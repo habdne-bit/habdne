@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "metrics": {
+    "tables": 48,
+    "types": 54,
+    "functions": 17,
+    "triggers": 37,
+    "indexes": 55,
+    "foreign_key_refs": 133,
+    "seed_commune_codes": 16,
+    "openapi_version": "3.1.0",
+    "openapi_paths": 61,
+    "openapi_operations": 64,
+    "openapi_schemas": 59,
+    "openapi_refs": 527
+  },
+  "errors": [],
+  "warnings": [],
+  "sha256": {
+    "schema_v0.2.sql": "a3f44d2c9c8728491cd37faf45f2a7d0572eb1508eee480f125322fa663fbb38",
+    "seed_master_data_v0.2.sql": "e3791d58e9f02fe65e1044201f970c0ecafe4cbfcca98d38d4c725e01c551480",
+    "openapi_v0.2.yaml": "8e4bd4fbf171adfb3724d6ebb1acdc5d72fac12503fdf67fa8aa2175bf294724"
+  }
+}

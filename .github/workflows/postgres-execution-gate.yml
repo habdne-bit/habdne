@@ -1,0 +1,53 @@
+name: PostgreSQL Execution Gate
+
+# The gate is a release blocker: no feature slice may start, and no merge may
+# land, unless a clean PostgreSQL 16+ database accepts the schema and seed and
+# every database-level contract test passes.
+# Ref: docs/handoff/04_DATABASE/POSTGRES_EXECUTION_GATE.md
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: turab
+          POSTGRES_PASSWORD: turab
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: turab
+      PGPASSWORD: turab
+      PGDATABASE: turab_contract_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install client tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+          python -m pip install --upgrade pip PyYAML
+
+      - name: Run the PostgreSQL Execution Gate
+        run: db/gate/run_gate.sh

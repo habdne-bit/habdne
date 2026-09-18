@@ -1,0 +1,199 @@
+{
+  "package": "TURAB Developer Handoff",
+  "version": "1.0",
+  "date": "2026-09-18",
+  "status": "CONDITIONAL_GO_POSTGRES_GATE_PENDING",
+  "technical_baseline": "v0.2",
+  "product_baseline": "Foundation v1.0 FINAL",
+  "files": [
+    {
+      "path": "00_START_HERE/DEVELOPER_KICKOFF_CHECKLIST.md",
+      "sha256": "220d8503186cd1012075472b2f7f4c12245133ba52d95404c1e5f840d62a50b1",
+      "bytes": 2277,
+      "authority": "GATE",
+      "purpose": "Developer preflight and acknowledgement checklist"
+    },
+    {
+      "path": "00_START_HERE/FILE_AUTHORITY_AND_VERSION_POLICY.md",
+      "sha256": "c5445956a64a54734a737d9b9fd53ca4b0b3312585160b10a90b585306ca0fbd",
+      "bytes": 1382,
+      "authority": "AUTHORITY",
+      "purpose": "Conflict/version policy"
+    },
+    {
+      "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.docx",
+      "sha256": "7cf21758d537628b5f1a32926689297949b34cc7425b529572e60f0ec47576f3",
+      "bytes": 52228,
+      "authority": "ENTRY",
+      "purpose": "Formatted master handoff guide"
+    },
+    {
+      "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.md",
+      "sha256": "3c1c004d2ca61554833cfc775403c27de53443c1599a264d6b6a99ecc30ebfc9",
+      "bytes": 25659,
+      "authority": "ENTRY",
+      "purpose": "Master handoff instructions and non-negotiable implementation guidance"
+    },
+    {
+      "path": "01_PRODUCT_BASELINE/TURAB_Foundation_Baseline_v1.0_FINAL.docx",
+      "sha256": "13da646dc4d3d243ce83333931d8c5916aa873835c9add2191cfe85ae9a2ad90",
+      "bytes": 98744,
+      "authority": "PRODUCT_AUTHORITY",
+      "purpose": "Highest product baseline"
+    },
+    {
+      "path": "01_PRODUCT_BASELINE/TURAB_Project_Instructions_v1.0.md",
+      "sha256": "cf47ccbb0911706b83075ec9f54eecb3dda2ad6921be3895261bfdbd977cabcd",
+      "bytes": 11878,
+      "authority": "PRODUCT_AUTHORITY",
+      "purpose": "Project decision method and Design Ledger rules"
+    },
+    {
+      "path": "02_DEVELOPER_SPEC/TURAB_Developer_Reference_Spec_v0.1.docx",
+      "sha256": "951ca6c44d2e9acd128e9bca6efad3e0a36aaf190908e792a3bb3325ff15276e",
+      "bytes": 73929,
+      "authority": "BEHAVIOR_REFERENCE",
+      "purpose": "Formatted copy of developer behavior reference"
+    },
+    {
+      "path": "02_DEVELOPER_SPEC/TURAB_Developer_Reference_Spec_v0.1.md",
+      "sha256": "3142d5681156d0cb86787c82805c84ea771dbf7a5317b1e7c0f6087c66d0592e",
+      "bytes": 61405,
+      "authority": "BEHAVIOR_AUTHORITY",
+      "purpose": "Detailed developer behavior reference"
+    },
+    {
+      "path": "03_ARCHITECTURE/ARCHITECTURE_DECISIONS_v0.2.md",
+      "sha256": "90d34654535f5c34c3e445ec24c5dfa7c650f6c25eed91be304cc9689035eb4f",
+      "bytes": 8587,
+      "authority": "TECH_AUTHORITY",
+      "purpose": "Accepted technical ADRs"
+    },
+    {
+      "path": "03_ARCHITECTURE/REMEDIATION_REVIEW_v0.2.md",
+      "sha256": "59a54228a25bd551824f824552b513f710c3d692fca427896d1c913a40992e89",
+      "bytes": 5906,
+      "authority": "QA_REFERENCE",
+      "purpose": "Evidence that v0.1 P0/P1 findings were remediated"
+    },
+    {
+      "path": "03_ARCHITECTURE/TECHNICAL_PACK_README_v0.2.md",
+      "sha256": "d438b4561dc8ec92ee1836a08c330a4905c1438763b327c9551d68c52ad06c47",
+      "bytes": 3776,
+      "authority": "TECH_REFERENCE",
+      "purpose": "Technical pack status and reading map adapted to handoff layout"
+    },
+    {
+      "path": "04_DATABASE/POSTGRES_EXECUTION_GATE.md",
+      "sha256": "ebd912d258d94d947bc8e6edde23de3dba22a0a42927df16012f907bb5e6b7f7",
+      "bytes": 989,
+      "authority": "RELEASE_GATE",
+      "purpose": "Mandatory runtime database proof"
+    },
+    {
+      "path": "04_DATABASE/schema_v0.2.sql",
+      "sha256": "a3f44d2c9c8728491cd37faf45f2a7d0572eb1508eee480f125322fa663fbb38",
+      "bytes": 67591,
+      "authority": "EXECUTABLE_AUTHORITY",
+      "purpose": "PostgreSQL 16+ schema baseline"
+    },
+    {
+      "path": "04_DATABASE/seed_master_data_v0.2.sql",
+      "sha256": "e3791d58e9f02fe65e1044201f970c0ecafe4cbfcca98d38d4c725e01c551480",
+      "bytes": 12495,
+      "authority": "EXECUTABLE_AUTHORITY",
+      "purpose": "Controlled master data baseline"
+    },
+    {
+      "path": "05_API/API_CONTRACTS_v0.2.md",
+      "sha256": "5258df1355638a00eaac9939f9e187a64d93ead1d69442804409087be1c47dff",
+      "bytes": 17336,
+      "authority": "API_AUTHORITY",
+      "purpose": "Behavioral API/domain contract"
+    },
+    {
+      "path": "05_API/API_INVENTORY_v0.2.md",
+      "sha256": "786c768a77c8297c8a9804f044656f456aa88d1eef5cd090aa7cc1a9c9c3d4f0",
+      "bytes": 8874,
+      "authority": "API_REFERENCE",
+      "purpose": "Human-readable API inventory"
+    },
+    {
+      "path": "05_API/openapi_v0.2.yaml",
+      "sha256": "8e4bd4fbf171adfb3724d6ebb1acdc5d72fac12503fdf67fa8aa2175bf294724",
+      "bytes": 124280,
+      "authority": "EXECUTABLE_AUTHORITY",
+      "purpose": "OpenAPI 3.1 HTTP contract"
+    },
+    {
+      "path": "06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md",
+      "sha256": "3c72e4e320fcc7fc180c0b2811306252d31f23313b05db5ff289a77c56492878",
+      "bytes": 12648,
+      "authority": "BUILD_AUTHORITY",
+      "purpose": "Required slice sequence and stop gates"
+    },
+    {
+      "path": "07_QA_ACCEPTANCE/RED_TEAM_ACCEPTANCE_TESTS_v0.2.md",
+      "sha256": "8797b574dc9c4625fc394cc5e3dafac69dbafc1a95ec5903b15ea783878dfc6a",
+      "bytes": 8557,
+      "authority": "ACCEPTANCE_AUTHORITY",
+      "purpose": "Mandatory edge-case acceptance suite"
+    },
+    {
+      "path": "07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.json",
+      "sha256": "72e463c11b75de2de430a20d87c4a72dc87a796f7cd78f1bb0a05f54a593588e",
+      "bytes": 671,
+      "authority": "QA_RESULT",
+      "purpose": "Latest PASS static audit result"
+    },
+    {
+      "path": "07_QA_ACCEPTANCE/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.txt",
+      "sha256": "e951911f6a464ed913c89056b6d4b898a459e13f2c57d6379871a9400de16b0c",
+      "bytes": 1573,
+      "authority": "QA_REFERENCE",
+      "purpose": "Original v0.2 technical-pack checksums"
+    },
+    {
+      "path": "07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.py",
+      "sha256": "f50314c2ae7f7b0ea0fcb5c22306821518d60cf91e29dfe6c01477715fccfdcc",
+      "bytes": 8816,
+      "authority": "QA_TOOL",
+      "purpose": "Repeatable static contract audit adapted to handoff layout"
+    },
+    {
+      "path": "99_REFERENCE_HISTORY/CHANGELOG_v0.2.md",
+      "sha256": "86264e628089266c9868cf730be4fe5d709ddb21e914918b0714b41ea364033b",
+      "bytes": 3843,
+      "authority": "HISTORY_ONLY",
+      "purpose": "Technical changes v0.1 → v0.2"
+    },
+    {
+      "path": "99_REFERENCE_HISTORY/MIGRATION_NOTES_v0.1_TO_v0.2.md",
+      "sha256": "405a273b0ec4d30e23be430d4d49ef60fb5e7f2f689b18681cc4a5b1ceaa3169",
+      "bytes": 1153,
+      "authority": "HISTORY_ONLY",
+      "purpose": "Migration notes only if legacy v0.1 code exists"
+    },
+    {
+      "path": "99_REFERENCE_HISTORY/REFERENCE_Architecture_Review_v0.1.md",
+      "sha256": "63eeef66bd9a2bda0fecc289eb4a7bccdfebb52a1e058100cdd6ebabe7985491",
+      "bytes": 30837,
+      "authority": "HISTORY_ONLY",
+      "purpose": "Red-team review that motivated v0.2; not implementation baseline"
+    },
+    {
+      "path": "README.md",
+      "sha256": "7289dfd27ae21922dd23040725c91a4bf8bd785abace64b6d6c9e7d4b2407f33",
+      "bytes": 940,
+      "authority": "ENTRY",
+      "purpose": "Root quick-start"
+    },
+    {
+      "path": "verify_handoff.py",
+      "sha256": "2c898d68c467d7abbe66b81bdfbc8e3d508b29e5ed09b82e75a0b3c980b8300f",
+      "bytes": 661,
+      "authority": "QA_TOOL",
+      "purpose": "Verifies package integrity against HANDOFF_MANIFEST.json"
+    }
+  ]
+}

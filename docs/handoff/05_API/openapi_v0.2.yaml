@@ -1,0 +1,4801 @@
+openapi: 3.1.0
+info:
+  title: TURAB API
+  version: 0.2.0
+  description: 'TURAB foundational API contract v0.2 — remediated after Technical Architecture Review.
+
+
+    Core invariants:
+
+    - REQUEST and PROPERTY are equal first-class entities.
+
+    - PROPERTY != POST/SOURCE and PROPERTY != PROPERTY_OFFER.
+
+    - Match evaluation is Request × canonical Property plus an explicit commercial context.
+
+    - MATCH_CANDIDATE != OPPORTUNITY.
+
+    - Matching inputs are snapshotted immutably and hashed.
+
+    - Hard FAIL cannot be overridden by ranking; required UNKNOWN creates information work.
+
+    - Opportunity requires latest human APPROVED review plus freshness, permission and information gates.
+
+    - Consent is resource-scoped and revocable.
+
+    - Customer/public DTOs are separate from internal DTOs.
+
+    - AI never upgrades verification, changes user criteria silently, or creates Opportunity autonomously.
+
+    '
+servers:
+- url: /api/v1
+  description: Relative API base
+tags:
+- name: Auth
+- name: Master Data
+- name: Parties
+- name: External Leads
+- name: Requests
+- name: Properties
+- name: Truth
+- name: Identity
+- name: Matching
+- name: Tasks
+- name: Opportunities
+- name: Communication
+- name: Public
+- name: Audit
+paths:
+  /auth/otp/start:
+    post:
+      summary: Start OTP challenge
+      tags:
+      - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpStart'
+      responses:
+        '201':
+          description: Challenge created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - challenge_id
+                - expires_at
+                properties:
+                  challenge_id: &id002
+                    type: string
+                    format: uuid
+                  expires_at: &id003
+                    type: string
+                    format: date-time
+        '400': &id001
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      operationId: postAuthOtpStart
+  /auth/otp/verify:
+    post:
+      summary: Verify OTP for phone control or account login; phone verification does not require or create an account unless
+        purpose=LOGIN and account flow authorizes it.
+      tags:
+      - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpVerify'
+      responses:
+        '200':
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - verification_result
+                properties:
+                  verification_result:
+                    type: string
+                    enum:
+                    - PHONE_CONTROL_VERIFIED
+                    - SESSION_CREATED
+                  contact_point_id:
+                    type: string
+                    format: uuid
+                  access_token:
+                    type:
+                    - string
+                    - 'null'
+                  account_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  party_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  roles:
+                    type: array
+                    items:
+                      type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      operationId: postAuthOtpVerify
+  /locations:
+    get:
+      summary: Search canonical locations
+      tags:
+      - Master Data
+      security: []
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: parent_id
+        in: query
+        schema: *id002
+      - name: type
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+                  meta:
+                    $ref: '#/components/schemas/PageMeta'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      operationId: getLocations
+  /reason-codes:
+    get:
+      summary: List active reason codes
+      tags:
+      - Master Data
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    category:
+                      type: string
+                    label_ar:
+                      type: string
+                    label_en:
+                      type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      operationId: getReasonCodes
+  /parties:
+    post:
+      summary: Create a market PARTY without requiring an account
+      tags:
+      - Parties
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postParties
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /parties/{party_id}:
+    get:
+      summary: Get party
+      tags:
+      - Parties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: party_id
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getPartiesPartyId
+      x-authorization: Internal resource access; role check plus business-purpose authorization. Customer access uses /me/*
+        endpoints.
+    patch:
+      summary: Update party
+      tags:
+      - Parties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: party_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IfMatchVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyPatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: patchPartiesPartyId
+      description: Typed projection update only. Status, consent, claim ownership, availability and other stateful fields
+        require dedicated domain commands. Critical fact updates MUST atomically write provenance/resolution plus the operational
+        projection.
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /parties/{party_id}/consents:
+    post:
+      summary: Record granular consent
+      tags:
+      - Parties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: party_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentGrantInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  consent_id: *id002
+                  status:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postPartiesPartyIdConsents
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /external-leads:
+    post:
+      summary: Capture external discovery lead; does not activate inventory
+      tags:
+      - External Leads
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalLeadCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  external_lead_id: *id002
+                  status:
+                    type: string
+                  source_id: *id002
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postExternalLeads
+  /external-leads/{lead_id}/convert:
+    post:
+      summary: Convert consented external lead into assisted draft
+      tags:
+      - External Leads
+      description: MUST fail unless contact/consent rules are satisfied. Conversion never creates a fake login account.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - party_id
+              - consent_id
+              properties:
+                party_id: *id002
+                consent_id: *id002
+                target:
+                  type: string
+                  enum:
+                  - REQUEST
+                  - PROPERTY
+                payload:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Converted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id:
+                    anyOf:
+                    - *id002
+                    - type: 'null'
+                  property_id:
+                    anyOf:
+                    - *id002
+                    - type: 'null'
+                  status:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postExternalLeadsLeadIdConvert
+  /requests:
+    post:
+      summary: Create request
+      tags:
+      - Requests
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postRequests
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /requests/{request_id}:
+    get:
+      summary: Get request
+      tags:
+      - Requests
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getRequestsRequestId
+      x-authorization: Internal resource access; role check plus business-purpose authorization. Customer access uses /me/*
+        endpoints.
+    patch:
+      summary: Update request fields without silently relaxing criteria
+      tags:
+      - Requests
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IfMatchVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: patchRequestsRequestId
+      description: Typed projection update only. Status, consent, claim ownership, availability and other stateful fields
+        require dedicated domain commands. Critical fact updates MUST atomically write provenance/resolution plus the operational
+        projection.
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /requests/{request_id}/criteria:
+    post:
+      summary: Add request criterion
+      tags:
+      - Requests
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCriterion'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestCriterion'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postRequestsRequestIdCriteria
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /requests/{request_id}/state:
+    post:
+      summary: Transition request lifecycle
+      tags:
+      - Requests
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestStateCommand'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postRequestsRequestIdState
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /requests/{request_id}/reconfirm:
+    post:
+      summary: Reconfirm request freshness
+      tags:
+      - Requests
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateReconfirm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postRequestsRequestIdReconfirm
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /properties:
+    post:
+      summary: Create physical property identity
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postProperties
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /properties/{property_id}:
+    get:
+      summary: Get property operational state
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: property_id
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorPropertyView'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getPropertiesPropertyId
+      x-authorization: Internal resource access; role check plus business-purpose authorization. Customer access uses /me/*
+        endpoints.
+    patch:
+      summary: Update property operational state
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: property_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IfMatchVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyPatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: patchPropertiesPropertyId
+      description: Typed projection update only. Status, consent, claim ownership, availability and other stateful fields
+        require dedicated domain commands. Critical fact updates MUST atomically write provenance/resolution plus the operational
+        projection.
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /properties/{property_id}/offers:
+    post:
+      summary: Create independent commercial offer for property
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: property_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyOffer'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postPropertiesPropertyIdOffers
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /offers/{offer_id}:
+    patch:
+      summary: Update offer; do not overwrite other parties offers
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: offer_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IfMatchVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferPatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyOffer'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: patchOffersOfferId
+      description: Typed projection update only. Status, consent, claim ownership, availability and other stateful fields
+        require dedicated domain commands. Critical fact updates MUST atomically write provenance/resolution plus the operational
+        projection.
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /offers/{offer_id}/sources:
+    post:
+      summary: Link source to offer
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: offer_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - source_id
+              properties:
+                source_id: *id002
+                is_primary:
+                  type: boolean
+      responses:
+        '204':
+          description: Linked
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postOffersOfferIdSources
+  /properties/{property_id}/reconfirm:
+    post:
+      summary: Reconfirm property availability/freshness
+      tags:
+      - Properties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: property_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - availability
+              properties:
+                availability:
+                  type: string
+                  enum:
+                  - AVAILABLE
+                  - POTENTIALLY_AVAILABLE
+                  - UNDER_DISCUSSION
+                  - TEMPORARILY_UNAVAILABLE
+                  - UNAVAILABLE
+                  - NEEDS_CONFIRMATION
+                  - UNKNOWN
+                confirmed_at: *id003
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: postPropertiesPropertyIdReconfirm
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /public/properties:
+    get:
+      summary: Browse PUBLIC properties only
+      tags:
+      - Public
+      description: Returns only PUBLIC properties with at least one active public commercial context backed by currently valid
+        PUBLIC_LISTING_ALLOWED consent. Private/Potential records and internal fields are never projected here. Price fields
+        obey price_visibility.
+      security: []
+      parameters:
+      - name: location_id
+        in: query
+        schema: *id002
+      - name: property_type
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicPropertySummary'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      operationId: getPublicProperties
+  /interests:
+    post:
+      summary: Record direct interest without creating a REQUEST
+      tags:
+      - Public
+      description: INTEREST != REQUEST. The API may later offer an explicit convert-to-request action; it must never auto-create
+        a request.
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterestCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interest_id: *id002
+                  status:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      - OPERATOR
+      operationId: postInterests
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /observations:
+    post:
+      summary: Record observation with source/time
+      tags:
+      - Truth
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservationInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observation_id: *id002
+                  recorded_at: *id003
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postObservations
+  /claims:
+    post:
+      summary: Record atomic claim; does not automatically become verified truth
+      tags:
+      - Truth
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  claim_id: *id002
+                  verification_level:
+                    type: string
+                  status:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postClaims
+  /claims/{claim_id}/verification-events:
+    post:
+      summary: Record an explicit verification action
+      tags:
+      - Truth
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: claim_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationEventInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verification_event_id: *id002
+                  level:
+                    type: string
+                  outcome:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: postClaimsClaimIdVerificationEvents
+  /resolutions:
+    post:
+      summary: Resolve current operational value from claim/evidence
+      tags:
+      - Truth
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolutionInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resolved_value_id: *id002
+                  resolution_status:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: postResolutions
+  /identity/candidates:
+    get:
+      summary: List property identity candidates
+      tags:
+      - Identity
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IdentityCandidate'
+                  meta:
+                    $ref: '#/components/schemas/PageMeta'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getIdentityCandidates
+  /identity/candidates/generate:
+    post:
+      summary: Generate explainable identity candidates; never merge automatically
+      tags:
+      - Identity
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                property_id: *id002
+                algorithm_version:
+                  type: string
+                  default: rules-0.1.0
+      responses:
+        '201':
+          description: Generated
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IdentityCandidate'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postIdentityCandidatesGenerate
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /identity/candidates/{candidate_id}/review:
+    post:
+      summary: Human identity decision
+      tags:
+      - Identity
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: candidate_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityReviewInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityCandidate'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - REVIEWER
+      operationId: postIdentityCandidatesCandidateIdReview
+      description: 'CONFIRMED_SAME is a transactional identity-resolution command: create non-destructive alias→canonical
+        mapping, preserve all sources/offers/claims, and trigger review of affected open matches/opportunities. No destructive
+        merge.'
+  /requests/{request_id}/matching/run:
+    post:
+      summary: Run matching for request against current resolved property state
+      tags:
+      - Matching
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                matching_policy_version:
+                  type: string
+                  default: 0.1.0
+                property_ids:
+                  type: array
+                  items: *id002
+      responses:
+        '201':
+          description: Evaluation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MatchCandidate'
+                  diagnostic:
+                    $ref: '#/components/schemas/Diagnostic'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: postRequestsRequestIdMatchingRun
+  /matches/{match_id}:
+    get:
+      summary: Get explainable match candidate
+      tags:
+      - Matching
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: match_id
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchCandidate'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getMatchesMatchId
+  /matches/{match_id}/review:
+    post:
+      summary: Human match decision; APPROVED may create Opportunity only if all gates pass
+      tags:
+      - Matching
+      description: APPROVED MUST fail if any hard/information/freshness/permission gate is not PASS. NEED_MORE_INFORMATION
+        should create a focused task where applicable.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: match_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchReviewInput'
+      responses:
+        '200':
+          description: Reviewed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  match_id: *id002
+                  decision:
+                    type: string
+                  opportunity:
+                    anyOf:
+                    - $ref: '#/components/schemas/Opportunity'
+                    - type: 'null'
+                  task:
+                    anyOf:
+                    - $ref: '#/components/schemas/Task'
+                    - type: 'null'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - REVIEWER
+      operationId: postMatchesMatchIdReview
+  /requests/{request_id}/diagnostic:
+    get:
+      summary: Get latest Match Diagnostic
+      tags:
+      - Matching
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostic'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getRequestsRequestIdDiagnostic
+  /tasks:
+    get:
+      summary: List operational tasks
+      tags:
+      - Tasks
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: priority
+        in: query
+        schema:
+          type: string
+      - name: assigned_to_me
+        in: query
+        schema:
+          type: boolean
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  meta:
+                    $ref: '#/components/schemas/PageMeta'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getTasks
+  /tasks/{task_id}/complete:
+    post:
+      summary: Complete focused information/reconfirmation task
+      tags:
+      - Tasks
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCompletionInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: postTasksTaskIdComplete
+      description: Append a task_completion_event and mark task DONE in one transaction. Outcome/evidence must not be discarded.
+  /opportunities/{opportunity_id}:
+    get:
+      summary: Get opportunity with field-level redaction by sharing scope
+      tags:
+      - Opportunities
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalOpportunityView'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getOpportunitiesOpportunityId
+      x-authorization: Internal resource access; role check plus business-purpose authorization. Customer access uses /me/*
+        endpoints.
+  /opportunities/{opportunity_id}/responses:
+    post:
+      summary: Customer/party response to opportunity
+      tags:
+      - Opportunities
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityResponseInput'
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  opportunity_response_id: *id002
+                  response:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      - OPERATOR
+      operationId: postOpportunitiesOpportunityIdResponses
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /opportunities/{opportunity_id}/share:
+    post:
+      summary: Mark/share opportunity through allowed scope
+      tags:
+      - Opportunities
+      description: Response payload and outbound content MUST be redacted according to sharing_scope and price visibility.
+        Internal seller expectations must never leak.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel:
+                  type: string
+                  enum:
+                  - WHATSAPP
+                  - SMS
+                  - EMAIL
+                  - WEB
+                note:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opportunity'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postOpportunitiesOpportunityIdShare
+  /opportunities/{opportunity_id}/revalidate:
+    post:
+      summary: Revalidate freshness/permission before further sharing
+      tags:
+      - Opportunities
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opportunity'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: postOpportunitiesOpportunityIdRevalidate
+  /opportunities/{opportunity_id}/close:
+    post:
+      summary: Close opportunity with outcome reason
+      tags:
+      - Opportunities
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseCommand'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opportunity'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: postOpportunitiesOpportunityIdClose
+  /communication/threads:
+    post:
+      summary: Create communication thread linked to domain context
+      tags:
+      - Communication
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunicationThreadCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  thread_id: *id002
+                  opened_at: *id003
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postCommunicationThreads
+  /communication/threads/{thread_id}/messages:
+    post:
+      summary: Archive/send message reference in official channel
+      tags:
+      - Communication
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: thread_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id: *id002
+                  delivery_status:
+                    type: string
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      operationId: postCommunicationThreadsThreadIdMessages
+  /parties/{party_id}/timeline:
+    get:
+      summary: Get operational communication/interaction timeline
+      tags:
+      - Communication
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: party_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  meta:
+                    $ref: '#/components/schemas/PageMeta'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      operationId: getPartiesPartyIdTimeline
+  /webhooks/whatsapp:
+    post:
+      summary: Receive WhatsApp Business webhook
+      tags:
+      - Communication
+      description: Provider webhook. Deduplicate by (provider, provider_event_id) before resolving thread/message. Replayed
+        events MUST be idempotent.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppWebhookEnvelope'
+      responses:
+        '200':
+          description: Accepted
+        '400': *id001
+        '401': *id001
+      operationId: postWebhooksWhatsapp
+      parameters: []
+  /audit:
+    get:
+      summary: Query audit history
+      tags:
+      - Audit
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: entity_table
+        in: query
+        schema:
+          type: string
+      - name: entity_id
+        in: query
+        schema: *id002
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  meta:
+                    $ref: '#/components/schemas/PageMeta'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - REVIEWER
+      operationId: getAudit
+  /parties/{party_id}/contact-points/phone:
+    post:
+      summary: Attach phone contact point to party
+      tags:
+      - Parties
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: party_id
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactPoint'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '422': *id001
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      operationId: attachPartyPhoneContactPoint
+      x-authorization: Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level
+        authorization in addition to role.
+  /consents/{consent_id}/revoke:
+    post:
+      summary: Revoke consent grant
+      operationId: postConsentsConsentIdRevoke
+      tags:
+      - Consent
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: consent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRevokeInput'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      x-authorization: CUSTOMER may revoke only consent belonging to own party; staff require operational authority.
+  /consents/bindings:
+    post:
+      summary: Bind a granted consent to a resource and purpose
+      operationId: postConsentsBindings
+      tags:
+      - Consent
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentBindingInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentBinding'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      x-authorization: Server validates consent party, scope, status and resource-party consistency.
+  /me/party:
+    get:
+      summary: Get caller party projection
+      operationId: getMeParty
+      tags:
+      - Me
+      security:
+      - BearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPartyView'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - CUSTOMER
+      x-authorization: Bound to authenticated account.party_id; no arbitrary party id accepted.
+  /me/requests/{request_id}:
+    get:
+      summary: Get caller-owned request
+      operationId: getMeRequestsRequestId
+      tags:
+      - Me
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerRequestView'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - CUSTOMER
+      x-authorization: request.party_id MUST equal authenticated account.party_id or explicit delegated authorization.
+  /me/properties/{property_id}:
+    get:
+      summary: Get caller-managed property
+      operationId: getMePropertiesPropertyId
+      tags:
+      - Me
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: property_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPropertyView'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - CUSTOMER
+      x-authorization: Caller must manage/own/claim this property; otherwise 404/403. Public browsing uses /public/properties.
+  /me/opportunities/{opportunity_id}:
+    get:
+      summary: Get caller opportunity with sharing-scope redaction
+      operationId: getMeOpportunitiesOpportunityId
+      tags:
+      - Me
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOpportunityView'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - CUSTOMER
+      x-authorization: Opportunity request MUST belong to caller. Response renderer MUST enforce sharing_scope and never expose
+        seller_expectation or internal claims.
+  /offers/{offer_id}/state:
+    post:
+      summary: Transition offer state
+      operationId: postOffersOfferIdState
+      tags:
+      - Offers
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: offer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferStateCommand'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyOffer'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      x-authorization: Customer may mutate only own offer. State machine validation required.
+  /offers/{offer_id}/reconfirm:
+    post:
+      summary: Reconfirm commercial terms/freshness
+      operationId: postOffersOfferIdReconfirm
+      tags:
+      - Offers
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: offer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateReconfirm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyOffer'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - CUSTOMER
+      x-authorization: Customer may reconfirm only own offer; server records provenance and updates offer freshness transactionally.
+  /records/claim:
+    post:
+      summary: Claim an assisted record after verified control
+      operationId: postRecordsClaim
+      tags:
+      - Parties
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRecordInput'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      - OPERATOR
+      x-authorization: For customer, verified contact point and resource party relationship are mandatory. Command changes
+        ASSISTED/UNCLAIMED to SHARED_MANAGEMENT/CLAIMED transactionally; no duplicate resource is created.
+  /backoffice/queues/external-leads:
+    get:
+      summary: External leads requiring action
+      operationId: getBackofficeQueuesExternalLeads
+      tags:
+      - BackOffice
+      security:
+      - BearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuePage'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      x-authorization: Internal queue. Filters and sorting must be deterministic and role-aware.
+  /backoffice/queues/requests:
+    get:
+      summary: Requests requiring qualification/reconfirmation
+      operationId: getBackofficeQueuesRequests
+      tags:
+      - BackOffice
+      security:
+      - BearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuePage'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      x-authorization: Internal queue. Filters and sorting must be deterministic and role-aware.
+  /backoffice/queues/properties:
+    get:
+      summary: Properties requiring review/reconfirmation
+      operationId: getBackofficeQueuesProperties
+      tags:
+      - BackOffice
+      security:
+      - BearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuePage'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      x-authorization: Internal queue. Filters and sorting must be deterministic and role-aware.
+  /backoffice/queues/matches:
+    get:
+      summary: Candidate matches pending human decision
+      operationId: getBackofficeQueuesMatches
+      tags:
+      - BackOffice
+      security:
+      - BearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuePage'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      x-authorization: Internal queue. Filters and sorting must be deterministic and role-aware.
+  /backoffice/queues/opportunities:
+    get:
+      summary: Opportunities needing follow-up/revalidation
+      operationId: getBackofficeQueuesOpportunities
+      tags:
+      - BackOffice
+      security:
+      - BearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuePage'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      x-roles:
+      - ADMIN
+      - OPERATOR
+      - REVIEWER
+      x-authorization: Internal queue. Filters and sorting must be deterministic and role-aware.
+  /master/criterion-definitions:
+    get:
+      summary: List active criterion definitions
+      operationId: getMasterCriterionDefinitions
+      tags:
+      - MasterData
+      security: []
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CriterionDefinition'
+        '400':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Request rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+      description: Required for mutating commands. Same key + same request hash must replay the original result; same key
+        + different hash returns 409.
+    IfMatchVersion:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Required optimistic concurrency version for mutable resource projection.
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+  schemas:
+    Problem:
+      type: object
+      required:
+      - title
+      - status
+      - code
+      - trace_id
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
+        field_errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+    PageMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        has_next:
+          type: boolean
+    Location:
+      type: object
+      required:
+      - location_id
+      - code
+      - canonical_ar
+      - location_type
+      properties:
+        location_id: *id002
+        code:
+          type: string
+        parent_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        canonical_ar:
+          type: string
+        canonical_fr:
+          anyOf:
+          - type: string
+          - type: 'null'
+        location_type:
+          type: string
+          enum:
+          - WILAYA
+          - COMMUNE
+          - AREA
+          - KSAR
+          - NEIGHBORHOOD
+          - LANDMARK
+          - OTHER
+        confidence_level:
+          type: string
+          enum:
+          - CONFIRMED
+          - CANDIDATE
+          - UNMAPPED
+        active_for_selection:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+    Party:
+      type: object
+      required:
+      - party_id
+      - kind
+      - status
+      properties:
+        party_id: *id002
+        kind:
+          type: string
+          enum:
+          - PERSON
+          - BUSINESS
+        status:
+          type: string
+          enum:
+          - DISCOVERED
+          - CONTACTED
+          - CONTACT_VERIFIED
+          - PARTY_ACTIVE
+          - INACTIVE
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+        legal_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+        created_at: *id003
+        updated_at: *id003
+    PartyCreate:
+      type: object
+      required:
+      - kind
+      properties:
+        kind:
+          type: string
+          enum:
+          - PERSON
+          - BUSINESS
+        display_name:
+          type: string
+        legal_name:
+          type: string
+        notes:
+          type: string
+      additionalProperties: false
+    PhoneInput:
+      type: object
+      additionalProperties: false
+      required:
+      - phone_e164
+      properties:
+        phone_e164:
+          type: string
+          pattern: ^\+[1-9][0-9]{7,14}$
+        is_primary:
+          type: boolean
+          default: false
+        relationship_note:
+          type:
+          - string
+          - 'null'
+    ConsentGrantInput:
+      type: object
+      required:
+      - scope
+      - channel
+      - consent_version
+      - granted_at
+      properties:
+        scope:
+          type: string
+          enum:
+          - ASSISTED_ENTRY
+          - PUBLIC_LISTING_ALLOWED
+          - PRIVATE_MATCHING_ONLY
+          - CONTACT_BEFORE_SHARING
+          - COMMUNICATION_ARCHIVE
+        channel:
+          type: string
+          enum:
+          - WHATSAPP
+          - SMS
+          - PHONE_CONFIRMED
+          - WEB
+          - IN_PERSON
+          - OTHER
+        consent_version:
+          type: string
+        granted_at: *id003
+        evidence_observation_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        notes:
+          type: string
+      additionalProperties: false
+    RequestCriterion:
+      type: object
+      required:
+      - criterion_code
+      - importance
+      - operator
+      - value
+      properties:
+        request_criterion_id: *id002
+        criterion_code:
+          type: string
+        importance:
+          type: string
+          enum:
+          - REQUIRED
+          - PREFERRED
+          - FLEXIBLE
+        operator:
+          type: string
+          enum:
+          - EQ
+          - NEQ
+          - IN
+          - NOT_IN
+          - GTE
+          - LTE
+          - BETWEEN
+          - EXISTS
+          - BOOL
+          - TEXT_SEMANTIC
+        value: {}
+        unit:
+          anyOf:
+          - type: string
+          - type: 'null'
+        blocking_if_unknown:
+          type: boolean
+          default: false
+        sort_order:
+          type: integer
+          default: 100
+    RequestCreate:
+      type: object
+      required:
+      - claim_status
+      - intent
+      - management_mode
+      - party_id
+      - transaction_intent
+      properties:
+        party_id: *id002
+        intent: &id018
+          type: string
+          enum:
+          - EXPLORING
+          - ACTIVE_SEARCH
+          - READY_TO_ACT
+        payment: &id019
+          type: string
+          enum:
+          - CASH
+          - BANK_FINANCING
+          - MIXED
+          - UNDECIDED
+        desired_property_type: &id020
+          anyOf:
+          - type: string
+            enum:
+            - HOUSE_VILLA
+            - APARTMENT
+            - LAND
+            - SHOP_COMMERCIAL
+            - AGRICULTURAL_PROPERTY
+            - BUILDING
+            - OTHER
+          - type: 'null'
+        property_type_importance:
+          type: string
+          enum:
+          - REQUIRED
+          - PREFERRED
+          - FLEXIBLE
+        primary_location_id: &id021
+          anyOf:
+          - *id002
+          - type: 'null'
+        location_importance:
+          type: string
+          enum:
+          - REQUIRED
+          - PREFERRED
+          - FLEXIBLE
+        local_location_detail:
+          type: string
+        budget_target_dzd: &id022
+          type: integer
+          minimum: 0
+        budget_max_dzd: &id023
+          type: integer
+          minimum: 0
+        budget_importance:
+          type: string
+          enum:
+          - REQUIRED
+          - PREFERRED
+          - FLEXIBLE
+        budget_flexibility: &id024
+          type: string
+          enum:
+          - STRICT
+          - LOW
+          - MODERATE
+          - HIGH
+          - UNSPECIFIED
+        management_mode:
+          type: string
+          enum:
+          - SELF_MANAGED
+          - ASSISTED
+          - SHARED_MANAGEMENT
+        criteria: &id026
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestCriterion'
+        transaction_intent: &id017
+          type: string
+          enum:
+          - BUY
+          - RENT
+        claim_status:
+          type: string
+          enum:
+          - UNCLAIMED
+          - CLAIMED
+      additionalProperties: false
+    Request:
+      allOf:
+      - $ref: '#/components/schemas/RequestCreate'
+      - type: object
+        required:
+        - request_id
+        - status
+        - version
+        - created_at
+        properties:
+          request_id: *id002
+          status: &id016
+            type: string
+            enum:
+            - RAW
+            - CONTACTED
+            - QUALIFIED
+            - ACTIVE
+            - NEEDS_CONFIRMATION
+            - PAUSED
+            - CLOSED
+          last_confirmed_at: &id025
+            anyOf:
+            - *id003
+            - type: 'null'
+          claim_status:
+            type: string
+            enum:
+            - UNCLAIMED
+            - CLAIMED
+          version:
+            type: integer
+            minimum: 1
+          created_at: *id003
+          updated_at: *id003
+    RequestStateCommand:
+      type: object
+      required:
+      - target_status
+      properties:
+        target_status:
+          type: string
+          enum:
+          - CONTACTED
+          - QUALIFIED
+          - ACTIVE
+          - NEEDS_CONFIRMATION
+          - PAUSED
+          - CLOSED
+        reason_code:
+          type: string
+        note:
+          type: string
+      additionalProperties: false
+    PropertyCreate:
+      type: object
+      required:
+      - claim_status
+      - management_mode
+      - property_type
+      - supply_mode
+      properties:
+        property_type: &id009
+          type: string
+          enum:
+          - HOUSE_VILLA
+          - APARTMENT
+          - LAND
+          - SHOP_COMMERCIAL
+          - AGRICULTURAL_PROPERTY
+          - BUILDING
+          - OTHER
+        canonical_location_id: &id010
+          anyOf:
+          - *id002
+          - type: 'null'
+        local_location_detail:
+          type: string
+        land_area_m2:
+          type: number
+          exclusiveMinimum: 0
+        built_area_m2:
+          type: number
+          exclusiveMinimum: 0
+        current_availability: &id011
+          type: string
+          enum:
+          - AVAILABLE
+          - POTENTIALLY_AVAILABLE
+          - UNDER_DISCUSSION
+          - TEMPORARILY_UNAVAILABLE
+          - UNAVAILABLE
+          - NEEDS_CONFIRMATION
+          - UNKNOWN
+        supply_mode: &id013
+          type: string
+          enum:
+          - PUBLIC
+          - PRIVATE
+          - POTENTIAL
+        management_mode:
+          type: string
+          enum:
+          - SELF_MANAGED
+          - ASSISTED
+          - SHARED_MANAGEMENT
+        claim_status:
+          type: string
+          enum:
+          - UNCLAIMED
+          - CLAIMED
+      additionalProperties: false
+    Property:
+      allOf:
+      - $ref: '#/components/schemas/PropertyCreate'
+      - type: object
+        required:
+        - property_id
+        - version
+        - claim_status
+        - created_at
+        properties:
+          property_id: *id002
+          availability_last_confirmed_at: &id012
+            anyOf:
+            - *id003
+            - type: 'null'
+          claim_status:
+            type: string
+            enum:
+            - UNCLAIMED
+            - CLAIMED
+          version: &id014
+            type: integer
+            minimum: 1
+          created_at: *id003
+          updated_at: *id003
+    OfferCreate:
+      type: object
+      required:
+      - party_id
+      - transaction_type
+      properties:
+        party_id: *id002
+        transaction_type:
+          type: string
+          enum:
+          - SALE
+          - RENT
+        asking_price_dzd:
+          type: integer
+          minimum: 0
+        raw_price_text:
+          type: string
+        price_negotiable:
+          type: string
+          enum:
+          - 'YES'
+          - 'NO'
+          - UNKNOWN
+        seller_expectation_dzd:
+          type: integer
+          minimum: 0
+          description: Internal/confidential. Never expose in public/customer representations unless policy explicitly permits.
+        price_visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - ON_REQUEST
+          - PRIVATE
+        permission_scope:
+          type: string
+          enum:
+          - SUMMARY_ONLY
+          - PROPERTY_DETAILS_ALLOWED
+          - CONTACT_AFTER_CONFIRMATION
+      additionalProperties: false
+    PropertyOffer:
+      allOf:
+      - $ref: '#/components/schemas/OfferCreate'
+      - type: object
+        required:
+        - offer_id
+        - property_id
+        - status
+        - version
+        properties:
+          offer_id: *id002
+          property_id: *id002
+          status:
+            type: string
+            enum:
+            - DRAFT
+            - PENDING_INFO
+            - ACTIVE
+            - PAUSED
+            - WITHDRAWN
+            - CLOSED
+          last_confirmed_at:
+            anyOf:
+            - *id003
+            - type: 'null'
+          version:
+            type: integer
+          created_at: *id003
+          updated_at: *id003
+          commercial_terms_last_confirmed_at:
+            type:
+            - string
+            - 'null'
+            format: date-time
+    ExternalLeadCreate:
+      type: object
+      required:
+      - lead_kind
+      - source
+      properties:
+        lead_kind:
+          type: string
+          enum:
+          - PROPERTY
+          - REQUEST
+        source:
+          type: object
+          required:
+          - kind
+          properties:
+            kind:
+              type: string
+              enum:
+              - USER_FORM
+              - EMPLOYEE_ENTRY
+              - FACEBOOK_POST
+              - OUEDKNISS_POST
+              - OTHER_WEB_POST
+              - WHATSAPP
+              - PHONE_CALL
+              - IN_PERSON
+              - BROKER
+              - DOCUMENT
+              - IMPORT
+              - OTHER
+            external_url:
+              type: string
+              format: uri
+            external_ref:
+              type: string
+            title:
+              type: string
+            raw_text:
+              type: string
+            captured_at: *id003
+            metadata:
+              type: object
+              additionalProperties: true
+        raw_payload:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+    ObservationInput:
+      type: object
+      required:
+      - kind
+      properties:
+        source_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        kind:
+          type: string
+          enum:
+          - TEXT
+          - CALL_NOTE
+          - MESSAGE
+          - DOCUMENT
+          - IMAGE
+          - FORM_SUBMISSION
+          - SYSTEM_IMPORT
+          - OTHER
+        party_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        observed_at:
+          anyOf:
+          - *id003
+          - type: 'null'
+        raw_text:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+    ClaimInput:
+      type: object
+      required:
+      - subject
+      - attribute_code
+      - claimed_value
+      properties:
+        subject:
+          type: object
+          required:
+          - type
+          - id
+          properties:
+            type:
+              type: string
+              enum:
+              - PARTY
+              - REQUEST
+              - PROPERTY
+              - OFFER
+            id: *id002
+        attribute_code:
+          type: string
+        claimed_value: {}
+        asserted_by_party_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        source_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        observation_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        extracted_by:
+          type: string
+        extraction_model_version:
+          type: string
+        extraction_confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        observed_at:
+          anyOf:
+          - *id003
+          - type: 'null'
+        valid_from:
+          anyOf:
+          - *id003
+          - type: 'null'
+        valid_to:
+          anyOf:
+          - *id003
+          - type: 'null'
+      additionalProperties: false
+    VerificationEventInput:
+      type: object
+      required:
+      - level
+      - outcome
+      properties:
+        level:
+          type: string
+          enum:
+          - DECLARED
+          - DOCUMENT_SEEN
+          - DETAILS_MATCHED
+          - PROFESSIONAL_CHECK
+        procedure_code:
+          type: string
+        outcome:
+          type: string
+          enum:
+          - CONFIRMED
+          - NOT_CONFIRMED
+          - CONFLICT_FOUND
+          - INCONCLUSIVE
+        notes:
+          type: string
+      additionalProperties: false
+    ResolutionInput:
+      type: object
+      required:
+      - subject
+      - attribute_code
+      - resolved_value
+      properties:
+        subject:
+          type: object
+          required:
+          - type
+          - id
+          properties:
+            type:
+              type: string
+              enum:
+              - PARTY
+              - REQUEST
+              - PROPERTY
+              - OFFER
+            id: *id002
+        attribute_code:
+          type: string
+        resolved_value: {}
+        source_claim_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        resolution_reason_code:
+          type: string
+        valid_from:
+          anyOf:
+          - *id003
+          - type: 'null'
+      additionalProperties: false
+    IdentityCandidate:
+      type: object
+      required:
+      - identity_candidate_id
+      - property_a_id
+      - property_b_id
+      - review_status
+      - signals
+      properties:
+        identity_candidate_id: *id002
+        property_a_id: *id002
+        property_b_id: *id002
+        signals:
+          type: object
+          additionalProperties: true
+        explanation:
+          type: object
+          additionalProperties: true
+        review_status:
+          type: string
+          enum:
+          - PENDING_REVIEW
+          - CONFIRMED_SAME
+          - CONFIRMED_DISTINCT
+          - UNSURE
+        review_reason_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+        generated_at: *id003
+        algorithm_version:
+          type: string
+    IdentityReviewInput:
+      type: object
+      additionalProperties: false
+      required:
+      - decision
+      properties:
+        decision:
+          type: string
+          enum:
+          - CONFIRMED_SAME
+          - CONFIRMED_DISTINCT
+          - UNSURE
+        canonical_property_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Required only for CONFIRMED_SAME and must be one of candidate pair.
+        reason_code:
+          type:
+          - string
+          - 'null'
+        reason_text:
+          type:
+          - string
+          - 'null'
+    CriterionResult:
+      type: object
+      required:
+      - criterion_code
+      - importance
+      - compatibility
+      - rule_id
+      - rule_version
+      properties:
+        criterion_code:
+          type: string
+        importance:
+          type: string
+          enum:
+          - REQUIRED
+          - PREFERRED
+          - FLEXIBLE
+        request_value: {}
+        property_value: {}
+        compatibility:
+          type: string
+          enum:
+          - PASS
+          - FAIL
+          - UNKNOWN
+        blocking:
+          type: boolean
+        delta: {}
+        evidence_level:
+          anyOf:
+          - type: string
+            enum:
+            - DECLARED
+            - DOCUMENT_SEEN
+            - DETAILS_MATCHED
+            - PROFESSIONAL_CHECK
+          - type: 'null'
+        evidence_claim_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        reason_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+        rule_id:
+          type: string
+        rule_version:
+          type: string
+    MatchCandidate:
+      type: object
+      required:
+      - commercial_context_snapshot
+      - criteria
+      - eligibility
+      - freshness_snapshot
+      - input_hash
+      - match_id
+      - matching_policy_id
+      - matching_policy_version
+      - permission_snapshot
+      - property_id
+      - property_snapshot
+      - request_id
+      - request_snapshot
+      properties:
+        match_id: *id002
+        request_id: *id002
+        property_id: *id002
+        request_version:
+          type: integer
+        property_version:
+          type: integer
+        matching_policy_version:
+          type: string
+        evaluated_at: *id003
+        eligibility:
+          type: string
+          enum:
+          - ELIGIBLE
+          - REJECTED
+          - NEED_MORE_INFORMATION
+          - NEEDS_CONFIRMATION
+        hard_gate_status:
+          type: string
+          enum:
+          - PASS
+          - FAIL
+          - UNKNOWN
+          - NOT_APPLICABLE
+        information_gate_status:
+          type: string
+          enum:
+          - PASS
+          - FAIL
+          - UNKNOWN
+          - NOT_APPLICABLE
+        request_freshness:
+          type: string
+          enum:
+          - FRESH
+          - STALE
+          - UNKNOWN
+          - NOT_APPLICABLE
+        property_freshness:
+          type: string
+          enum:
+          - FRESH
+          - STALE
+          - UNKNOWN
+          - NOT_APPLICABLE
+        freshness_gate_status:
+          type: string
+          enum:
+          - PASS
+          - FAIL
+          - UNKNOWN
+          - NOT_APPLICABLE
+        permission_gate_status:
+          type: string
+          enum:
+          - PASS
+          - FAIL
+          - UNKNOWN
+          - NOT_APPLICABLE
+        soft_score:
+          anyOf:
+          - type: number
+            minimum: 0
+            maximum: 1
+            description: Internal ordering aid only; not a user-facing truth score.
+          - type: 'null'
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/CriterionResult'
+        explanation:
+          type: object
+          additionalProperties: true
+        next_action:
+          anyOf:
+          - type: object
+            additionalProperties: true
+          - type: 'null'
+        evaluated_offer_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        offer_version:
+          type:
+          - integer
+          - 'null'
+        matching_policy_id:
+          type: string
+          format: uuid
+        offer_freshness:
+          type: string
+          enum:
+          - FRESH
+          - STALE
+          - UNKNOWN
+          - NOT_APPLICABLE
+        request_snapshot:
+          type: object
+          additionalProperties: true
+        property_snapshot:
+          type: object
+          additionalProperties: true
+        commercial_context_snapshot:
+          type: object
+          additionalProperties: true
+        permission_snapshot:
+          type: object
+          additionalProperties: true
+        freshness_snapshot:
+          type: object
+          additionalProperties: true
+        input_hash:
+          type: string
+          description: Hash of canonical immutable matching inputs.
+    MatchReviewInput:
+      type: object
+      required:
+      - decision
+      properties:
+        decision:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+          - NEED_MORE_INFORMATION
+        reason_code:
+          type: string
+        reason_text:
+          type: string
+      additionalProperties: false
+    Diagnostic:
+      type: object
+      required:
+      - request_id
+      - ready_opportunity_count
+      - actionable_unknown_count
+      - near_match_count
+      properties:
+        request_id: *id002
+        run_at: *id003
+        ready_opportunity_count:
+          type: integer
+        actionable_unknown_count:
+          type: integer
+        near_match_count:
+          type: integer
+        blocker_summary:
+          type: object
+          additionalProperties: true
+        suggested_actions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        relaxation_scenarios:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    Task:
+      type: object
+      required:
+      - task_id
+      - task_type
+      - priority
+      - status
+      - title
+      properties:
+        task_id: *id002
+        task_type:
+          type: string
+          enum:
+          - VERIFY_DOCUMENT
+          - RECONFIRM_REQUEST
+          - RECONFIRM_PROPERTY
+          - CONFIRM_PRICE
+          - CONFIRM_AVAILABILITY
+          - CONFIRM_PERMISSION
+          - CONTACT_PARTY
+          - RESOLVE_IDENTITY
+          - OTHER
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+          - URGENT
+        status:
+          type: string
+          enum:
+          - OPEN
+          - IN_PROGRESS
+          - DONE
+          - CANCELLED
+        title:
+          type: string
+        reason_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+        party_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        request_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        property_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        match_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        due_at:
+          anyOf:
+          - *id003
+          - type: 'null'
+        payload:
+          type: object
+          additionalProperties: true
+    Opportunity:
+      $ref: '#/components/schemas/InternalOpportunityView'
+    OpportunityResponseInput:
+      type: object
+      required:
+      - response
+      properties:
+        response:
+          type: string
+          enum:
+          - INTERESTED
+          - NEED_MORE_INFORMATION
+          - NOT_SUITABLE
+        reason_code:
+          type: string
+        comment:
+          type: string
+      additionalProperties: false
+    CommunicationThreadCreate:
+      type: object
+      required:
+      - channel
+      properties:
+        channel:
+          type: string
+          enum:
+          - WHATSAPP
+          - PHONE
+          - SMS
+          - EMAIL
+          - WEB
+          - IN_PERSON
+          - OTHER
+        party_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        request_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        property_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        opportunity_id:
+          anyOf:
+          - *id002
+          - type: 'null'
+        external_thread_ref:
+          type: string
+      additionalProperties: false
+    MessageCreate:
+      type: object
+      required:
+      - direction
+      - occurred_at
+      properties:
+        external_message_ref:
+          type: string
+        direction:
+          type: string
+          enum:
+          - INBOUND
+          - OUTBOUND
+          - INTERNAL
+        message_type:
+          type: string
+          default: TEXT
+        body_text:
+          type: string
+        media_ref:
+          type: string
+        delivery_status:
+          type: string
+          enum:
+          - QUEUED
+          - SENT
+          - DELIVERED
+          - READ
+          - FAILED
+          - UNKNOWN
+        occurred_at: *id003
+        metadata:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+    InterestCreate:
+      type: object
+      required:
+      - party_id
+      - property_id
+      properties:
+        party_id: *id002
+        property_id: *id002
+      additionalProperties: false
+    OtpStart:
+      type: object
+      required:
+      - phone_e164
+      - purpose
+      properties:
+        phone_e164:
+          type: string
+          pattern: ^\+[1-9][0-9]{7,14}$
+        purpose:
+          type: string
+          enum:
+          - LOGIN
+          - VERIFY_PHONE_CONTROL
+    OtpVerify:
+      type: object
+      required:
+      - challenge_id
+      - code
+      properties:
+        challenge_id: *id002
+        code:
+          type: string
+          minLength: 4
+          maxLength: 8
+    StateReconfirm:
+      type: object
+      properties:
+        confirmed_at: *id003
+        notes:
+          type: string
+      additionalProperties: false
+    CloseCommand:
+      type: object
+      required:
+      - reason_code
+      properties:
+        reason_code:
+          type: string
+        note:
+          type: string
+      additionalProperties: false
+    PartyPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        display_name:
+          type:
+          - string
+          - 'null'
+        legal_name:
+          type:
+          - string
+          - 'null'
+        notes:
+          type:
+          - string
+          - 'null'
+    RequestPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        intent:
+          type: string
+          enum:
+          - EXPLORING
+          - ACTIVE_SEARCH
+          - READY_TO_ACT
+        payment:
+          type: string
+          enum:
+          - CASH
+          - BANK_FINANCING
+          - MIXED
+          - UNDECIDED
+        desired_property_type:
+          anyOf:
+          - type: string
+            enum:
+            - HOUSE_VILLA
+            - APARTMENT
+            - LAND
+            - SHOP_COMMERCIAL
+            - AGRICULTURAL_PROPERTY
+            - BUILDING
+            - OTHER
+          - type: 'null'
+        primary_location_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        local_location_detail:
+          type:
+          - string
+          - 'null'
+        budget_target_dzd:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        budget_max_dzd:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        budget_flexibility:
+          type: string
+          enum:
+          - STRICT
+          - LOW
+          - MODERATE
+          - HIGH
+          - UNSPECIFIED
+    PropertyPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        property_type:
+          type: string
+          enum:
+          - HOUSE_VILLA
+          - APARTMENT
+          - LAND
+          - SHOP_COMMERCIAL
+          - AGRICULTURAL_PROPERTY
+          - BUILDING
+          - OTHER
+        canonical_location_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        local_location_detail:
+          type:
+          - string
+          - 'null'
+        land_area_m2:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0
+          - type: 'null'
+        built_area_m2:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0
+          - type: 'null'
+    OfferPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        asking_price_dzd:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        raw_price_text:
+          type:
+          - string
+          - 'null'
+        price_negotiable:
+          type: string
+          enum:
+          - 'YES'
+          - 'NO'
+          - UNKNOWN
+        seller_expectation_dzd:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+          description: Internal confidential negotiation signal. Never expose in customer/public DTOs.
+        price_visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - ON_REQUEST
+          - PRIVATE
+    ContactPoint:
+      type: object
+      additionalProperties: false
+      required:
+      - contact_point_id
+      - kind
+      - normalized_value
+      - control_status
+      properties:
+        contact_point_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - PHONE
+          - EMAIL
+        normalized_value:
+          type: string
+        display_value:
+          type:
+          - string
+          - 'null'
+        control_status:
+          type: string
+          enum:
+          - UNVERIFIED
+          - VERIFIED_CONTROL
+        control_verified_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    ConsentBindingInput:
+      type: object
+      additionalProperties: false
+      required:
+      - consent_id
+      - purpose
+      - resource_type
+      - resource_id
+      properties:
+        consent_id:
+          type: string
+          format: uuid
+        purpose:
+          type: string
+          enum:
+          - ASSISTED_ENTRY
+          - PUBLIC_LISTING_ALLOWED
+          - PRIVATE_MATCHING_ONLY
+          - CONTACT_BEFORE_SHARING
+          - COMMUNICATION_ARCHIVE
+        resource_type:
+          type: string
+          enum:
+          - REQUEST
+          - PROPERTY
+          - PROPERTY_OFFER
+          - COMMUNICATION_THREAD
+        resource_id:
+          type: string
+          format: uuid
+        notes:
+          type:
+          - string
+          - 'null'
+    ConsentBinding:
+      allOf:
+      - $ref: '#/components/schemas/ConsentBindingInput'
+      - type: object
+        required:
+        - consent_binding_id
+        - bound_at
+        properties:
+          consent_binding_id:
+            type: string
+            format: uuid
+          bound_at:
+            type: string
+            format: date-time
+          revoked_at:
+            type:
+            - string
+            - 'null'
+            format: date-time
+    ConsentRevokeInput:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type:
+          - string
+          - 'null'
+        evidence_observation_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+    InternalOpportunityView:
+      type: object
+      required:
+      - opportunity_id
+      - request_id
+      - property_id
+      - approved_match_id
+      - status
+      - validity_status
+      - sharing_scope
+      - why_real
+      properties:
+        opportunity_id: &id004
+          type: string
+          format: uuid
+        request_id: *id004
+        property_id: *id004
+        approved_match_id: *id004
+        status: &id006
+          type: string
+          enum:
+          - NEW
+          - SHARED
+          - ENGAGED
+          - CLOSED
+        validity_status: &id007
+          type: string
+          enum:
+          - VALID
+          - NEEDS_CONFIRMATION
+          - INVALID
+        sharing_scope: &id008
+          type: string
+          enum:
+          - SUMMARY_ONLY
+          - PROPERTY_DETAILS_ALLOWED
+          - CONTACT_AFTER_CONFIRMATION
+        why_real:
+          type: object
+          additionalProperties: true
+        known_differences:
+          type: array
+          items: {}
+        created_at: &id005
+          type: string
+          format: date-time
+        shared_at:
+          anyOf:
+          - *id005
+          - type: 'null'
+        engaged_at:
+          anyOf:
+          - *id005
+          - type: 'null'
+        last_confirmed_at:
+          anyOf:
+          - *id005
+          - type: 'null'
+        last_activity_at:
+          anyOf:
+          - *id005
+          - type: 'null'
+        closed_at:
+          anyOf:
+          - *id005
+          - type: 'null'
+        close_reason_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+        current_offer_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        current_permission_binding_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        commercial_context_snapshot:
+          type: object
+          additionalProperties: true
+        permission_snapshot:
+          type: object
+          additionalProperties: true
+    CustomerOpportunityView:
+      type: object
+      additionalProperties: false
+      required:
+      - opportunity_id
+      - status
+      - validity_status
+      - sharing_scope
+      - why_real
+      properties:
+        opportunity_id:
+          type: string
+          format: uuid
+        status: *id006
+        validity_status: *id007
+        sharing_scope: *id008
+        why_real:
+          type: object
+          additionalProperties: true
+        known_differences:
+          type: array
+          items: {}
+        property:
+          $ref: '#/components/schemas/CustomerPropertyView'
+        created_at:
+          type: string
+          format: date-time
+        shared_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    PublicPropertySummary:
+      type: object
+      additionalProperties: false
+      required:
+      - property_id
+      - property_type
+      - supply_mode
+      properties:
+        property_id:
+          type: string
+          format: uuid
+        property_type: *id009
+        canonical_location_id: *id010
+        local_location_detail:
+          type:
+          - string
+          - 'null'
+        land_area_m2:
+          type:
+          - number
+          - 'null'
+        built_area_m2:
+          type:
+          - number
+          - 'null'
+        supply_mode:
+          type: string
+          enum:
+          - PUBLIC
+        availability:
+          type: string
+          enum:
+          - AVAILABLE
+          - POTENTIALLY_AVAILABLE
+          - UNDER_DISCUSSION
+          - NEEDS_CONFIRMATION
+          - UNKNOWN
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicOfferSummary'
+    PublicOfferSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - offer_id
+      - transaction_type
+      properties:
+        offer_id:
+          type: string
+          format: uuid
+        transaction_type:
+          type: string
+          enum:
+          - SALE
+          - RENT
+        asking_price_dzd:
+          type:
+          - integer
+          - 'null'
+        price_visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - ON_REQUEST
+          - PRIVATE
+        price_negotiable:
+          type: string
+          enum:
+          - 'YES'
+          - 'NO'
+          - UNKNOWN
+    CustomerPropertyView:
+      type: object
+      additionalProperties: false
+      required:
+      - property_id
+      - property_type
+      - supply_mode
+      properties:
+        property_id:
+          type: string
+          format: uuid
+        property_type: *id009
+        canonical_location_id: *id010
+        local_location_detail:
+          type:
+          - string
+          - 'null'
+        land_area_m2:
+          type:
+          - number
+          - 'null'
+        built_area_m2:
+          type:
+          - number
+          - 'null'
+        current_availability: *id011
+        availability_last_confirmed_at: *id012
+        supply_mode: *id013
+        version: *id014
+    OperatorPropertyView:
+      allOf:
+      - $ref: '#/components/schemas/PropertyCreate'
+      - type: object
+        required:
+        - property_id
+        - version
+        - claim_status
+        - created_at
+        properties:
+          property_id:
+            type: string
+            format: uuid
+          availability_last_confirmed_at:
+            anyOf:
+            - &id015
+              type: string
+              format: date-time
+            - type: 'null'
+          claim_status:
+            type: string
+            enum:
+            - UNCLAIMED
+            - CLAIMED
+          version:
+            type: integer
+            minimum: 1
+          created_at: *id015
+          updated_at: *id015
+    CustomerPartyView:
+      type: object
+      additionalProperties: false
+      required:
+      - party_id
+      - display_name
+      properties:
+        party_id:
+          type: string
+          format: uuid
+        display_name:
+          type:
+          - string
+          - 'null'
+        contact_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactPoint'
+    CustomerRequestView:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - status
+      - transaction_intent
+      - intent
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        status: *id016
+        transaction_intent: *id017
+        intent: *id018
+        payment: *id019
+        desired_property_type: *id020
+        primary_location_id: *id021
+        budget_target_dzd: *id022
+        budget_max_dzd: *id023
+        budget_flexibility: *id024
+        last_confirmed_at: *id025
+        criteria: *id026
+    OfferStateCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PENDING_INFO
+          - ACTIVE
+          - PAUSED
+          - WITHDRAWN
+          - CLOSED
+        reason_code:
+          type:
+          - string
+          - 'null'
+    ClaimRecordInput:
+      type: object
+      additionalProperties: false
+      required:
+      - resource_type
+      - resource_id
+      - verification_contact_point_id
+      properties:
+        resource_type:
+          type: string
+          enum:
+          - REQUEST
+          - PROPERTY
+        resource_id:
+          type: string
+          format: uuid
+        verification_contact_point_id:
+          type: string
+          format: uuid
+    TaskCompletionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        outcome_code:
+          type:
+          - string
+          - 'null'
+        note:
+          type:
+          - string
+          - 'null'
+        evidence_observation_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+    QueueItem:
+      type: object
+      additionalProperties: true
+      required:
+      - id
+      - kind
+      - priority
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        priority:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reason:
+          type:
+          - string
+          - 'null'
+    QueuePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueueItem'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    CriterionDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - label_ar
+      - value_type
+      properties:
+        code:
+          type: string
+        label_ar:
+          type: string
+        label_en:
+          type:
+          - string
+          - 'null'
+        value_type:
+          type: string
+    WhatsAppWebhookEnvelope:
+      type: object
+      additionalProperties: true
+      required:
+      - provider_event_id
+      - event_type
+      - payload
+      properties:
+        provider_event_id:
+          type: string
+        event_type:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
