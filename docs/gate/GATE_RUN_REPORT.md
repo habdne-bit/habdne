@@ -2,9 +2,10 @@
 
 **Date:** 2026-09-18
 **Gate reference:** `docs/handoff/04_DATABASE/POSTGRES_EXECUTION_GATE.md`
-**Engine:** PostgreSQL 16.13 (Ubuntu 24.04), clean database built from zero
-**Package under test:** `TURAB Developer Handoff v1.0`, database baseline at patch
-revision **v0.2.1** (`verify_handoff.py` → PASS, 27/27 files)
+**Engine:** PostgreSQL 16.13 (Ubuntu 24.04), clean database rebuilt from zero on every run
+**Package under test:** **TURAB Developer Handoff v1.0.1** (official), vendored
+**unmodified** under `docs/handoff/` — `verify_handoff.py` → PASS, 29/29 files
+**Executable database authority:** `schema_v0.2.1.sql` + `seed_master_data_v0.2.1.sql`
 
 ---
 
@@ -12,15 +13,13 @@ revision **v0.2.1** (`verify_handoff.py` → PASS, 27/27 files)
 
 > **POSTGRES RUNTIME GATE: PASS.**
 >
-> All six steps green, twice in succession, on a database rebuilt from zero each
-> time. The single blocker found on the first run — a duplicated constraint
-> declaration in `schema_v0.2.sql` — was corrected under approval as
-> **schema v0.2.1**.
+> All six steps green on two consecutive full runs (`run_gate.sh`, exit 0 both
+> times, 65/65 database assertions each). Both duplicate foreign keys are gone,
+> the hardened static audit detects the class of defect that escaped v0.2, and
+> the audit's reported figure now agrees exactly with what the server creates.
 >
-> Per `Master v1.0` §10, the Pre-Slice Gate is satisfied and **Slice 0
-> (Application Skeleton + Security Boundaries) may begin**. Slices must then
-> follow `IMPLEMENTATION_SLICES_v0.2.md` in order, and no advanced AI work may
-> start before the Core Hypothesis Stop Gate passes (§10, Stop Gate E).
+> The Pre-Slice Gate of `Master v1.0.1` §10 is satisfied. See
+> `TECHNICAL_BASELINE_FROZEN.md` for the freeze record and the commit it pins.
 
 ---
 
@@ -28,80 +27,109 @@ revision **v0.2.1** (`verify_handoff.py` → PASS, 27/27 files)
 
 | # | Gate step | Result |
 |---|---|---|
-| 0 | Handoff package integrity (`verify_handoff.py`) | **PASS** — 27/27 files, checksums intact |
-| 1 | Static audit (`technical_pack_static_audit_v0.2.py`) | **PASS** — see the note on `foreign_key_refs` below |
-| 2 | Clean database rebuilt from zero | **PASS** |
-| 3 | `psql -f schema_v0.2.1.sql` | **PASS** — v0.2 failed here; see the blocker below |
-| 4 | `psql -f seed_master_data_v0.2.sql` ×2 (idempotency) | **PASS** — 16 Adrar communes and 1 active policy stable across both runs |
+| 0 | Handoff package integrity (`verify_handoff.py`) | **PASS** — 29/29 files, checksums intact |
+| 1 | Hardened static audit (`technical_pack_static_audit_v0.2.1.py`) | **PASS** — 0 errors, 0 warnings, **131** FK references |
+| 2 | Clean database rebuilt from zero | **PASS** — PostgreSQL 16.13 |
+| 3 | `psql -f schema_v0.2.1.sql` | **PASS** |
+| 4 | `psql -f seed_master_data_v0.2.1.sql` ×2 (idempotency) | **PASS** — 16 Adrar communes, 1 active policy, stable across both runs |
 | 5 | Database-level contract tests (11 required areas) | **PASS** — 65/65 assertions |
-| 6 | OpenAPI parse / lint | **PASS** — 3.1.0, 61 paths, 64 operations, 527 `$ref` all resolve, no duplicate `operationId` |
+| 6 | OpenAPI parse / lint | **PASS** — 3.1.0, 61 paths, 64 operations, 527 `$ref` all resolve |
 
-The full runner was executed twice end to end (`run_gate.sh`, exit 0 both times,
-65/65 contract assertions each). The package is unchanged by a run:
-`verify_handoff.py` still reports 27/27 afterwards.
+Every expectation set for this run was met: integrity PASS, enhanced static audit
+PASS, **131** FK references, schema PASS, seed ×2 PASS, 65/65 assertions, OpenAPI
+PASS, full gate PASS twice.
 
 ---
 
-## The blocker found on the first run (resolved in v0.2.1)
+## Frozen artifact digests
 
-`docs/handoff/04_DATABASE/schema_v0.2.sql` declares the same foreign key **twice**:
+SHA-256 as computed from the vendored files. Each value was cross-checked against
+**both** `07_QA_ACCEPTANCE/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.1.txt` and
+`HANDOFF_MANIFEST.json`; all three agree, which confirms the gate ran against the
+official artifacts unmodified.
 
-- **Line 508–510** — in section 9, immediately after `CREATE TABLE observations`.
-  This placement is *required*: `consent_grants` (line ~295) is created before
-  `observations`, so the FK cannot be declared inline on the table and must be
-  added once `observations` exists.
-- **Line 1336–1337** — again in section 15, "LATE FKs / CROSS-SECTION CONSTRAINTS".
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `04_DATABASE/schema_v0.2.1.sql` | 67,336 | `9fac9fa2552d2963a8fc8c0745eea4c71a12c193c161268a073b64c216b42688` |
+| `04_DATABASE/seed_master_data_v0.2.1.sql` | 12,499 | `c8edb576500e6726487deab121b85fc1f6b99f6a07cc3f87e557b123807409da` |
+| `05_API/openapi_v0.2.yaml` | 124,280 | `8e4bd4fbf171adfb3724d6ebb1acdc5d72fac12503fdf67fa8aa2175bf294724` |
 
-Both declarations are byte-for-byte equivalent in effect:
+The OpenAPI digest is **unchanged from v0.2**, confirming in evidence what
+`TECHNICAL_PATCH_v0.2.1.md` asserts in prose: the patch touches the executable
+database baseline only, never the API contract.
 
-```sql
-ALTER TABLE consent_grants
-  ADD CONSTRAINT fk_consent_evidence_observation
-  FOREIGN KEY (evidence_observation_id) REFERENCES observations(observation_id) ON DELETE SET NULL;
+---
+
+## Live database verification
+
+Queried directly against the database left by the second run:
+
+| Check | Value |
+|---|---|
+| Foreign-key constraints actually created | **131** |
+| `schema_metadata.schema_version` | `0.2.1` |
+| Base tables in schema `turab` | 48 |
+| Communes seeded (Adrar) | 16 |
+| Active matching policies | 1 |
+| `%resolved_claim%` FK constraints | **1** |
+| `%consent_evidence_observation%` FK constraints | **1** |
+
+The static audit's 131 and the server's 131 now agree. Under v0.2 they did not:
+the audit reported 133 textual `REFERENCES` occurrences while the server created
+132 constraints and rejected the schema outright. Both formerly duplicated
+foreign keys now exist exactly once.
+
+---
+
+## What v0.2.1 corrected
+
+Two redundant declarations of the same relationship, both resolved by keeping the
+late, centralized declaration and removing the earlier one.
+
+**1 — Named duplicate (hard failure).**
+`consent_grants.evidence_observation_id → observations.observation_id`, declared
+twice under the identical name `fk_consent_evidence_observation`. PostgreSQL
+rejected the second outright, so a clean database could not accept v0.2 at all.
+
+**2 — Semantic duplicate (silent).**
+`property_attributes.resolved_claim_id → claims.claim_id`, declared twice under
+*different* names — `fk_property_attributes_resolved_claim` and
+`fk_property_attribute_resolved_claim`. PostgreSQL accepts this: it creates two
+constraints enforcing the same rule. It would not have failed the gate; it would
+have shipped as redundant enforcement with no authoritative declaration.
+`fk_property_attribute_resolved_claim` (remediation section) is retained.
+
+Verified diff of official `schema_v0.2.1.sql` against the original
+`schema_v0.2.sql`: the two removals above, the header version, the seeded
+`schema_version` value `0.2.0` → `0.2.1`, and one explanatory comment. Nothing
+else. The seed differs by its two header comment lines only.
+
+---
+
+## Static-audit hardening, verified by negative test
+
+v0.2.1 adds two checks to the audit: duplicate constraint names on a table, and
+semantically redundant foreign keys enforcing the same local columns → referenced
+table/columns/delete behaviour under different names.
+
+The hardening was confirmed rather than assumed. Running the **v0.2.1 audit
+against the old, defective v0.2 schema** returns `FAIL` and names all three
+findings:
+
+```
+SQL_DUP_CONSTRAINT_NAME  Duplicate FK constraint name on consent_grants:
+                         fk_consent_evidence_observation
+SQL_DUP_FK_SEMANTICS     Redundant FK on consent_grants(evidence_observation_id)
+                         -> observations(observation_id)
+SQL_DUP_FK_SEMANTICS     Redundant FK on property_attributes(resolved_claim_id)
+                         -> claims(claim_id),
+                         constraints=['fk_property_attribute_resolved_claim',
+                                      'fk_property_attributes_resolved_claim']
 ```
 
-PostgreSQL rejects the second one:
-
-```
-psql:schema_v0.2.sql:1337: ERROR:  constraint "fk_consent_evidence_observation"
-                                   for relation "consent_grants" already exists
-```
-
-### Why the static audit did not catch it
-
-`technical_pack_static_audit_v0.2.py` counts `REFERENCES` occurrences in the file
-text (133) rather than the constraints a server actually creates (132). A textual
-duplicate is invisible to it. This is precisely the failure mode the gate exists
-to catch, and is why `Master v1.0` §2 records the runtime gate as `PENDING`
-despite a `PASS` static audit.
-
-### Impact
-
-Structural only, and **zero semantic impact on the domain model**: the constraint
-is still created by the line-509 declaration, over the same column, against the
-same target, with the same `ON DELETE SET NULL` action. Confirmed on the live
-database — 132 foreign-key constraints, and `fk_consent_evidence_observation`
-present and enforcing.
-
-Nothing about the domain model, workflow, permissions or matching logic changed.
-
-### Resolution (approved)
-
-The **section 9** declaration was removed; the constraint keeps its home in
-section 15, the file's own designated place for cross-section constraints. The
-corrected artifact was issued as a patch revision, `schema_v0.2.1.sql`, leaving
-nothing named v0.2 carrying altered content. Affected artifacts were updated in
-the same change, as `Master v1.0` §13 requires: the static audit script and its
-results, all three checksum manifests, and the filename references in the
-operative documents. `99_REFERENCE_HISTORY/MIGRATION_NOTES_v0.1_TO_v0.2.md` was
-deliberately left untouched — it records a past migration and is history, not an
-implementation baseline. Full detail in
-`docs/handoff/99_REFERENCE_HISTORY/CHANGELOG_v0.2.md`.
-
-One documented figure moves as a result: `Master v1.0` §2 records **133**
-foreign-key references from the static audit; it is now **132**. The database is
-identical either way — the old number counted a textual duplicate that no server
-ever created.
+The same audit returns `PASS` with zero errors on `schema_v0.2.1.sql`. The
+defect class that escaped v0.2 is now caught statically, before a database is
+ever touched.
 
 ---
 
@@ -109,7 +137,7 @@ ever created.
 
 `db/gate/postgres_execution_gate_tests.sql` — 65 assertions covering all eleven
 areas the gate names. The suite runs in one transaction and rolls back, so it is
-repeatable and leaves the database clean (verified: two consecutive runs, 65/65 each).
+repeatable and leaves the database clean.
 
 | Gate requirement | Assertions | Representative checks |
 |---|---|---|
@@ -135,23 +163,19 @@ db/gate/run_gate.sh          # needs PostgreSQL 16+ and PGHOST/PGUSER/... set
 ```
 
 CI runs the identical script against a `postgres:16` service on every push and
-pull request (`.github/workflows/postgres-execution-gate.yml`), satisfying the
-kickoff requirement that CI rebuild a clean database from zero.
+pull request (`.github/workflows/postgres-execution-gate.yml`).
 
 ---
 
-## Kickoff checklist — technical preflight status
+## Kickoff checklist — technical preflight
 
 | Item | Status |
 |---|---|
-| `technical_pack_static_audit_v0.2.py` returns PASS | Done |
-| PostgreSQL 16+ clean database accepts the schema | Done — at v0.2.1 |
-| `seed_master_data_v0.2.sql` executes twice without failure | Done |
+| Static audit returns PASS | Done — hardened v0.2.1 audit |
+| PostgreSQL 16+ clean database accepts the schema | Done |
+| Seed executes twice without failure | Done |
 | PostgreSQL Execution Gate tests pass | Done — 65/65 |
 | `openapi_v0.2.yaml` parses/lints in CI | Done |
 | CI can rebuild a clean database from zero | Done |
-| Object-level authorization tests included from Slice 0 | Not started — Slice 0 is gated |
-| Idempotency replay and conflict tests included from Slice 0 | Not started — Slice 0 is gated |
-
-The last two items belong to Slice 0, which is now unblocked and is where they
-are to be implemented.
+| Object-level authorization tests included from Slice 0 | Slice 0 scope — now unblocked |
+| Idempotency replay and conflict tests included from Slice 0 | Slice 0 scope — now unblocked |

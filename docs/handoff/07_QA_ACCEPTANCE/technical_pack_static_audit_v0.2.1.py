@@ -4,7 +4,7 @@ import re, json, yaml, sys, hashlib
 BASE=Path(__file__).resolve().parents[1]
 QA=BASE/'07_QA_ACCEPTANCE'
 SQL=BASE/'04_DATABASE'/'schema_v0.2.1.sql'
-SEED=BASE/'04_DATABASE'/'seed_master_data_v0.2.sql'
+SEED=BASE/'04_DATABASE'/'seed_master_data_v0.2.1.sql'
 OAS=BASE/'05_API'/'openapi_v0.2.yaml'
 errors=[]; warnings=[]; metrics={}
 
@@ -50,6 +50,41 @@ for m in re.finditer(r'REFERENCES\s+(\w+)\s*\((\w+)\)',sql):
     if table not in blocks: err('SQL_FK_TABLE',f'Missing FK target table {table}')
     elif col not in cols[table]: err('SQL_FK_COLUMN',f'Missing FK target column {table}.{col}')
 metrics['foreign_key_refs']=len(re.findall(r'REFERENCES\s+\w+\s*\(\w+\)',sql))
+
+# Named and semantic duplicate FK checks. The v0.2 runtime gate exposed that
+# counting FK references is insufficient: PostgreSQL rejects a duplicate
+# constraint name and silently tolerates redundant same-semantics FKs with
+# different names. Both are release blockers for the baseline.
+alter_blocks=[]
+for am in re.finditer(r'ALTER\s+TABLE\s+([a-zA-Z_][\w]*)\s+(.*?);', sql, re.I|re.S):
+    table=am.group(1)
+    body=am.group(2)
+    for fm in re.finditer(
+        r'ADD\s+CONSTRAINT\s+([a-zA-Z_][\w]*)\s+FOREIGN\s+KEY\s*\(([^)]+)\)\s+'
+        r'REFERENCES\s+([a-zA-Z_][\w]*)\s*\(([^)]+)\)([^,;]*)',
+        body, re.I|re.S
+    ):
+        alter_blocks.append({
+            'table':table,
+            'name':fm.group(1),
+            'cols':' '.join(fm.group(2).split()).lower(),
+            'ref_table':fm.group(3).lower(),
+            'ref_cols':' '.join(fm.group(4).split()).lower(),
+            'tail':' '.join(fm.group(5).split()).upper(),
+        })
+from collections import defaultdict
+by_name=defaultdict(list); by_sem=defaultdict(list)
+for fk in alter_blocks:
+    by_name[(fk['table'].lower(),fk['name'].lower())].append(fk)
+    by_sem[(fk['table'].lower(),fk['cols'],fk['ref_table'],fk['ref_cols'],fk['tail'])].append(fk)
+for key,vals in by_name.items():
+    if len(vals)>1:
+        err('SQL_DUP_CONSTRAINT_NAME',f'Duplicate FK constraint name on {key[0]}: {key[1]}')
+for key,vals in by_sem.items():
+    if len(vals)>1:
+        names=sorted({v['name'] for v in vals})
+        err('SQL_DUP_FK_SEMANTICS',f'Redundant FK on {key[0]}({key[1]}) -> {key[2]}({key[3]}), constraints={names}')
+metrics['named_alter_fks']=len(alter_blocks)
 funcs=set(found['functions'])
 for m in re.finditer(r'CREATE TRIGGER\s+(\w+).*?ON\s+(\w+).*?EXECUTE FUNCTION\s+(\w+)\s*\(',sql,re.S):
     tr,table,fn=m.groups()
@@ -139,9 +174,9 @@ if oas:
         if f'/backoffice/queues/{q}' not in paths: err('OAS_QUEUE',f'Missing backoffice queue {q}')
 
 # File hashes for review reproducibility
-file_map={'schema_v0.2.1.sql':SQL,'seed_master_data_v0.2.sql':SEED,'openapi_v0.2.yaml':OAS}
+file_map={'schema_v0.2.1.sql':SQL,'seed_master_data_v0.2.1.sql':SEED,'openapi_v0.2.yaml':OAS}
 hashes={f:hashlib.sha256(path.read_bytes()).hexdigest() for f,path in file_map.items()}
 result={'status':'PASS' if not errors else 'FAIL','metrics':metrics,'errors':errors,'warnings':warnings,'sha256':hashes}
-(QA/'STATIC_AUDIT_RESULTS_v0.2.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
+(QA/'STATIC_AUDIT_RESULTS_v0.2.1.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
 print(json.dumps(result,ensure_ascii=False,indent=2))
 sys.exit(0 if not errors else 1)

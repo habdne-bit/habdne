@@ -1,3 +1,5 @@
+> **Supersession note (2026-09-18):** PostgreSQL runtime execution later exposed duplicate FK declarations in schema v0.2. The executable database baseline is superseded by `TECHNICAL_PATCH_v0.2.1.md` / `schema_v0.2.1.sql`. This document remains evidence of the v0.1→v0.2 remediation work, not proof that v0.2 passed runtime execution.
+
 # TURAB — Technical Remediation Review v0.2
 
 **Review date:** 2026-09-18  
@@ -57,7 +59,7 @@ This distinction is intentional: the architecture is remediated, but static anal
 
 ## Static audit result
 
-Latest `STATIC_AUDIT_RESULTS_v0.2.json` reports:
+Latest `STATIC_AUDIT_RESULTS_v0.2.1.json` reports:
 
 - 48 tables
 - 54 enum/types

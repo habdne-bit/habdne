@@ -7,8 +7,8 @@ Before implementation freeze, CI MUST run against PostgreSQL 16+:
 ```bash
 createdb turab_contract_test
 psql turab_contract_test -v ON_ERROR_STOP=1 -f schema_v0.2.1.sql
-psql turab_contract_test -v ON_ERROR_STOP=1 -f seed_master_data_v0.2.sql
-psql turab_contract_test -v ON_ERROR_STOP=1 -f seed_master_data_v0.2.sql   # idempotency check
+psql turab_contract_test -v ON_ERROR_STOP=1 -f seed_master_data_v0.2.1.sql
+psql turab_contract_test -v ON_ERROR_STOP=1 -f seed_master_data_v0.2.1.sql   # idempotency check
 ```
 
 Then execute database-level contract tests for:

@@ -7,23 +7,24 @@
 
 | Gate | Status |
 |---|---|
-| Static architecture audit | PASS |
-| **PostgreSQL 16+ Execution Gate** | **PASS** (database baseline at v0.2.1) |
-| Slice 0 — Application Skeleton + Security Boundaries | Unblocked, not yet started |
+| Hardened static audit (v0.2.1) | PASS — 131 FK references |
+| **PostgreSQL 16+ Execution Gate** | **PASS** — twice, 65/65 assertions |
+| Technical database baseline | **FROZEN** at `schema_v0.2.1.sql` |
+| Slice 0 — Application Skeleton + Security Boundaries | **Open** |
 
-Full run results, including the one blocker found and corrected, are in
-**[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**.
+Handoff package: **v1.0.1** (official), vendored unmodified.
 
-The Pre-Slice Gate of
-`docs/handoff/00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.md` §10 is
-satisfied. Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in
-order; no advanced AI work begins before the Core Hypothesis Stop Gate passes.
+- Gate results and artifact digests: **[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**
+- Freeze record and pinned commit: **[`docs/gate/TECHNICAL_BASELINE_FROZEN.md`](docs/gate/TECHNICAL_BASELINE_FROZEN.md)**
+
+Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
+advanced AI work begins before the Core Hypothesis Stop Gate passes.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `docs/handoff/` | The Developer Handoff v1.0 package — the authority baseline. Read `docs/handoff/README.md` first. Database schema is at patch revision v0.2.1; every other artifact is as shipped. |
+| `docs/handoff/` | The official Developer Handoff **v1.0.1** package, vendored **unmodified** — the authority baseline. Read `docs/handoff/README.md` first. Never edited in place: corrections arrive as a new official package. |
 | `docs/gate/` | Execution gate run reports |
 | `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint |
 | `.github/workflows/` | CI — rebuilds a clean database from zero on every push |

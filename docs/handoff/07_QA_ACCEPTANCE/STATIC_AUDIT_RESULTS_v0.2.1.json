@@ -6,7 +6,8 @@
     "functions": 17,
     "triggers": 37,
     "indexes": 55,
-    "foreign_key_refs": 132,
+    "foreign_key_refs": 131,
+    "named_alter_fks": 12,
     "seed_commune_codes": 16,
     "openapi_version": "3.1.0",
     "openapi_paths": 61,
@@ -17,8 +18,8 @@
   "errors": [],
   "warnings": [],
   "sha256": {
-    "schema_v0.2.1.sql": "234d0b784eb20a4b598796bf2e9a01b56f3e24cbfb890d6b2bc5958f55a30d2f",
-    "seed_master_data_v0.2.sql": "e3791d58e9f02fe65e1044201f970c0ecafe4cbfcca98d38d4c725e01c551480",
+    "schema_v0.2.1.sql": "9fac9fa2552d2963a8fc8c0745eea4c71a12c193c161268a073b64c216b42688",
+    "seed_master_data_v0.2.1.sql": "c8edb576500e6726487deab121b85fc1f6b99f6a07cc3f87e557b123807409da",
     "openapi_v0.2.yaml": "8e4bd4fbf171adfb3724d6ebb1acdc5d72fac12503fdf67fa8aa2175bf294724"
   }
 }

@@ -1,10 +1,10 @@
 # تُراب — TURAB
-## Developer Handoff Master v1.0
+## Developer Handoff Master v1.0.1
 
 **الحالة:** حزمة التسليم الرسمية للمطور  
 **التاريخ:** 2026-09-18  
 **مرجع المنتج:** `TURAB Foundation Baseline v1.0 FINAL`  
-**مرجع التنفيذ التقني:** `Technical Implementation Pack v0.2`  
+**مرجع التنفيذ التقني:** `Technical Implementation Pack v0.2` + Database Patch `v0.2.1`  
 **قرار البدء:** **Conditional GO** — لا يبدأ التنفيذ الفعلي قبل اجتياز `POSTGRES_EXECUTION_GATE.md` على PostgreSQL 16+.
 
 ---
@@ -27,14 +27,16 @@
 
 تم تجميد الأساس المنتجـي في `Foundation Baseline v1.0 FINAL`. ثم أُعدت مواصفة مطور تفصيلية، وبعدها Schema وOpenAPI وخطة تنفيذ. خضعت الحزمة التقنية v0.1 لمراجعة Red-Team صارمة، وأُغلقت ملاحظات P0/P1 في النسخة التقنية v0.2.
 
-الحزمة التقنية v0.2 اجتازت **Static Audit** بنتيجة `PASS` مع:
+الحزمة التقنية v0.2 اجتازت المراجعة الساكنة أولًا، ثم كشف PostgreSQL Execution Gate تكرار FK فعليًا في الـSchema. أُصدر Patch تصحيحي `v0.2.1` دون تغيير دلالات المنتج أو الـAPI، وتم تحسين الفحص الساكن لمنع تكرار هذا النوع. الحالة الحالية لـ`schema_v0.2.1.sql` هي **Static Audit PASS** مع:
 
 - 48 جدولًا.
 - 54 Type.
 - 17 Function.
 - 37 Trigger.
 - 55 Index.
-- 133 Foreign-Key Reference.
+- 131 Foreign-Key Reference.
+- 12 named cross-section FK constraints.
+- 0 duplicate FK names / 0 semantic duplicate FKs detected by hardened audit.
 - 16 بلدية لولاية أدرار ضمن Seed.
 - OpenAPI 3.1.0.
 - 61 Path.
@@ -42,10 +44,10 @@
 - 59 Component Schema.
 - 527 `$ref` داخلية بدون كسر.
 
-لكن يوجد Gate واحد لم يُنفذ في بيئة إعداد الوثائق: تشغيل الـSchema والـSeed فعليًا على PostgreSQL 16+ واختبار القيود والـTriggers. لذلك حالة الحزمة هي:
+ويبقى Gate الإصدار الحاسم: إعادة تشغيل `schema_v0.2.1.sql` والـSeed فعليًا على PostgreSQL 16+ واختبار القيود والـTriggers. فشل v0.2 في هذا الـGate هو الذي أدى إلى Patch v0.2.1. لذلك حالة الحزمة هي:
 
-> **Static Architecture: PASS**  
-> **PostgreSQL Runtime Gate: PENDING**  
+> **Static Architecture: PASS on database patch v0.2.1**  
+> **PostgreSQL Runtime Gate: PENDING RE-RUN**  
 > **Implementation Status: CONDITIONAL GO**
 
 هذا الـGate Release Blocker وليس خطوة شكلية.
@@ -60,10 +62,10 @@
 |---|---|---|
 | 1 | `TURAB_Foundation_Baseline_v1.0_FINAL.docx` | معنى المنتج، المبادئ، الحدود، القرارات التأسيسية |
 | 2 | `TURAB_Project_Instructions_v1.0.md` | منهج اتخاذ القرار، Design Ledger، منع Feature Creep |
-| 3 | `ARCHITECTURE_DECISIONS_v0.2.md` | القرارات التقنية الملزمة التي أغلقت مراجعة v0.1 |
+| 3 | `ARCHITECTURE_DECISIONS_v0.2.md` + `TECHNICAL_PATCH_v0.2.1.md` | القرارات التقنية الملزمة وتصحيح executable database baseline |
 | 4 | `TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي المطلوب من النظام |
 | 5 | `API_CONTRACTS_v0.2.md` + `openapi_v0.2.yaml` | حدود الخدمات والعقود والـDTOs والصلاحيات |
-| 6 | `schema_v0.2.1.sql` + `seed_master_data_v0.2.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
+| 6 | `schema_v0.2.1.sql` + `seed_master_data_v0.2.1.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
 | 7 | `IMPLEMENTATION_SLICES_v0.2.md` | ترتيب التنفيذ وStop Gates |
 | 8 | `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | حالات القبول الإلزامية |
 | مرجعي فقط | ملفات `99_REFERENCE_HISTORY` | لماذا تغيرت القرارات؛ لا تُستخدم كBaseline تنفيذية |
@@ -351,9 +353,9 @@ Opportunity uniqueness تبقى عند:
 
 1. قراءة هذا الملف كاملًا.
 2. قراءة Foundation Baseline ثم Developer Reference Spec ثم Architecture Decisions.
-3. تشغيل `technical_pack_static_audit_v0.2.py` والتأكد من PASS.
+3. تشغيل `technical_pack_static_audit_v0.2.1.py` والتأكد من PASS.
 4. تشغيل `schema_v0.2.1.sql` على PostgreSQL 16+ جديد.
-5. تشغيل `seed_master_data_v0.2.sql` مرتين للتحقق من idempotency.
+5. تشغيل `seed_master_data_v0.2.1.sql` مرتين للتحقق من idempotency.
 6. تنفيذ اختبارات `POSTGRES_EXECUTION_GATE.md`.
 7. Parse/Lint `openapi_v0.2.yaml` في CI.
 8. إنشاء CI يعيد بناء قاعدة فارغة ويشغل الاختبارات في كل Merge Request.
@@ -410,15 +412,15 @@ Opportunity uniqueness تبقى عند:
 | `03_ARCHITECTURE/ARCHITECTURE_DECISIONS_v0.2.md` | ADRs الملزمة |
 | `03_ARCHITECTURE/REMEDIATION_REVIEW_v0.2.md` | إثبات إغلاق ملاحظات v0.1 |
 | `04_DATABASE/schema_v0.2.1.sql` | PostgreSQL 16+ baseline |
-| `04_DATABASE/seed_master_data_v0.2.sql` | Master Data / Adrar / reasons / policy |
+| `04_DATABASE/seed_master_data_v0.2.1.sql` | Master Data / Adrar / reasons / policy |
 | `04_DATABASE/POSTGRES_EXECUTION_GATE.md` | Release gate قبل الكود |
 | `05_API/openapi_v0.2.yaml` | العقد الآلي للـHTTP API |
 | `05_API/API_CONTRACTS_v0.2.md` | السلوك التفصيلي للـAPI |
 | `05_API/API_INVENTORY_v0.2.md` | جرد العمليات |
 | `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` | خطة البناء وStop Gates |
 | `07_QA_ACCEPTANCE/RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | Edge cases واختبارات القبول |
-| `07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.py` | فحص ساكن قابل للتكرار |
-| `07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.json` | نتيجة الفحص الحالية |
+| `07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.1.py` | فحص ساكن قابل للتكرار |
+| `07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.1.json` | نتيجة الفحص الحالية |
 | `99_REFERENCE_HISTORY/*` | تاريخ القرارات فقط؛ ليس Baseline تنفيذية |
 
 ---

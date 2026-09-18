@@ -26,7 +26,7 @@ step "0/6  Handoff package integrity"
 ( cd "$REPO_ROOT/docs/handoff" && python3 verify_handoff.py )
 
 step "1/6  Static audit of the technical pack"
-( cd "$QA_DIR" && python3 technical_pack_static_audit_v0.2.py )
+( cd "$QA_DIR" && python3 technical_pack_static_audit_v0.2.1.py )
 
 step "2/6  Rebuild a clean database from zero"
 dropdb --if-exists "$PGDATABASE"
@@ -36,9 +36,9 @@ psql -tAc 'SHOW server_version'
 step "3/6  Apply schema_v0.2.1.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.1.sql"
 
-step "4/6  Apply seed_master_data_v0.2.sql twice (idempotency)"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.sql"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.sql"
+step "4/6  Apply seed_master_data_v0.2.1.sql twice (idempotency)"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.1.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.1.sql"
 
 step "5/6  Database-level contract tests"
 psql -v ON_ERROR_STOP=1 -q -f "$GATE_DIR/postgres_execution_gate_tests.sql"
