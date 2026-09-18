@@ -1,15 +1,35 @@
 # RFC-001 — Object-Level Authorization
 
-**Status:** PROPOSED — awaiting review. **No authorization code will be written until this is accepted.**
+**Status:** REVISED — decisions of 2026-09-18 incorporated. **Awaiting final approval.
+No authorization code is written until this revision is approved.**
+**Revision:** 2 (supersedes the PROPOSED draft)
 **Slice:** 0 — Application Skeleton / Security Boundaries
 **Date:** 2026-09-18
 **Baseline:** Handoff v1.0.1, technical baseline frozen at commit `f833fe7d05e160b048a6de1c4120f2c79015c3bb`
 
+## Decisions incorporated in this revision
+
+Eight decisions were returned on revision 1. All are binding and are folded into the
+rules below; §13 records how each was resolved and what remains open.
+
+| # | Decision | Effect here |
+|---|---|---|
+| 1 | `relation_code` values do **not** grant write authority; domain relationship and authorization stay separate | §4 rewritten — this changes the authority model, not just a parameter |
+| 2 | `/me/*` uses **404** for inaccessible/unowned; **403** only for a known accessible resource where the action is prohibited | §5.3, §12 |
+| 3 | Roles are literal and non-hierarchical; no implicit ADMIN/REVIEWER/OPERATOR inheritance | §2 confirmed |
+| 4 | Customer delegated authority is **not** implemented in v0.1; access is ownership-only | §4, Q7 closed |
+| 5 | `GET /reason-codes` → `ADMIN`, `OPERATOR`, `REVIEWER`; not `CUSTOMER` | §10, Q8 closed |
+| 6 | Three sharing scopes with server-side field filtering; internal data never exposed merely because the scope is higher | §8, §9 |
+| 7 | Deny by default | §10 confirmed |
+| 8 | Maker–checker separation is intentional and must be preserved | §2.1, now enforced |
+
+A technology decision was returned with them and is recorded in §14.
+
 ## Sources
 
 This RFC derives from the frozen artifacts and adds no new product semantics. Where
-it proposes something the artifacts do not already fix, that is marked **[DECISION]**
-and listed in §13. Nothing marked **[DECISION]** is implemented before it is ruled on.
+something remains genuinely open it is marked **[OPEN]** and listed in §13. Nothing
+marked **[OPEN]** is implemented before it is ruled on.
 
 | Source | Used for |
 |---|---|
@@ -79,7 +99,21 @@ Reading the frozen `x-roles` across all 57 operations, staff authority splits:
 This is **maker–checker**: the actor who records market truth (`OPERATOR`) cannot
 approve the match that turns it into an OPPORTUNITY, and the actor who approves
 (`REVIEWER`) does not perform the outward share. `REVIEWER` also holds `/audit`,
-which `OPERATOR` does not. The service MUST preserve this split exactly.
+which `OPERATOR` does not.
+
+**Decision 8 makes preserving this split binding**, so it is enforced rather than
+documented:
+
+- **R2.1** A single account MUST NOT hold both `OPERATOR` and `REVIEWER`. The service
+  rejects the grant at role-assignment time; a test asserts no account in the database
+  holds both. `user_account_roles` has primary key `(account_id, role)` — verified —
+  so the database permits the combination and the service is the only thing preventing
+  it.
+- **R2.2** `ADMIN` is exempt from R2.1 by construction, since the contract lists it on
+  both sides of the split. That exemption is the reason `ADMIN` grants must be rare and
+  auditable; it is not a licence to route ordinary work through `ADMIN`.
+- **R2.3** Decision 3 forbids implicit inheritance. The check is literal set
+  intersection against the operation's `x-roles`. No code computes a role ordering.
 
 ---
 
@@ -113,72 +147,107 @@ Three verified schema facts drive the rules below:
   `NULL = NULL` is `NULL` in SQL and a careless predicate can invert into an allow.
 - **R3.2** `party_id` is read from the database per request, never from the token.
   A token minted before a PARTY was detached must not keep conferring access.
-- **R3.3 [DECISION]** When one account holds both a staff role and `CUSTOMER`
-  (§13, Q3), authorization is evaluated **per operation** against the operation's
-  `x-roles`, and the customer object check applies whenever the operation is reached
-  via the `CUSTOMER` role. Proposed: a staff role never widens `/me/*`, and
-  `CUSTOMER` never widens an internal endpoint.
+- **R3.3** When one account holds both a staff role and `CUSTOMER`, authorization is
+  evaluated **per operation** against that operation's literal `x-roles` (decision 3).
+  A staff role never widens `/me/*`; `CUSTOMER` never widens an internal endpoint.
+  `OPERATOR` + `REVIEWER` on one account is prohibited outright by R2.1.
 
 ---
 
 ## 4. Resource ownership and relationships
 
-There is no generic "owner" column. Authority is derived per resource type from a
-distinct relationship. This is the authority graph the policy layer implements.
+**Decision 1 separates two things that revision 1 conflated.** A domain relationship
+records *how a party relates to a thing in the market*. Authorization records *whether
+a caller may act on a row*. `party_property_relations` is the former and is **not**
+an authorization source. Decision 4 further restricts customer access to **ownership
+only** in v0.1.
 
-| Resource | Customer authority derives from | Verified mechanism |
+This is the corrected authority graph.
+
+| Resource | Customer authority derives from | Column / table |
 |---|---|---|
-| `PARTY` | identity | `party.party_id = subject.party_id` |
-| `REQUEST` | ownership | `requests.party_id = subject.party_id` |
-| `PROPERTY` | **relationship, not a column** | a row in `party_property_relations` for `(subject.party_id, property_id)` that is currently valid |
-| `PROPERTY_OFFER` | ownership | `property_offers.party_id = subject.party_id` |
+| `PARTY` | identity | `parties.party_id = subject.party_id` |
+| `REQUEST` | ownership **and** claimed state | `requests.party_id = subject.party_id AND requests.claim_status = 'CLAIMED'` |
+| `PROPERTY` | creation **or** a recorded claim | `properties.created_by_account_id = subject.account_id` **OR** a `record_claim_events` row for `(property_id, subject.account_id)` |
+| `PROPERTY_OFFER` | ownership, gated by the parent property — **[OPEN] Q9** | `property_offers.party_id = subject.party_id` |
 | `OPPORTUNITY` | transitive via request | `opportunities.request_id → requests.party_id = subject.party_id` |
 | `INTEREST` | ownership | `interests.party_id = subject.party_id` |
 | `CONSENT_GRANT` | ownership | `consent_grants.party_id = subject.party_id` |
 | `COMMUNICATION_THREAD` | ownership | `communication_threads.party_id = subject.party_id` |
 
-### 4.1 Property authority
+### 4.1 Why PROPERTY needs two sources
 
-`properties` has **no `party_id`**. Authority comes from `party_property_relations`,
-whose `relation_code` is constrained to `OWNER_DECLARED`, `BROKER`, `AGENCY`,
-`DEVELOPER`, `OCCUPANT`, `CONTACT_PERSON`, `OTHER`, and which carries
-`valid_from`/`valid_to`.
+`properties` carries **no `party_id`** — verified. With `relation_code` removed as an
+authority source by decision 1, exactly two facts in the frozen schema tie a property
+to a customer account:
 
-- **R4.1** A property relation authorizes only while current:
-  `(valid_from IS NULL OR valid_from <= now()) AND (valid_to IS NULL OR valid_to > now())`.
-  This is the same currency predicate `enforce_consent_binding()` already applies to
-  property-scoped consent, so the two agree by construction.
-- **R4.2 [DECISION]** Which `relation_code` values confer *write* authority. The
-  schema treats all seven alike. Proposed: `OWNER_DECLARED`, `BROKER`, `AGENCY`,
-  `DEVELOPER` confer read+write; `OCCUPANT`, `CONTACT_PERSON`, `OTHER` confer read
-  only. Rationale: an occupant or a contact person is not commercially empowered to
-  alter offers. See §13 Q1.
-- **R4.3** `verification_level` on the relation is **not** an authorization input.
-  A `DECLARED` relation authorizes exactly as a `PROFESSIONAL_CHECK` one does.
-  Verification governs trust in market truth, not access. Conflating them would make
-  access silently expand when an unrelated verification event fires.
+1. **`properties.created_by_account_id`** — the self-service path. A customer creating
+   their own property via `POST /properties` (`SELF_MANAGED + CLAIMED`) is its creator.
+2. **`record_claim_events`** — the assisted path. The table records
+   `claimed_by_account_id` with exactly one of `request_id` / `property_id`
+   (`CHECK (num_nonnulls(request_id, property_id) = 1)`), and `POST /records/claim`
+   moves the record `ASSISTED/UNCLAIMED → SHARED_MANAGEMENT/CLAIMED`.
 
-### 4.2 Canonical identity and authority
+- **R4.1** Property authority is the disjunction of those two facts and nothing else.
+- **R4.2** Both are **account**-scoped, not party-scoped, because both columns
+  reference `user_accounts`. A second account belonging to the same party does **not**
+  inherit property authority. This is stricter than party-scoping and consistent with
+  decision 4; if it proves too strict operationally it is a product decision, not an
+  implementation liberty.
+- **R4.3** `created_by_account_id` is `ON DELETE SET NULL` — verified. Deleting an
+  account silently detaches authorship. Combined with R3.1, the predicate must guard
+  `NULL` explicitly: a `NULL` creator matches nobody.
+- **R4.4** For an **assisted** record `created_by_account_id` is the *operator's*
+  account. It therefore grants that operator nothing as a customer — operators are
+  authorized by role — and grants the subject party nothing until a claim event exists.
 
-- **R4.4** Authority checks resolve through `property_identity_aliases` to the
-  canonical property first. A customer authorized on an alias property is authorized
-  on the canonical record, because identity resolution is non-destructive (ADR-03)
-  and must not strip a real party of access to their own property.
+### 4.2 What `party_property_relations` is for
 
-### 4.3 Management mode and claim state
+It remains a first-class domain fact and keeps three uses, none of which is
+authorization:
 
-`management_mode ∈ {SELF_MANAGED, ASSISTED, SHARED_MANAGEMENT}` with the schema
-invariant `ASSISTED ⇔ UNCLAIMED` and `{SELF_MANAGED, SHARED_MANAGEMENT} ⇔ CLAIMED`.
+1. **Eligibility to claim.** `x-authorization` on `POST /records/claim` requires
+   "verified contact point and resource party relationship". The relation is a
+   *precondition* the claim command checks; the claim event is the authority it
+   produces. Decision 1 is exactly this ordering.
+2. **Consent binding validity.** `enforce_consent_binding()` requires an active
+   relation before a property-scoped consent may bind — verified in the schema.
+3. **Matching and permission evidence**, recorded in snapshots.
 
-Per `x-authorization` on `POST /records/claim`, claiming moves a record
-`ASSISTED/UNCLAIMED → SHARED_MANAGEMENT/CLAIMED`.
+- **R4.5** No read or write authorization predicate may reference
+  `party_property_relations`. An architecture test asserts the policy layer does not
+  query that table.
+- **R4.6** Relation currency
+  (`valid_from <= now() < valid_to`) still governs uses 1 and 2. It no longer governs
+  access, so an expired relation cannot silently revoke a claimed owner's access to
+  their own property — which is the correct behaviour and a direct benefit of
+  decision 1.
+- **R4.7** `verification_level` on a relation is not an authorization input, for the
+  same reason as before: verification governs trust in market truth, not access.
 
-- **R4.5** An `ASSISTED + UNCLAIMED` record has **no authorized customer**. It is
-  staff-operated. Customer access begins at the claim command.
-- **R4.6** `SHARED_MANAGEMENT` means staff authority and customer authority coexist.
-  It does not reduce staff authority.
+### 4.3 REQUEST and the claim gate
 
----
+`requests.party_id` is `NOT NULL`, so an **assisted** request already carries the
+subject's party before any claim. Party match alone would therefore hand a customer
+access to a record staff are still operating.
+
+- **R4.8** Request authority requires `claim_status = 'CLAIMED'` in addition to the
+  party match. An `ASSISTED + UNCLAIMED` request has no authorized customer (the
+  schema invariant makes `ASSISTED` and `UNCLAIMED` equivalent, so either test works;
+  both are written for clarity).
+
+### 4.4 Canonical identity
+
+- **R4.9** Authority resolves through `property_identity_aliases` to the canonical
+  property first. A customer authorized on an alias is authorized on the canonical
+  record: identity resolution is non-destructive (ADR-03) and must not strip a real
+  owner of access.
+
+### 4.5 Management mode and claim state
+
+- **R4.10** `ASSISTED + UNCLAIMED` ⇒ no authorized customer, on every resource type.
+- **R4.11** `SHARED_MANAGEMENT` means staff and customer authority coexist. It does
+  not reduce staff authority.
 
 ## 5. `/me/*` semantics
 
@@ -191,13 +260,27 @@ Four operations exist, all `CUSTOMER`-only: `GET /me/party`,
   written as "this object **and** it belongs to me" in one statement. It is never
   "fetch, then compare in application code" — a fetch-then-compare has already read
   the row and invites a later refactor that returns it.
-- **R5.3 [DECISION]** `/me/*` authorization failure returns **404**, not 403.
-  Rationale: `GET /me/properties/{id}` carries `x-authorization` "otherwise 404/403",
-  and both codes are declared on every operation, so the contract permits either.
-  A 403 on `/me/*` confirms that an id exists, turning the endpoint into an existence
-  oracle for UUIDs — precisely what K01/K02 guard against. Internal staff endpoints
-  keep **403** with `OBJECT_NOT_AUTHORIZED`, since a staff caller is already trusted
-  to know that objects exist. See §13 Q2.
+- **R5.3 Concealment vs prohibition (decision 2).** The two codes answer different
+  questions and must not be used interchangeably:
+
+  | Situation | Code |
+  |---|---|
+  | The object does not exist | `404` |
+  | The object exists but the caller has no authority over it | `404` — indistinguishable from the above, by design |
+  | The caller **is** authorized on the object, but the requested **action** is not permitted to them | `403` |
+
+  A `403` is therefore an admission that the object exists *and* that the caller may
+  see it. It is only ever returned once authority has already been established, so it
+  discloses nothing the caller did not already know. Any `403` from `/me/*` that could
+  be triggered by an unauthorized caller would turn the endpoint into an existence
+  oracle for UUIDs, which is what K01/K02 forbid.
+- **R5.3a** Concretely: `GET /me/requests/{someone-elses-id}` → `404`.
+  `POST /requests/{own-id}/state` attempting a transition reserved to staff → `403`,
+  because the caller owns the request and is merely barred from that action.
+- **R5.3b** The same rule applies on internal endpoints. Staff object checks that fail
+  return `403` with `OBJECT_NOT_AUTHORIZED` — a staff caller is already trusted to know
+  that objects exist, so concealment buys nothing and a precise error is more useful.
+
 - **R5.4** Staff do not use `/me/*`. Internal reads use
   `GET /parties|requests|properties|opportunities/{id}`, whose `x-roles` exclude
   `CUSTOMER` (K01).
@@ -215,15 +298,14 @@ Staff hold no ownership, so the object check takes a different form.
   runs in a transaction that sets `app.account_id` and `app.audit_context`, which
   `audit_row_change()` reads — verified in the schema. A staff read of an arbitrary
   object is permitted but **recorded**.
-- **R6.3 [DECISION]** Whether staff *reads* are logged to `audit_log` as well as
+- **R6.3 [OPEN]** Whether staff *reads* are logged to `audit_log` as well as
   writes. `audit_row_change()` fires on INSERT/UPDATE/DELETE only, so reads are not
   captured today. Proposed: staff reads of customer-scoped objects emit a structured
   access log entry (not an `audit_log` row, which is row-change shaped) carrying
   actor, object, operation and trace id. See §13 Q4.
-- **R6.4** `REVIEWER` must not be granted the `OPERATOR` data-entry operations, and
-  an account SHOULD NOT hold both, or maker–checker (§2.1) collapses into one person.
-  **[DECISION]** whether this is enforced by the service or by administrative policy
-  (§13 Q3).
+- **R6.4** An account MUST NOT hold both `OPERATOR` and `REVIEWER`, or maker–checker
+  (§2.1) collapses into one person. Decision 8 makes this binding and R2.1 enforces it
+  at role-grant time, with a database test as the backstop.
 
 ---
 
@@ -270,17 +352,29 @@ stored `NOT NULL` on `opportunities` and as `permission_scope` on `property_offe
 - **R8.1** `sharing_scope` is an **output filter**, not an access gate. It does not
   decide whether a caller may read an opportunity — §4 does. It decides how much of
   it is rendered.
-- **R8.2 [DECISION]** The exact field sets. The enum names the levels; no frozen
-  artifact enumerates fields per level. Proposed, and intentionally the narrowest
-  reading consistent with `x-authorization` on `GET /me/opportunities/{id}`:
+- **R8.2 Field sets (decision 6).** Three scopes, filtered **server-side**:
 
   | Scope | `CustomerOpportunityView` renders |
   |---|---|
   | `SUMMARY_ONLY` | `opportunity_id`, `status`, `validity_status`, `sharing_scope`, `why_real`, `known_differences`, `created_at`, `shared_at`; `property` reduced to type, location and area bands |
-  | `PROPERTY_DETAILS_ALLOWED` | the above plus the full `CustomerPropertyView` and public offer terms subject to `price_visibility` |
+  | `PROPERTY_DETAILS_ALLOWED` | the above plus the full `CustomerPropertyView` and public offer terms, subject to `price_visibility` |
   | `CONTACT_AFTER_CONFIRMATION` | the above plus counterparty contact, released **only** after a recorded confirmation event |
 
-  See §13 Q5.
+- **R8.2a Scope raises the ceiling, it never opens the floor (decision 6).** The
+  following are **never** rendered at *any* scope, including the highest:
+
+  - internal pricing expectations (`seller_expectation_dzd` and anything derived from it);
+  - private claims and claim internals;
+  - internal/staff notes;
+  - source-private data (`sources.raw_text`, `external_url`, `external_ref`, `metadata`
+    and observation payloads);
+  - AI internals (`ai_trace_ref`, model versions, extraction confidences, raw scores).
+
+  These belong to the never-serialized set of §9.2 and are outside the scope ladder
+  entirely. A reviewer reading a future diff should be able to check this by asking one
+  question: *does a higher scope add this field?* For anything in this list the answer
+  is always no.
+
 - **R8.3** `CONTACT_AFTER_CONFIRMATION` releases contact data only on evidence of the
   confirmation, never on the scope value alone. The scope names a precondition; it is
   not itself the satisfaction of it.
@@ -342,11 +436,16 @@ deny; none can re-grant what an earlier stage denied.
   roles equal the contract's, and no policy may exist for an unknown operation. The
   contract and the code cannot drift silently.
 - **R10.3** Stage 5 is a single scoped query. There is no unscoped `findById`
-  reachable from a request path. **[DECISION]** whether this is enforced by
+  reachable from a request path. **[OPEN]** whether this is enforced by an
   architecture test (§13 Q6).
-- **R10.3a** Exactly one authenticated operation carries no `x-roles`:
-  `GET /reason-codes`. Under R10.1 it is therefore denied to everyone until
-  §13 Q8 is decided. Generated evidence: `docs/api/API_INVENTORY_GENERATED.md`.
+- **R10.3a `GET /reason-codes` (decision 5).** It is the only authenticated operation
+  in the frozen contract carrying no `x-roles`. Its policy entry is
+  `{ADMIN, OPERATOR, REVIEWER}` — **not** `CUSTOMER`. It stays authenticated: it is not
+  added to the closed unauthenticated list of R10.4. Because this policy entry has no
+  counterpart in the contract, R10.2's cross-check treats it as an explicit, named
+  exception rather than a drift, and the test asserts that it is the **only** such
+  exception.
+
 - **R10.4** The six unauthenticated operations — `GET /locations`,
   `GET /master/criterion-definitions`, `GET /public/properties`, `POST /auth/otp/start`,
   `POST /auth/otp/verify`, `POST /webhooks/whatsapp` — are an explicit closed list
@@ -370,7 +469,8 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 | S03 | Customer A calls internal `GET /requests/{A}` — own object, wrong endpoint | **D** 403, role excludes `CUSTOMER` (K01) |
 | S04 | Customer A reads a party by guessed UUID via `GET /parties/{B}` | **D** 403 (K01) |
 | S05 | Customer with `party_id = NULL` calls any `/me/*` | **D** 403 (R3.1) |
-| S06 | Customer A `PATCH /requests/{B}` | **D** 404/403 before any field validation |
+| S06 | Customer A `PATCH /requests/{B}` | **D** 404 before any field validation (R5.3) |
+| S06a | Customer A attempts a staff-only transition on **own** request | **D** 403 — owns it, action prohibited (R5.3a) |
 | S07 | Customer A sends `status` or `claim_status` in a typed PATCH | **D** 422 (K04) |
 | S08 | Customer A `POST /interests` with `party_id` = B | **D** 403 (R4, interests) |
 | S09 | Customer A responds to an opportunity whose request is B's | **D** 404 |
@@ -379,13 +479,16 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 
 | # | Scenario | Expected |
 |---|---|---|
-| S10 | Customer with current `OWNER_DECLARED` relation reads `/me/properties/{id}` | **A** 200 |
-| S11 | Same customer after `valid_to` has passed | **D** 404 (R4.1) |
-| S12 | Customer with `OCCUPANT` relation calls `PATCH /offers/{id}` | **D** 403 under proposed R4.2 |
-| S13 | Customer authorized on an alias property reads the canonical | **A** 200 (R4.4) |
-| S14 | Any customer reads an `ASSISTED + UNCLAIMED` property | **D** 404 (R4.5) |
-| S15 | Same record after a successful `POST /records/claim` | **A** 200, now `SHARED_MANAGEMENT` |
-| S16 | Customer relation is `DECLARED` rather than verified | **A** 200 (R4.3) |
+| S10 | Customer reads a property they created (`created_by_account_id` match) | **A** 200 (R4.1) |
+| S11 | Customer reads a property whose `created_by_account_id` is `NULL` | **D** 404 — a null creator matches nobody (R4.3) |
+| S12 | Customer with **any** `relation_code`, including `OWNER_DECLARED`, but no claim event and not the creator | **D** 404 — relationship is not authority (decision 1, R4.5) |
+| S13 | Customer authorized on an alias property reads the canonical | **A** 200 (R4.9) |
+| S14 | Any customer reads an `ASSISTED + UNCLAIMED` property | **D** 404 (R4.10) |
+| S15 | Same record after a successful `POST /records/claim` | **A** 200, now `SHARED_MANAGEMENT`, authority from the claim event (R4.1) |
+| S16 | Customer relation is `DECLARED` rather than verified, and a claim event exists | **A** 200 — verification is not an access input (R4.7) |
+| S16a | Claimed owner whose `party_property_relations` row has **expired** | **A** 200 — expiry cannot revoke a claimed owner (R4.6) |
+| S16b | Second account of the **same party** reads a property claimed by the first | **D** 404 — property authority is account-scoped (R4.2) |
+| S16c | Customer reads an `ASSISTED + UNCLAIMED` request whose `party_id` is theirs | **D** 404 — party match alone is insufficient (R4.8) |
 
 ### Staff and separation of duties
 
@@ -396,6 +499,9 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 | S19 | `REVIEWER` calls `POST /observations` | **D** 403 (§2.1) |
 | S20 | `REVIEWER` calls `POST /opportunities/{id}/share` | **D** 403 (§2.1) |
 | S21 | `OPERATOR` calls `GET /audit` | **D** 403 (§2.1) |
+| S21a | Granting `REVIEWER` to an account already holding `OPERATOR` | **D** rejected at grant time; DB-level test finds no such account (R2.1) |
+| S21b | `CUSTOMER` calls `GET /reason-codes` | **D** 403 (decision 5, R10.3a) |
+| S21c | `OPERATOR` calls `GET /reason-codes` | **A** 200 (decision 5) |
 | S22 | `REVIEWER` approves a match with every gate `PASS` | **A** 201 |
 | S23 | Any staff writes with `app.account_id` unset | **D** — transaction wrapper refuses |
 
@@ -421,6 +527,7 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 | S34 | Opportunity at `CONTACT_AFTER_CONFIRMATION`, no confirmation recorded | **D** — contact withheld (R8.3) |
 | S35 | Offer with `price_visibility = PRIVATE` inside a permissive scope | **A** — price still redacted (R9.4) |
 | S36 | Customer explanation for a match influenced by seller expectation | **A** — explanation present, expectation not stated or inferable (R9.3, D02) |
+| S36a | Opportunity at `CONTACT_AFTER_CONFIRMATION`, confirmation recorded — response inspected for internal pricing, private claims, staff notes, source-private data, AI internals | **A** contact released; **D** none of the five appear at any scope (R8.2a) |
 | S37 | A new column is added to `properties` | **D** — DTO allow-list test fails (R9.5) |
 
 ### Pipeline
@@ -441,8 +548,9 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 |---|---|---|
 | No/invalid token | 401 | `UNAUTHENTICATED` |
 | Role mismatch | 403 | `ROLE_NOT_PERMITTED` |
-| Object check failed, `/me/*` | 404 | `NOT_FOUND` |
-| Object check failed, internal | 403 | `OBJECT_NOT_AUTHORIZED` |
+| Object check failed, `/me/*` (unowned or absent) | 404 | `NOT_FOUND` |
+| Authorized on the object, action prohibited | 403 | `ACTION_NOT_PERMITTED` |
+| Object check failed, internal endpoint | 403 | `OBJECT_NOT_AUTHORIZED` |
 | Consent missing/revoked | 409 | `CONSENT_REVOKED` |
 | Stale `If-Match-Version` | 409 | `STALE_VERSION` |
 | Undeclared PATCH field | 422 | `UNKNOWN_FIELD` |
@@ -454,31 +562,95 @@ document payloads.
 
 ---
 
-## 13. Open questions requiring a decision
+## 13. Decision register
 
-Implementation of the affected rule does not begin until each is ruled on.
+### Resolved
+
+| # | Question | Ruling |
+|---|---|---|
+| Q1 | Which `relation_code` values confer write authority? | **None.** Domain relationship and authorization are separate concerns. Revision 1 proposed a write-conferring subset; that proposal is withdrawn and §4 rewritten. |
+| Q2 | `404` or `403` on a failed object check? | **404** for inaccessible or unowned; **403** only where the caller is authorized on the object but the action is prohibited (R5.3). |
+| Q3 | May one account hold several roles? | Roles are **literal and non-hierarchical**, no implicit inheritance (decision 3). `OPERATOR` + `REVIEWER` on one account is prohibited, enforced at grant time (R2.1, decision 8). Staff + `CUSTOMER` is allowed and evaluated per operation (R3.3). |
+| Q5 | Field sets per `sharing_scope` | The three scopes of R8.2, server-side filtered, with the never-exposed floor of R8.2a. |
+| Q7 | Delegated authority | **Not implemented in v0.1.** Customer access is ownership-only. No delegation model is invented (decision 4). The gap between `API_CONTRACTS` §2.2 and the schema stands recorded and unresolved-by-design. |
+| Q8 | `GET /reason-codes` with no `x-roles` | `ADMIN`, `OPERATOR`, `REVIEWER`; **not** `CUSTOMER`. Remains authenticated (R10.3a). |
+
+### Open
 
 | # | Question | Proposal | Blocks |
 |---|---|---|---|
-| **Q1** | Which `relation_code` values confer **write** authority on a PROPERTY/OFFER? The schema treats all seven alike. | `OWNER_DECLARED`, `BROKER`, `AGENCY`, `DEVELOPER` → read+write; `OCCUPANT`, `CONTACT_PERSON`, `OTHER` → read only | R4.2, S12 |
-| **Q2** | `404` or `403` for a failed object check on `/me/*`? Both are declared; `x-authorization` says "404/403". | `404` on `/me/*`; `403` internally | R5.3, S02 |
-| **Q3** | May one account hold `OPERATOR` **and** `REVIEWER`, or staff **and** `CUSTOMER`? The PK permits it. | Service rejects `OPERATOR`+`REVIEWER` on one account; staff+`CUSTOMER` allowed but evaluated per operation | R3.3, R6.4 |
-| **Q4** | Are staff **reads** of customer-scoped objects recorded? `audit_row_change()` covers writes only. | Structured access-log entry, not an `audit_log` row | R6.3 |
-| **Q5** | Exact field sets per `sharing_scope`. No artifact enumerates them. | The table in R8.2 | R8.2, S33–S34 |
-| **Q6** | Is "no unscoped `findById` from a request path" enforced by architecture test or by convention? | Architecture test | R10.3 |
-| **Q8** | `GET /reason-codes` (`getReasonCodes`) declares `security: BearerAuth` but **no `x-roles`** — the only operation in the contract in that state. Under deny-by-default it is unreachable by every role. Its two sibling master-data reads, `GET /locations` and `GET /master/criterion-definitions`, are unauthenticated. | Treat reason codes as master data and allow all four authenticated roles to read it. Do **not** silently make it unauthenticated: that widens the closed list in R10.4. | R10.1, S38 |
-| **Q7** | **"Explicit delegated authority" has no representation in the frozen schema.** `API_CONTRACTS` §2.2 and the `x-authorization` on `GET /me/requests/{id}` both invoke it; no table, column or endpoint models it. | Treat as **out of scope for Slice 0**: implement ownership only, and let any future delegation arrive as an approved domain change. Do **not** improvise a mechanism. | R4, S01–S02 |
+| **Q4** | Are staff **reads** of customer-scoped objects recorded? `audit_row_change()` fires on INSERT/UPDATE/DELETE only, so reads are invisible today. | Structured access-log entry carrying actor, object, operation and trace id — not an `audit_log` row, whose shape is row-change specific. | R6.3 |
+| **Q6** | Is "no unscoped `findById` reachable from a request path" enforced by an architecture test or left to convention? | Architecture test. It is the rule most likely to erode silently under refactoring. | R10.3 |
+| **Q9** | **New, raised by decision 1.** `property_offers` has no `claim_status` of its own, unlike `requests` and `properties`. An offer recorded during assisted entry already carries the subject's `party_id`, so a bare party match would grant a customer access to an offer about them that staff are still operating — the hole R4.8 closes for requests. | Offer authority = `property_offers.party_id = subject.party_id` **AND** the parent property is not `ASSISTED + UNCLAIMED`. Conservative, and it mirrors the claim gate the other two resources already have. | §4 offer row, S12 |
 
-**Q7 is the significant one.** It is a genuine gap between the API contract and the
-database baseline, of the kind `FILE_AUTHORITY_AND_VERSION_POLICY.md` says must not be
-resolved silently in code. Inventing a delegation table would change the domain model
-without approval; ignoring the phrase entirely would contradict the contract. The
-proposal — implement strict ownership now, raise delegation as its own decision when a
-real case appears — keeps both documents honest and leaves no half-built mechanism.
+Q9 is the one genuinely new question this revision raises. It exists because decision 1
+removed the relation shortcut and exposed that offers, alone among the three
+customer-facing resources, have no claim state to gate on. The proposal borrows the
+parent property's gate rather than inventing one; confirming or replacing it is a
+product call, not an implementation detail.
 
----
+## 14. Technology decision
 
-## 14. Test plan
+Returned with the authorization decisions and recorded here so the RFC is the single
+reference for Slice 0.
+
+| Concern | Decision |
+|---|---|
+| Shape | **Modular monolith** — no microservices |
+| Language | Python 3.12+ |
+| HTTP | FastAPI |
+| Validation / DTOs | Pydantic v2 |
+| Persistence | SQLAlchemy 2.x |
+| Migrations | Alembic |
+| Database | PostgreSQL 16+ |
+| Tests | pytest |
+
+**Not introduced without a demonstrated need:** microservices, Redis, Celery, external
+policy engines, or any additional infrastructure. A policy layer written in ordinary
+Python against the tables in §4 is the default; an external engine would have to earn
+its place.
+
+### 14.1 The contract stays frozen and stays first
+
+FastAPI generates an OpenAPI document from the code. That generated document is **not**
+the contract.
+
+- **R14.1** `openapi_v0.2.yaml` remains the contract. The generated document is
+  **checked against it** and never replaces, overwrites or regenerates it.
+- **R14.2** A conformance test compares the generated document to the frozen one over
+  paths, methods, `operationId` values, required request fields and response codes.
+  A divergence fails the build; the resolution is to change the code, or to raise a
+  contract change through the handoff process — never to re-export the contract from
+  the code.
+- **R14.3** This test is the natural home for R10.2's policy cross-check, since both
+  compare running code against the frozen contract.
+
+### 14.2 Alembic must not redefine the frozen baseline
+
+Alembic autogeneration compares models to a live database and emits a migration. Pointed
+at the frozen schema it will happily produce a diff that quietly becomes the new truth.
+
+- **R14.4** `schema_v0.2.1.sql` is the **initial** migration. Alembic's first revision
+  stamps that state; it does not recreate it from models.
+- **R14.5** SQLAlchemy models are written to **match** the frozen schema. Where a model
+  and the schema disagree, the schema is right and the model is a defect.
+- **R14.6** Autogenerated migrations are reviewed as proposed *changes to a frozen
+  baseline*, not as routine output. A migration altering anything in `schema_v0.2.1.sql`
+  requires the same approval path as a schema change, and CI still verifies the frozen
+  digests (`TECHNICAL_BASELINE_FROZEN.md`).
+- **R14.7** The 70-assertion gate suite keeps running against the frozen SQL, not
+  against models. It is the independent check that the ORM has not drifted.
+
+### 14.3 Where authorization lives
+
+- **R14.8** The policy layer is a module with no HTTP and no ORM-session
+  construction of its own: it receives a subject and a resource reference and returns a
+  decision. That keeps §11's scenarios testable without a running server.
+- **R14.9** Pydantic v2 models are the DTO boundary of §9. Public, customer and internal
+  views are **separate model classes** (R9.1), never one model with conditional fields
+  — a conditional field is exactly the delete-keys pattern R9.1 rejects, wearing a type.
+
+## 15. Test plan
 
 Authorization tests are written **with** the implementation, not after (kickoff
 checklist: object-level authorization tests included from Slice 0).
@@ -489,18 +661,28 @@ checklist: object-level authorization tests included from Slice 0).
    (`API_CONTRACTS` §8: "BOLA/IDOR tests for every customer resource endpoint").
 3. **Separation of duties** — S17–S23.
 4. **Consent vs authorization** — S24–S31, including the ordering guarantee R7.4.
-5. **DTO allow-lists** — S32–S37, asserting exact key sets so new columns fail closed.
+5. **DTO allow-lists** — S32–S37, asserting exact key sets so new columns fail closed,
+   plus S36a proving the R8.2a floor holds at the highest scope.
 6. **Pipeline** — S38–S42.
-7. **Regression** — K01–K05 and D02 from `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` run in CI
+7. **Authority-model invariants** — the rules decision 1 introduced, which are the most
+   likely to be undone by a well-meaning refactor:
+   - an architecture test asserting the policy layer never queries
+     `party_property_relations` (R4.5);
+   - a database test asserting no account holds both `OPERATOR` and `REVIEWER` (R2.1);
+   - a null-safety test for `created_by_account_id IS NULL` and `party_id IS NULL`
+     (R3.1, R4.3).
+8. **Contract conformance of the running app** — R14.2, comparing FastAPI's generated
+   document to the frozen `openapi_v0.2.yaml`.
+9. **Regression** — K01–K05 and D02 from `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` run in CI
    alongside the PostgreSQL Execution Gate.
 
 ---
 
-## 15. Explicitly out of scope
+## 16. Explicitly out of scope
 
-Row-level security in PostgreSQL as the enforcement mechanism (the schema sets
-`app.account_id` for *audit*, not RLS, and no policies exist); delegated authority
-(Q7); field-level encryption; rate limiting; multi-tenancy; any change to the frozen
+Customer delegated authority (decision 4 — ownership only in v0.1);
+row-level security in PostgreSQL as the enforcement mechanism (the schema sets
+`app.account_id` for *audit*, not RLS, and no policies exist); field-level encryption; rate limiting; multi-tenancy; any change to the frozen
 `schema_v0.2.1.sql` or `openapi_v0.2.yaml`.
 
 This RFC proposes **no change** to the domain model, workflow, permissions model or

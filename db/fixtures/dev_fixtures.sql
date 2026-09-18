@@ -203,3 +203,229 @@ UNION ALL SELECT 'requests',       count(*) FROM requests
 UNION ALL SELECT 'consent_grants', count(*) FROM consent_grants
 UNION ALL SELECT 'consent_bindings',count(*) FROM resource_consent_bindings
 ORDER BY 1;
+
+-- =============================================================================
+-- DOMAIN EDGE CASES EC1-EC8
+--
+-- One fixture per approved decision in RFC-001 revision 2, so each decision has
+-- data to be tested against. Data only: no match candidate, review or
+-- opportunity is created here, because those are produced by the domain
+-- commands of Slices 4-5 and never inserted by hand.
+--
+-- Interpretation note: "the eight domain edge cases" was read as the domain
+-- situation implied by each of the eight decisions. If a different set was
+-- meant, these are additive and cheap to replace.
+-- =============================================================================
+BEGIN;
+
+-- Supporting accounts -------------------------------------------------------
+-- A second customer (EC2), an ADMIN (EC3/EC8), and a SECOND ACCOUNT FOR AMINA'S
+-- PARTY (EC1) to prove property authority is account-scoped, not party-scoped.
+INSERT INTO contact_points (contact_point_id, kind, normalized_value, display_value,
+                            control_status, control_verified_at, verification_method) VALUES
+  ('f2000000-0000-4000-8000-000000000004','PHONE','+213661000004','0661 00 00 04','VERIFIED_CONTROL', now(),'OTP'),
+  ('f2000000-0000-4000-8000-000000000005','PHONE','+213661000005','0661 00 00 05','VERIFIED_CONTROL', now(),'OTP')
+ON CONFLICT (contact_point_id) DO NOTHING;
+
+INSERT INTO parties (party_id, kind, status, display_name) VALUES
+  ('f1000000-0000-4000-8000-000000000004','PERSON','PARTY_ACTIVE','خديجة (مشترية ثانية)')
+ON CONFLICT (party_id) DO NOTHING;
+
+INSERT INTO party_contact_points (party_id, contact_point_id, is_primary) VALUES
+  ('f1000000-0000-4000-8000-000000000004','f2000000-0000-4000-8000-000000000004', true)
+ON CONFLICT (party_id, contact_point_id) DO NOTHING;
+
+INSERT INTO user_accounts (account_id, party_id, status, login_contact_point_id, email, activated_at) VALUES
+  ('f3000000-0000-4000-8000-000000000004','f1000000-0000-4000-8000-000000000004','ACTIVATED',
+   'f2000000-0000-4000-8000-000000000004', NULL, now()),
+  ('f3000000-0000-4000-8000-000000000005', NULL,'ACTIVATED', NULL,'admin@turab.local', now()),
+  -- EC1: same PARTY as account ...001, different ACCOUNT
+  ('f3000000-0000-4000-8000-000000000006','f1000000-0000-4000-8000-000000000001','ACTIVATED',
+   'f2000000-0000-4000-8000-000000000005', NULL, now())
+ON CONFLICT (account_id) DO NOTHING;
+
+INSERT INTO user_account_roles (account_id, role) VALUES
+  ('f3000000-0000-4000-8000-000000000004','CUSTOMER'),
+  ('f3000000-0000-4000-8000-000000000005','ADMIN'),
+  ('f3000000-0000-4000-8000-000000000006','CUSTOMER')
+ON CONFLICT (account_id, role) DO NOTHING;
+-- EC8: no account here holds both OPERATOR and REVIEWER. RFC-001 R2.1 forbids
+-- it; a test asserts the table contains no such account.
+
+-- ---------------------------------------------------------------------------
+-- EC1 - decision 1: a domain relationship is NOT authority.
+--
+-- Property f4...001 (the villa) already carries Brahim's OWNER_DECLARED
+-- relation and the agency's BROKER relation, yet its created_by_account_id is
+-- the OPERATOR account and no claim event exists for it. Under RFC-001 R4.1
+-- neither related party may reach it as a customer.
+--
+-- The contrast: f4...004 below IS claimed, so authority exists there and the
+-- difference between the two properties is exactly the claim event.
+-- ---------------------------------------------------------------------------
+INSERT INTO properties (property_id, property_type, canonical_location_id, local_location_detail,
+                        land_area_m2, built_area_m2, current_availability,
+                        availability_last_confirmed_at, supply_mode, management_mode,
+                        claim_status, created_by_account_id)
+SELECT 'f4000000-0000-4000-8000-000000000004','HOUSE_VILLA',
+       (SELECT location_id FROM locations WHERE code='ADR-KSAR-OULED-ALI'),
+       'منزل تم تأكيد ملكيته', 180.00, 150.00,'AVAILABLE', now(),'PUBLIC',
+       'SHARED_MANAGEMENT','CLAIMED','f3000000-0000-4000-8000-000000000002'
+ON CONFLICT (property_id) DO NOTHING;
+
+INSERT INTO party_property_relations (party_property_relation_id, party_id, property_id,
+                                      relation_code, verification_level, valid_from, valid_to) VALUES
+  ('f5000000-0000-4000-8000-000000000004','f1000000-0000-4000-8000-000000000001',
+   'f4000000-0000-4000-8000-000000000004','OWNER_DECLARED','DECLARED', now() - interval '90 days', NULL),
+  -- EC1 (R4.6): an EXPIRED relation on a property the same party has claimed.
+  -- Expiry must not revoke a claimed owner's access.
+  ('f5000000-0000-4000-8000-000000000005','f1000000-0000-4000-8000-000000000001',
+   'f4000000-0000-4000-8000-000000000004','CONTACT_PERSON','DECLARED',
+   now() - interval '300 days', now() - interval '10 days')
+ON CONFLICT (party_property_relation_id) DO NOTHING;
+
+-- The claim event: THIS is the authority, and it names an ACCOUNT.
+-- Account ...001 may reach the property; account ...006, same party, may not.
+INSERT INTO record_claim_events (claim_event_id, request_id, property_id,
+                                 claimed_by_account_id, claimed_at,
+                                 verification_contact_point_id) VALUES
+  ('fa000000-0000-4000-8000-000000000001', NULL,'f4000000-0000-4000-8000-000000000004',
+   'f3000000-0000-4000-8000-000000000001', now() - interval '80 days',
+   'f2000000-0000-4000-8000-000000000001')
+ON CONFLICT (claim_event_id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- EC2 - decision 2: 404 conceals, 403 prohibits.
+-- Khadija owns a request of her own. Probing Amina's request must yield 404;
+-- a staff-only action on her OWN request must yield 403.
+-- ---------------------------------------------------------------------------
+INSERT INTO requests (request_id, party_id, status, transaction_intent, intent, payment,
+                      desired_property_type, primary_location_id, budget_target_dzd,
+                      budget_max_dzd, budget_flexibility, last_confirmed_at,
+                      management_mode, claim_status, created_by_account_id)
+SELECT 'f7000000-0000-4000-8000-000000000003','f1000000-0000-4000-8000-000000000004',
+       'ACTIVE','BUY','ACTIVE_SEARCH','BANK_FINANCING','APARTMENT',
+       (SELECT location_id FROM locations WHERE code='ADR-CENTER'),
+       8000000, 9500000,'STRICT', now(),'SELF_MANAGED','CLAIMED',
+       'f3000000-0000-4000-8000-000000000004'
+ON CONFLICT (request_id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- EC3 - decision 3: roles are literal, no inheritance.
+-- ADMIN account f3...005 holds ONLY 'ADMIN'. Because the contract lists ADMIN
+-- explicitly on every staff operation, a literal check still admits it. If any
+-- code ever computed ADMIN as a superset, this fixture would not detect it -
+-- what detects it is S18/S19: OPERATOR must be refused /matches/{id}/review
+-- and REVIEWER must be refused /observations.
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- EC4 - decision 4: no delegated authority in v0.1.
+-- The agency is BROKER on the villa f4...001 and would, in any delegation
+-- model, act for the owner. With delegation unimplemented the agency has no
+-- customer access to that property or to the owner's request. It keeps its own
+-- offer (f6...002), which it owns directly.
+-- Amina's request f7...001 also has no delegate: no row anywhere confers it.
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- EC5 - decision 5: /reason-codes excludes CUSTOMER.
+-- Customer accounts f3...001, ...004 and ...006 hold ONLY the CUSTOMER role and
+-- must be refused; OPERATOR/REVIEWER/ADMIN accounts must be allowed. The reason
+-- codes themselves come from the master seed, not from here.
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- EC6 - decision 6: sharing scopes, and the floor that no scope lifts.
+-- An offer at each of the three permission_scope values, plus internal data
+-- that must never surface at ANY scope: an internal price expectation, a
+-- private claim, and a source carrying private raw text and an external URL.
+-- ---------------------------------------------------------------------------
+INSERT INTO property_offers (offer_id, property_id, party_id, transaction_type, status,
+                             asking_price_dzd, price_negotiable, seller_expectation_dzd,
+                             price_visibility, last_confirmed_at,
+                             commercial_terms_last_confirmed_at, permission_scope,
+                             created_by_account_id) VALUES
+  -- the third scope, absent from the base fixtures
+  ('f6000000-0000-4000-8000-000000000005','f4000000-0000-4000-8000-000000000004',
+   'f1000000-0000-4000-8000-000000000001','SALE','ACTIVE', 19500000,'YES', 18000000,
+   'ON_REQUEST', now(), now(),'CONTACT_AFTER_CONFIRMATION','f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (offer_id) DO NOTHING;
+
+INSERT INTO sources (source_id, kind, external_url, external_ref, title, raw_text,
+                     captured_at, metadata, created_by_account_id) VALUES
+  ('fb000000-0000-4000-8000-000000000001','FACEBOOK_POST',
+   'https://example.invalid/private-post/12345','fb:12345',
+   'منشور خاص',
+   'صاحب المنزل مستعجل ويقبل 18 مليون نقدا - معلومة خاصة لا تنشر',
+   now() - interval '15 days',
+   '{"private": true, "operator_note": "do not repeat to buyers"}'::jsonb,
+   'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (source_id) DO NOTHING;
+
+INSERT INTO observations (observation_id, source_id, kind, party_id, observed_at,
+                          raw_text, payload, recorded_by_account_id) VALUES
+  ('fc000000-0000-4000-8000-000000000001','fb000000-0000-4000-8000-000000000001',
+   'CALL_NOTE','f1000000-0000-4000-8000-000000000001', now() - interval '15 days',
+   'مكالمة: البائع يقبل أقل من السعر المعلن',
+   '{"channel":"phone"}'::jsonb,'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (observation_id) DO NOTHING;
+
+-- A private claim about the offer. Matching may read it; no customer DTO may.
+INSERT INTO claims (claim_id, offer_id, attribute_code, claimed_value,
+                    asserted_by_party_id, source_id, observation_id,
+                    observed_at, effective_verification_level, status,
+                    recorded_by_account_id) VALUES
+  ('fd000000-0000-4000-8000-000000000001','f6000000-0000-4000-8000-000000000005',
+   'seller_expectation_dzd','{"amount":18000000,"currency":"DZD","private":true}'::jsonb,
+   'f1000000-0000-4000-8000-000000000001','fb000000-0000-4000-8000-000000000001',
+   'fc000000-0000-4000-8000-000000000001', now() - interval '15 days',
+   'DECLARED','ACTIVE','f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (claim_id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- EC7 - decision 7: deny by default.
+-- An orphan property: created_by_account_id IS NULL, no relation, no claim
+-- event, no offer. No rule reaches it, so no customer may. It also exercises
+-- the null-safety guard in RFC-001 R4.3 - a NULL creator must match nobody,
+-- not everybody.
+-- ---------------------------------------------------------------------------
+INSERT INTO properties (property_id, property_type, canonical_location_id, local_location_detail,
+                        current_availability, supply_mode, management_mode,
+                        claim_status, created_by_account_id)
+SELECT 'f4000000-0000-4000-8000-000000000005','LAND',
+       (SELECT location_id FROM locations WHERE code='ADR-KSAR-ADGHA'),
+       'قطعة بلا مالك معروف بعد','UNKNOWN','POTENTIAL','ASSISTED','UNCLAIMED', NULL
+ON CONFLICT (property_id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- EC8 - decision 8: maker-checker preserved.
+-- Accounts stay single-purpose: ...002 OPERATOR, ...003 REVIEWER, ...005 ADMIN.
+-- No account holds OPERATOR and REVIEWER together. Asserted below.
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE violators int;
+BEGIN
+  SELECT count(*) INTO violators
+  FROM user_account_roles o
+  JOIN user_account_roles r ON r.account_id = o.account_id
+  WHERE o.role = 'OPERATOR' AND r.role = 'REVIEWER';
+  IF violators > 0 THEN
+    RAISE EXCEPTION 'EC8: % account(s) hold both OPERATOR and REVIEWER; RFC-001 R2.1 forbids this', violators;
+  END IF;
+END $$;
+
+COMMIT;
+
+\echo ''
+\echo 'Edge cases EC1-EC8 loaded.'
+SELECT 'claimed properties (authority exists)' AS check, count(*)::text AS value FROM record_claim_events
+UNION ALL SELECT 'orphan properties (created_by NULL)',
+  (SELECT count(*)::text FROM properties WHERE created_by_account_id IS NULL)
+UNION ALL SELECT 'distinct permission_scope values on offers',
+  (SELECT count(DISTINCT permission_scope)::text FROM property_offers)
+UNION ALL SELECT 'accounts holding OPERATOR and REVIEWER',
+  (SELECT count(*)::text FROM user_account_roles o JOIN user_account_roles r
+     ON r.account_id=o.account_id WHERE o.role='OPERATOR' AND r.role='REVIEWER')
+UNION ALL SELECT 'accounts sharing one party',
+  (SELECT count(*)::text FROM user_accounts WHERE party_id='f1000000-0000-4000-8000-000000000001');

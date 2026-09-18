@@ -17,7 +17,7 @@ Handoff package: **v1.0.1** (official), vendored unmodified.
 
 - Gate results and artifact digests: **[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**
 - Freeze record and pinned commit: **[`docs/gate/TECHNICAL_BASELINE_FROZEN.md`](docs/gate/TECHNICAL_BASELINE_FROZEN.md)**
-- Object-level authorization design, **under review**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
+- Object-level authorization design, **revision 2 awaiting final approval**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
 advanced AI work begins before the Core Hypothesis Stop Gate passes.
@@ -30,7 +30,7 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 | `docs/gate/` | Execution gate run reports |
 | `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint, API inventory generator |
 | `db/dev/` | Development database reset (`reset_db.sh`) |
-| `db/fixtures/` | Developer fixtures — a small coherent Adrar world |
+| `db/fixtures/` | Developer fixtures — a coherent Adrar world plus edge cases EC1–EC8 |
 | `docs/rfc/` | Design RFCs awaiting or carrying decisions |
 | `docs/api/` | Generated API inventory (do not edit) |
 | `.github/workflows/` | CI — rebuilds a clean database from zero on every push |
