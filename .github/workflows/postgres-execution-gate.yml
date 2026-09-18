@@ -51,3 +51,20 @@ jobs:
 
       - name: Run the PostgreSQL Execution Gate
         run: db/gate/run_gate.sh
+
+      # Slice -1 deliverable: the generated API inventory is the table the
+      # Slice 0 policy layer is checked against (RFC-001 R10.2). If it drifts
+      # from the frozen contract, that check is worthless.
+      - name: Verify the generated API inventory is current
+        run: |
+          db/gate/generate_api_inventory.py \
+            docs/handoff/05_API/openapi_v0.2.yaml --check
+
+      # The development reset path must keep working, fixtures included, and
+      # loading the fixtures twice must be idempotent.
+      - name: Verify development reset and fixtures
+        env:
+          PGDATABASE: turab_dev
+        run: |
+          db/dev/reset_db.sh --fixtures
+          psql -v ON_ERROR_STOP=1 -q -f db/fixtures/dev_fixtures.sql

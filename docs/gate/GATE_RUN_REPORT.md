@@ -32,7 +32,7 @@
 | 2 | Clean database rebuilt from zero | **PASS** — PostgreSQL 16.13 |
 | 3 | `psql -f schema_v0.2.1.sql` | **PASS** |
 | 4 | `psql -f seed_master_data_v0.2.1.sql` ×2 (idempotency) | **PASS** — 16 Adrar communes, 1 active policy, stable across both runs |
-| 5 | Database-level contract tests (11 required areas) | **PASS** — 65/65 assertions |
+| 5 | Database-level contract tests (11 required areas + Slice −1 locations) | **PASS** — **70/70** assertions |
 | 6 | OpenAPI parse / lint | **PASS** — 3.1.0, 61 paths, 64 operations, 527 `$ref` all resolve |
 
 Every expectation set for this run was met: integrity PASS, enhanced static audit
@@ -135,9 +135,16 @@ ever touched.
 
 ## Contract test coverage
 
-`db/gate/postgres_execution_gate_tests.sql` — 65 assertions covering all eleven
-areas the gate names. The suite runs in one transaction and rolls back, so it is
-repeatable and leaves the database clean.
+`db/gate/postgres_execution_gate_tests.sql` — **70** assertions covering all eleven
+areas the gate names, plus the Slice −1 location test added after the freeze. The
+suite runs in one transaction and rolls back, so it is repeatable and leaves the
+database clean.
+
+> **Note on the count.** The baseline was frozen on the evidence of **65/65**; that
+> figure stands unaltered in `TECHNICAL_BASELINE_FROZEN.md` as the record of what
+> authorised the freeze. The suite has since grown to 70 with T12 below. Adding a
+> test does not reopen the baseline — no frozen artifact changed, and every frozen
+> digest still verifies.
 
 | Gate requirement | Assertions | Representative checks |
 |---|---|---|
@@ -153,6 +160,7 @@ repeatable and leaves the database clean.
 | One active matching policy | 3 | seed leaves exactly one active after a double run; a second active policy is rejected; inactive drafts allowed |
 | One open opportunity per Request × canonical Property | 4 | second open opportunity on the same pair rejected; allowed again only after the first is `CLOSED`; the closed one is retained; one opportunity per approved match |
 | Provenance / audit | 1 | `audit_log` captured mutations on the critical entities |
+| Adrar location integrity (Slice −1) | 5 | Ksar Tililane and New City Tililane remain **distinct canonical locations** — both seeded, distinct ids, different `location_type` (`KSAR` vs `AREA`), the ksar alias never resolves to the new city, and `locations.code` is unique |
 
 ---
 

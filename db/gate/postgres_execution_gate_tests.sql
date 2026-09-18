@@ -536,6 +536,31 @@ SELECT turab_gate_expect_true('AUDIT.critical-mutations-are-recorded',
   'audit_log captured critical-entity mutations');
 
 \echo ''
+\echo '== T12. Adrar location integrity (Slice -1 mandatory) ============='
+-- "Ksar Tililane and New City Tililane remain distinct canonical locations"
+-- IMPLEMENTATION_SLICES_v0.2.md, Slice -1 mandatory tests.
+SELECT turab_gate_expect_true('T12.tililane-pair-both-seeded',
+  (SELECT count(*) FROM locations WHERE code IN ('ADR-KSAR-TILILANE','ADR-NEW-TIL')) = 2,
+  'both Tililane locations exist after a double seed');
+SELECT turab_gate_expect_true('T12.tililane-distinct-identities',
+  (SELECT count(DISTINCT location_id) FROM locations
+     WHERE code IN ('ADR-KSAR-TILILANE','ADR-NEW-TIL')) = 2,
+  'Ksar Tililane and New City Tililane are two distinct canonical locations');
+SELECT turab_gate_expect_true('T12.tililane-different-types',
+  (SELECT location_type FROM locations WHERE code='ADR-KSAR-TILILANE') = 'KSAR'
+  AND (SELECT location_type FROM locations WHERE code='ADR-NEW-TIL') = 'AREA',
+  'the ksar is KSAR and the new city is AREA; a shared name is not a shared place');
+SELECT turab_gate_expect_true('T12.tililane-aliases-not-crossed',
+  (SELECT count(*) FROM location_aliases a
+     JOIN locations l ON l.location_id = a.location_id
+    WHERE l.code = 'ADR-NEW-TIL' AND a.normalized_text = 'قصر تيليلان') = 0,
+  'the ksar alias never resolves to the new city');
+SELECT turab_gate_expect_error('T12.location-code-is-unique', $q$
+  INSERT INTO locations (code, canonical_ar, location_type)
+  VALUES ('ADR-KSAR-TILILANE','تكرار','KSAR') $q$,
+  NULL);
+
+\echo ''
 \echo '== GATE RESULT ====================================================='
 SELECT 'ALL DATABASE-LEVEL CONTRACT TESTS PASSED' AS gate_result;
 

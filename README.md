@@ -8,14 +8,16 @@
 | Gate | Status |
 |---|---|
 | Hardened static audit (v0.2.1) | PASS — 131 FK references |
-| **PostgreSQL 16+ Execution Gate** | **PASS** — twice, 65/65 assertions |
+| **PostgreSQL 16+ Execution Gate** | **PASS** — twice, 70/70 assertions |
 | Technical database baseline | **FROZEN** at `schema_v0.2.1.sql` |
-| Slice 0 — Application Skeleton + Security Boundaries | **Open** |
+| Slice −1 — Tooling baseline | Complete |
+| Slice 0 — Application Skeleton + Security Boundaries | **Open** — authorization portion blocked on RFC-001 |
 
 Handoff package: **v1.0.1** (official), vendored unmodified.
 
 - Gate results and artifact digests: **[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**
 - Freeze record and pinned commit: **[`docs/gate/TECHNICAL_BASELINE_FROZEN.md`](docs/gate/TECHNICAL_BASELINE_FROZEN.md)**
+- Object-level authorization design, **under review**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
 advanced AI work begins before the Core Hypothesis Stop Gate passes.
@@ -26,7 +28,11 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 |---|---|
 | `docs/handoff/` | The official Developer Handoff **v1.0.1** package, vendored **unmodified** — the authority baseline. Read `docs/handoff/README.md` first. Never edited in place: corrections arrive as a new official package. |
 | `docs/gate/` | Execution gate run reports |
-| `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint |
+| `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint, API inventory generator |
+| `db/dev/` | Development database reset (`reset_db.sh`) |
+| `db/fixtures/` | Developer fixtures — a small coherent Adrar world |
+| `docs/rfc/` | Design RFCs awaiting or carrying decisions |
+| `docs/api/` | Generated API inventory (do not edit) |
 | `.github/workflows/` | CI — rebuilds a clean database from zero on every push |
 
 Authority order when two documents disagree is fixed by
