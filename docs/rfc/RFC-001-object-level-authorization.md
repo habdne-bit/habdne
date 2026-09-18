@@ -1,8 +1,8 @@
 # RFC-001 — Object-Level Authorization
 
-**Status:** REVISED — decisions of 2026-09-18 incorporated. **Awaiting final approval.
-No authorization code is written until this revision is approved.**
-**Revision:** 2 (supersedes the PROPOSED draft)
+**Status:** REVISED — all open questions now closed. **Awaiting final approval; if no
+new contradiction appears this is FINAL and authorization implementation may begin.**
+**Revision:** 3 (supersedes revisions 1 and 2)
 **Slice:** 0 — Application Skeleton / Security Boundaries
 **Date:** 2026-09-18
 **Baseline:** Handoff v1.0.1, technical baseline frozen at commit `f833fe7d05e160b048a6de1c4120f2c79015c3bb`
@@ -25,11 +25,21 @@ rules below; §13 records how each was resolved and what remains open.
 
 A technology decision was returned with them and is recorded in §14.
 
+### Revision 3 — the last three questions closed
+
+| # | Decision | Effect here |
+|---|---|---|
+| Q4 | Audit successful **staff** reads of sensitive/non-public individual resources, and authorization-denied attempts. Audit a bulk list **once**, not per row. Public/master-data reads need no per-resource read audit. Audit metadata must not duplicate sensitive payloads. | §6.3 |
+| Q6 | Enforce authorization **structurally**, not by banning a function name. Routes must not import repositories or SQLAlchemy sessions; loading passes through application services and actor-scoped, policy-checked loaders. Architecture tests prevent route→repository bypass; integration tests prove cross-account UUID access returns 404. | §10.3, §14.3, §15 |
+| Q9 | `CUSTOMER` authority over a `PROPERTY_OFFER` requires the offer's creator account **or** the conjunction of a valid parent-property claim, party match and `CLAIMED` parent. `offer.party_id` alone and `party_property_relations` alone never grant it. | §4.6 |
+
+Nothing else changed in revision 3.
+
 ## Sources
 
-This RFC derives from the frozen artifacts and adds no new product semantics. Where
-something remains genuinely open it is marked **[OPEN]** and listed in §13. Nothing
-marked **[OPEN]** is implemented before it is ruled on.
+This RFC derives from the frozen artifacts and adds no new product semantics. As of
+revision 3 **no question remains open**: §13 records every ruling, and the three items
+deferred by Design Ledger are marked as deferred rather than left ambiguous.
 
 | Source | Used for |
 |---|---|
@@ -169,7 +179,7 @@ This is the corrected authority graph.
 | `PARTY` | identity | `parties.party_id = subject.party_id` |
 | `REQUEST` | ownership **and** claimed state | `requests.party_id = subject.party_id AND requests.claim_status = 'CLAIMED'` |
 | `PROPERTY` | creation **or** a recorded claim | `properties.created_by_account_id = subject.account_id` **OR** a `record_claim_events` row for `(property_id, subject.account_id)` |
-| `PROPERTY_OFFER` | ownership, gated by the parent property — **[OPEN] Q9** | `property_offers.party_id = subject.party_id` |
+| `PROPERTY_OFFER` | creation, **or** parent-property claim **and** party match **and** parent `CLAIMED` | see §4.6 — `offer.party_id` alone never suffices |
 | `OPPORTUNITY` | transitive via request | `opportunities.request_id → requests.party_id = subject.party_id` |
 | `INTEREST` | ownership | `interests.party_id = subject.party_id` |
 | `CONSENT_GRANT` | ownership | `consent_grants.party_id = subject.party_id` |
@@ -249,6 +259,61 @@ access to a record staff are still operating.
 - **R4.11** `SHARED_MANAGEMENT` means staff and customer authority coexist. It does
   not reduce staff authority.
 
+### 4.5a Design Ledger — per-account claim revocation is deferred
+
+**Entry:** *Defer.* Per-account revocation of a record claim is **not implemented in
+v0.1**.
+
+A `record_claim_events` row grants **continuing** authority. The schema offers no way to
+withdraw one: the table is append-only in practice, carries no revoked/valid-to column,
+and `POST /records/claim` has no inverse in the frozen contract — verified.
+
+Consequences to hold in mind while building:
+
+- **R4.11a** The only thing that currently ends claim-derived authority is the
+  **account** ceasing to be usable. Subject resolution therefore admits only accounts
+  whose `status = 'ACTIVATED'`; `INVITED`, `SUSPENDED` and `DISABLED` accounts resolve
+  to no authority at all. This is the mechanism the deferral relies on, so it is a rule,
+  not a convenience.
+- **R4.11b** Disabling an account is consequently the **only** operational lever if a
+  claim turns out to be wrong. That is coarse, and it is accepted for v0.1 rather than
+  worked around: inventing a revocation column or a compensating "unclaim" event would
+  be a domain change without approval.
+- **R4.11c** A future explicit lifecycle mechanism — claim revocation, expiry, or
+  transfer — is a domain change requiring its own decision, schema change and gate
+  re-run. Nothing in Slice 0 should be built in a way that assumes claims are forever;
+  the authority predicate stays a function of rows, so adding a validity term later is
+  a predicate change, not a rewrite.
+
+### 4.6 PROPERTY_OFFER authority (Q9 closed)
+
+Offers have no claim state of their own, so the gate is borrowed from the parent
+property **and** narrowed by a party match. Customer authority over an offer exists
+when **either**:
+
+1. `property_offers.created_by_account_id = subject.account_id` — the actor created
+   the offer; **or**
+2. all three of:
+   - a valid `record_claim_events` row exists for the **parent property** and
+     `subject.account_id`;
+   - `property_offers.party_id = subject.party_id`;
+   - the parent property is `CLAIMED`.
+
+- **R4.12** `offer.party_id` **alone never grants authority**, and
+  `party_property_relations` never does, at all. Condition 2 uses the party match only
+  as a *narrowing* term on top of a claim, never as an authority source of its own.
+- **R4.13 Claiming a property does not open other parties' offers on it.** This is the
+  point of the party match in condition 2. On one physical property an owner and a
+  broker may each hold an offer (D01); the owner's claim reaches the owner's offer and
+  stops there. Nothing in the frozen schema would have prevented the wider reading, so
+  this rule is the only thing standing between a property claim and a competitor's
+  commercial terms.
+- **R4.14** No offer-specific claim model is introduced in v0.1. If offers ever need
+  independent claiming, that is a domain change with its own approval.
+- **R4.15** `property_offers.created_by_account_id` is `ON DELETE SET NULL` — verified,
+  like every other creator column. Condition 1 must therefore guard `NULL` explicitly
+  (R3.1, R4.3).
+
 ## 5. `/me/*` semantics
 
 Four operations exist, all `CUSTOMER`-only: `GET /me/party`,
@@ -298,11 +363,35 @@ Staff hold no ownership, so the object check takes a different form.
   runs in a transaction that sets `app.account_id` and `app.audit_context`, which
   `audit_row_change()` reads — verified in the schema. A staff read of an arbitrary
   object is permitted but **recorded**.
-- **R6.3 [OPEN]** Whether staff *reads* are logged to `audit_log` as well as
-  writes. `audit_row_change()` fires on INSERT/UPDATE/DELETE only, so reads are not
-  captured today. Proposed: staff reads of customer-scoped objects emit a structured
-  access log entry (not an `audit_log` row, which is row-change shaped) carrying
-  actor, object, operation and trace id. See §13 Q4.
+- **R6.3 Read auditing (Q4 closed).** `audit_row_change()` fires on INSERT/UPDATE/DELETE
+  only — verified — so reads are invisible to it. Read auditing is therefore a separate,
+  application-emitted access record, governed by four rules:
+
+  | Event | Audited? |
+  |---|---|
+  | Successful **staff** read of a sensitive / non-public **individual** resource | **Yes** |
+  | **Authorization-denied attempt**, by any actor | **Yes** |
+  | Staff read of a **bulk list** (queues, search) | **Once, for the list access** — never one event per row |
+  | Public or master-data read (`/locations`, `/public/properties`, `/master/*`) | **No** per-resource read audit |
+
+- **R6.3a** A denied attempt is audited for **every** actor class, not staff alone: a
+  customer probing UUIDs is precisely the signal worth keeping (K01/K02).
+- **R6.3b Audit metadata must not duplicate sensitive payloads.** An access record
+  carries *references*, not content: actor account, role used, operation, resource type
+  and id, decision, reason code, trace id, timestamp. It MUST NOT carry the rendered
+  DTO, `seller_expectation_dzd`, private claims, staff notes, source-private data, OTP
+  codes or document payloads. The audit trail is not a second copy of the data it
+  protects — that would relocate the leak rather than prevent it, and `API_CONTRACTS` §8
+  already forbids it for logs.
+- **R6.3c** A list access records the query shape and result count, not the identifiers
+  returned. Per-row auditing of a queue would generate volume proportional to browsing
+  and bury the individual reads that matter.
+- **R6.3d** These records are **not** `audit_log` rows: that table's shape is
+  row-change specific (`old_row`, `new_row`, `action`). Read access is emitted as
+  structured application audit. **[OPEN — implementation detail, not blocking]** whether
+  it lands in a dedicated table or the structured log stream; both satisfy the rules
+  above, and the choice can be made when the logging stack is set up.
+
 - **R6.4** An account MUST NOT hold both `OPERATOR` and `REVIEWER`, or maker–checker
   (§2.1) collapses into one person. Decision 8 makes this binding and R2.1 enforces it
   at role-grant time, with a database test as the backstop.
@@ -435,9 +524,28 @@ deny; none can re-grant what an earlier stage denied.
   `openapi_v0.2.yaml`: every operation with `x-roles` MUST have a policy entry whose
   roles equal the contract's, and no policy may exist for an unknown operation. The
   contract and the code cannot drift silently.
-- **R10.3** Stage 5 is a single scoped query. There is no unscoped `findById`
-  reachable from a request path. **[OPEN]** whether this is enforced by an
-  architecture test (§13 Q6).
+- **R10.3 Structural enforcement (Q6 closed).** Banning a function name is not
+  enforcement; a rule that only forbids a spelling is bypassed by the next refactor.
+  Authorization is enforced by **layering**:
+
+  1. **API routes must not import repositories or SQLAlchemy sessions.** A route that
+     cannot reach a session cannot issue an unscoped query, whatever it is called.
+  2. **All resource loading passes through application services**, which obtain rows
+     from **actor-scoped, policy-checked loaders**. A loader takes the subject and
+     returns only what the §4 predicate admits; there is no variant that takes an id
+     alone.
+  3. The scoped query remains a single statement — "this object **and** it is mine" —
+     never fetch-then-compare (R5.2).
+
+- **R10.3b** Two test families hold the line, one structural and one behavioural:
+  - **Architecture tests** asserting no module under the routes package imports a
+    repository, a session factory, or `sqlalchemy` directly, and that the policy layer
+    never imports `party_property_relations` (R4.5).
+  - **Integration tests** proving cross-account access by raw UUID returns **404** on
+    every customer-reachable resource — the behavioural proof that the layering
+    actually holds end to end, since an architecture test alone cannot show that the
+    predicate is correct.
+
 - **R10.3a `GET /reason-codes` (decision 5).** It is the only authenticated operation
   in the frozen contract carrying no `x-roles`. Its policy entry is
   `{ADMIN, OPERATOR, REVIEWER}` — **not** `CUSTOMER`. It stays authenticated: it is not
@@ -489,6 +597,13 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 | S16a | Claimed owner whose `party_property_relations` row has **expired** | **A** 200 — expiry cannot revoke a claimed owner (R4.6) |
 | S16b | Second account of the **same party** reads a property claimed by the first | **D** 404 — property authority is account-scoped (R4.2) |
 | S16c | Customer reads an `ASSISTED + UNCLAIMED` request whose `party_id` is theirs | **D** 404 — party match alone is insufficient (R4.8) |
+| S16d | Owner who claimed a property reads **their own** offer on it | **A** 200 — §4.6 condition 2 |
+| S16e | Same owner reads the **broker's** offer on that same property | **D** 404 — a claim never opens another party's offer (R4.13) |
+| S16f | Broker reads the offer they created, with no claim on the parent property | **A** 200 — §4.6 condition 1 |
+| S16g | Customer whose `party_id` matches an offer, with no parent claim and not the creator | **D** 404 — `offer.party_id` alone never grants (R4.12) |
+| S16h | Customer holding only a `party_property_relations` row reads an offer | **D** 404 — relations never grant (R4.12) |
+| S16i | Authorized owner whose account is later `DISABLED` | **D** 404 — claim authority ends with the account (R4.11a) |
+| S16j | Account in `INVITED` or `SUSPENDED` status | **D** 404 (R4.11a) |
 
 ### Staff and separation of duties
 
@@ -540,6 +655,19 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 | S41 | Webhook with an invalid provider signature | **D** — rejected before domain resolution (R10.5) |
 | S42 | Webhook replayed with the same `provider_event_id` | **A** 200, no duplicate message (ADR-09) |
 
+### Audit and structural enforcement
+
+| # | Scenario | Expected |
+|---|---|---|
+| S43 | `OPERATOR` reads one customer request internally | **A** 200, one access record emitted (R6.3) |
+| S44 | Any actor is denied on an object check | **A** denial recorded, for staff and customers alike (R6.3a) |
+| S45 | `OPERATOR` opens a back-office queue returning 50 rows | **A** exactly **one** access record, not 50 (R6.3c) |
+| S46 | Anonymous `GET /public/properties` | **A** no per-resource read audit (R6.3) |
+| S47 | An access record is inspected for content | **D** no rendered DTO, seller expectation, private claim, staff note, source-private data, OTP or document payload (R6.3b) |
+| S48 | A route module imports a repository, a session factory or `sqlalchemy` | **D** architecture test fails (R10.3b) |
+| S49 | The policy layer imports `party_property_relations` | **D** architecture test fails (R4.5) |
+| S50 | Cross-account raw-UUID access, every customer-reachable resource | **D** 404 in integration, end to end (R10.3b) |
+
 ---
 
 ## 12. Error semantics
@@ -575,19 +703,25 @@ document payloads.
 | Q7 | Delegated authority | **Not implemented in v0.1.** Customer access is ownership-only. No delegation model is invented (decision 4). The gap between `API_CONTRACTS` §2.2 and the schema stands recorded and unresolved-by-design. |
 | Q8 | `GET /reason-codes` with no `x-roles` | `ADMIN`, `OPERATOR`, `REVIEWER`; **not** `CUSTOMER`. Remains authenticated (R10.3a). |
 
-### Open
+### Resolved in revision 3
 
-| # | Question | Proposal | Blocks |
-|---|---|---|---|
-| **Q4** | Are staff **reads** of customer-scoped objects recorded? `audit_row_change()` fires on INSERT/UPDATE/DELETE only, so reads are invisible today. | Structured access-log entry carrying actor, object, operation and trace id — not an `audit_log` row, whose shape is row-change specific. | R6.3 |
-| **Q6** | Is "no unscoped `findById` reachable from a request path" enforced by an architecture test or left to convention? | Architecture test. It is the rule most likely to erode silently under refactoring. | R10.3 |
-| **Q9** | **New, raised by decision 1.** `property_offers` has no `claim_status` of its own, unlike `requests` and `properties`. An offer recorded during assisted entry already carries the subject's `party_id`, so a bare party match would grant a customer access to an offer about them that staff are still operating — the hole R4.8 closes for requests. | Offer authority = `property_offers.party_id = subject.party_id` **AND** the parent property is not `ASSISTED + UNCLAIMED`. Conservative, and it mirrors the claim gate the other two resources already have. | §4 offer row, S12 |
+| # | Question | Ruling |
+|---|---|---|
+| Q4 | Are staff reads audited? | Yes for successful staff reads of sensitive/non-public **individual** resources, and for authorization-denied attempts by any actor. Bulk lists are audited **once** as a list access. Public/master-data reads need no per-resource read audit. Metadata carries references, never sensitive payloads (R6.3–R6.3d). |
+| Q6 | How is unscoped loading prevented? | **Structurally.** Routes import no repositories or SQLAlchemy sessions; loading goes through application services and actor-scoped, policy-checked loaders. Architecture tests prevent route→repository bypass; integration tests prove cross-account UUID access returns 404 (R10.3, R10.3b). |
+| Q9 | Customer authority over a `PROPERTY_OFFER` | Offer creator account, **or** parent-property claim **and** party match **and** parent `CLAIMED`. `offer.party_id` alone and `party_property_relations` alone never grant it. A property claim never opens another party's offer. No offer-specific claim model in v0.1 (§4.6). |
 
-Q9 is the one genuinely new question this revision raises. It exists because decision 1
-removed the relation shortcut and exposed that offers, alone among the three
-customer-facing resources, have no claim state to gate on. The proposal borrows the
-parent property's gate rather than inventing one; confirming or replacing it is a
-product call, not an implementation detail.
+**No open questions remain.** One implementation detail is explicitly non-blocking:
+whether read-access records land in a dedicated table or the structured log stream
+(R6.3d); both satisfy the approved rules.
+
+### Deferred by Design Ledger
+
+| Item | Status |
+|---|---|
+| Per-account claim revocation | **Defer** to a future version; see §4.5a. Authority continues until the account is no longer `ACTIVATED`. |
+| Customer delegated authority | **Defer**; ownership only in v0.1 (decision 4). |
+| Offer-specific claim model | **Defer**; not introduced in v0.1 (R4.14). |
 
 ## 14. Technology decision
 
@@ -673,14 +807,22 @@ checklist: object-level authorization tests included from Slice 0).
      (R3.1, R4.3).
 8. **Contract conformance of the running app** — R14.2, comparing FastAPI's generated
    document to the frozen `openapi_v0.2.yaml`.
-9. **Regression** — K01–K05 and D02 from `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` run in CI
+9. **Read audit** — S43–S47: emission on staff individual reads and on denials, exactly
+   one record per list access, silence on public/master data, and a content assertion
+   that access records carry references only (R6.3b).
+10. **Structural enforcement** — S48–S50: the two architecture tests, plus the
+    cross-account 404 integration sweep over every customer-reachable resource, which is
+    the behavioural proof the layering actually holds (R10.3b).
+11. **Regression** — K01–K05 and D02 from `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` run in CI
    alongside the PostgreSQL Execution Gate.
 
 ---
 
 ## 16. Explicitly out of scope
 
-Customer delegated authority (decision 4 — ownership only in v0.1);
+Customer delegated authority (decision 4 — ownership only in v0.1); per-account claim
+revocation and any claim expiry or transfer (§4.5a, Design Ledger: Defer); an
+offer-specific claim model (R4.14);
 row-level security in PostgreSQL as the enforcement mechanism (the schema sets
 `app.account_id` for *audit*, not RLS, and no policies exist); field-level encryption; rate limiting; multi-tenancy; any change to the frozen
 `schema_v0.2.1.sql` or `openapi_v0.2.yaml`.

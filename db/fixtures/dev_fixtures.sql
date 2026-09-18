@@ -429,3 +429,376 @@ UNION ALL SELECT 'accounts holding OPERATOR and REVIEWER',
      ON r.account_id=o.account_id WHERE o.role='OPERATOR' AND r.role='REVIEWER')
 UNION ALL SELECT 'accounts sharing one party',
   (SELECT count(*)::text FROM user_accounts WHERE party_id='f1000000-0000-4000-8000-000000000001');
+
+-- =============================================================================
+-- MARKET / DOMAIN EDGE FIXTURES MF1-MF8
+--
+-- The eight market situations the product must represent correctly, each
+-- traceable to a red-team acceptance case. Data only: the later-slice BEHAVIOUR
+-- (public-browse exclusion, matching gates, opportunity creation, identity
+-- review commands) is NOT implemented here. These fixtures exist so that when
+-- those slices are built there is already a world that exercises them.
+--
+--   MF1 owner + broker offers on one PROPERTY        -> D01
+--   MF2 all offers withdrawn                         -> D04
+--   MF3 POTENTIAL property without public offer      -> D05
+--   MF4 LAND_BOOK-required request, UNKNOWN document -> C03
+--   MF5 active -> withdrawn consent                  -> B03
+--   MF6 PARTY without USER_ACCOUNT                   -> A03
+--   MF7 shared phone without party merge             -> A01
+--   MF8 adjacent similar units confirmed distinct    -> E03
+-- =============================================================================
+BEGIN;
+
+-- ---------------------------------------------------------------------------
+-- MF1 - one physical property, several independent commercial offers (D01)
+-- Owner SALE 24M, broker SALE 27M, owner RENT 70k/month. Already present on
+-- property f4...001 from the base fixtures; asserted here so the guarantee is
+-- explicit rather than incidental, and so a later edit that collapses offers
+-- into the property fails loudly.
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE sale_offers int; rent_offers int; distinct_parties int;
+BEGIN
+  SELECT count(*) FILTER (WHERE transaction_type='SALE'),
+         count(*) FILTER (WHERE transaction_type='RENT'),
+         count(DISTINCT party_id)
+    INTO sale_offers, rent_offers, distinct_parties
+  FROM property_offers WHERE property_id='f4000000-0000-4000-8000-000000000001';
+  IF sale_offers < 2 OR rent_offers < 1 OR distinct_parties < 2 THEN
+    RAISE EXCEPTION 'MF1: expected >=2 SALE, >=1 RENT from >=2 parties on one property; got % / % / %',
+      sale_offers, rent_offers, distinct_parties;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- MF2 - PUBLIC property whose offers are ALL withdrawn (D04)
+-- supply_mode=PUBLIC is not sufficient for public browse. This property must be
+-- absent from /public/properties once that endpoint exists.
+-- ---------------------------------------------------------------------------
+INSERT INTO properties (property_id, property_type, canonical_location_id, local_location_detail,
+                        land_area_m2, built_area_m2, current_availability,
+                        availability_last_confirmed_at, supply_mode, management_mode,
+                        claim_status, created_by_account_id)
+SELECT 'f4000000-0000-4000-8000-000000000006','APARTMENT',
+       (SELECT location_id FROM locations WHERE code='ADR-NEW-SMB'),
+       'شقة سُحبت كل عروضها', NULL, 88.00,'AVAILABLE', now(),'PUBLIC',
+       'ASSISTED','UNCLAIMED','f3000000-0000-4000-8000-000000000002'
+ON CONFLICT (property_id) DO NOTHING;
+
+INSERT INTO property_offers (offer_id, property_id, party_id, transaction_type, status,
+                             asking_price_dzd, price_negotiable, price_visibility,
+                             last_confirmed_at, commercial_terms_last_confirmed_at,
+                             permission_scope, created_by_account_id) VALUES
+  ('f6000000-0000-4000-8000-000000000006','f4000000-0000-4000-8000-000000000006',
+   'f1000000-0000-4000-8000-000000000002','SALE','WITHDRAWN', 11000000,'UNKNOWN','PUBLIC',
+   now() - interval '45 days', now() - interval '45 days','PROPERTY_DETAILS_ALLOWED',
+   'f3000000-0000-4000-8000-000000000002'),
+  ('f6000000-0000-4000-8000-000000000007','f4000000-0000-4000-8000-000000000006',
+   'f1000000-0000-4000-8000-000000000003','RENT','CLOSED', 55000,'NO','PUBLIC',
+   now() - interval '60 days', now() - interval '60 days','SUMMARY_ONLY',
+   'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (offer_id) DO NOTHING;
+
+DO $$
+DECLARE live int;
+BEGIN
+  SELECT count(*) INTO live FROM property_offers
+   WHERE property_id='f4000000-0000-4000-8000-000000000006'
+     AND status NOT IN ('WITHDRAWN','CLOSED');
+  IF live <> 0 THEN
+    RAISE EXCEPTION 'MF2: property must have no live offer; found %', live;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- MF3 - POTENTIAL property with no public offer at all (D05)
+-- May be evaluated only from a structured willingness context, never from an
+-- offer id. Property f4...002 from the base fixtures is POTENTIAL; this adds
+-- the structured willingness the rule requires, recorded as provenance rather
+-- than invented as a column.
+-- ---------------------------------------------------------------------------
+INSERT INTO sources (source_id, kind, title, raw_text, captured_at, metadata,
+                     created_by_account_id) VALUES
+  ('fb000000-0000-4000-8000-000000000002','PHONE_CALL','استعداد مبدئي للبيع',
+   'المالك غير معروض رسميا لكنه مستعد للبيع حول 6 ملايين إذا جاء مشتر جاد',
+   now() - interval '25 days','{"willingness": true}'::jsonb,
+   'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (source_id) DO NOTHING;
+
+INSERT INTO observations (observation_id, source_id, kind, party_id, observed_at,
+                          raw_text, payload, recorded_by_account_id) VALUES
+  ('fc000000-0000-4000-8000-000000000002','fb000000-0000-4000-8000-000000000002',
+   'CALL_NOTE','f1000000-0000-4000-8000-000000000002', now() - interval '25 days',
+   'استعداد للبيع دون عرض معلن',
+   '{"indicative_price_dzd": 6000000, "transaction_type": "SALE"}'::jsonb,
+   'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (observation_id) DO NOTHING;
+
+INSERT INTO claims (claim_id, property_id, attribute_code, claimed_value,
+                    asserted_by_party_id, source_id, observation_id, observed_at,
+                    effective_verification_level, status, recorded_by_account_id) VALUES
+  ('fd000000-0000-4000-8000-000000000002','f4000000-0000-4000-8000-000000000002',
+   'POTENTIAL_WILLINGNESS',
+   '{"willing_to_sell": true, "indicative_price_dzd": 6000000, "transaction_type": "SALE"}'::jsonb,
+   'f1000000-0000-4000-8000-000000000002','fb000000-0000-4000-8000-000000000002',
+   'fc000000-0000-4000-8000-000000000002', now() - interval '25 days',
+   'DECLARED','ACTIVE','f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (claim_id) DO NOTHING;
+
+DO $$
+DECLARE offers int;
+BEGIN
+  SELECT count(*) INTO offers FROM property_offers
+   WHERE property_id='f4000000-0000-4000-8000-000000000002';
+  IF offers <> 0 THEN
+    RAISE EXCEPTION 'MF3: POTENTIAL property must carry no offer; found %', offers;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- MF4 - REQUIRED document criterion vs UNKNOWN property value (C03)
+-- Request demands DOCUMENT_TYPE = LAND_BOOK as REQUIRED and blocking when
+-- unknown. The candidate property's document type is genuinely UNKNOWN, not
+-- absent-by-accident. Correct later behaviour is NEED_MORE_INFORMATION:
+-- neither PASS nor hard FAIL. UNKNOWN != FAIL (Master section 4, invariant 8).
+-- ---------------------------------------------------------------------------
+INSERT INTO requests (request_id, party_id, status, transaction_intent, intent, payment,
+                      desired_property_type, primary_location_id, budget_target_dzd,
+                      budget_max_dzd, budget_flexibility, last_confirmed_at,
+                      management_mode, claim_status, created_by_account_id)
+SELECT 'f7000000-0000-4000-8000-000000000004','f1000000-0000-4000-8000-000000000004',
+       'ACTIVE','BUY','READY_TO_ACT','CASH','LAND',
+       (SELECT location_id FROM locations WHERE code='ADR-KSOUR'),
+       5000000, 7000000,'STRICT', now(),'SELF_MANAGED','CLAIMED',
+       'f3000000-0000-4000-8000-000000000004'
+ON CONFLICT (request_id) DO NOTHING;
+
+INSERT INTO request_criteria (request_criterion_id, request_id, criterion_code, importance,
+                              operator, value, blocking_if_unknown, sort_order, source_note) VALUES
+  ('fe000000-0000-4000-8000-000000000001','f7000000-0000-4000-8000-000000000004',
+   'DOCUMENT_TYPE','REQUIRED','EQ','"LAND_BOOK"'::jsonb, true, 10,
+   'المشتري يشترط دفترا عقاريا'),
+  ('fe000000-0000-4000-8000-000000000002','f7000000-0000-4000-8000-000000000004',
+   'LAND_AREA_MIN','PREFERRED','GTE','300'::jsonb, false, 20, NULL)
+ON CONFLICT (request_criterion_id) DO NOTHING;
+
+-- The property whose document type is explicitly UNKNOWN, not missing.
+INSERT INTO properties (property_id, property_type, canonical_location_id, local_location_detail,
+                        land_area_m2, current_availability, availability_last_confirmed_at,
+                        supply_mode, management_mode, claim_status, created_by_account_id)
+SELECT 'f4000000-0000-4000-8000-000000000007','LAND',
+       (SELECT location_id FROM locations WHERE code='ADR-KSAR-BARBAA'),
+       'أرض وثيقتها غير معروفة', 350.00,'AVAILABLE', now(),'PUBLIC',
+       'ASSISTED','UNCLAIMED','f3000000-0000-4000-8000-000000000002'
+ON CONFLICT (property_id) DO NOTHING;
+
+INSERT INTO property_attributes (property_attribute_id, property_id, attribute_definition_id, value)
+SELECT 'ff000000-0000-4000-8000-000000000001','f4000000-0000-4000-8000-000000000007',
+       attribute_definition_id, '"UNKNOWN"'::jsonb
+FROM attribute_definitions WHERE code='DOCUMENT_TYPE'
+ON CONFLICT (property_attribute_id) DO NOTHING;
+
+INSERT INTO property_offers (offer_id, property_id, party_id, transaction_type, status,
+                             asking_price_dzd, price_negotiable, price_visibility,
+                             last_confirmed_at, commercial_terms_last_confirmed_at,
+                             permission_scope, created_by_account_id) VALUES
+  ('f6000000-0000-4000-8000-000000000008','f4000000-0000-4000-8000-000000000007',
+   'f1000000-0000-4000-8000-000000000002','SALE','ACTIVE', 6500000,'YES','PUBLIC',
+   now(), now(),'PROPERTY_DETAILS_ALLOWED','f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (offer_id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- MF5 - consent active, then withdrawn (B03)
+-- Grant f8...004 is already REVOKED in the base fixtures but was never bound.
+-- Here a grant is bound to a resource while active and then revoked, which is
+-- the case that matters: a binding whose grant died under it. Any later share
+-- depending on it must fail or revalidate; history must survive untouched.
+-- ---------------------------------------------------------------------------
+INSERT INTO consent_grants (consent_id, party_id, scope, status, channel, consent_version,
+                            granted_at, revoked_at, created_by_account_id) VALUES
+  ('f8000000-0000-4000-8000-000000000005','f1000000-0000-4000-8000-000000000002',
+   'CONTACT_BEFORE_SHARING','GRANTED','PHONE_CONFIRMED','consent-v1',
+   now() - interval '50 days', NULL,'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (consent_id) DO NOTHING;
+
+-- Bound while the grant is still GRANTED: enforce_consent_binding() requires it.
+--
+-- NOTE for anyone extending these fixtures: ON CONFLICT DO NOTHING is NOT enough
+-- here. A BEFORE INSERT trigger fires before conflict resolution, so on a second
+-- load enforce_consent_binding() would see the now-revoked grant and abort the
+-- whole file. The row must not be offered to the trigger at all, hence the
+-- WHERE NOT EXISTS guard.
+INSERT INTO resource_consent_bindings (consent_binding_id, consent_id, purpose,
+                                       request_id, property_id, offer_id, thread_id,
+                                       bound_at, bound_by_account_id, notes)
+SELECT 'f9000000-0000-4000-8000-000000000004','f8000000-0000-4000-8000-000000000005',
+       'CONTACT_BEFORE_SHARING', NULL, NULL,'f6000000-0000-4000-8000-000000000001', NULL,
+       now() - interval '49 days','f3000000-0000-4000-8000-000000000002',
+       'MF5: bound while active, grant revoked afterwards'
+WHERE NOT EXISTS (
+  SELECT 1 FROM resource_consent_bindings
+   WHERE consent_binding_id='f9000000-0000-4000-8000-000000000004'
+);
+
+-- Now revoke the grant. The binding row is deliberately left in place: ADR-04
+-- says revocation blocks future use and never erases history.
+UPDATE consent_grants
+   SET status='REVOKED', revoked_at = now() - interval '2 days'
+ WHERE consent_id='f8000000-0000-4000-8000-000000000005'
+   AND status <> 'REVOKED';
+
+DO $$
+DECLARE binding_alive int; grant_revoked int;
+BEGIN
+  SELECT count(*) INTO binding_alive FROM resource_consent_bindings
+   WHERE consent_binding_id='f9000000-0000-4000-8000-000000000004' AND revoked_at IS NULL;
+  SELECT count(*) INTO grant_revoked FROM consent_grants
+   WHERE consent_id='f8000000-0000-4000-8000-000000000005' AND status='REVOKED';
+  IF binding_alive <> 1 OR grant_revoked <> 1 THEN
+    RAISE EXCEPTION 'MF5: expected a surviving binding under a revoked grant; got % / %',
+      binding_alive, grant_revoked;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- MF6 - PARTY with no USER_ACCOUNT (A03)
+-- An operator records a party and an assisted property for it after consent,
+-- while no account exists. PARTY != USER_ACCOUNT (ADR-07). No customer may
+-- reach this record: there is no account to be authorized.
+-- ---------------------------------------------------------------------------
+INSERT INTO parties (party_id, kind, status, display_name, notes) VALUES
+  ('f1000000-0000-4000-8000-000000000005','PERSON','CONTACTED','سي محمد (بدون حساب)',
+   'سجل مساعد: لا يملك حسابا ولا يريد إنشاءه حاليا')
+ON CONFLICT (party_id) DO NOTHING;
+
+INSERT INTO contact_points (contact_point_id, kind, normalized_value, display_value,
+                            control_status) VALUES
+  ('f2000000-0000-4000-8000-000000000006','PHONE','+213661000006','0661 00 00 06','UNVERIFIED')
+ON CONFLICT (contact_point_id) DO NOTHING;
+
+INSERT INTO party_contact_points (party_id, contact_point_id, is_primary) VALUES
+  ('f1000000-0000-4000-8000-000000000005','f2000000-0000-4000-8000-000000000006', true)
+ON CONFLICT (party_id, contact_point_id) DO NOTHING;
+
+INSERT INTO consent_grants (consent_id, party_id, scope, status, channel, consent_version,
+                            granted_at, created_by_account_id) VALUES
+  ('f8000000-0000-4000-8000-000000000006','f1000000-0000-4000-8000-000000000005',
+   'ASSISTED_ENTRY','GRANTED','IN_PERSON','consent-v1', now() - interval '12 days',
+   'f3000000-0000-4000-8000-000000000002')
+ON CONFLICT (consent_id) DO NOTHING;
+
+INSERT INTO properties (property_id, property_type, canonical_location_id, local_location_detail,
+                        land_area_m2, current_availability, supply_mode, management_mode,
+                        claim_status, created_by_account_id)
+SELECT 'f4000000-0000-4000-8000-000000000008','AGRICULTURAL_PROPERTY',
+       (SELECT location_id FROM locations WHERE code='ADR-KSAR-MERAGUEN'),
+       'أرض فلاحية مسجلة مساعدةً', 5000.00,'AVAILABLE','PRIVATE',
+       'ASSISTED','UNCLAIMED','f3000000-0000-4000-8000-000000000002'
+ON CONFLICT (property_id) DO NOTHING;
+
+DO $$
+DECLARE accounts int;
+BEGIN
+  SELECT count(*) INTO accounts FROM user_accounts
+   WHERE party_id='f1000000-0000-4000-8000-000000000005';
+  IF accounts <> 0 THEN
+    RAISE EXCEPTION 'MF6: this party must have no account; found %', accounts;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- MF7 - one phone, two parties, no merge (A01)
+-- The base fixtures already share contact point f2...002 between Brahim and the
+-- agency. Asserted here so that any future "helpful" deduplication that merges
+-- parties on a matching phone fails loudly at fixture load.
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE sharers int; still_separate int;
+BEGIN
+  SELECT count(DISTINCT party_id) INTO sharers
+  FROM party_contact_points WHERE contact_point_id='f2000000-0000-4000-8000-000000000002';
+  SELECT count(*) INTO still_separate FROM parties
+   WHERE party_id IN ('f1000000-0000-4000-8000-000000000002',
+                      'f1000000-0000-4000-8000-000000000003');
+  IF sharers < 2 OR still_separate <> 2 THEN
+    RAISE EXCEPTION 'MF7: one phone must reach 2 parties that remain separate; got % / %',
+      sharers, still_separate;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- MF8 - adjacent similar units, confirmed DISTINCT (E03)
+-- Two neighbouring villas in one development sharing specs. A reviewer has
+-- ruled CONFIRMED_DISTINCT, so NO alias mapping exists and none may be created.
+-- The trigger enforce_identity_same_requires_alias() only guards CONFIRMED_SAME,
+-- so nothing in the database stops a later process from aliasing these two: the
+-- guarantee is behavioural and belongs in the Slice 9 identity work.
+-- ---------------------------------------------------------------------------
+INSERT INTO properties (property_id, property_type, canonical_location_id, local_location_detail,
+                        land_area_m2, built_area_m2, current_availability,
+                        availability_last_confirmed_at, supply_mode, management_mode,
+                        claim_status, created_by_account_id)
+SELECT v.pid,'HOUSE_VILLA',
+       (SELECT location_id FROM locations WHERE code='ADR-NEW-TIL'),
+       v.detail, 200.00, 160.00,'AVAILABLE', now(),'PUBLIC',
+       'ASSISTED','UNCLAIMED','f3000000-0000-4000-8000-000000000002'
+FROM (VALUES
+  ('f4000000-0000-4000-8000-000000000009'::uuid,'فيلا رقم 12، نفس النموذج'),
+  ('f4000000-0000-4000-8000-00000000000a'::uuid,'فيلا رقم 14، نفس النموذج')
+) AS v(pid, detail)
+ON CONFLICT (property_id) DO NOTHING;
+
+INSERT INTO property_identity_candidates (identity_candidate_id, property_a_id, property_b_id,
+                                          generated_at, signals, explanation, review_status,
+                                          review_reason_text, reviewer_account_id, reviewed_at,
+                                          algorithm_version) VALUES
+  ('77777777-0000-4000-8000-00000000000a','f4000000-0000-4000-8000-000000000009',
+   'f4000000-0000-4000-8000-00000000000a', now() - interval '6 days',
+   '{"same_development": true, "identical_specs": true, "shared_images": true}'::jsonb,
+   '{"note": "same model and development, adjacent plots"}'::jsonb,
+   'CONFIRMED_DISTINCT','وحدتان متجاورتان متطابقتان في النموذج لكنهما عقاران ماديان مختلفان',
+   'f3000000-0000-4000-8000-000000000003', now() - interval '5 days','rules-0.2.0')
+ON CONFLICT (identity_candidate_id) DO NOTHING;
+
+DO $$
+DECLARE aliases int; status identity_review_status;
+BEGIN
+  SELECT count(*) INTO aliases FROM property_identity_aliases
+   WHERE source_identity_candidate_id='77777777-0000-4000-8000-00000000000a';
+  SELECT review_status INTO status FROM property_identity_candidates
+   WHERE identity_candidate_id='77777777-0000-4000-8000-00000000000a';
+  IF aliases <> 0 OR status <> 'CONFIRMED_DISTINCT' THEN
+    RAISE EXCEPTION 'MF8: CONFIRMED_DISTINCT must leave no alias mapping; got % alias(es), status %',
+      aliases, status;
+  END IF;
+END $$;
+
+COMMIT;
+
+\echo ''
+\echo 'Market edge fixtures MF1-MF8 loaded.'
+SELECT 'MF1 offers on one property'        AS fixture,
+       (SELECT count(*)::text FROM property_offers WHERE property_id='f4000000-0000-4000-8000-000000000001') AS value
+UNION ALL SELECT 'MF2 live offers (must be 0)',
+       (SELECT count(*)::text FROM property_offers
+         WHERE property_id='f4000000-0000-4000-8000-000000000006' AND status NOT IN ('WITHDRAWN','CLOSED'))
+UNION ALL SELECT 'MF3 POTENTIAL property offers (must be 0)',
+       (SELECT count(*)::text FROM property_offers WHERE property_id='f4000000-0000-4000-8000-000000000002')
+UNION ALL SELECT 'MF4 blocking REQUIRED criteria',
+       (SELECT count(*)::text FROM request_criteria
+         WHERE request_id='f7000000-0000-4000-8000-000000000004' AND importance='REQUIRED' AND blocking_if_unknown)
+UNION ALL SELECT 'MF5 live bindings under revoked grants',
+       (SELECT count(*)::text FROM resource_consent_bindings b JOIN consent_grants g USING (consent_id)
+         WHERE g.status='REVOKED' AND b.revoked_at IS NULL)
+UNION ALL SELECT 'MF6 parties with no account',
+       (SELECT count(*)::text FROM parties p
+         WHERE NOT EXISTS (SELECT 1 FROM user_accounts a WHERE a.party_id=p.party_id))
+UNION ALL SELECT 'MF7 parties on the shared phone',
+       (SELECT count(DISTINCT party_id)::text FROM party_contact_points
+         WHERE contact_point_id='f2000000-0000-4000-8000-000000000002')
+UNION ALL SELECT 'MF8 CONFIRMED_DISTINCT pairs with no alias',
+       (SELECT count(*)::text FROM property_identity_candidates c
+         WHERE c.review_status='CONFIRMED_DISTINCT'
+           AND NOT EXISTS (SELECT 1 FROM property_identity_aliases a
+                            WHERE a.source_identity_candidate_id=c.identity_candidate_id));
