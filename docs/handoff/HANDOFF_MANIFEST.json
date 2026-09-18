@@ -2,21 +2,21 @@
   "package": "TURAB Developer Handoff",
   "version": "1.0",
   "date": "2026-09-18",
-  "status": "CONDITIONAL_GO_POSTGRES_GATE_PENDING",
-  "technical_baseline": "v0.2",
+  "status": "POSTGRES_GATE_PASSED_SLICE_0_READY",
+  "technical_baseline": "v0.2.1",
   "product_baseline": "Foundation v1.0 FINAL",
   "files": [
     {
       "path": "00_START_HERE/DEVELOPER_KICKOFF_CHECKLIST.md",
-      "sha256": "220d8503186cd1012075472b2f7f4c12245133ba52d95404c1e5f840d62a50b1",
-      "bytes": 2277,
+      "sha256": "42fdf09c8ec0027f863f00632cee09f149d09e8b7b12fed2d280420d711552ae",
+      "bytes": 2279,
       "authority": "GATE",
       "purpose": "Developer preflight and acknowledgement checklist"
     },
     {
       "path": "00_START_HERE/FILE_AUTHORITY_AND_VERSION_POLICY.md",
-      "sha256": "c5445956a64a54734a737d9b9fd53ca4b0b3312585160b10a90b585306ca0fbd",
-      "bytes": 1382,
+      "sha256": "424202a78f5fa4c3c2a6a5f6b9e15ec3a43ffc21819a1480b69c1170dc7216f9",
+      "bytes": 1384,
       "authority": "AUTHORITY",
       "purpose": "Conflict/version policy"
     },
@@ -29,8 +29,8 @@
     },
     {
       "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.md",
-      "sha256": "3c1c004d2ca61554833cfc775403c27de53443c1599a264d6b6a99ecc30ebfc9",
-      "bytes": 25659,
+      "sha256": "a4cdce2d6b6d1f5fc6e3aec8ce1af86b7410803c3d1af779cbfce96b3a1d034c",
+      "bytes": 25665,
       "authority": "ENTRY",
       "purpose": "Master handoff instructions and non-negotiable implementation guidance"
     },
@@ -78,22 +78,22 @@
     },
     {
       "path": "03_ARCHITECTURE/TECHNICAL_PACK_README_v0.2.md",
-      "sha256": "d438b4561dc8ec92ee1836a08c330a4905c1438763b327c9551d68c52ad06c47",
-      "bytes": 3776,
+      "sha256": "9de5dee0859ad25b0f84eb806238cadbe9b46ac30dd72bd3c5bbe9d7b0200ccc",
+      "bytes": 3780,
       "authority": "TECH_REFERENCE",
       "purpose": "Technical pack status and reading map adapted to handoff layout"
     },
     {
       "path": "04_DATABASE/POSTGRES_EXECUTION_GATE.md",
-      "sha256": "ebd912d258d94d947bc8e6edde23de3dba22a0a42927df16012f907bb5e6b7f7",
-      "bytes": 989,
+      "sha256": "1fb64433b34d103e53e51d10e0edeb97c1289859e6fa7293ea72a8e1671ad38a",
+      "bytes": 991,
       "authority": "RELEASE_GATE",
       "purpose": "Mandatory runtime database proof"
     },
     {
-      "path": "04_DATABASE/schema_v0.2.sql",
-      "sha256": "a3f44d2c9c8728491cd37faf45f2a7d0572eb1508eee480f125322fa663fbb38",
-      "bytes": 67591,
+      "path": "04_DATABASE/schema_v0.2.1.sql",
+      "sha256": "234d0b784eb20a4b598796bf2e9a01b56f3e24cbfb890d6b2bc5958f55a30d2f",
+      "bytes": 67797,
       "authority": "EXECUTABLE_AUTHORITY",
       "purpose": "PostgreSQL 16+ schema baseline"
     },
@@ -106,8 +106,8 @@
     },
     {
       "path": "05_API/API_CONTRACTS_v0.2.md",
-      "sha256": "5258df1355638a00eaac9939f9e187a64d93ead1d69442804409087be1c47dff",
-      "bytes": 17336,
+      "sha256": "fbb9f2a29281c10da59d4d8c7db59a8dfe22de22dfd5df54e79fe702018d3436",
+      "bytes": 17338,
       "authority": "API_AUTHORITY",
       "purpose": "Behavioral API/domain contract"
     },
@@ -127,8 +127,8 @@
     },
     {
       "path": "06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md",
-      "sha256": "3c72e4e320fcc7fc180c0b2811306252d31f23313b05db5ff289a77c56492878",
-      "bytes": 12648,
+      "sha256": "6ba5bb4c6028c39b83674bdd28089c51b5f0b4086bca8cb69da0560152e94944",
+      "bytes": 12650,
       "authority": "BUILD_AUTHORITY",
       "purpose": "Required slice sequence and stop gates"
     },
@@ -141,29 +141,29 @@
     },
     {
       "path": "07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.json",
-      "sha256": "72e463c11b75de2de430a20d87c4a72dc87a796f7cd78f1bb0a05f54a593588e",
-      "bytes": 671,
+      "sha256": "c4c36f91b3bc95e4b2b879c1d6dcba31ea08df1f61c8683128a8d48686dd9309",
+      "bytes": 673,
       "authority": "QA_RESULT",
       "purpose": "Latest PASS static audit result"
     },
     {
       "path": "07_QA_ACCEPTANCE/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.txt",
-      "sha256": "e951911f6a464ed913c89056b6d4b898a459e13f2c57d6379871a9400de16b0c",
-      "bytes": 1573,
+      "sha256": "c9dcd582bbb5c7757bfc6f25b15f417fa46bb82bce6795ec1a1f1ab1291ade6b",
+      "bytes": 1575,
       "authority": "QA_REFERENCE",
       "purpose": "Original v0.2 technical-pack checksums"
     },
     {
       "path": "07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.py",
-      "sha256": "f50314c2ae7f7b0ea0fcb5c22306821518d60cf91e29dfe6c01477715fccfdcc",
-      "bytes": 8816,
+      "sha256": "74d6eaa73a9a337850a34cdc1a42912076c47b46814e8921670100410ff9f43c",
+      "bytes": 8820,
       "authority": "QA_TOOL",
       "purpose": "Repeatable static contract audit adapted to handoff layout"
     },
     {
       "path": "99_REFERENCE_HISTORY/CHANGELOG_v0.2.md",
-      "sha256": "86264e628089266c9868cf730be4fe5d709ddb21e914918b0714b41ea364033b",
-      "bytes": 3843,
+      "sha256": "f66ad09fcd343d099be8b8b66da6cf9eaf36559a1a1f1a55887959f41459fc16",
+      "bytes": 6741,
       "authority": "HISTORY_ONLY",
       "purpose": "Technical changes v0.1 → v0.2"
     },
@@ -183,8 +183,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "7289dfd27ae21922dd23040725c91a4bf8bd785abace64b6d6c9e7d4b2407f33",
-      "bytes": 940,
+      "sha256": "c539f31b1bde840f9e2510fa602bee048de3f08f26a2ca89c7c87cbe771f165e",
+      "bytes": 942,
       "authority": "ENTRY",
       "purpose": "Root quick-start"
     },

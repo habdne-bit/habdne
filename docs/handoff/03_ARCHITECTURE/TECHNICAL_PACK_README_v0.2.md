@@ -15,7 +15,7 @@ v0.2 closes the P0/P1 architecture findings from `REFERENCE_Architecture_Review_
 
 | File | Purpose |
 |---|---|
-| `schema_v0.2.sql` | Clean PostgreSQL 16+ baseline schema with v0.2 invariants |
+| `schema_v0.2.1.sql` | Clean PostgreSQL 16+ baseline schema with v0.2 invariants |
 | `seed_master_data_v0.2.sql` | Adrar location master data, controlled document/right options, reason codes, matching policy |
 | `openapi_v0.2.yaml` | OpenAPI 3.1 contract with DTO separation, operationIds, idempotency and queues |
 | `API_CONTRACTS_v0.2.md` | Behavioral API/domain contract |
@@ -35,7 +35,7 @@ v0.2 closes the P0/P1 architecture findings from `REFERENCE_Architecture_Review_
 1. `REFERENCE_Developer_Spec_v0.1.md`
 2. `ARCHITECTURE_DECISIONS_v0.2.md`
 3. `API_CONTRACTS_v0.2.md`
-4. `schema_v0.2.sql`
+4. `schema_v0.2.1.sql`
 5. `openapi_v0.2.yaml`
 6. `IMPLEMENTATION_SLICES_v0.2.md`
 7. `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md`

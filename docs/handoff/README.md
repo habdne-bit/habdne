@@ -11,7 +11,7 @@ This is the clean handoff package for implementation.
 3. `02_DEVELOPER_SPEC/TURAB_Developer_Reference_Spec_v0.1.md`
 4. `03_ARCHITECTURE/ARCHITECTURE_DECISIONS_v0.2.md`
 5. `05_API/API_CONTRACTS_v0.2.md`
-6. `04_DATABASE/schema_v0.2.sql`
+6. `04_DATABASE/schema_v0.2.1.sql`
 7. `05_API/openapi_v0.2.yaml`
 8. `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md`
 9. `07_QA_ACCEPTANCE/RED_TEAM_ACCEPTANCE_TESTS_v0.2.md`

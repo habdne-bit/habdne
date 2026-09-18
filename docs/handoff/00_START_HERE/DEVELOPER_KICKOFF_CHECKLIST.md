@@ -22,7 +22,7 @@ The developer should complete and acknowledge this checklist before starting fea
 ## Technical preflight
 
 - [ ] `technical_pack_static_audit_v0.2.py` returns PASS.
-- [ ] PostgreSQL 16+ clean database accepts `schema_v0.2.sql`.
+- [ ] PostgreSQL 16+ clean database accepts `schema_v0.2.1.sql`.
 - [ ] `seed_master_data_v0.2.sql` executes twice without failure.
 - [ ] PostgreSQL Execution Gate tests pass.
 - [ ] `openapi_v0.2.yaml` parses/lints in CI.

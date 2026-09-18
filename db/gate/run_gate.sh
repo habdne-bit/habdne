@@ -33,8 +33,8 @@ dropdb --if-exists "$PGDATABASE"
 createdb "$PGDATABASE"
 psql -tAc 'SHOW server_version'
 
-step "3/6  Apply schema_v0.2.sql"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.sql"
+step "3/6  Apply schema_v0.2.1.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.1.sql"
 
 step "4/6  Apply seed_master_data_v0.2.sql twice (idempotency)"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.sql"

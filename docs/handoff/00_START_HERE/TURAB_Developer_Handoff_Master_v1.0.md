@@ -63,7 +63,7 @@
 | 3 | `ARCHITECTURE_DECISIONS_v0.2.md` | القرارات التقنية الملزمة التي أغلقت مراجعة v0.1 |
 | 4 | `TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي المطلوب من النظام |
 | 5 | `API_CONTRACTS_v0.2.md` + `openapi_v0.2.yaml` | حدود الخدمات والعقود والـDTOs والصلاحيات |
-| 6 | `schema_v0.2.sql` + `seed_master_data_v0.2.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
+| 6 | `schema_v0.2.1.sql` + `seed_master_data_v0.2.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
 | 7 | `IMPLEMENTATION_SLICES_v0.2.md` | ترتيب التنفيذ وStop Gates |
 | 8 | `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | حالات القبول الإلزامية |
 | مرجعي فقط | ملفات `99_REFERENCE_HISTORY` | لماذا تغيرت القرارات؛ لا تُستخدم كBaseline تنفيذية |
@@ -352,7 +352,7 @@ Opportunity uniqueness تبقى عند:
 1. قراءة هذا الملف كاملًا.
 2. قراءة Foundation Baseline ثم Developer Reference Spec ثم Architecture Decisions.
 3. تشغيل `technical_pack_static_audit_v0.2.py` والتأكد من PASS.
-4. تشغيل `schema_v0.2.sql` على PostgreSQL 16+ جديد.
+4. تشغيل `schema_v0.2.1.sql` على PostgreSQL 16+ جديد.
 5. تشغيل `seed_master_data_v0.2.sql` مرتين للتحقق من idempotency.
 6. تنفيذ اختبارات `POSTGRES_EXECUTION_GATE.md`.
 7. Parse/Lint `openapi_v0.2.yaml` في CI.
@@ -409,7 +409,7 @@ Opportunity uniqueness تبقى عند:
 | `02_DEVELOPER_SPEC/TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي للمطور |
 | `03_ARCHITECTURE/ARCHITECTURE_DECISIONS_v0.2.md` | ADRs الملزمة |
 | `03_ARCHITECTURE/REMEDIATION_REVIEW_v0.2.md` | إثبات إغلاق ملاحظات v0.1 |
-| `04_DATABASE/schema_v0.2.sql` | PostgreSQL 16+ baseline |
+| `04_DATABASE/schema_v0.2.1.sql` | PostgreSQL 16+ baseline |
 | `04_DATABASE/seed_master_data_v0.2.sql` | Master Data / Adrar / reasons / policy |
 | `04_DATABASE/POSTGRES_EXECUTION_GATE.md` | Release gate قبل الكود |
 | `05_API/openapi_v0.2.yaml` | العقد الآلي للـHTTP API |

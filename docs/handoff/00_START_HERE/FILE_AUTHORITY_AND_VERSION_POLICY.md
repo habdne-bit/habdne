@@ -7,7 +7,7 @@
 3. Accepted technical architecture: `ARCHITECTURE_DECISIONS_v0.2.md`
 4. Developer behavioral reference: `TURAB_Developer_Reference_Spec_v0.1.md`
 5. API behavior: `API_CONTRACTS_v0.2.md` + `openapi_v0.2.yaml`
-6. Database baseline: `schema_v0.2.sql` + `seed_master_data_v0.2.sql`
+6. Database baseline: `schema_v0.2.1.sql` + `seed_master_data_v0.2.sql`
 7. Build sequence: `IMPLEMENTATION_SLICES_v0.2.md`
 8. Release/acceptance: `POSTGRES_EXECUTION_GATE.md` + `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md`
 

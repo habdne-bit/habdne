@@ -3,18 +3,24 @@
 **Date:** 2026-09-18
 **Gate reference:** `docs/handoff/04_DATABASE/POSTGRES_EXECUTION_GATE.md`
 **Engine:** PostgreSQL 16.13 (Ubuntu 24.04), clean database built from zero
-**Package under test:** `TURAB Developer Handoff v1.0` / Technical Pack v0.2, vendored
-unmodified under `docs/handoff/` (`verify_handoff.py` → PASS, 27/27 files)
+**Package under test:** `TURAB Developer Handoff v1.0`, database baseline at patch
+revision **v0.2.1** (`verify_handoff.py` → PASS, 27/27 files)
 
 ---
 
 ## Verdict
 
-> **POSTGRES RUNTIME GATE: FAIL — release blocker open.**
+> **POSTGRES RUNTIME GATE: PASS.**
 >
-> One defect in `schema_v0.2.sql` prevents a clean database from accepting the
-> schema. Everything else in the gate passes once that single statement is
-> neutralised. **No feature slice may start** (`Master v1.0` §11, §10 Pre-Slice Gate).
+> All six steps green, twice in succession, on a database rebuilt from zero each
+> time. The single blocker found on the first run — a duplicated constraint
+> declaration in `schema_v0.2.sql` — was corrected under approval as
+> **schema v0.2.1**.
+>
+> Per `Master v1.0` §10, the Pre-Slice Gate is satisfied and **Slice 0
+> (Application Skeleton + Security Boundaries) may begin**. Slices must then
+> follow `IMPLEMENTATION_SLICES_v0.2.md` in order, and no advanced AI work may
+> start before the Core Hypothesis Stop Gate passes (§10, Stop Gate E).
 
 ---
 
@@ -23,20 +29,20 @@ unmodified under `docs/handoff/` (`verify_handoff.py` → PASS, 27/27 files)
 | # | Gate step | Result |
 |---|---|---|
 | 0 | Handoff package integrity (`verify_handoff.py`) | **PASS** — 27/27 files, checksums intact |
-| 1 | Static audit (`technical_pack_static_audit_v0.2.py`) | **PASS** — metrics match `Master v1.0` §2 exactly |
+| 1 | Static audit (`technical_pack_static_audit_v0.2.py`) | **PASS** — see the note on `foreign_key_refs` below |
 | 2 | Clean database rebuilt from zero | **PASS** |
-| 3 | `psql -f schema_v0.2.sql` | **FAIL** — see blocker below |
-| 4 | `psql -f seed_master_data_v0.2.sql` ×2 (idempotency) | **PASS** (against a corrected schema) |
-| 5 | Database-level contract tests (11 required areas) | **PASS** — 65/65 assertions (against a corrected schema) |
+| 3 | `psql -f schema_v0.2.1.sql` | **PASS** — v0.2 failed here; see the blocker below |
+| 4 | `psql -f seed_master_data_v0.2.sql` ×2 (idempotency) | **PASS** — 16 Adrar communes and 1 active policy stable across both runs |
+| 5 | Database-level contract tests (11 required areas) | **PASS** — 65/65 assertions |
 | 6 | OpenAPI parse / lint | **PASS** — 3.1.0, 61 paths, 64 operations, 527 `$ref` all resolve, no duplicate `operationId` |
 
-Steps 4–6 were executed against a probe copy of the schema with the offending
-statement removed, in order to establish whether the blocker is isolated. **It is.**
-The blocker is the only execution defect in the package.
+The full runner was executed twice end to end (`run_gate.sh`, exit 0 both times,
+65/65 contract assertions each). The package is unchanged by a run:
+`verify_handoff.py` still reports 27/27 afterwards.
 
 ---
 
-## The blocker
+## The blocker found on the first run (resolved in v0.2.1)
 
 `docs/handoff/04_DATABASE/schema_v0.2.sql` declares the same foreign key **twice**:
 
@@ -77,11 +83,25 @@ same target, with the same `ON DELETE SET NULL` action. Confirmed on the live
 database — 132 foreign-key constraints, and `fk_consent_evidence_observation`
 present and enforcing.
 
-Nothing about the domain model, workflow, permissions or matching logic changes
-under either remediation option. **The correction is nevertheless pending product
-approval**, because `schema_v0.2.sql` is an authoritative baseline with a published
-SHA-256 in `CHECKSUMS_SHA256.txt` and `TECHNICAL_PACK_MANIFEST_SHA256_v0.2.txt`,
-and `Master v1.0` §13 requires the decision before the edit.
+Nothing about the domain model, workflow, permissions or matching logic changed.
+
+### Resolution (approved)
+
+The **section 9** declaration was removed; the constraint keeps its home in
+section 15, the file's own designated place for cross-section constraints. The
+corrected artifact was issued as a patch revision, `schema_v0.2.1.sql`, leaving
+nothing named v0.2 carrying altered content. Affected artifacts were updated in
+the same change, as `Master v1.0` §13 requires: the static audit script and its
+results, all three checksum manifests, and the filename references in the
+operative documents. `99_REFERENCE_HISTORY/MIGRATION_NOTES_v0.1_TO_v0.2.md` was
+deliberately left untouched — it records a past migration and is history, not an
+implementation baseline. Full detail in
+`docs/handoff/99_REFERENCE_HISTORY/CHANGELOG_v0.2.md`.
+
+One documented figure moves as a result: `Master v1.0` §2 records **133**
+foreign-key references from the static audit; it is now **132**. The database is
+identical either way — the old number counted a textual duplicate that no server
+ever created.
 
 ---
 
@@ -125,12 +145,13 @@ kickoff requirement that CI rebuild a clean database from zero.
 | Item | Status |
 |---|---|
 | `technical_pack_static_audit_v0.2.py` returns PASS | Done |
-| PostgreSQL 16+ clean database accepts `schema_v0.2.sql` | **Blocked** — duplicate constraint |
-| `seed_master_data_v0.2.sql` executes twice without failure | Done (pending the schema fix) |
-| PostgreSQL Execution Gate tests pass | Done (pending the schema fix) |
+| PostgreSQL 16+ clean database accepts the schema | Done — at v0.2.1 |
+| `seed_master_data_v0.2.sql` executes twice without failure | Done |
+| PostgreSQL Execution Gate tests pass | Done — 65/65 |
 | `openapi_v0.2.yaml` parses/lints in CI | Done |
 | CI can rebuild a clean database from zero | Done |
 | Object-level authorization tests included from Slice 0 | Not started — Slice 0 is gated |
 | Idempotency replay and conflict tests included from Slice 0 | Not started — Slice 0 is gated |
 
-The last two items belong to Slice 0, which cannot begin until the gate is green.
+The last two items belong to Slice 0, which is now unblocked and is where they
+are to be implemented.

@@ -5,25 +5,25 @@
 
 ## Project status
 
-**Implementation has not started. It is gated.**
-
 | Gate | Status |
 |---|---|
-| Static architecture audit (Technical Pack v0.2) | PASS |
-| **PostgreSQL 16+ Execution Gate** | **FAIL — release blocker open** |
-| Slice 0 and all feature slices | Not started (blocked by the gate) |
+| Static architecture audit | PASS |
+| **PostgreSQL 16+ Execution Gate** | **PASS** (database baseline at v0.2.1) |
+| Slice 0 — Application Skeleton + Security Boundaries | Unblocked, not yet started |
 
-The blocker and the full run results are in
+Full run results, including the one blocker found and corrected, are in
 **[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**.
 
-Per `docs/handoff/00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.md` §10–§11,
-no feature slice may begin until the gate is green.
+The Pre-Slice Gate of
+`docs/handoff/00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.md` §10 is
+satisfied. Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in
+order; no advanced AI work begins before the Core Hypothesis Stop Gate passes.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `docs/handoff/` | The Developer Handoff v1.0 package, vendored **unmodified**. Read `docs/handoff/README.md` first. This is the authority baseline. |
+| `docs/handoff/` | The Developer Handoff v1.0 package — the authority baseline. Read `docs/handoff/README.md` first. Database schema is at patch revision v0.2.1; every other artifact is as shipped. |
 | `docs/gate/` | Execution gate run reports |
 | `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint |
 | `.github/workflows/` | CI — rebuilds a clean database from zero on every push |

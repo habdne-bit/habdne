@@ -1,5 +1,11 @@
--- TURAB — PostgreSQL schema v0.2
+-- TURAB — PostgreSQL schema v0.2.1
 -- Reference date: 2026-09-18
+-- Patch revision of v0.2: removes a duplicate declaration of
+--   fk_consent_evidence_observation that made v0.2 unexecutable on a clean
+--   database. The constraint is unchanged and now declared once, in
+--   section 15 (LATE FKs / CROSS-SECTION CONSTRAINTS).
+--   No domain-model, workflow, permission or matching-logic change.
+--   See 99_REFERENCE_HISTORY/CHANGELOG_v0.2.md.
 -- Target: PostgreSQL 16+
 -- Purpose: executable baseline schema for the TURAB foundational pilot.
 -- IMPORTANT: this schema implements the product invariants in TURAB Developer Reference Specification v0.1 plus v0.2 remediation decisions.
@@ -504,10 +510,6 @@ CREATE TABLE observations (
   recorded_by_account_id uuid REFERENCES user_accounts(account_id) ON DELETE SET NULL
 );
 CREATE INDEX idx_observations_source ON observations(source_id);
-
-ALTER TABLE consent_grants
-  ADD CONSTRAINT fk_consent_evidence_observation
-  FOREIGN KEY (evidence_observation_id) REFERENCES observations(observation_id) ON DELETE SET NULL;
 
 CREATE TABLE evidence_artifacts (
   evidence_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

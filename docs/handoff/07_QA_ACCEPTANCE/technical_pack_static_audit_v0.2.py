@@ -3,7 +3,7 @@ from pathlib import Path
 import re, json, yaml, sys, hashlib
 BASE=Path(__file__).resolve().parents[1]
 QA=BASE/'07_QA_ACCEPTANCE'
-SQL=BASE/'04_DATABASE'/'schema_v0.2.sql'
+SQL=BASE/'04_DATABASE'/'schema_v0.2.1.sql'
 SEED=BASE/'04_DATABASE'/'seed_master_data_v0.2.sql'
 OAS=BASE/'05_API'/'openapi_v0.2.yaml'
 errors=[]; warnings=[]; metrics={}
@@ -139,7 +139,7 @@ if oas:
         if f'/backoffice/queues/{q}' not in paths: err('OAS_QUEUE',f'Missing backoffice queue {q}')
 
 # File hashes for review reproducibility
-file_map={'schema_v0.2.sql':SQL,'seed_master_data_v0.2.sql':SEED,'openapi_v0.2.yaml':OAS}
+file_map={'schema_v0.2.1.sql':SQL,'seed_master_data_v0.2.sql':SEED,'openapi_v0.2.yaml':OAS}
 hashes={f:hashlib.sha256(path.read_bytes()).hexdigest() for f,path in file_map.items()}
 result={'status':'PASS' if not errors else 'FAIL','metrics':metrics,'errors':errors,'warnings':warnings,'sha256':hashes}
 (QA/'STATIC_AUDIT_RESULTS_v0.2.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
