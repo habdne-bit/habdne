@@ -24,6 +24,7 @@ from ..auth.loaders import (
 from ..auth.policy import Decision, DenyReason, PolicyTable
 from ..auth.roles import Role
 from ..auth.subject import Subject
+from . import timeline
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +172,43 @@ class AccessService:
                 resource_kind=kind.value, resource_id=resource_id,
             )
         return result
+
+    def read_party_timeline(
+        self, party_id: uuid.UUID, operation_id: str, *, page: int, page_size: int
+    ) -> LoadResult | timeline.Page:
+        """A scoped list: one party's interactions.
+
+        A list about one object still needs that object's gate, so the party
+        is loaded through the staff loader first. Without it the endpoint
+        would answer "no interactions" for an id that does not exist and for
+        an id that does but is empty, and a caller could enumerate parties by
+        the difference — or, worse, read a timeline for a party the loader
+        would have refused.
+
+        Returns the denial when the gate refuses, and the page when it does
+        not. R6.3c: the page is audited once, for the access, never per row.
+        """
+        gate = STAFF_LOADERS[ResourceKind.PARTY](self._session, self._subject, party_id)
+        if not gate.authorized:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=(gate.reason or DenyReason.OBJECT_NOT_AUTHORIZED).value,
+                resource_kind=ResourceKind.PARTY.value, resource_id=party_id,
+            )
+            return gate
+
+        page_result = timeline.read_party_timeline(
+            self._session, party_id, page=page, page_size=page_size
+        )
+        self.record_list_access(
+            operation_id=operation_id,
+            resource_kind="INTERACTION",
+            result_count=len(page_result.items),
+            query_shape={"party_id": str(party_id), "page": page_result.page,
+                         "page_size": page_result.page_size},
+        )
+        return page_result
 
     def record_list_access(
         self, *, operation_id: str, resource_kind: str, result_count: int,

@@ -15,10 +15,10 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...auth.loaders import ResourceKind
-from ...dto import Audience, CustomerPartyView, assert_no_forbidden_fields
+from ...auth.loaders import LoadResult, ResourceKind
 from ...services import consent as consent_service
 from ...services import parties as party_service
+from ...services import timeline as timeline_service
 from ...services.concurrency import (
     HEADER,
     IfMatchRequired,
@@ -225,6 +225,48 @@ def grant_consent(request: Request, party_id: uuid.UUID, body: ConsentGrantInput
     return _run(request, command, "postPartiesPartyIdConsents",
                 f"POST /parties/{party_id}/consents",
                 body.model_dump(mode="json"), handler, 201)
+
+
+@router.get("/parties/{party_id}/timeline",
+            operation_id="getPartiesPartyIdTimeline")
+def get_party_timeline(
+    request: Request,
+    party_id: uuid.UUID,
+    access: Access,
+    page: int = 1,
+    page_size: int = timeline_service.DEFAULT_PAGE_SIZE,
+):
+    """A party's operational interaction timeline.
+
+    x-roles is ADMIN, OPERATOR, REVIEWER — no CUSTOMER. This is the internal
+    operating record of how TURAB dealt with a party, including who spoke to
+    them and what was concluded; it is not a customer-facing history, and
+    nothing here is reachable from `/me/*`.
+
+    The contract types an item as an open object. That is delegation, not
+    permission: the field set is `services.timeline._ENTRY_FIELDS`, and
+    `interactions.metadata` is outside it.
+    """
+    decision = access.authorize_operation("getPartiesPartyIdTimeline")
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    try:
+        page, page_size = timeline_service.validate_pagination(page, page_size)
+    except timeline_service.InvalidPagination as exc:
+        return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request), str(exc))
+
+    result = access.read_party_timeline(
+        party_id, "getPartiesPartyIdTimeline", page=page, page_size=page_size
+    )
+    if isinstance(result, LoadResult):
+        return for_denial(result.reason, trace_id_of(request), customer_scoped=False)
+
+    # No `assert_no_forbidden_fields` here on purpose: it exempts INTERNAL
+    # by definition, so calling it would read as a check while doing nothing.
+    # The guarantee is `timeline._ENTRY_FIELDS`, which is asserted directly.
+    return {"items": [timeline_service.entry(r) for r in result.items],
+            "meta": result.meta()}
 
 
 def _run(request, command, operation_id, route_key, payload, handler,

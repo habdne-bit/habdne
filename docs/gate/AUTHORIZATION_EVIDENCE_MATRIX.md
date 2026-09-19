@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **79**
-- Distinct tests cited: **182**
-- Suite total: **293/293** test cases passing (227 distinct test functions)
+- Rules and invariants covered: **84**
+- Distinct tests cited: **198**
+- Suite total: **312/312** test cases passing (243 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -90,6 +90,11 @@ matrix, because it reads as assurance.
 | `R4.4 positive` | The object gate still permits the legitimate caller | `test_customer_may_patch_their_own_party`<br>`test_customer_may_grant_consent_on_their_own_party`<br>`test_staff_may_act_on_any_party` | PASS |
 | `R6.3a applied` | Every command refusal is audited | `test_every_refusal_is_audited` | PASS |
 | `R10.3 / Q6 applied` | The object gate is structural: a command route without one fails the build | `test_every_command_route_performs_an_object_check`<br>`test_the_guard_check_is_not_vacuous`<br>`test_there_are_command_routes_to_check` | PASS |
+| `Slice 1 / timeline scope` | A timeline holds one party's interactions and nobody else's | `test_the_timeline_holds_only_that_partys_interactions`<br>`test_an_orphaned_interaction_belongs_to_nobody`<br>`test_a_party_with_no_interactions_gets_an_empty_page` | PASS |
+| `R4.4 / R5.3b applied` | A list about an object still runs that object's gate | `test_an_unknown_party_is_refused_not_answered_empty`<br>`test_a_customer_cannot_read_any_timeline`<br>`test_a_reviewer_may_read_it`<br>`test_the_timeline_is_not_reachable_unauthenticated` | PASS |
+| `R9.1 applied` | An open contract schema is delegation, not permission: the field set is an allow-list and interaction metadata is outside it | `test_interaction_metadata_never_reaches_the_response`<br>`test_the_item_field_set_is_exactly_the_allow_list`<br>`test_a_new_column_does_not_silently_reach_the_response` | PASS |
+| `PageMeta / PageSize` | Pagination partitions the timeline, is totally ordered, and is capped | `test_pages_partition_the_timeline_without_overlap`<br>`test_the_ordering_is_total_so_pages_cannot_repeat_a_row`<br>`test_pagination_outside_the_contracts_bounds_is_rejected`<br>`test_the_page_size_cap_is_the_contracts_maximum` | PASS |
+| `R6.3c / R6.3b applied` | The page is audited once, by shape and count, never by row | `test_the_page_is_audited_once_not_per_row`<br>`test_the_audit_records_the_query_shape_not_the_rows` | PASS |
 | `D6 / baseline hygiene` | Version drift in any single claim is caught mechanically | `test_a_consistent_package_passes`<br>`test_drift_in_any_single_place_is_caught`<br>`test_a_missing_artifact_is_an_error` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 
