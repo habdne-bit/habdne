@@ -15,8 +15,8 @@ Prove that the remediated technical pack is executable before product code begin
 ## Deliverables
 
 - PostgreSQL 16 local/CI service.
-- `schema_v0.2.2.sql` executes on an empty database.
-- `seed_master_data_v0.2.2.sql` executes cleanly.
+- `schema_v0.2.3.sql` executes on an empty database.
+- `seed_master_data_v0.2.3.sql` executes cleanly.
 - migration reset script for development.
 - OpenAPI lint/parse in CI.
 - generated API inventory or SDK stubs using stable `operationId` values.

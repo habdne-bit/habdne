@@ -22,28 +22,34 @@ export PGDATABASE
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
-step "0/6  Handoff package integrity"
+step "0/7  Handoff package integrity"
 ( cd "$REPO_ROOT/docs/handoff" && python3 verify_handoff.py )
 
-step "1/6  Static audit of the technical pack"
-( cd "$QA_DIR" && python3 technical_pack_static_audit_v0.2.2.py )
+step "1/7  Static audit of the technical pack"
+( cd "$QA_DIR" && python3 technical_pack_static_audit_v0.2.3.py )
 
-step "2/6  Rebuild a clean database from zero"
+step "2/7  Rebuild a clean database from zero"
 dropdb --if-exists "$PGDATABASE"
 createdb "$PGDATABASE"
 psql -tAc 'SHOW server_version'
 
-step "3/6  Apply schema_v0.2.2.sql"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.2.sql"
+step "3/7  Apply schema_v0.2.3.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.3.sql"
 
-step "4/6  Apply seed_master_data_v0.2.2.sql twice (idempotency)"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.2.sql"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.2.sql"
+step "4/7  Apply seed_master_data_v0.2.3.sql twice (idempotency)"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
 
-step "5/6  Database-level contract tests"
+step "5/7  Database-level contract tests"
 psql -v ON_ERROR_STOP=1 -q -f "$GATE_DIR/postgres_execution_gate_tests.sql"
 
-step "6/6  OpenAPI parse / lint"
-python3 "$GATE_DIR/lint_openapi.py" "$API_DIR/openapi_v0.2.2.yaml"
+step "6/7  OpenAPI parse / lint"
+python3 "$GATE_DIR/lint_openapi.py" "$API_DIR/openapi_v0.2.3.yaml"
+
+step "7/7  Baseline version consistency"
+# D6 was a version stated in eleven places and wrong in one, and every runtime
+# test passed over it because nothing executable reads it. This closes that
+# class of defect mechanically.
+python3 "$GATE_DIR/verify_version_consistency.py" "$REPO_ROOT/docs/handoff"
 
 printf '\n\033[1;32mPOSTGRES EXECUTION GATE: PASS\033[0m\n'

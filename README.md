@@ -7,14 +7,14 @@
 
 | Gate | Status |
 |---|---|
-| Hardened static audit (v0.2.2) | PASS — 131 FK references |
-| **PostgreSQL 16+ Execution Gate** | **PASS** — twice on v0.2.2, 70/70 assertions |
-| Technical database baseline | **FROZEN** at `schema_v0.2.2.sql` |
+| Hardened static audit (v0.2.3) | PASS — 131 FK references |
+| **PostgreSQL 16+ Execution Gate** | **PASS** — twice on v0.2.3, 7 steps, 70/70 assertions |
+| Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
 | Slice −1 — Tooling baseline | Complete |
-| Slice 0 — Application Skeleton + Security Boundaries | **Complete** — 218 tests, 62 rules evidenced |
-| Slice 1 — PARTY / Contact / Account / Consent | Unblocked (D1/D2 resolved in v0.2.2) |
+| Slice 0 — Application Skeleton + Security Boundaries | **Complete** — 227 tests, 63 rules evidenced |
+| Slice 1 — PARTY / Contact / Account / Consent | **Open** — D1, D2 and D6 all resolved |
 
-Handoff package: **v1.0.2** (official), vendored unmodified.
+Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
 - Gate results and artifact digests: **[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**
 - Freeze record and pinned commit: **[`docs/gate/TECHNICAL_BASELINE_FROZEN.md`](docs/gate/TECHNICAL_BASELINE_FROZEN.md)**
@@ -29,7 +29,7 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 
 | Path | Contents |
 |---|---|
-| `docs/handoff/` | The official Developer Handoff **v1.0.2** package, vendored **unmodified** — the authority baseline. Read `docs/handoff/README.md` first. Never edited in place: corrections arrive as a new official package. |
+| `docs/handoff/` | The official Developer Handoff **v1.0.3** package, vendored **unmodified** — the authority baseline. Read `docs/handoff/README.md` first. Never edited in place: corrections arrive as a new official package. |
 | `docs/gate/` | Execution gate run reports |
 | `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint, API inventory generator |
 | `db/dev/` | Development database reset (`reset_db.sh`) |
@@ -62,7 +62,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 218 tests
+./.venv/bin/pytest -q                  # 227 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

@@ -1,11 +1,11 @@
 # تُراب — TURAB
-## Developer Handoff Master v1.0.2
+## Developer Handoff Master v1.0.3
 
 **الحالة:** حزمة التسليم الرسمية للمطور  
 **التاريخ:** 2026-09-19  
 **مرجع المنتج:** `TURAB Foundation Baseline v1.0 FINAL`  
-**مرجع التنفيذ التقني:** `Technical Implementation Pack v0.2` + Technical Patch `v0.2.2`  
-**قرار البدء:** **Slice 0 PASS / Slice 1 BLOCKED pending v0.2.2 re-freeze** — Patch v0.2.2 يجب أن يجتاز PostgreSQL/OpenAPI/Slice 0 rerun قبل بدء PARTY domain implementation.
+**مرجع التنفيذ التقني:** `Technical Implementation Pack v0.2` + Technical Patch `v0.2.3`  
+**قرار البدء:** **Slice 0 PASS / Slice 1 BLOCKED pending v0.2.3 re-freeze** — Patch v0.2.3 هو تصحيح D6 الخاص باتساق رقم نسخة الـSchema، ويجب أن يجتاز PostgreSQL/OpenAPI/Slice 0 rerun قبل بدء PARTY domain implementation.
 
 ---
 
@@ -25,31 +25,43 @@
 
 # 2. حالة المشروع عند التسليم
 
-تم تجميد الأساس المنتجـي في `Foundation Baseline v1.0 FINAL`. أُغلقت ملاحظات Architecture Review الأساسية في v0.2، ثم أصلح Patch v0.2.1 تكرارات FK التي كشفها PostgreSQL Runtime Gate. بعد ذلك أفاد المطور باجتياز v0.2.1 فعليًا على PostgreSQL 16.13، وإغلاق Slice 0 مع اختبارات authorization / DTO / error / idempotency / concurrency foundation دون تعديل الحزمة المجمدة.
+تم تجميد الأساس المنتجـي في `Foundation Baseline v1.0 FINAL`. أُغلقت ملاحظات Architecture Review الأساسية في v0.2، ثم أصلح Patch v0.2.1 تكرارات FK التي كشفها PostgreSQL Runtime Gate. بعد ذلك اجتاز v0.2.1 فعليًا على PostgreSQL 16.13، وأُغلقت Slice 0 من حيث authorization / DTO / error / idempotency / concurrency foundation.
 
-قبل بدء Slice 1 كشف Closure Review تناقضين يجب حسمهما في Baseline نفسها، لا بترقيع محلي:
+قبل بدء Slice 1 كشف Closure Review تناقضين في Baseline نفسها:
 
 - **D1:** OpenAPI كانت تسمّي header الفعلي `If-Match` بينما النص والعقد التشغيلي يعتمدان `If-Match-Version`.
 - **D2:** `PATCH /parties/{party_id}` يطلب optimistic concurrency لكن جدول `parties` وDTOs الطرف لم تكن تحمل `version`.
 
-لذلك صدر Technical Patch `v0.2.2`، وهو Patch ضيق النطاق:
+صدر لذلك Technical Patch `v0.2.2`، وحافظ على إصلاحات FK السابقة وأضاف فقط D1/D2. وقد أفاد المطور باجتياز v0.2.2 فعليًا على PostgreSQL 16.13 مرتين، مع expanded gate وSlice 0 suite وOpenAPI drift كلها خضراء.
 
-- يحافظ على جميع إصلاحات FK السابقة؛
-- يبقي عدد FK = **131**؛
-- يجعل `If-Match-Version` هو header الرسمي الوحيد؛
-- يضيف `parties.version integer NOT NULL DEFAULT 1 CHECK (version > 0)`؛
-- يجعل تحديث PARTY يستخدم `bump_version_and_timestamp()`؛
-- يضيف `version` إلى `Party` و`CustomerPartyView` فقط، لا إلى input schemas.
+خلال التحقق النهائي من القاعدة الحية ظهر **D6**:
+
+- الملف والترويسة كانا `schema_v0.2.2.sql` / v0.2.2؛
+- لكن `schema_metadata.schema_version` بقيت `0.2.1`.
+
+لا يعتمد السلوك التشغيلي الحالي على هذه القيمة، لذلك تبقى نتائج v0.2.2 دليلًا صالحًا على التشغيل، لكن لا يجوز تجميد Baseline تعرف نفسها داخليًا برقم مختلف. لذلك حُفظت v0.2.2 تاريخيًا بوصفها:
+
+> **RUNTIME_VALIDATED_BUT_NOT_FROZEN_DUE_TO_D6_METADATA_MISMATCH**
+
+وصدر Technical Patch `v0.2.3` كتصحيح ضيق جدًا:
+
+- يغيّر `schema_metadata.schema_version` إلى `0.2.3`؛
+- يزامن أسماء/ترويـسات machine artifacts وOpenAPI `info.version` والـmanifest مع `0.2.3`؛
+- يضيف Version Consistency Invariant تمنع تكرار هذا الصنف من الانحراف؛
+- يحافظ على D1/D2 كما هما؛
+- يحافظ على عدد FK = **131**؛
+- لا يغيّر Domain/API authorization/matching/consent semantics.
 
 الحالة الحالية عند نشر هذه الحزمة:
 
 > **Product / Architecture baseline: FROZEN**  
-> **Previous v0.2.1 runtime evidence: PASS (historical prior baseline)**  
-> **Technical Patch v0.2.2: STATIC ADOPTION CANDIDATE**  
-> **v0.2.2 PostgreSQL + OpenAPI + Slice 0 rerun: REQUIRED**  
+> **Slice 0 implementation: PASS (historical closure evidence)**  
+> **v0.2.2 runtime evidence: PASS BUT NOT FROZEN بسبب D6**  
+> **Technical Patch v0.2.3: STATIC ADOPTION CANDIDATE**  
+> **v0.2.3 PostgreSQL + OpenAPI + Slice 0 rerun: REQUIRED**  
 > **Slice 1: BLOCKED UNTIL RE-FREEZE**
 
-لا يجوز اعتبار v0.2.2 مجمدة بمجرد اسم الحزمة. يجب أن تمر `verify_v022_baseline.py` والـGate الكامل ثم يسجل المطور commit/hash جديدين.
+لا يجوز اعتبار v0.2.3 مجمدة بمجرد اسم الحزمة. يجب أن تمر `verify_v023_baseline.py` و`verify_version_consistency.py` والـGate الكامل ثم يسجل المطور commit/hash جديدين.
 
 ---
 
@@ -61,10 +73,10 @@
 |---|---|---|
 | 1 | `TURAB_Foundation_Baseline_v1.0_FINAL.docx` | معنى المنتج، المبادئ، الحدود، القرارات التأسيسية |
 | 2 | `TURAB_Project_Instructions_v1.0.md` | منهج اتخاذ القرار، Design Ledger، منع Feature Creep |
-| 3 | `ARCHITECTURE_DECISIONS_v0.2.md` + `TECHNICAL_PATCH_v0.2.2.md` | القرارات التقنية الملزمة وتصحيح executable database baseline |
+| 3 | `ARCHITECTURE_DECISIONS_v0.2.md` + `TECHNICAL_PATCH_v0.2.3.md` | القرارات التقنية الملزمة وتصحيح executable database baseline |
 | 4 | `TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي المطلوب من النظام |
-| 5 | `API_CONTRACTS_v0.2.md` + `openapi_v0.2.2.yaml` | حدود الخدمات والعقود والـDTOs والصلاحيات |
-| 6 | `schema_v0.2.2.sql` + `seed_master_data_v0.2.2.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
+| 5 | `API_CONTRACTS_v0.2.md` + `openapi_v0.2.3.yaml` | حدود الخدمات والعقود والـDTOs والصلاحيات |
+| 6 | `schema_v0.2.3.sql` + `seed_master_data_v0.2.3.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
 | 7 | `IMPLEMENTATION_SLICES_v0.2.md` | ترتيب التنفيذ وStop Gates |
 | 8 | `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | حالات القبول الإلزامية |
 | مرجعي فقط | ملفات `99_REFERENCE_HISTORY` | لماذا تغيرت القرارات؛ لا تُستخدم كBaseline تنفيذية |
@@ -352,16 +364,16 @@ Opportunity uniqueness تبقى عند:
 
 1. قراءة هذا الملف كاملًا.
 2. قراءة Foundation Baseline ثم Developer Reference Spec ثم Architecture Decisions.
-3. تشغيل `verify_v022_baseline.py` ثم `technical_pack_static_audit_v0.2.2.py` والتأكد من PASS.
-4. تشغيل `schema_v0.2.2.sql` على PostgreSQL 16+ جديد.
-5. تشغيل `seed_master_data_v0.2.2.sql` مرتين للتحقق من idempotency.
+3. تشغيل `verify_v023_baseline.py` و`verify_version_consistency.py` ثم `technical_pack_static_audit_v0.2.3.py` والتأكد من PASS.
+4. تشغيل `schema_v0.2.3.sql` على PostgreSQL 16+ جديد والتحقق من أن `schema_metadata.schema_version = 0.2.3`.
+5. تشغيل `seed_master_data_v0.2.3.sql` مرتين للتحقق من idempotency.
 6. تنفيذ `POSTGRES_EXECUTION_GATE.md` والـexpanded DB gate suite.
-7. Parse/Lint `openapi_v0.2.2.yaml` وتشغيل runtime OpenAPI drift check.
+7. Parse/Lint `openapi_v0.2.3.yaml` وتشغيل runtime OpenAPI drift check.
 8. تحديث توقعات Slice 0 إلى `If-Match-Version` فقط وإعادة مجموعة Slice 0 كاملة.
 9. تسجيل baseline commit وSHA-256 الجديدة ثم Re-freeze.
 10. عندها فقط يبدأ Slice 1؛ لا يبدأ PARTY domain implementation قبل ذلك.
 
-إذا فشل PostgreSQL Gate، **لا يبدأ Slice 0 بوصف الحزمة مجمدة**؛ يتم إصلاح الـSchema/Contracts أولًا وتحديث النسخة رسميًا.
+إذا فشل PostgreSQL Gate، **لا يُفتح Slice 1 ولا تُعتبر v0.2.3 مجمدة**؛ يتم إصلاح الـSchema/Contracts أولًا وتحديث النسخة رسميًا.
 
 ---
 
@@ -410,18 +422,19 @@ Opportunity uniqueness تبقى عند:
 | `02_DEVELOPER_SPEC/TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي للمطور |
 | `03_ARCHITECTURE/ARCHITECTURE_DECISIONS_v0.2.md` | ADRs الملزمة |
 | `03_ARCHITECTURE/REMEDIATION_REVIEW_v0.2.md` | إثبات إغلاق ملاحظات v0.1 |
-| `03_ARCHITECTURE/TECHNICAL_PATCH_v0.2.2.md` | أحدث Patch ملزم لـD1/D2 |
-| `04_DATABASE/schema_v0.2.2.sql` | PostgreSQL 16+ baseline |
-| `04_DATABASE/seed_master_data_v0.2.2.sql` | Master Data / Adrar / reasons / policy |
+| `03_ARCHITECTURE/TECHNICAL_PATCH_v0.2.3.md` | أحدث Patch ملزم لـD6 ويحافظ على D1/D2 |
+| `04_DATABASE/schema_v0.2.3.sql` | PostgreSQL 16+ baseline candidate |
+| `04_DATABASE/seed_master_data_v0.2.3.sql` | Master Data / Adrar / reasons / policy |
 | `04_DATABASE/POSTGRES_EXECUTION_GATE.md` | Release gate قبل الكود |
-| `05_API/openapi_v0.2.2.yaml` | العقد الآلي للـHTTP API |
+| `05_API/openapi_v0.2.3.yaml` | العقد الآلي للـHTTP API؛ semantics محفوظة من v0.2.2 |
 | `05_API/API_CONTRACTS_v0.2.md` | السلوك التفصيلي للـAPI |
 | `05_API/API_INVENTORY_v0.2.md` | جرد العمليات |
 | `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` | خطة البناء وStop Gates |
 | `07_QA_ACCEPTANCE/RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | Edge cases واختبارات القبول |
-| `07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.2.py` | فحص ساكن قابل للتكرار |
-| `07_QA_ACCEPTANCE/verify_v022_baseline.py` | فحص آلي خاص بقبول D1/D2 |
-| `07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.2.json` | نتيجة الفحص الحالية |
+| `07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.3.py` | فحص ساكن قابل للتكرار ويشمل Version Consistency |
+| `07_QA_ACCEPTANCE/verify_v023_baseline.py` | فحص آلي لقبول D6 مع Regression لـD1/D2 وFK fixes |
+| `07_QA_ACCEPTANCE/verify_version_consistency.py` | يثبت اتساق جميع ادعاءات نسخة الـbaseline |
+| `07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.3.json` | نتيجة الفحص الحالية |
 | `99_REFERENCE_HISTORY/*` | تاريخ القرارات فقط؛ ليس Baseline تنفيذية |
 
 ---

@@ -1,35 +1,34 @@
 # TURAB — File Authority & Version Policy
 
-## Authoritative baselines
+## 1. Authority order
 
 1. Product meaning: `TURAB_Foundation_Baseline_v1.0_FINAL.docx`
-2. Project decision method: `TURAB_Project_Instructions_v1.0.md`
-3. Accepted technical architecture: `ARCHITECTURE_DECISIONS_v0.2.md`; latest patch authority: `TECHNICAL_PATCH_v0.2.2.md`
-4. Developer behavioral reference: `TURAB_Developer_Reference_Spec_v0.1.md`
-5. API behavior: `API_CONTRACTS_v0.2.md` + `openapi_v0.2.2.yaml`, with v0.2.2 taking precedence on the concurrency-header/Party-version delta
-6. Database baseline candidate: `schema_v0.2.2.sql` + `seed_master_data_v0.2.2.sql`
-7. Build sequence: `IMPLEMENTATION_SLICES_v0.2.md`
-8. Release/acceptance: `POSTGRES_EXECUTION_GATE.md` + `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` + `verify_v022_baseline.py`
+2. Decision method: `TURAB_Project_Instructions_v1.0.md`
+3. Accepted technical architecture: `ARCHITECTURE_DECISIONS_v0.2.md`; latest patch authority: `TECHNICAL_PATCH_v0.2.3.md`
+4. Detailed behavior: `TURAB_Developer_Reference_Spec_v0.1.*`
+5. API behavior: `API_CONTRACTS_v0.2.md` + `openapi_v0.2.3.yaml`; v0.2.3 preserves the v0.2.2 D1/D2 semantics and changes only the D6 version-stamp baseline identity
+6. Database baseline candidate: `schema_v0.2.3.sql` + `seed_master_data_v0.2.3.sql`
+7. Build order: `IMPLEMENTATION_SLICES_v0.2.md`
+8. Release/acceptance: `POSTGRES_EXECUTION_GATE.md` + `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` + `verify_v023_baseline.py` + `verify_version_consistency.py`
 
-## Conflict rule
+## 2. Conflict rule
 
-Do not silently resolve a contradiction. Product semantics defer upward to the Foundation. Technical Patch v0.2.2 supersedes v0.2.1 only for the explicit D1/D2 corrections documented in the patch. All v0.2.1 FK remediations remain in force. If same-level contracts disagree, stop the affected implementation and raise a change/clarification before coding around it.
+Do not silently resolve a contradiction. Product semantics defer upward to the Foundation. Technical Patch v0.2.3 supersedes v0.2.2 only for the explicit D6 metadata/version-consistency correction documented in the patch. All v0.2.2 D1/D2 semantics and all v0.2.1 FK remediations remain in force. If same-level contracts disagree, stop the affected implementation and raise a change/clarification before coding around it.
 
-## Immutability / supersession
+## 3. Immutability and supersession
 
-- v0.2 remains an historical runtime-failed candidate.
-- v0.2.1 remains the previously executed/frozen baseline and is not edited in place.
-- v0.2.2 is a new adoption candidate. It becomes the active frozen baseline only after the full rerun and re-freeze.
-- Published hashes for older packages are never rewritten.
+- Published packages are immutable evidence. Never edit an older handoff in place.
+- v0.2.1 is retained as the previously frozen executable baseline before D1/D2.
+- v0.2.2 is retained as `RUNTIME_VALIDATED_BUT_NOT_FROZEN_DUE_TO_D6_METADATA_MISMATCH`.
+- v0.2.3 is a new adoption candidate. It becomes the active frozen baseline only after the full rerun and re-freeze.
+- Any later correction must receive a new technical patch and handoff version with new checksums.
 
-## Do not use as implementation baseline
+## 4. Files not to use for new implementation
 
-- Foundation v0.1–v0.9.
-- Technical Implementation Pack v0.1.
-- schema/openapi/API contracts v0.1.
-- `schema_v0.2.sql` or `schema_v0.2.1.sql` for new work after v0.2.2 adoption.
-- historical review files except to understand rationale.
+Do not use old machine baselines for new work after v0.2.3 adoption, including:
 
-## Change discipline
+- `schema_v0.2.sql`, `schema_v0.2.1.sql`, or `schema_v0.2.2.sql`;
+- `openapi_v0.2.yaml` or `openapi_v0.2.2.yaml`;
+- technical manifests from older baselines except as historical evidence.
 
-A domain, state, permission, matching, privacy, verification, opportunity, persistence, or HTTP-contract change requires an explicit approved decision and synchronized changes to schema, OpenAPI, contracts, tests, manifests, and relevant documentation.
+Files in `99_REFERENCE_HISTORY` explain history; they do not override the current baseline.

@@ -1,4 +1,4 @@
--- TURAB — PostgreSQL schema v0.2.2
+-- TURAB — PostgreSQL schema v0.2.3
 -- Reference date: 2026-09-19
 -- Target: PostgreSQL 16+
 -- Purpose: executable baseline schema for the TURAB foundational pilot.
@@ -125,7 +125,7 @@ CREATE TABLE schema_metadata (
 );
 
 INSERT INTO schema_metadata(key,value) VALUES
-  ('schema_version','0.2.1'),
+  ('schema_version','0.2.3'),
   ('reference_spec','TURAB Developer Reference Specification v0.1 + Technical Architecture Remediation v0.2')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 

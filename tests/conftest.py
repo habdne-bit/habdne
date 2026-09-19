@@ -38,8 +38,8 @@ def database_url() -> str:
                    check=True, env=env, capture_output=True)
     subprocess.run(["createdb", "-h", PGHOST, "-U", PGUSER, TEST_DB],
                    check=True, env=env, capture_output=True)
-    _psql(TEST_DB, "-f", str(DB_DIR / "schema_v0.2.2.sql"))
-    _psql(TEST_DB, "-f", str(DB_DIR / "seed_master_data_v0.2.2.sql"))
+    _psql(TEST_DB, "-f", str(DB_DIR / "schema_v0.2.3.sql"))
+    _psql(TEST_DB, "-f", str(DB_DIR / "seed_master_data_v0.2.3.sql"))
     _psql(TEST_DB, "-f", str(FIXTURES))
     return f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{TEST_DB}"
 

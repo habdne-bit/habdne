@@ -56,10 +56,13 @@ jobs:
       # Slice -1 deliverable: the generated API inventory is the table the
       # Slice 0 policy layer is checked against (RFC-001 R10.2). If it drifts
       # from the frozen contract, that check is worthless.
+      - name: Baseline version consistency
+        run: db/gate/verify_version_consistency.py docs/handoff
+
       - name: Verify the generated API inventory is current
         run: |
           db/gate/generate_api_inventory.py \
-            docs/handoff/05_API/openapi_v0.2.2.yaml --check
+            docs/handoff/05_API/openapi_v0.2.3.yaml --check
 
       # The development reset path must keep working, fixtures included, and
       # loading the fixtures twice must be idempotent.

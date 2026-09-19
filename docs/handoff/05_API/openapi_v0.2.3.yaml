@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: TURAB API
-  version: 0.2.2
+  version: 0.2.3
   description: 'TURAB foundational API contract v0.2 — remediated after Technical Architecture Review.
 
 
@@ -28,8 +28,7 @@ info:
     - AI never upgrades verification, changes user criteria silently, or creates Opportunity autonomously.
 
 
-    Technical Patch v0.2.2 aligns optimistic concurrency: the canonical header is If-Match-Version and PARTY projections expose
-    an integer version.
+    Technical Patch v0.2.3 is a metadata/version-stamp correction only; it preserves the v0.2.2 concurrency and PARTY-version semantics.
 
     '
 servers:

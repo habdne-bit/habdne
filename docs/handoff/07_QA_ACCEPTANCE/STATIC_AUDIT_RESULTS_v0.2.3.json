@@ -18,8 +18,8 @@
   "errors": [],
   "warnings": [],
   "sha256": {
-    "schema_v0.2.2.sql": "eb1862b1984b7a62e29b1e58a490c2c6c4a1783cab01be66738cd1c97bb032ea",
-    "seed_master_data_v0.2.2.sql": "132869b4b91a2c07925f352fdd71192cc26a90313a0a19a1844366141fedc553",
-    "openapi_v0.2.2.yaml": "7e6187ce700c504060a0f0dc724174c35369b39ba6c24b99a64a06cf41005d07"
+    "schema_v0.2.3.sql": "789841a1a41d869ca78de256879e62950f0672c9719c40a94408c549e28d98a0",
+    "seed_master_data_v0.2.3.sql": "21b31c4ed338bb4aac24ea5d724b265e5e5b941bc54dd627f3953f3c2ff6cf10",
+    "openapi_v0.2.3.yaml": "b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72"
   }
 }

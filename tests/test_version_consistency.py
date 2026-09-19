@@ -27,6 +27,16 @@ def package_copy(tmp_path):
     return dest
 
 
+def _baseline_version(root: pathlib.Path) -> str:
+    """Read the version from the schema filename.
+
+    Derived, never hardcoded: these tests must survive the next version bump
+    without edits, which is the whole point of a version-agnostic invariant.
+    """
+    schema = next((root / "04_DATABASE").glob("schema_v*.sql"))
+    return re.search(r"schema_v(\d+\.\d+(?:\.\d+)?)\.sql", schema.name).group(1)
+
+
 def _set_schema_metadata(root: pathlib.Path, value: str) -> None:
     schema = next((root / "04_DATABASE").glob("schema_v*.sql"))
     text = schema.read_text(encoding="utf-8")
@@ -34,32 +44,18 @@ def _set_schema_metadata(root: pathlib.Path, value: str) -> None:
     schema.write_text(text, encoding="utf-8")
 
 
-def test_the_adopted_package_still_carries_d6(package_copy):
-    """Documents the open finding rather than asserting it away.
-
-    When v0.2.3 lands this test is deleted, not adjusted: the finding will no
-    longer exist.
-    """
-    ok, errors, claims = verify(package_copy)
-    assert not ok
-    assert len(errors) == 1, f"expected D6 alone, got {errors}"
-    assert "schema_metadata.schema_version" in errors[0]
-    assert "'0.2.1'" in errors[0]
-
-
-def test_d6_is_the_only_version_drift_in_the_package(package_copy):
-    """Ten of the eleven claims agree, which is why D6 was a single defect
-    rather than a systemically mis-versioned package."""
-    _ok, _errors, claims = verify(package_copy)
+def test_the_adopted_package_is_version_consistent():
+    """v0.2.3 resolved D6. The two tests that documented the finding were
+    deleted rather than inverted, because the finding no longer exists."""
+    ok, errors, claims = verify(PACKAGE)
+    assert ok, errors
     stated = [c for c in claims if c.version]
     assert len(stated) == 11
-    agreeing = [c for c in stated if c.version == "0.2.2"]
-    assert len(agreeing) == 10
+    assert len({c.version for c in stated}) == 1
 
 
 def test_a_consistent_package_passes(package_copy):
-    """The positive direction: correct D6 in a copy and the invariant is clean."""
-    _set_schema_metadata(package_copy, "0.2.2")
+    """The positive direction, on the package exactly as shipped."""
     ok, errors, _claims = verify(package_copy)
     assert ok, errors
 
@@ -77,7 +73,7 @@ def test_a_consistent_package_passes(package_copy):
 )
 def test_drift_in_any_single_place_is_caught(package_copy, mutate, expected):
     """Every claim is load-bearing: break one and the invariant fires."""
-    _set_schema_metadata(package_copy, "0.2.2")  # start from a clean package
+    version = _baseline_version(package_copy)
     db = package_copy / "04_DATABASE"
     schema = next(db.glob("schema_v*.sql"))
 
@@ -85,19 +81,19 @@ def test_drift_in_any_single_place_is_caught(package_copy, mutate, expected):
         _set_schema_metadata(package_copy, "9.9.9")
     elif mutate == "schema_header":
         text = schema.read_text(encoding="utf-8").replace(
-            "PostgreSQL schema v0.2.2", "PostgreSQL schema v9.9.9", 1
+            f"PostgreSQL schema v{version}", "PostgreSQL schema v9.9.9", 1
         )
         schema.write_text(text, encoding="utf-8")
     elif mutate == "seed_header":
         seed = next(db.glob("seed_master_data_v*.sql"))
         text = seed.read_text(encoding="utf-8").replace(
-            "master data seed v0.2.2", "master data seed v9.9.9", 1
+            f"master data seed v{version}", "master data seed v9.9.9", 1
         )
         seed.write_text(text, encoding="utf-8")
     elif mutate == "openapi_info":
         api = next((package_copy / "05_API").glob("openapi_v*.yaml"))
         text = api.read_text(encoding="utf-8").replace(
-            "  version: 0.2.2", "  version: 9.9.9", 1
+            f"  version: {version}", "  version: 9.9.9", 1
         )
         api.write_text(text, encoding="utf-8")
     elif mutate == "manifest_baseline":

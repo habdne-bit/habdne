@@ -1,4 +1,4 @@
-> **Supersession note (2026-09-19):** the v0.2 remediation work remains valid. Runtime FK corrections were released in v0.2.1; the current adoption candidate is `TECHNICAL_PATCH_v0.2.2.md` / `schema_v0.2.2.sql` / `openapi_v0.2.2.yaml`, which adds only the approved concurrency-header and PARTY-version corrections. This document is remediation evidence, not proof that v0.2.2 passed its required rerun.
+> **Supersession note (2026-09-19):** the v0.2 remediation work remains valid. Runtime FK corrections were released in v0.2.1; D1/D2 concurrency/PARTY-version corrections were runtime-validated in v0.2.2 but that candidate was not frozen because of D6 metadata version drift. The current adoption candidate is `TECHNICAL_PATCH_v0.2.3.md` / `schema_v0.2.3.sql` / `openapi_v0.2.3.yaml`, which changes only the authoritative version stamp/packaging identity while preserving all prior semantics. This document is remediation evidence, not proof that v0.2.3 passed its required rerun.
 
 # TURAB — Technical Remediation Review v0.2
 
@@ -59,7 +59,7 @@ This distinction is intentional: the architecture is remediated, but static anal
 
 ## Static audit result
 
-Latest `STATIC_AUDIT_RESULTS_v0.2.2.json` reports:
+Latest `STATIC_AUDIT_RESULTS_v0.2.3.json` reports:
 
 - 48 tables
 - 54 enum/types

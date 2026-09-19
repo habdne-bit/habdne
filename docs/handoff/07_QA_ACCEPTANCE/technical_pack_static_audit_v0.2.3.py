@@ -3,9 +3,9 @@ from pathlib import Path
 import re, json, yaml, sys, hashlib
 BASE=Path(__file__).resolve().parents[1]
 QA=BASE/'07_QA_ACCEPTANCE'
-SQL=BASE/'04_DATABASE'/'schema_v0.2.2.sql'
-SEED=BASE/'04_DATABASE'/'seed_master_data_v0.2.2.sql'
-OAS=BASE/'05_API'/'openapi_v0.2.2.yaml'
+SQL=BASE/'04_DATABASE'/'schema_v0.2.3.sql'
+SEED=BASE/'04_DATABASE'/'seed_master_data_v0.2.3.sql'
+OAS=BASE/'05_API'/'openapi_v0.2.3.yaml'
 errors=[]; warnings=[]; metrics={}
 
 def err(code,msg): errors.append({'code':code,'message':msg})
@@ -92,7 +92,7 @@ for m in re.finditer(r'CREATE TRIGGER\s+(\w+).*?ON\s+(\w+).*?EXECUTE FUNCTION\s+
     if fn not in funcs: err('SQL_TRIGGER_FUNCTION',f'{tr} calls missing function {fn}')
 
 
-# v0.2.2 D2 PARTY optimistic-concurrency checks
+# v0.2.3 preserves v0.2.2 D2 PARTY optimistic-concurrency checks
 party_block=blocks.get('parties','')
 if not re.search(r'\bversion\s+integer\s+NOT NULL\s+DEFAULT 1\s+CHECK\s*\(version > 0\)', party_block, re.I):
     err('SQL_PARTY_VERSION','parties.version integer NOT NULL DEFAULT 1 CHECK (version > 0) missing')
@@ -175,7 +175,7 @@ if oas:
     if len(ops)!=len(set(ops)): err('OAS_OPERATION_DUP','Duplicate operationId values')
     metrics['openapi_paths']=len(paths); metrics['openapi_operations']=len(ops); metrics['openapi_schemas']=len(schemas); metrics['openapi_refs']=len(refs)
 
-    # v0.2.2 D1/D2 contract checks
+    # v0.2.3 preserves v0.2.2 D1/D2 contract checks
     ifm=oas.get('components',{}).get('parameters',{}).get('IfMatchVersion',{})
     if ifm.get('name')!='If-Match-Version': err('OAS_IF_MATCH_HEADER',f"IfMatchVersion wire name must be If-Match-Version, found {ifm.get('name')}")
     if ifm.get('schema',{}).get('type')!='integer' or ifm.get('schema',{}).get('minimum')!=1:
@@ -200,10 +200,37 @@ if oas:
     for q in ['external-leads','requests','properties','matches','opportunities']:
         if f'/backoffice/queues/{q}' not in paths: err('OAS_QUEUE',f'Missing backoffice queue {q}')
 
+# v0.2.3 D6 version-consistency checks
+expected_version='0.2.3'
+sm=re.search(r"\('schema_version','([^']+)'\)",sql)
+schema_stamp=sm.group(1) if sm else None
+if schema_stamp != expected_version:
+    err('SCHEMA_VERSION_STAMP_MISMATCH',f'schema_metadata.schema_version={schema_stamp!r}, expected {expected_version!r}')
+sh=re.search(r'^-- TURAB .* schema v(\d+\.\d+\.\d+)$',sql,re.M)
+if not sh or sh.group(1)!=expected_version:
+    err('VERSION_CLAIM_MISMATCH',f'schema header must declare {expected_version}')
+seh=re.search(r'^-- TURAB .* seed v(\d+\.\d+\.\d+)$',seed,re.M)
+if not seh or seh.group(1)!=expected_version:
+    err('VERSION_CLAIM_MISMATCH',f'seed header must declare {expected_version}')
+if oas and str(oas.get('info',{}).get('version'))!=expected_version:
+    err('VERSION_CLAIM_MISMATCH',f"OpenAPI info.version={oas.get('info',{}).get('version')!r}, expected {expected_version!r}")
+manifest_path=BASE/'HANDOFF_MANIFEST.json'
+if manifest_path.exists():
+    try:
+        hm=json.loads(manifest_path.read_text())
+        mt=re.search(r'v(\d+\.\d+\.\d+)',str(hm.get('technical_baseline','')))
+        mv=mt.group(1) if mt else None
+        if mv!=expected_version:
+            err('VERSION_CLAIM_MISMATCH',f'HANDOFF_MANIFEST technical_baseline version={mv!r}, expected {expected_version!r}')
+    except Exception as e:
+        err('VERSION_MANIFEST_PARSE',str(e))
+else:
+    err('VERSION_MANIFEST_MISSING','HANDOFF_MANIFEST.json missing')
+
 # File hashes for review reproducibility
-file_map={'schema_v0.2.2.sql':SQL,'seed_master_data_v0.2.2.sql':SEED,'openapi_v0.2.2.yaml':OAS}
+file_map={'schema_v0.2.3.sql':SQL,'seed_master_data_v0.2.3.sql':SEED,'openapi_v0.2.3.yaml':OAS}
 hashes={f:hashlib.sha256(path.read_bytes()).hexdigest() for f,path in file_map.items()}
 result={'status':'PASS' if not errors else 'FAIL','metrics':metrics,'errors':errors,'warnings':warnings,'sha256':hashes}
-(QA/'STATIC_AUDIT_RESULTS_v0.2.2.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
+(QA/'STATIC_AUDIT_RESULTS_v0.2.3.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
 print(json.dumps(result,ensure_ascii=False,indent=2))
 sys.exit(0 if not errors else 1)

@@ -1,8 +1,8 @@
 # TURAB — API Contracts v0.2
 
 **Status:** implementation contract after Technical Architecture Review.  
-**Machine-readable source:** `openapi_v0.2.2.yaml`  
-**Database source:** `schema_v0.2.2.sql` (Technical Patch v0.2.2; API semantics remain v0.2 except the explicitly corrected concurrency header and PARTY version projection)  
+**Machine-readable source:** `openapi_v0.2.3.yaml`  
+**Database source:** `schema_v0.2.3.sql` (Technical Patch v0.2.3; API semantics remain those of v0.2.2, with D6 correcting only the authoritative schema-version stamp/package identity)  
 **Product source:** TURAB Foundation Baseline v1.0 + Developer Reference Specification v0.1.
 
 ## 1. Contract hierarchy

@@ -82,3 +82,12 @@ This release is a **breaking pre-implementation remediation** of v0.1. No produc
 - No advanced solver dependency.
 - No full in-app chat replacement for WhatsApp.
 - No payments/finance/signature stack.
+
+## Technical Patch v0.2.3 — 2026-09-19
+
+- D6 correction: `schema_metadata.schema_version` now matches the published schema baseline (`0.2.3`).
+- Operative machine artifacts are version-synchronized as v0.2.3 (schema, seed, OpenAPI, static audit/result, technical manifest).
+- Added `verify_version_consistency.py` and integrated version-consistency checks into the static audit.
+- Added `verify_v023_baseline.py` to preserve v0.2.1 FK fixes and v0.2.2 D1/D2 semantics while checking D6.
+- v0.2.2 retained historically as runtime-validated but not frozen because of metadata mismatch.
+- No domain, authorization, matching, consent, API-operation, role, or master-data semantic change.

@@ -2,8 +2,8 @@
 
 **Do not edit.** Regenerate with `db/gate/generate_api_inventory.py`.
 
-- Source: `docs/handoff/05_API/openapi_v0.2.2.yaml`
-- Source SHA-256: `7e6187ce700c504060a0f0dc724174c35369b39ba6c24b99a64a06cf41005d07`
+- Source: `docs/handoff/05_API/openapi_v0.2.3.yaml`
+- Source SHA-256: `b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72`
 - Operations: 64 · role-annotated: 57 · unauthenticated: 6
 
 ## Unauthenticated operations
