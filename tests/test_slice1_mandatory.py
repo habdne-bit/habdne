@@ -437,3 +437,75 @@ def test_an_unestablished_purpose_fails_closed(session, ids):
         text("SELECT status::text FROM turab.user_accounts WHERE account_id=:a"),
         {"a": account},
     ).scalar_one() == "INVITED"
+
+
+# --- 6. a party link is not a login path ----------------------------------
+#
+# Not in the handoff's mandatory list, but it is the question those five leave
+# open. A02 proves verification creates no account and A01 proves a shared
+# contact point never merges parties. Together they invite the inverse
+# question: if a customer ATTACHES a phone to their own party, does that phone
+# now reach their account? If it did, a customer could attach any number,
+# verify it, and be handed a session — the merge A01 forbids, arriving through
+# the login door instead.
+
+def test_attaching_a_phone_to_a_party_creates_no_login_path(session, provider, ids):
+    """`party_contact_points` and `user_accounts.login_contact_point_id` are
+    different relationships, and only the second one authenticates."""
+    before = session.execute(
+        text("""SELECT account_id, login_contact_point_id, status::text
+                  FROM turab.user_accounts ORDER BY account_id""")
+    ).mappings().all()
+
+    # Amina attaches a number she does not control to her OWN party — which
+    # the object gate permits, because it is her party.
+    stranger = "+213770000501"
+    party_service.attach_phone(session, party_id=ids.AMINA, phone_e164=stranger)
+    session.flush()
+
+    after = session.execute(
+        text("""SELECT account_id, login_contact_point_id, status::text
+                  FROM turab.user_accounts ORDER BY account_id""")
+    ).mappings().all()
+    assert [dict(r) for r in after] == [dict(r) for r in before], (
+        "attaching a contact point to a party must not touch any account's "
+        "login contact point"
+    )
+
+    # And the login flow on that number yields no session: no account names it
+    # as its login contact point, and the party link is not consulted.
+    result = _verify(session, provider, phone=stranger, purpose=OtpPurpose.LOGIN)
+    assert result["verification_result"] == VerificationResult.PHONE_CONTROL_VERIFIED.value
+    assert result["account_id"] is None
+    assert result["access_token"] is None
+
+
+def test_a_shared_line_does_not_authenticate_as_the_party_that_shares_it(
+    session, provider, ids
+):
+    """A01's shared line, pointed at the login door.
+
+    Brahim's verified phone already reaches the agency party. Link it to
+    AMINA's party as well — Amina is the fixture's only party WITH an account,
+    which is what makes this test able to fail: a resolver that walked
+    `party_contact_points` instead of `user_accounts.login_contact_point_id`
+    would now hand this caller Amina's session.
+    """
+    shared = "+213661000002"
+    party_service.attach_phone(session, party_id=ids.AMINA, phone_e164=shared)
+    session.flush()
+
+    linked_parties = session.execute(
+        text("""SELECT count(*) FROM turab.party_contact_points pcp
+                  JOIN turab.contact_points cp USING (contact_point_id)
+                 WHERE cp.normalized_value = :v"""),
+        {"v": shared},
+    ).scalar_one()
+    assert linked_parties >= 2, "the premise of this test is a shared line"
+
+    result = _verify(session, provider, phone=shared, purpose=OtpPurpose.LOGIN)
+    assert result["account_id"] != ids.ACC_AMINA
+    assert result["account_id"] is None, (
+        "a phone linked to a party must not authenticate as that party's account"
+    )
+    assert _accounts_for(session, result["contact_point_id"]) == 0

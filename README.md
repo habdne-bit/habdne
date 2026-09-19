@@ -12,7 +12,7 @@
 | Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
-| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, awaiting closure review** — all 11 contract operations wired, 312 tests, 84 rules evidenced |
+| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, submitted for closure review** — all 11 contract operations wired, 314 tests, 85 rules evidenced |
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -21,6 +21,7 @@ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 - Object-level authorization design, **FINAL / APPROVED**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
 - Authorization evidence: **[`docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`](docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md)**
 - Slice 0 closure: **[`docs/gate/SLICE_0_CLOSURE_PACK.md`](docs/gate/SLICE_0_CLOSURE_PACK.md)**
+- Slice 1 closure: **[`docs/gate/SLICE_1_CLOSURE_PACK.md`](docs/gate/SLICE_1_CLOSURE_PACK.md)**
 - Defect record (BOLA on the Slice 1 command surface, closed): **[`docs/gate/DEFECT-001-command-surface-object-gate.md`](docs/gate/DEFECT-001-command-surface-object-gate.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
@@ -63,7 +64,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 312 tests
+./.venv/bin/pytest -q                  # 314 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

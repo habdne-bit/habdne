@@ -96,8 +96,18 @@ class CommandService:
     # step that gets forgotten, so an architecture test asserts every command
     # route calls one of these before it runs.
 
-    def _staff(self) -> bool:
+    @property
+    def is_staff(self) -> bool:
+        """Any role other than CUSTOMER.
+
+        Deliberately not `roles == {CUSTOMER}`: that phrasing calls a
+        role-less subject "staff", and would be load-bearing the day a route
+        asked this question before the role gate rather than after it.
+        """
         return bool(self._subject.roles - {Role.CUSTOMER})
+
+    def _staff(self) -> bool:
+        return self.is_staff
 
     def authorize_party_scope(self, party_id: uuid.UUID) -> Decision:
         """A CUSTOMER may act only on their own party (RFC-001 §4, decision 4).

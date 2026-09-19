@@ -85,9 +85,7 @@ def revoke_consent(request: Request, consent_id: uuid.UUID,
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
 
-    from ...auth.roles import Role
-
-    if command.subject.roles == frozenset({Role.CUSTOMER}):
+    if not command.is_staff:
         owned = access.read_resource(
             ResourceKind.CONSENT_GRANT, consent_id, "postConsentsConsentIdRevoke"
         )
