@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **73**
-- Distinct tests cited: **169**
-- Suite total: **275/275** test cases passing (214 distinct test functions)
+- Rules and invariants covered: **79**
+- Distinct tests cited: **182**
+- Suite total: **293/293** test cases passing (227 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -84,6 +84,12 @@ matrix, because it reads as assurance.
 | `§2.3 applied` | Idempotency is enforced on the commands that declare it | `test_missing_idempotency_key_is_rejected`<br>`test_same_key_same_payload_replays`<br>`test_same_key_different_payload_is_409`<br>`test_a_replay_creates_no_second_row` | PASS |
 | `§2.4 applied` | If-Match-Version is enforced; a stale version applies nothing | `test_patch_requires_the_version_header`<br>`test_patch_with_the_current_version_succeeds_and_bumps_it`<br>`test_patch_with_a_stale_version_is_409_and_changes_nothing`<br>`test_the_old_if_match_header_is_not_accepted` | PASS |
 | `Slice 1 / K01, K04` | Role boundaries and typed PATCH hold on the new surface | `test_customer_cannot_read_a_party_internally`<br>`test_reviewer_can_read_but_not_create`<br>`test_patch_rejects_an_undeclared_field`<br>`test_customer_cannot_create_a_consent_binding`<br>`test_customer_cannot_revoke_another_partys_consent` | PASS |
+| `R4.4 / K01 applied` | A CUSTOMER cannot mutate a party that is not their own | `test_customer_cannot_patch_another_partys_record`<br>`test_customer_cannot_attach_a_phone_to_another_party`<br>`test_customer_cannot_grant_consent_on_another_party` | PASS |
+| `R10.1 applied / decision 4` | Party creation is staff-only; a CUSTOMER cannot mint a party | `test_customer_cannot_create_an_arbitrary_party`<br>`test_staff_may_still_create_parties` | PASS |
+| `R3.1 applied` | A CUSTOMER with no party is authorized over nothing, not everything | `test_a_customer_with_no_party_can_act_on_nothing` | PASS |
+| `R4.4 positive` | The object gate still permits the legitimate caller | `test_customer_may_patch_their_own_party`<br>`test_customer_may_grant_consent_on_their_own_party`<br>`test_staff_may_act_on_any_party` | PASS |
+| `R6.3a applied` | Every command refusal is audited | `test_every_refusal_is_audited` | PASS |
+| `R10.3 / Q6 applied` | The object gate is structural: a command route without one fails the build | `test_every_command_route_performs_an_object_check`<br>`test_the_guard_check_is_not_vacuous`<br>`test_there_are_command_routes_to_check` | PASS |
 | `D6 / baseline hygiene` | Version drift in any single claim is caught mechanically | `test_a_consistent_package_passes`<br>`test_drift_in_any_single_place_is_caught`<br>`test_a_missing_artifact_is_an_error` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 

@@ -161,3 +161,69 @@ def test_nothing_writes_to_the_frozen_contract():
         ):
             offenders.append(path.name)
     assert not offenders, f"{offenders} may write to the frozen contract"
+
+
+# --- command routes must carry an object check ----------------------------
+#
+# The read paths get theirs from the scoped loaders, which cannot return a row
+# the caller may not see. A command has no loader, so the check is an explicit
+# call — and an explicit call is exactly what gets forgotten. It was: Slice 1
+# first shipped PATCH /parties, phone attachment and consent granting with the
+# role gate and no object gate, which let a customer act on any party id.
+
+_SCOPE_GUARDS = ("authorize_party_scope", "authorize_staff_only")
+
+#: Commands whose object rule lives elsewhere, each with its reason. A route
+#: may only be here deliberately; the test below fails for anything else.
+_GUARD_EXEMPT = {
+    # Claiming is how a customer ACQUIRES authority, so an ownership check
+    # would make it unusable. Its object rule is INV-1 in services/claims.py.
+    "claim_record",
+    # Revocation checks ownership through the scoped CONSENT_GRANT loader.
+    "revoke_consent",
+}
+
+
+def _command_route_functions(module: pathlib.Path):
+    """Route handlers that take a CommandService, i.e. that mutate."""
+    tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        takes_command = any(
+            isinstance(a.annotation, ast.Name) and a.annotation.id == "Command"
+            for a in node.args.args
+            if a.annotation is not None
+        )
+        if takes_command:
+            yield node
+
+
+def test_there_are_command_routes_to_check():
+    found = [n.name for m in _route_modules() for n in _command_route_functions(m)]
+    assert found, "no command routes found; the check below would be vacuous"
+
+
+@pytest.mark.parametrize("module", _route_modules(), ids=lambda p: p.name)
+def test_every_command_route_performs_an_object_check(module):
+    """A mutating route must call a scope guard, or be a named exemption."""
+    for node in _command_route_functions(module):
+        if node.name in _GUARD_EXEMPT:
+            continue
+        called = {
+            n.func.attr
+            for n in ast.walk(node)
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+        }
+        assert called & set(_SCOPE_GUARDS), (
+            f"{module.name}:{node.name} mutates but performs no object check. "
+            f"Call one of {_SCOPE_GUARDS}, or add it to _GUARD_EXEMPT with a "
+            "reason (RFC-001 §4)."
+        )
+
+
+def test_the_guard_check_is_not_vacuous():
+    """Every exemption must name a real route, or the list is rotting."""
+    names = {n.name for m in _route_modules() for n in _command_route_functions(m)}
+    stale = _GUARD_EXEMPT - names
+    assert not stale, f"_GUARD_EXEMPT names routes that no longer exist: {stale}"

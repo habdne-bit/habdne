@@ -32,6 +32,11 @@ def claim_record(request: Request, body: ClaimRecordInput, command: Command):
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
+    # No party-scope guard here on purpose: claiming is how a customer ACQUIRES
+    # authority over a record they do not yet hold, so an ownership check would
+    # make the command unusable. Its object rule is INV-1 inside
+    # services/claims.py: a resource already claimed by another account is
+    # rejected, and an ambiguous one grants authority to nobody.
     if body.resource_type not in ("REQUEST", "PROPERTY"):
         return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request),
                      "resource_type must be REQUEST or PROPERTY.")

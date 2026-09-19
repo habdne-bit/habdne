@@ -86,6 +86,15 @@ def create_party(request: Request, body: PartyCreate, command: Command):
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
+    # A create has no object to own. Slice 1 delivers party creation "for
+    # staff"; self-service belongs to Slice 8, which defines that flow.
+    scope = command.authorize_staff_only(
+        "postParties",
+        "self-service party creation is not available in this version",
+    )
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=False, detail=scope.detail)
 
     def handler(session):
         row = party_service.create_party(
@@ -130,6 +139,10 @@ def update_party(
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
+    scope = command.authorize_party_scope(party_id)
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=False, detail=scope.detail)
     try:
         expected = parse_if_match(if_match_version)
     except IfMatchRequired:
@@ -163,6 +176,10 @@ def attach_phone(request: Request, party_id: uuid.UUID, body: PhoneInput,
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
+    scope = command.authorize_party_scope(party_id)
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=False, detail=scope.detail)
 
     def handler(session):
         row = party_service.attach_phone(
@@ -191,6 +208,10 @@ def grant_consent(request: Request, party_id: uuid.UUID, body: ConsentGrantInput
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
+    scope = command.authorize_party_scope(party_id)
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=False, detail=scope.detail)
 
     def handler(session):
         row = consent_service.grant_consent(

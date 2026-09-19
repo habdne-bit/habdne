@@ -21,7 +21,9 @@ from typing import Any, Callable
 from sqlalchemy.orm import Session
 
 from ..auth.audit import AccessAuditor
-from ..auth.policy import Decision, DenyReason, PolicyTable
+from ..auth.policy import ALLOW as ALLOW_DECISION
+from ..auth.policy import Decision, DenyReason, PolicyTable, deny
+from ..auth.roles import Role
 from ..auth.subject import Subject
 from ..db.session import audited_transaction
 from . import idempotency
@@ -83,6 +85,58 @@ class CommandService:
                 reason_code=decision.reason.value if decision.reason else "DENY",
             )
         return decision
+
+    # ------------------------------------------------------------------
+    # Object authorization for commands
+    # ------------------------------------------------------------------
+    #
+    # The read paths get their object check from the scoped loaders: a loader
+    # cannot return a row the caller may not see. A command has no loader, so
+    # the check has to be made explicitly — and that is exactly the kind of
+    # step that gets forgotten, so an architecture test asserts every command
+    # route calls one of these before it runs.
+
+    def _staff(self) -> bool:
+        return bool(self._subject.roles - {Role.CUSTOMER})
+
+    def authorize_party_scope(self, party_id: uuid.UUID) -> Decision:
+        """A CUSTOMER may act only on their own party (RFC-001 §4, decision 4).
+
+        Staff are authorized by role and recorded; a customer must BE the
+        party. Without this a customer could patch, re-phone or grant consent
+        on any party id they could guess, which is precisely K01/K02.
+        """
+        if self._staff():
+            return ALLOW_DECISION
+        if not self._subject.has_party or self._subject.party_id != party_id:
+            self._auditor.denied(
+                subject=self._subject, operation_id="party-scope",
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind="PARTY", resource_id=party_id,
+            )
+            return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not your party")
+        return ALLOW_DECISION
+
+    def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:
+        """For commands whose object does not exist yet.
+
+        `POST /parties` lists CUSTOMER in x-roles, but a create has no object
+        to own, and Slice 1's deliverable is "create/read/update PARTY **for
+        staff**". Self-service party creation belongs to Slice 8, which defines
+        that flow; until then a customer creating an arbitrary PARTY is an
+        unbounded write primitive producing a record with no owner and no way
+        to read it back. The role check still passes, and the OBJECT check
+        denies — which is what the contract's x-authorization demands.
+        """
+        if self._staff():
+            return ALLOW_DECISION
+        self._auditor.denied(
+            subject=self._subject, operation_id=operation_id,
+            trace_id=self._trace_id,
+            reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+        )
+        return deny(DenyReason.OBJECT_NOT_AUTHORIZED, reason)
 
     def run(
         self,

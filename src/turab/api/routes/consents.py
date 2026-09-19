@@ -45,6 +45,15 @@ def bind_consent(request: Request, body: ConsentBindingInput, command: Command):
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
+    # x-roles already excludes CUSTOMER (R7.5: revocation is easier than
+    # granting). Stated again as an object check so the guarantee does not
+    # depend on the contract staying that way.
+    scope = command.authorize_staff_only(
+        "postConsentsBindings", "binding a consent is a staff operation"
+    )
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=False, detail=scope.detail)
 
     def handler(session):
         row = consent_service.bind_consent(
