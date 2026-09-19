@@ -131,13 +131,16 @@ class CommandService:
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:
         """For commands whose object does not exist yet.
 
-        `POST /parties` lists CUSTOMER in x-roles, but a create has no object
-        to own, and Slice 1's deliverable is "create/read/update PARTY **for
-        staff**". Self-service party creation belongs to Slice 8, which defines
-        that flow; until then a customer creating an arbitrary PARTY is an
-        unbounded write primitive producing a record with no owner and no way
-        to read it back. The role check still passes, and the OBJECT check
-        denies — which is what the contract's x-authorization demands.
+        A create has no object to own, so ownership cannot be the rule; the
+        rule is who may perform it at all.
+
+        For `POST /parties` this is now settled at the contract layer too:
+        decision D7 / CORRECTION-001 narrows it to ADMIN and OPERATOR, so the
+        role gate denies a customer before reaching here. This check remains
+        as the second lock, because a customer creating an arbitrary PARTY is
+        an unbounded write primitive producing a record with no owner and no
+        way to read it back — and a guard that only exists in the contract is
+        one edit away from not existing.
         """
         if self._staff():
             return ALLOW_DECISION

@@ -29,6 +29,14 @@ proposed change to a frozen artifact, and approved as one (R14.6).
 **The URL is not in `alembic.ini`.** It comes from `TURAB_DATABASE_URL`, the
 same variable the application reads, so there is no second place that decides
 which database gets migrated.
+
+**`alembic_version` is pinned to `public`.** The frozen schema sets
+`search_path = turab, public`, so where Alembic puts its version table depends
+on WHEN it creates it: `upgrade head` on an empty database creates it before
+the schema exists and lands in `public`, while `stamp` on an already-built
+database picks up the schema's search_path and lands in `turab`. The same
+database then has its history in a different place depending on how it was
+built. `version_table_schema` removes the ambiguity.
 """
 from __future__ import annotations
 
@@ -66,6 +74,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table_schema="public",
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -81,6 +90,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            version_table_schema="public",
         )
         with context.begin_transaction():
             context.run_migrations()

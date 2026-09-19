@@ -19,9 +19,9 @@ The PASS declaration is the contract owner's, not the implementer's.
 | OpenAPI parse / lint | gate step 6 | **PASS** — 61 paths, 64 operations |
 | Baseline version consistency | gate step 7 | **PASS** — 11/11 claims agree on `0.2.3` |
 | **PostgreSQL Execution Gate** | `db/gate/run_gate.sh` | **PASS — 7/7** |
-| Application suite | `pytest -q` | **PASS — 329/329** |
+| Application suite | `pytest -q` | **PASS — 355/355** |
 | OpenAPI drift | `generate_api_inventory.py --check` | **PASS** |
-| Authorization evidence | `authorization_evidence.py --check` | **PASS — 90 rules, 0 UNPROVEN** |
+| Authorization evidence | `authorization_evidence.py --check` | **PASS — 97 rules, 0 UNPROVEN** |
 
 Frozen artifact digests, unchanged since the v0.2.3 freeze:
 
@@ -97,7 +97,7 @@ those counts from the OpenAPI so the policy cannot drift from it.
 
 ---
 
-## 4. Test breakdown — 329 cases, 256 distinct functions
+## 4. Test breakdown — 355 cases, 280 distinct functions
 
 | File | Cases | Covers |
 |---|---:|---|
@@ -117,14 +117,15 @@ those counts from the OpenAPI so the policy cannot drift from it.
 | `test_idempotency.py` | 13 | §2.3 |
 | `test_contract_policy.py` | 12 | policy table ≡ frozen contract |
 | `test_inv1_claim_authority.py` | 12 | INV-1 |
-| `test_slice1_bola.py` | 10 | DEFECT-001, each exploit asserted closed |
+| `test_slice1_bola.py` | 11 | DEFECT-001, each exploit asserted closed |
 | `test_version_consistency.py` | 9 | D6 baseline hygiene |
-| `test_migrations.py` | 15 | R14.4–R14.7, the frozen baseline as revision 0001 |
+| `test_migrations.py` | 20 | R14.4–R14.7, structural fingerprint, stamp guard |
+| `test_correction_001.py` | 20 | D7 acceptance criteria and the correction mechanism |
 | `test_transaction_audit_context.py` | 3 | R6.2 actor attribution |
-| **Total** | **329** | |
+| **Total** | **355** | |
 
 Counts are pytest CASES, taken from `reports/junit.xml`; a parametrised
-function contributes one case per parameter, which is why they exceed the 256
+function contributes one case per parameter, which is why they exceed the 280
 distinct test functions.
 
 Evidence per rule: `docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`, generated
@@ -167,7 +168,7 @@ failure mode this slice should be remembered for.
 
 | # | Item | Status |
 |---|---|---|
-| **D7** | `POST /parties` is **staff-only in the implementation**, while the frozen contract lists `CUSTOMER` in its `x-roles`. | **Awaiting ratification.** Implemented fail-closed. Options (a) ratify and correct `x-roles` in a later patch, or (b) define self-service creation now — both in DEFECT-001 §6. This is the **only** known contract/implementation divergence. |
+| **D7** | `POST /parties` is restricted to ADMIN and OPERATOR. | **CLOSED — ratified 2026-09-19.** Applied as `CORRECTION-001` through the contract-corrections overlay, which never edits the published package and can only narrow. Design Ledger DL-01. Acceptance criteria and evidence: `docs/contract/CORRECTION-001-post-parties-roles.md`. No database migration: the change is contract and permissions only. |
 | D3 | Read-access records go to the structured log stream, not a table. | Carried from Slice 0; RFC-001 R6.3d left the destination open. |
 | D4 | The bearer is an opaque account id; token issuance is the authentication workstream. | Carried. R3.2 already ensures token design cannot widen authority. |
 | D5 | `getReasonCodes` has no contract `x-roles`; decision 5 governs. | Carried, with a test asserting it stays the only exception. |
@@ -183,16 +184,27 @@ only, with no alias, and `parties.version` exists in v0.2.3.
 
 Nothing below is stubbed in a way that could read as working.
 
-**A gap worth naming explicitly.** The frozen contract declares **no account
-management and no role assignment operations at all** — no create account, no
-set login contact point, no grant role. Slice 1 delivers *activation* of an
-account that already exists, which is what the handoff asks for; but the
-consequence is that **a USER_ACCOUNT cannot be brought into existence through
-TURAB's own API**, and `user_accounts.login_contact_point_id` is written
-nowhere in the application. Accounts and roles are provisioned out of band
-(currently by fixture). `services/roles.py` enforces INV-2 at grant time and
-has no endpoint to enforce it on. This is not a defect against the contract; it
-is a product gap the contract itself carries, and it will block any real pilot.
+**The account gap, stated per path.** Corrected after review, which asked for
+precision rather than a single sentence:
+
+| Path | Status |
+|---|---|
+| Create a USER_ACCOUNT | **Not implemented.** No application code inserts into `user_accounts`. |
+| Bind an account to a PARTY (`party_id`) | **Not implemented.** No application code writes the column. |
+| Set the login contact point | **Not implemented.** The column is READ by the login flow and written nowhere. |
+| **Activate an account** | **Implemented.** `INVITED → ACTIVATED` on a verified LOGIN; `SUSPENDED`/`DISABLED` untouched. This is the Slice 1 deliverable and it is delivered. |
+| Assign a role | **Service exists, no caller.** `services/roles.py:grant_role` enforces INV-2 and is tested, but nothing invokes it, and it performs no actor authorization, no audit and no self-escalation check. |
+
+**Impact.** An account can only be activated if it already exists, and nothing
+in TURAB can bring one into existence: today accounts and roles reach the
+database only through `db/fixtures/dev_fixtures.sql`. The frozen contract
+declares no operation for any of it — zero across all 64 operations — so this
+is not a deviation from the contract but a gap the contract carries.
+Slice 2 development may proceed on controlled test accounts; **readiness for a
+real pilot may not be declared on the strength of fixtures.**
+
+Specification, not yet authorised for implementation:
+`docs/contract/ACCOUNT_PROVISIONING_MINI_CONTRACT.md` (Design Ledger DL-07).
 
 **Domain slices not begun** — REQUEST/criteria/freshness (2), PROPERTY/OFFER/
 SOURCE/truth (3), deterministic matching (4), human review → OPPORTUNITY (5),
@@ -237,5 +249,5 @@ afterwards. It changes no domain model, workflow, permission or matching rule,
 so it needed no approval. Policy and evidence:
 `docs/gate/MIGRATION_POLICY.md`.
 
-Nothing else is outstanding on the implementation side. **Slice 2 is blocked
-only on the D7 decision and your instruction to begin.**
+Nothing else is outstanding on the implementation side. **D7 is now closed and Slice 2 is
+authorised to begin.**

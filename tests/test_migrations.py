@@ -3,13 +3,19 @@
 Ref: RFC-001 R14.4-R14.7; `IMPLEMENTATION_SLICES_v0.2.md` slice-completion
 criterion "migration can rebuild an empty environment".
 
-The interesting test here is not "does the migration run" — it applies the
-frozen SQL file, so of course it does. It is whether the database the
-migration PRODUCES matches what the static audit independently counted by
-PARSING that file. Those two numbers are derived by different means from
-different representations, so agreement is evidence rather than tautology:
-the audit reads text and counts statements, PostgreSQL reads statements and
-builds a catalog.
+Two comparisons run here, and they prove different things.
+
+The weaker one compares object COUNTS against the static audit's independent
+parse of the same file. Agreement is evidence about counts — the audit reads
+text and counts statements while PostgreSQL reports what it built — but 48
+tables with the wrong columns still counts as 48.
+
+The stronger one compares a structural FINGERPRINT: every column, constraint
+definition, index definition, trigger definition, function body and enum label
+as the catalog reports them. `db/dev/baseline_fingerprint.py` documents
+exactly what that covers and what it does not, and the limits are real: it
+says nothing about row data, privileges or behaviour. Behaviour remains the
+70-assertion gate's job, against the frozen SQL (R14.7).
 """
 from __future__ import annotations
 
@@ -18,9 +24,13 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
 
 import pytest
 from sqlalchemy import create_engine, text
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "db" / "dev"))
+from baseline_fingerprint import describe, diff, fingerprint  # noqa: E402
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUDIT_RESULTS = (
@@ -36,12 +46,18 @@ MIGRATION_DB = os.environ.get("TURAB_MIGRATION_DB", "turab_migration_test")
 URL = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{MIGRATION_DB}"
 
 
+#: The PG* variables the tests resolved, passed to every child process. Without
+#: them a child falls back to the ambient defaults and talks to a different
+#: server than the tests do.
+PG_ENV = {"PGHOST": PGHOST, "PGUSER": PGUSER, "PGPASSWORD": PGPASSWORD}
+
+
 def _alembic(*args: str, env_extra: dict | None = None) -> subprocess.CompletedProcess:
     exe = REPO_ROOT / ".venv" / "bin" / "alembic"
     return subprocess.run(
         [str(exe) if exe.exists() else "alembic", *args],
         cwd=REPO_ROOT, capture_output=True, text=True,
-        env={**os.environ, "TURAB_DATABASE_URL": URL, **(env_extra or {})},
+        env={**os.environ, **PG_ENV, "TURAB_DATABASE_URL": URL, **(env_extra or {})},
     )
 
 
@@ -272,11 +288,170 @@ def test_upgrading_a_stamped_database_is_a_no_op(stamped):
     assert after == before > 0
 
 
-def test_the_dev_reset_script_stamps(stamped):
-    """A text check, and named as one: it pins the step above into the script
-    developers actually run, which no database assertion can reach."""
+def test_the_dev_reset_script_stamps_through_the_guard(stamped):
+    """A text check, and named as one: it pins the step into the script
+    developers actually run, which no database assertion can reach.
+
+    It must go through `stamp_baseline.py`, not `alembic stamp` — the bare
+    command writes a version row and verifies nothing.
+    """
     script = (REPO_ROOT / "db" / "dev" / "reset_db.sh").read_text(encoding="utf-8")
-    assert "stamp head" in script, (
+    assert "stamp_baseline.py" in script, (
         "reset_db.sh must stamp the initial revision, or every development "
         "database it builds is invisible to Alembic"
     )
+    # Comment lines are stripped first: the script EXPLAINS why it does not
+    # call `alembic stamp` directly, and a naive substring search would trip
+    # over the explanation it is meant to protect.
+    commands = [
+        line for line in script.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    offenders = [ln for ln in commands if "stamp" in ln and "stamp_baseline" not in ln]
+    assert not offenders, f"reset_db.sh stamps without the guard: {offenders}"
+
+
+# --- structural equality, not just matching counts ------------------------
+
+@pytest.fixture(scope="module")
+def reference():
+    """A database built by applying the frozen SQL directly — the reference
+    every other way of arriving at the baseline is measured against."""
+    db = f"{MIGRATION_DB}_reference"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, "PGPASSWORD": PGPASSWORD}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    schema = REPO_ROOT / "docs" / "handoff" / "04_DATABASE" / "schema_v0.2.3.sql"
+
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    subprocess.run(["psql", *base, "-d", db, "-v", "ON_ERROR_STOP=1", "-q",
+                    "-f", str(schema)], check=True, env=env, capture_output=True)
+    engine = create_engine(url, future=True)
+    yield engine
+    engine.dispose()
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+
+
+def test_the_migrated_database_is_structurally_identical_to_the_frozen_schema(
+    migrated, reference
+):
+    """The claim the count comparison cannot make.
+
+    Covers columns, constraint definitions, index definitions, trigger
+    definitions, function BODIES and enum labels. It does not cover row data,
+    privileges or behaviour — see baseline_fingerprint.py.
+    """
+    with migrated.connect() as m, reference.connect() as r:
+        got, want = describe(m), describe(r)
+        problems = diff(want, got)
+        assert not problems, "migrated database differs structurally:\n  " + \
+            "\n  ".join(problems)
+        assert fingerprint(m) == fingerprint(r)
+
+
+def test_the_fingerprint_notices_a_changed_function_body(reference):
+    """A fingerprint that only saw names would pass this, and a changed
+    trigger implementation is exactly the drift R14.7 exists to catch."""
+    with reference.connect() as r:
+        before = fingerprint(r)
+    with reference.begin() as w:
+        w.execute(text("""
+            CREATE OR REPLACE FUNCTION turab.turab_touch_updated_at()
+            RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN NEW.updated_at := now(); RETURN NEW; END $$
+        """))
+    try:
+        with reference.connect() as r:
+            assert fingerprint(r) != before
+    finally:
+        with reference.begin() as w:
+            w.execute(text("DROP FUNCTION IF EXISTS turab.turab_touch_updated_at()"))
+
+
+def test_the_version_table_is_pinned_to_public(migrated):
+    """The frozen schema sets search_path = turab, public, so an unpinned
+    version table lands in `turab` when stamped and `public` when migrated —
+    the same database keeping its history in different places depending on how
+    it was built. Found by the fingerprint, fixed in env.py."""
+    with migrated.connect() as c:
+        schemas = c.execute(text(
+            "SELECT table_schema FROM information_schema.tables "
+            "WHERE table_name = 'alembic_version'"
+        )).scalars().all()
+    assert schemas == ["public"]
+
+
+# --- the stamp guard ------------------------------------------------------
+
+def test_stamping_a_database_that_is_not_the_baseline_is_refused(reference):
+    """`alembic stamp` verifies nothing, and a stamp ASSERTS that the revision
+    is already present. A false assertion surfaces much later, as a migration
+    half-applying to a structure the history only claimed it had."""
+    db = f"{MIGRATION_DB}_notbaseline"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, "PGPASSWORD": PGPASSWORD}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    subprocess.run(["psql", *base, "-d", db, "-v", "ON_ERROR_STOP=1", "-q", "-c",
+                    "CREATE SCHEMA turab; CREATE TABLE turab.parties (party_id uuid)"],
+                   check=True, env=env, capture_output=True)
+    try:
+        result = subprocess.run(
+            [str(REPO_ROOT / ".venv" / "bin" / "python"),
+             str(REPO_ROOT / "db" / "dev" / "stamp_baseline.py")],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+            env={**os.environ, **PG_ENV, "TURAB_DATABASE_URL": url},
+        )
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "NOT the frozen baseline" in result.stderr
+
+        engine = create_engine(url, future=True)
+        try:
+            with engine.connect() as c:
+                assert c.execute(text(
+                    "SELECT to_regclass('public.alembic_version') IS NULL"
+                )).scalar_one(), "a refused stamp must write no version row"
+        finally:
+            engine.dispose()
+    finally:
+        subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                       capture_output=True)
+
+
+def test_stamping_the_real_baseline_succeeds(reference):
+    """The guard must not be so strict it refuses the case it exists to allow."""
+    db = f"{MIGRATION_DB}_stampok"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, "PGPASSWORD": PGPASSWORD}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    schema = REPO_ROOT / "docs" / "handoff" / "04_DATABASE" / "schema_v0.2.3.sql"
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    subprocess.run(["psql", *base, "-d", db, "-v", "ON_ERROR_STOP=1", "-q",
+                    "-f", str(schema)], check=True, env=env, capture_output=True)
+    try:
+        result = subprocess.run(
+            [str(REPO_ROOT / ".venv" / "bin" / "python"),
+             str(REPO_ROOT / "db" / "dev" / "stamp_baseline.py"),
+             "--reference-db", f"{MIGRATION_DB}_refok"],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+            env={**os.environ, **PG_ENV, "TURAB_DATABASE_URL": url},
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        engine = create_engine(url, future=True)
+        try:
+            with engine.connect() as c:
+                assert c.execute(
+                    text("SELECT version_num FROM public.alembic_version")
+                ).scalar_one() == "0001_frozen_baseline_v0_2_3"
+        finally:
+            engine.dispose()
+    finally:
+        subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                       capture_output=True)

@@ -101,15 +101,22 @@ def test_customer_cannot_grant_consent_on_another_party(client, ids, engine):
 
 
 def test_customer_cannot_create_an_arbitrary_party(client, ids, engine):
-    """Slice 1 delivers party creation for staff; self-service is Slice 8.
+    """Creating a party is a staff operation.
 
     Allowing it here would produce a record with no owner that its creator
     could never read back, and hand customers an unbounded write primitive.
+
+    The refusal is now `ROLE_NOT_PERMITTED`, not `OBJECT_NOT_AUTHORIZED`:
+    decision D7 / CORRECTION-001 narrowed this operation to ADMIN and
+    OPERATOR, so the ROLE gate denies before the object gate is reached. That
+    is a stronger position, not a weaker one — the object gate below is still
+    in place as the second lock, and
+    `test_the_object_gate_on_party_creation_is_still_present` proves it.
     """
     r = client.post("/parties", json={"kind": "PERSON", "display_name": "orphan"},
                     headers={**cust(ids), **key("bola-create")})
     assert r.status_code == 403
-    assert r.json()["code"] == "OBJECT_NOT_AUTHORIZED"
+    assert r.json()["code"] == "ROLE_NOT_PERMITTED"
     with Session(bind=engine, future=True) as s:
         assert s.execute(
             text("SELECT count(*) FROM turab.parties WHERE display_name='orphan'")
@@ -215,3 +222,25 @@ def _restore(engine, party_id, name):
         s.execute(text("UPDATE turab.parties SET display_name=:n WHERE party_id=:p"),
                   {"n": name, "p": party_id})
         s.commit()
+
+
+def test_the_object_gate_on_party_creation_is_still_present():
+    """CORRECTION-001 moved the refusal to the role gate. The object gate must
+    not be deleted as redundant: a create has no object to own, so if the
+    contract's roles ever widened again, the contract would be the only thing
+    between a customer and an unbounded write primitive.
+    """
+    import ast
+    import pathlib
+
+    source = pathlib.Path("src/turab/api/routes/parties.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    create = next(
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.FunctionDef) and n.name == "create_party"
+    )
+    called = {
+        node.func.attr for node in ast.walk(create)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    }
+    assert "authorize_staff_only" in called

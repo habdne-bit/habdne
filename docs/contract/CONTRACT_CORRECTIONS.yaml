@@ -1,0 +1,45 @@
+# =============================================================================
+# TURAB — numbered contract corrections
+#
+# Ref: RFC-001 R10.2, R14.1; FILE_AUTHORITY_AND_VERSION_POLICY.md.
+#
+# The frozen OpenAPI is vendored byte-for-byte and is NEVER edited in place.
+# Where an approved decision makes an operation's declared roles wrong, the
+# decision is recorded here and applied on top of the frozen contract when the
+# policy table is built. The frozen file stays the published artifact; this
+# file is the audited difference between it and what is enforced.
+#
+# Two invariants are enforced mechanically in src/turab/auth/contract.py and
+# are the reason this file cannot become a back door:
+#
+#   1. A correction may only NARROW. `corrected` must be a subset of `frozen`.
+#      Widening access is a contract change and needs a new official handoff
+#      package, not a local overlay.
+#   2. `frozen` must equal what the frozen contract actually declares today.
+#      If the published package changes, every correction that referred to the
+#      old text fails loudly instead of silently applying to new text.
+#
+# Every entry names the decision that approved it. A correction without one is
+# an opinion.
+# =============================================================================
+
+baseline: "0.2.3"
+
+corrections:
+  - id: CORRECTION-001
+    decision: D7
+    approved: "2026-09-19"
+    operation_id: postParties
+    field: x-roles
+    frozen: [ADMIN, OPERATOR, CUSTOMER]
+    corrected: [ADMIN, OPERATOR]
+    rationale: >-
+      POST /parties creates a market PARTY on behalf of someone, performed by
+      staff. No general self-service creation is adopted through it, and
+      CUSTOMER is not added to its permissions without a defined onboarding
+      path. Self-service party creation is held as a separate Design Ledger
+      item requiring its own contract before implementation.
+    does_not_affect: >-
+      A CUSTOMER creating their own REQUEST remains in scope for Slice 2,
+      using an account already bound to the correct party. Restricting PARTY
+      creation to staff does not remove that path.

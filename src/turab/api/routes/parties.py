@@ -86,11 +86,15 @@ def create_party(request: Request, body: PartyCreate, command: Command):
     if not decision.allowed:
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
-    # A create has no object to own. Slice 1 delivers party creation "for
-    # staff"; self-service belongs to Slice 8, which defines that flow.
+    # CORRECTION-001 / decision D7: the role gate above already denies
+    # CUSTOMER, because the correction narrows this operation to ADMIN and
+    # OPERATOR. This object check is kept and not deleted as redundant: a
+    # create has no object to own, so if the roles ever widen again the only
+    # thing standing between a customer and an unbounded write primitive
+    # would be the contract. It stays as the second lock.
     scope = command.authorize_staff_only(
         "postParties",
-        "self-service party creation is not available in this version",
+        "creating a party is a staff operation",
     )
     if not scope.allowed:
         return for_denial(scope.reason, trace_id_of(request),

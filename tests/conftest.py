@@ -23,12 +23,36 @@ PGUSER = os.environ.get("PGUSER", "turab")
 PGPASSWORD = os.environ.get("PGPASSWORD", "turab")
 
 
+def _require_server() -> None:
+    """Fail once, readably, instead of 200+ identical connection errors.
+
+    See docs/gate/ENVIRONMENT_NOTES.md EN-01: this container restarts and
+    PostgreSQL does not come back up with it, so an entire suite can fail for
+    one reason that the output buries.
+    """
+    probe = subprocess.run(
+        ["pg_isready", "-h", PGHOST, "-q"], capture_output=True
+    )
+    if probe.returncode != 0:
+        raise pytest.UsageError(
+            f"PostgreSQL is not accepting connections on {PGHOST}. "
+            "Start it with `service postgresql start` and re-run. "
+            "See docs/gate/ENVIRONMENT_NOTES.md EN-01 — a suite failing this "
+            "way produced no result, and must not be reported as one."
+        )
+
+
 def _psql(db: str, *args: str) -> None:
     env = {**os.environ, "PGPASSWORD": PGPASSWORD}
     subprocess.run(
         ["psql", "-h", PGHOST, "-U", PGUSER, "-d", db, "-v", "ON_ERROR_STOP=1", "-q", *args],
         check=True, env=env, capture_output=True,
     )
+
+
+def pytest_sessionstart(session) -> None:
+    """One readable failure instead of a wall of identical ones (EN-01)."""
+    _require_server()
 
 
 @pytest.fixture(scope="session")

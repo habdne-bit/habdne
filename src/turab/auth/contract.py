@@ -33,9 +33,71 @@ CONTRACT_PATH = (
     / "openapi_v0.2.3.yaml"
 )
 
+#: Approved decisions that correct the frozen contract's declared roles.
+#: The frozen file is never edited; this is the audited difference.
+CORRECTIONS_PATH = (
+    pathlib.Path(__file__).resolve().parents[3]
+    / "docs" / "contract" / "CONTRACT_CORRECTIONS.yaml"
+)
+
 
 class ContractError(RuntimeError):
     """The contract and the policy layer disagree. Fails at startup."""
+
+
+@functools.cache
+def _correction_entries(path: pathlib.Path | None = None) -> tuple[dict, ...]:
+    doc = yaml.safe_load((path or CORRECTIONS_PATH).read_text(encoding="utf-8"))
+    return tuple(doc.get("corrections") or ())
+
+
+def load_corrections(
+    path: pathlib.Path | None = None,
+) -> dict[str, frozenset[Role]]:
+    """Read the numbered corrections and return operation_id -> corrected roles.
+
+    Every check here exists to stop this file being a quieter way to grant
+    access than changing the contract.
+    """
+    out: dict[str, frozenset[Role]] = {}
+    seen_ids: set[str] = set()
+
+    for entry in _correction_entries(path):
+        cid = entry.get("id")
+        if not cid or cid in seen_ids:
+            raise ContractError(f"correction {cid!r}: missing or duplicated id")
+        seen_ids.add(cid)
+        if not entry.get("decision"):
+            raise ContractError(
+                f"{cid}: names no decision. A correction without an approved "
+                "decision behind it is an opinion, not a contract change."
+            )
+        operation_id = entry.get("operation_id")
+        if operation_id in out:
+            raise ContractError(f"{cid}: {operation_id} is corrected twice")
+
+        frozen = frozenset(Role(r) for r in entry.get("frozen") or [])
+        corrected = frozenset(Role(r) for r in entry.get("corrected") or [])
+        if not corrected:
+            raise ContractError(
+                f"{cid}: an empty role set makes the operation unreachable; "
+                "remove the operation from the contract instead"
+            )
+        if not corrected <= frozen:
+            raise ContractError(
+                f"{cid}: {sorted(r.value for r in corrected - frozen)} is not in "
+                "the frozen contract. A correction may only NARROW — widening "
+                "access needs a new official handoff package (R14.1)."
+            )
+        out[operation_id] = corrected
+
+    return out
+
+
+def _corrected_roles(
+    operation_id: str, declared: frozenset[Role], corrections: dict[str, frozenset[Role]]
+) -> frozenset[Role]:
+    return corrections.get(operation_id, declared)
 
 
 def _operations(doc: dict[str, Any]):
@@ -57,8 +119,10 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
     no rule for, so a contract change cannot land silently unenforced.
     """
     doc = load_contract(path)
+    corrections = load_corrections()
     policies: dict[str, RoutePolicy] = {}
     unannotated: list[str] = []
+    corrected_frozen: dict[str, frozenset[Role]] = {}
 
     for route, method, op in _operations(doc):
         operation_id = op.get("operationId")
@@ -76,7 +140,9 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
                 )
             roles: frozenset[Role] = frozenset()
         elif declared:
-            roles = frozenset(Role(r) for r in declared)
+            as_declared = frozenset(Role(r) for r in declared)
+            corrected_frozen[operation_id] = as_declared
+            roles = _corrected_roles(operation_id, as_declared, corrections)
         elif operation_id in CONTRACT_ROLE_EXCEPTIONS:
             # R10.3a. Authenticated, no x-roles, ruled on explicitly.
             roles = CONTRACT_ROLE_EXCEPTIONS[operation_id]
@@ -105,6 +171,24 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
             + " — each needs a decision before it can be reachable"
         )
 
+    # Every correction must name a real, role-annotated operation, and must
+    # still describe the contract as it stands today (invariant 2).
+    for entry in _correction_entries():
+        operation_id = entry["operation_id"]
+        if operation_id not in corrected_frozen:
+            raise ContractError(
+                f"{entry['id']}: {operation_id} is not an operation the frozen "
+                "contract annotates with x-roles"
+            )
+        stated = frozenset(Role(r) for r in entry["frozen"])
+        if stated != corrected_frozen[operation_id]:
+            raise ContractError(
+                f"{entry['id']}: declares the frozen roles as "
+                f"{sorted(r.value for r in stated)}, but the contract now says "
+                f"{sorted(r.value for r in corrected_frozen[operation_id])}. "
+                "The correction is stale and must be re-approved against the "
+                "current package."
+            )
     # PUBLIC_OPERATIONS must not claim anything the contract does not.
     declared_public = {p.operation_id for p in policies.values() if p.public}
     if declared_public != PUBLIC_OPERATIONS:
@@ -133,6 +217,7 @@ def verify_policy_matches_contract(table: PolicyTable, path: pathlib.Path | None
     Run at startup and as a test, so code and contract cannot drift apart.
     """
     doc = load_contract(path)
+    corrections = load_corrections()
     problems: list[str] = []
 
     for route, method, op in _operations(doc):
@@ -145,7 +230,8 @@ def verify_policy_matches_contract(table: PolicyTable, path: pathlib.Path | None
             if not policy.public:
                 problems.append(f"{operation_id}: unauthenticated in contract, not in policy")
             continue
-        expected = frozenset(Role(r) for r in (op.get("x-roles") or [])) or (
+        declared = frozenset(Role(r) for r in (op.get("x-roles") or []))
+        expected = _corrected_roles(operation_id, declared, corrections) if declared else (
             CONTRACT_ROLE_EXCEPTIONS.get(operation_id, frozenset())
         )
         if policy.roles != expected:

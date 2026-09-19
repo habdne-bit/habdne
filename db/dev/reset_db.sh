@@ -43,17 +43,23 @@ psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
 # STAMPED at that revision rather than migrated up to it. Without this the
 # database carries no alembic_version, and the next `alembic upgrade head`
 # would try to apply the baseline again on top of itself and fail.
-step "Stamping the initial Alembic revision"
-if [[ -x "$REPO_ROOT/.venv/bin/alembic" ]]; then
-  ALEMBIC="$REPO_ROOT/.venv/bin/alembic"
+#
+# Not `alembic stamp` directly: that writes a version row and verifies
+# nothing. stamp_baseline.py refuses unless the database is structurally
+# identical to one built from the frozen schema, because a stamp ASSERTS that
+# revision is already present and a false assertion surfaces much later, as a
+# migration half-applying to a structure the history only claimed it had.
+step "Stamping the initial Alembic revision (structure verified)"
+if [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
+  PYTHON="$REPO_ROOT/.venv/bin/python"
 else
-  ALEMBIC="alembic"
+  PYTHON="python3"
 fi
 # Built from the same PG* variables psql just used, so the stamp cannot land
 # on a different database than the schema did. PGPORT is included: omitting it
 # would let a non-default port succeed for psql and silently fail here.
 STAMP_URL="${TURAB_DATABASE_URL:-postgresql+psycopg://${PGUSER:-$USER}@${PGHOST:-/var/run/postgresql}:${PGPORT:-5432}/$PGDATABASE}"
-( cd "$REPO_ROOT" && TURAB_DATABASE_URL="$STAMP_URL" "$ALEMBIC" stamp head )
+TURAB_DATABASE_URL="$STAMP_URL" "$PYTHON" "$REPO_ROOT/db/dev/stamp_baseline.py"
 
 if [[ $WITH_FIXTURES -eq 1 ]]; then
   step "Loading development fixtures"

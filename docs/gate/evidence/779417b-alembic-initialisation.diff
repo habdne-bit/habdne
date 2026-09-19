@@ -1,0 +1,905 @@
+commit 779417b06cc636edd6a5c161b722951b3a9fb97b
+Author: Claude <noreply@anthropic.com>
+Date:   Sat Sep 19 16:23:06 2026 +0000
+
+    build(db): initialise Alembic with the frozen schema as revision 0001
+    
+    The groundwork Slice 2 cannot proceed without. It changes no domain model,
+    workflow, permission or matching rule, so it needed no approval; Slice 2
+    itself remains blocked on D7 and on instruction to begin.
+    
+    R14.4 says the frozen schema IS the initial migration and that Alembic must
+    not recreate it from models. Revision 0001 therefore applies
+    docs/handoff/04_DATABASE/schema_v0.2.3.sql verbatim, as bytes read from the
+    vendored package. It transcribes nothing, so there is no second copy of the
+    baseline to drift.
+    
+    What is mechanically prevented, each with a test:
+    
+      * the revision verifies the file's SHA-256 BEFORE executing it, so editing
+        the vendored schema cannot become an approved schema change by accident;
+      * the declared digest is asserted equal to the file's, so the guard cannot
+        be compared against a stale constant;
+      * target_metadata is None, so Alembic refuses --autogenerate outright —
+        with no declarative metadata, autogenerate would compare "nothing" to 48
+        tables and emit a migration dropping the baseline;
+      * exactly one head;
+      * downgrade() from the baseline raises: dropping it is reset_db.sh's job,
+        and that script refuses to run against a production-looking name.
+    
+    The test that carries the weight is different in kind: it compares the
+    MIGRATED catalog against STATIC_AUDIT_RESULTS_v0.2.3.json, which counts the
+    same objects by parsing the SQL text. Two derivations, different means,
+    different representations — agreement across 48 tables, 54 enum types, 17
+    functions, 37 triggers and 131 foreign keys is evidence. A migration that ran
+    but built a partial schema passes "did it run" and fails this.
+    
+    reset_db.sh now STAMPS the initial revision, which is R14.4's actual word.
+    Without it every development database carries no alembic_version, and the next
+    `upgrade head` applies the baseline on top of itself and dies on the first
+    duplicate object. That trap is closed and pinned: removing the stamp makes two
+    tests fail, which was verified by doing it.
+    
+    One thing removed rather than kept: an env.py hook meant to refuse autogenerate
+    with a fuller message. Alembic rejects the command before that hook is reached,
+    so it was unreachable — a check reading as a guarantee while providing none.
+    The test now pins Alembic's real refusal, and a companion test pins
+    `target_metadata = None` as the reason, because a deliberate absence is exactly
+    what a later helpful edit restores.
+    
+    Verification: 329 tests pass (15 new); 90 rules evidenced, 0 UNPROVEN;
+    PostgreSQL Execution Gate 7/7 PASS (70/70); dev reset + fixture re-load
+    idempotent; OpenAPI drift, version consistency and handoff integrity (36/36)
+    all PASS.
+    
+    Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01Cj64KjjgBK3118wmEfHgz2
+
+diff --git a/README.md b/README.md
+index 3005054..a377110 100644
+--- a/README.md
++++ b/README.md
+@@ -12,7 +12,7 @@
+ | Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
+ | Slice −1 — Tooling baseline | Complete |
+ | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
+-| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, submitted for closure review** — all 11 contract operations wired, 314 tests, 85 rules evidenced |
++| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, submitted for closure review** — all 11 contract operations wired, 329 tests, 90 rules evidenced |
+ 
+ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
+ 
+@@ -22,6 +22,7 @@ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
+ - Authorization evidence: **[`docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`](docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md)**
+ - Slice 0 closure: **[`docs/gate/SLICE_0_CLOSURE_PACK.md`](docs/gate/SLICE_0_CLOSURE_PACK.md)**
+ - Slice 1 closure: **[`docs/gate/SLICE_1_CLOSURE_PACK.md`](docs/gate/SLICE_1_CLOSURE_PACK.md)**
++- Migration policy (R14.4–R14.7): **[`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md)**
+ - Defect record (BOLA on the Slice 1 command surface, closed): **[`docs/gate/DEFECT-001-command-surface-object-gate.md`](docs/gate/DEFECT-001-command-surface-object-gate.md)**
+ 
+ Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
+@@ -34,7 +35,8 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
+ | `docs/handoff/` | The official Developer Handoff **v1.0.3** package, vendored **unmodified** — the authority baseline. Read `docs/handoff/README.md` first. Never edited in place: corrections arrive as a new official package. |
+ | `docs/gate/` | Execution gate run reports |
+ | `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint, API inventory generator |
+-| `db/dev/` | Development database reset (`reset_db.sh`) |
++| `db/dev/` | Development database reset (`reset_db.sh`) — applies the frozen baseline, then **stamps** the initial Alembic revision |
++| `db/migrations/` | Alembic. The frozen schema **is** the initial migration; autogenerate is refused. See [`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md) |
+ | `db/fixtures/` | Developer fixtures — a coherent Adrar world, authorization edge cases EC1–EC8, market edge cases MF1–MF8 |
+ | `docs/rfc/` | Design RFCs awaiting or carrying decisions |
+ | `docs/api/` | Generated API inventory (do not edit) |
+@@ -64,7 +66,7 @@ release blocker.
+ ```bash
+ python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
+ db/dev/reset_db.sh --fixtures          # a database to work against
+-./.venv/bin/pytest -q                  # 314 tests
++./.venv/bin/pytest -q                  # 329 tests
+ ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
+ ```
+ 
+diff --git a/alembic.ini b/alembic.ini
+new file mode 100644
+index 0000000..6329b39
+--- /dev/null
++++ b/alembic.ini
+@@ -0,0 +1,49 @@
++# TURAB — Alembic configuration.
++#
++# Ref: RFC-001 §14.2 (R14.4-R14.7).
++#
++# The frozen schema is the initial migration. Autogeneration is refused in
++# db/migrations/env.py, not merely discouraged here: see the reasoning there.
++#
++# The URL is deliberately absent. It comes from TURAB_DATABASE_URL via env.py,
++# so a migration cannot be run against a database nobody named.
++
++[alembic]
++script_location = db/migrations
++prepend_sys_path = src
++version_path_separator = os
++file_template = %%(rev)s_%%(slug)s
++
++[loggers]
++keys = root,sqlalchemy,alembic
++
++[handlers]
++keys = console
++
++[formatters]
++keys = generic
++
++[logger_root]
++level = WARNING
++handlers = console
++qualname =
++
++[logger_sqlalchemy]
++level = WARNING
++handlers =
++qualname = sqlalchemy.engine
++
++[logger_alembic]
++level = INFO
++handlers =
++qualname = alembic
++
++[handler_console]
++class = StreamHandler
++args = (sys.stderr,)
++level = NOTSET
++formatter = generic
++
++[formatter_generic]
++format = %(levelname)-5.5s [%(name)s] %(message)s
++datefmt = %H:%M:%S
+diff --git a/db/dev/reset_db.sh b/db/dev/reset_db.sh
+index db5e423..cd1f791 100755
+--- a/db/dev/reset_db.sh
++++ b/db/dev/reset_db.sh
+@@ -39,6 +39,22 @@ step "Applying frozen baseline"
+ psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.3.sql"
+ psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
+ 
++# R14.4: the frozen schema IS the initial migration, so the database is
++# STAMPED at that revision rather than migrated up to it. Without this the
++# database carries no alembic_version, and the next `alembic upgrade head`
++# would try to apply the baseline again on top of itself and fail.
++step "Stamping the initial Alembic revision"
++if [[ -x "$REPO_ROOT/.venv/bin/alembic" ]]; then
++  ALEMBIC="$REPO_ROOT/.venv/bin/alembic"
++else
++  ALEMBIC="alembic"
++fi
++# Built from the same PG* variables psql just used, so the stamp cannot land
++# on a different database than the schema did. PGPORT is included: omitting it
++# would let a non-default port succeed for psql and silently fail here.
++STAMP_URL="${TURAB_DATABASE_URL:-postgresql+psycopg://${PGUSER:-$USER}@${PGHOST:-/var/run/postgresql}:${PGPORT:-5432}/$PGDATABASE}"
++( cd "$REPO_ROOT" && TURAB_DATABASE_URL="$STAMP_URL" "$ALEMBIC" stamp head )
++
+ if [[ $WITH_FIXTURES -eq 1 ]]; then
+   step "Loading development fixtures"
+   psql -v ON_ERROR_STOP=1 -q -f "$REPO_ROOT/db/fixtures/dev_fixtures.sql"
+diff --git a/db/gate/authorization_evidence.py b/db/gate/authorization_evidence.py
+index e925158..af8fc77 100755
+--- a/db/gate/authorization_evidence.py
++++ b/db/gate/authorization_evidence.py
+@@ -337,6 +337,27 @@ RULES: tuple[Rule, ...] = (
+          ("test_a_consistent_package_passes",
+           "test_drift_in_any_single_place_is_caught",
+           "test_a_missing_artifact_is_an_error")),
++    # --- migrations (R14.4-R14.7) -------------------------------------------
++    Rule("R14.4", "The frozen schema IS the initial migration; it rebuilds an "
++                  "empty environment and stamps at head",
++         ("test_a_migration_rebuilds_an_empty_environment",
++          "test_there_is_exactly_one_head")),
++    Rule("R14.4 / R14.7",
++         "The migrated catalog agrees with the static audit's own parse",
++         ("test_the_migrated_catalog_matches_the_static_audit",)),
++    Rule("R14.6", "A baseline that is not the frozen one refuses to migrate",
++         ("test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one",
++          "test_the_declared_digest_is_the_frozen_one")),
++    Rule("R14.4 / R14.5",
++         "Autogenerate is refused; there is no metadata to diff the baseline against",
++         ("test_autogenerate_is_refused",
++          "test_env_declares_no_metadata_to_diff_against",
++          "test_there_is_no_downgrade_from_the_baseline")),
++    Rule("R14.4 stamp",
++         "A database built from the frozen SQL is stamped, so upgrade is a no-op",
++         ("test_a_stamped_database_is_already_at_head",
++          "test_upgrading_a_stamped_database_is_a_no_op",
++          "test_the_dev_reset_script_stamps")),
+     Rule("Slice 0", "Health is liveness; readiness checks the database and fails 503",
+          ("test_health_is_liveness_only", "test_readiness_checks_the_database",
+           "test_readiness_reports_503_when_the_database_is_unreachable")),
+diff --git a/db/migrations/env.py b/db/migrations/env.py
+new file mode 100644
+index 0000000..7047189
+--- /dev/null
++++ b/db/migrations/env.py
+@@ -0,0 +1,93 @@
++"""Alembic environment for TURAB.
++
++Ref: RFC-001 §14.2 — R14.4 (the frozen schema IS the initial migration),
++R14.5 (models match the schema, never the reverse), R14.6 (a migration that
++alters the baseline needs the schema-change approval path), R14.7 (the
++70-assertion gate keeps running against the frozen SQL).
++
++Two decisions are enforced here rather than written down and hoped for.
++
++**`target_metadata` is None, and that is itself the guard.** Alembic's
++autogenerate compares model metadata to a live database and emits the
++difference. TURAB has no declarative models — the services issue explicit SQL
++against the frozen schema — so the comparison would be "nothing declared"
++versus "48 tables", and the obliging output is a migration dropping the entire
++baseline.
++
++With `target_metadata = None`, Alembic refuses `--autogenerate` outright:
++"Can't proceed with --autogenerate option; environment script ... does not
++provide a MetaData object". That refusal happens before any revision file is
++written, which is stronger than a `process_revision_directives` hook that
++inspects a directive Alembic never gets far enough to produce. An earlier
++draft of this file carried such a hook; it was unreachable, and an unreachable
++check reads as a guarantee while providing none. `test_autogenerate_is_refused`
++pins the real behaviour instead.
++
++A migration against this baseline is therefore written by hand, reviewed as a
++proposed change to a frozen artifact, and approved as one (R14.6).
++
++**The URL is not in `alembic.ini`.** It comes from `TURAB_DATABASE_URL`, the
++same variable the application reads, so there is no second place that decides
++which database gets migrated.
++"""
++from __future__ import annotations
++
++import os
++import sys
++from logging.config import fileConfig
++from pathlib import Path
++
++from alembic import context
++from sqlalchemy import engine_from_config, pool
++
++REPO_ROOT = Path(__file__).resolve().parents[2]
++sys.path.insert(0, str(REPO_ROOT / "src"))
++
++config = context.config
++if config.config_file_name is not None:
++    fileConfig(config.config_file_name)
++
++#: R14.5. Deliberately None — see the module docstring.
++target_metadata = None
++
++
++def _database_url() -> str:
++    url = os.environ.get("TURAB_DATABASE_URL")
++    if url:
++        return url
++    from turab.db.session import database_url
++
++    return database_url()
++
++
++def run_migrations_offline() -> None:
++    context.configure(
++        url=_database_url(),
++        target_metadata=target_metadata,
++        literal_binds=True,
++        dialect_opts={"paramstyle": "named"},
++    )
++    with context.begin_transaction():
++        context.run_migrations()
++
++
++def run_migrations_online() -> None:
++    section = config.get_section(config.config_ini_section, {})
++    section["sqlalchemy.url"] = _database_url()
++    connectable = engine_from_config(
++        section, prefix="sqlalchemy.", poolclass=pool.NullPool
++    )
++    with connectable.connect() as connection:
++        context.configure(
++            connection=connection,
++            target_metadata=target_metadata,
++        )
++        with context.begin_transaction():
++            context.run_migrations()
++    connectable.dispose()
++
++
++if context.is_offline_mode():
++    run_migrations_offline()
++else:
++    run_migrations_online()
+diff --git a/db/migrations/script.py.mako b/db/migrations/script.py.mako
+new file mode 100644
+index 0000000..cd894c5
+--- /dev/null
++++ b/db/migrations/script.py.mako
+@@ -0,0 +1,27 @@
++"""${message}
++
++Revision ID: ${up_revision}
++Revises: ${down_revision | comma,n}
++Created: ${create_date}
++
++A migration in TURAB is a proposed change to a FROZEN baseline, not routine
++output (RFC-001 R14.6). State what it changes and why the change was approved.
++"""
++from __future__ import annotations
++
++from alembic import op
++import sqlalchemy as sa
++${imports if imports else ""}
++
++revision = ${repr(up_revision)}
++down_revision = ${repr(down_revision)}
++branch_labels = ${repr(branch_labels)}
++depends_on = ${repr(depends_on)}
++
++
++def upgrade() -> None:
++    ${upgrades if upgrades else "raise NotImplementedError"}
++
++
++def downgrade() -> None:
++    ${downgrades if downgrades else "raise NotImplementedError"}
+diff --git a/db/migrations/versions/0001_frozen_baseline_v0_2_3.py b/db/migrations/versions/0001_frozen_baseline_v0_2_3.py
+new file mode 100644
+index 0000000..5b86f30
+--- /dev/null
++++ b/db/migrations/versions/0001_frozen_baseline_v0_2_3.py
+@@ -0,0 +1,70 @@
++"""Frozen technical baseline v0.2.3 as the initial migration.
++
++Revision ID: 0001_frozen_baseline_v0_2_3
++Revises: (none — this is the root)
++
++Ref: RFC-001 R14.4; `docs/gate/TECHNICAL_BASELINE_FROZEN_v0.2.3.md`.
++
++R14.4 says the frozen schema **is** the initial migration and that Alembic
++must not recreate it from models. This revision therefore applies
++`docs/handoff/04_DATABASE/schema_v0.2.3.sql` **verbatim**, as bytes read from
++the vendored handoff package. It contains no transcription of that file, so
++there is no second copy of the baseline to drift.
++
++Two consequences are deliberate.
++
++**The digest is checked before the file is executed.** A migration that
++silently applied whatever happened to be at that path would turn an edit to
++the frozen package into an approved schema change. If the bytes are not the
++frozen ones, this refuses to run and names the mismatch. That is the same
++guarantee `verify_handoff.py` gives in CI, enforced at the one moment it
++matters most.
++
++**`downgrade()` refuses.** Dropping the baseline is not a migration; it is
++`db/dev/reset_db.sh` against a development database, which says so in its own
++name and refuses to run against anything that looks like production.
++"""
++from __future__ import annotations
++
++import hashlib
++import pathlib
++
++from alembic import op
++
++revision = "0001_frozen_baseline_v0_2_3"
++down_revision = None
++branch_labels = None
++depends_on = None
++
++#: The frozen artifact and its digest, as recorded at the v0.2.3 freeze.
++SCHEMA = (
++    pathlib.Path(__file__).resolve().parents[3]
++    / "docs" / "handoff" / "04_DATABASE" / "schema_v0.2.3.sql"
++)
++SCHEMA_SHA256 = "789841a1a41d869ca78de256879e62950f0672c9719c40a94408c549e28d98a0"
++
++
++def _frozen_sql() -> str:
++    raw = SCHEMA.read_bytes()
++    digest = hashlib.sha256(raw).hexdigest()
++    if digest != SCHEMA_SHA256:
++        raise SystemExit(
++            f"refusing to migrate: {SCHEMA.name} is not the frozen baseline.\n"
++            f"  expected {SCHEMA_SHA256}\n"
++            f"  found    {digest}\n"
++            "The frozen package is vendored byte-for-byte and corrected only by "
++            "a new official handoff (RFC-001 R14.6). Applying an edited baseline "
++            "as this revision would make a local edit the new truth."
++        )
++    return raw.decode("utf-8")
++
++
++def upgrade() -> None:
++    op.execute(_frozen_sql())
++
++
++def downgrade() -> None:
++    raise NotImplementedError(
++        "There is no downgrade from the initial baseline. To rebuild a "
++        "development database from zero, use db/dev/reset_db.sh."
++    )
+diff --git a/docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md b/docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md
+index d9f5508..e397e94 100644
+--- a/docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md
++++ b/docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md
+@@ -3,9 +3,9 @@
+ **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
+ **Do not edit.** The status column is a real test result, not an assertion.
+ 
+-- Rules and invariants covered: **85**
+-- Distinct tests cited: **200**
+-- Suite total: **314/314** test cases passing (245 distinct test functions)
++- Rules and invariants covered: **90**
++- Distinct tests cited: **211**
++- Suite total: **329/329** test cases passing (256 distinct test functions)
+ 
+ A rule whose mapping matches no test is reported **UNPROVEN** and fails the
+ check: an evidence matrix that can silently lose its evidence is worse than no
+@@ -97,6 +97,11 @@ matrix, because it reads as assurance.
+ | `R6.3c / R6.3b applied` | The page is audited once, by shape and count, never by row | `test_the_page_is_audited_once_not_per_row`<br>`test_the_audit_records_the_query_shape_not_the_rows` | PASS |
+ | `Slice 1 / A01 x A02` | A party contact-point link is not a login path | `test_attaching_a_phone_to_a_party_creates_no_login_path`<br>`test_a_shared_line_does_not_authenticate_as_the_party_that_shares_it` | PASS |
+ | `D6 / baseline hygiene` | Version drift in any single claim is caught mechanically | `test_a_consistent_package_passes`<br>`test_drift_in_any_single_place_is_caught`<br>`test_a_missing_artifact_is_an_error` | PASS |
++| `R14.4` | The frozen schema IS the initial migration; it rebuilds an empty environment and stamps at head | `test_a_migration_rebuilds_an_empty_environment`<br>`test_there_is_exactly_one_head` | PASS |
++| `R14.4 / R14.7` | The migrated catalog agrees with the static audit's own parse | `test_the_migrated_catalog_matches_the_static_audit` | PASS |
++| `R14.6` | A baseline that is not the frozen one refuses to migrate | `test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one`<br>`test_the_declared_digest_is_the_frozen_one` | PASS |
++| `R14.4 / R14.5` | Autogenerate is refused; there is no metadata to diff the baseline against | `test_autogenerate_is_refused`<br>`test_env_declares_no_metadata_to_diff_against`<br>`test_there_is_no_downgrade_from_the_baseline` | PASS |
++| `R14.4 stamp` | A database built from the frozen SQL is stamped, so upgrade is a no-op | `test_a_stamped_database_is_already_at_head`<br>`test_upgrading_a_stamped_database_is_a_no_op`<br>`test_the_dev_reset_script_stamps` | PASS |
+ | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
+ 
+ ## Reading this table
+diff --git a/docs/gate/MIGRATION_POLICY.md b/docs/gate/MIGRATION_POLICY.md
+new file mode 100644
+index 0000000..dd2988c
+--- /dev/null
++++ b/docs/gate/MIGRATION_POLICY.md
+@@ -0,0 +1,88 @@
++# TURAB — Migration policy
++
++**Ref:** RFC-001 §14.2 (R14.4–R14.7); `IMPLEMENTATION_SLICES_v0.2.md`
++slice-completion criterion *"migration can rebuild an empty environment"*.
++**Established:** 2026-09-19, before Slice 2 — the first slice that changes the
++schema.
++
++---
++
++## 1. The rule
++
++**The frozen schema is the initial migration.** Revision
++`0001_frozen_baseline_v0_2_3` applies
++`docs/handoff/04_DATABASE/schema_v0.2.3.sql` **verbatim**, as bytes read from
++the vendored handoff package. It contains no transcription of that file, so
++there is no second copy of the baseline that can drift from the first.
++
++Everything else follows from not having a second copy.
++
++## 2. What is mechanically prevented
++
++| Hazard | What stops it | Test |
++|---|---|---|
++| A local edit to the vendored schema silently becoming an approved schema change | The revision verifies the file's SHA-256 **before executing it** and refuses on mismatch | `test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one` |
++| The digest guard being compared against a stale constant | The declared digest is asserted equal to the file's | `test_the_declared_digest_is_the_frozen_one` |
++| Autogenerate proposing a migration that drops the baseline | `env.py` sets `target_metadata = None`, so Alembic refuses `--autogenerate` before writing any revision file | `test_autogenerate_is_refused`, `test_env_declares_no_metadata_to_diff_against` |
++| A second root revision nobody noticed | One head asserted | `test_there_is_exactly_one_head` |
++| A development database invisible to Alembic | `reset_db.sh` stamps the initial revision, so `upgrade head` is a no-op instead of re-applying the baseline onto itself | `test_a_stamped_database_is_already_at_head`, `test_upgrading_a_stamped_database_is_a_no_op`, `test_the_dev_reset_script_stamps` |
++| A migration that "runs" but builds a partial schema | The migrated catalog is compared to the static audit's **independent parse** of the same file | `test_the_migrated_catalog_matches_the_static_audit` |
++
++The last row is the one that carries weight. The other checks ask whether the
++migration ran; that one asks whether it produced the right database, and it
++answers using a number derived by different means from a different
++representation: `STATIC_AUDIT_RESULTS_v0.2.3.json` counts statements in SQL
++text, and PostgreSQL reports what it actually built. Agreement across 48
++tables, 54 enum types, 17 functions, 37 triggers and 131 foreign keys is
++evidence; a single run of the file compared against itself would not be.
++
++## 3. Deliberate absences
++
++Two things are missing on purpose, and both are pinned by a test, because a
++deliberate absence is exactly what a later well-meaning edit restores.
++
++**No `target_metadata`.** TURAB has no declarative models — the services issue
++explicit SQL against the frozen schema — so autogenerate would compare
++"nothing declared" against 48 tables and obligingly emit a migration dropping
++the baseline. `None` makes Alembic refuse outright.
++
++**No `downgrade()` from the baseline.** Dropping the baseline is not a
++migration. It is `db/dev/reset_db.sh`, which says so in its name and refuses
++to run against a database whose name looks like production or staging.
++
++An earlier draft of `env.py` carried a `process_revision_directives` hook
++meant to refuse autogenerate with a fuller message. Alembic rejects the
++command before that hook is ever reached, so the hook was unreachable — a
++check that reads as a guarantee while providing none. It was removed rather
++than kept, and the test now pins Alembic's real refusal.
++
++## 4. Writing a migration from here
++
++1. **Write it by hand.** Autogenerate is unavailable, by design.
++2. **A migration that alters anything in the frozen schema needs the
++   schema-change approval path** (R14.6) — the same path that produced
++   v0.2.2 and v0.2.3. Corrections to the baseline arrive as a new official
++   handoff package, not as a local migration.
++3. **A migration that adds new objects** (Slice 2 onward) is ordinary work and
++   does not touch the frozen digests.
++4. **The 70-assertion gate keeps running against the frozen SQL**, never
++   against models or migrations (R14.7). It is the independent check that the
++   application has not drifted from the baseline.
++
++## 5. Commands
++
++```bash
++# Build a development database and stamp it (the normal path)
++PGDATABASE=turab_dev db/dev/reset_db.sh --fixtures
++
++# Build one by migrating instead, to prove the migration still rebuilds zero
++createdb turab_migration_check
++TURAB_DATABASE_URL=postgresql+psycopg:///turab_migration_check alembic upgrade head
++
++alembic current      # which revision a database is at
++alembic heads        # must print exactly one
++```
++
++`TURAB_DATABASE_URL` is the only source of the connection URL — the same
++variable the application reads. `alembic.ini` deliberately declares none, so a
++migration cannot be run against a database nobody named.
+diff --git a/docs/gate/SLICE_1_CLOSURE_PACK.md b/docs/gate/SLICE_1_CLOSURE_PACK.md
+index f682de3..8a56203 100644
+--- a/docs/gate/SLICE_1_CLOSURE_PACK.md
++++ b/docs/gate/SLICE_1_CLOSURE_PACK.md
+@@ -19,9 +19,9 @@ The PASS declaration is the contract owner's, not the implementer's.
+ | OpenAPI parse / lint | gate step 6 | **PASS** — 61 paths, 64 operations |
+ | Baseline version consistency | gate step 7 | **PASS** — 11/11 claims agree on `0.2.3` |
+ | **PostgreSQL Execution Gate** | `db/gate/run_gate.sh` | **PASS — 7/7** |
+-| Application suite | `pytest -q` | **PASS — 314/314** |
++| Application suite | `pytest -q` | **PASS — 329/329** |
+ | OpenAPI drift | `generate_api_inventory.py --check` | **PASS** |
+-| Authorization evidence | `authorization_evidence.py --check` | **PASS — 85 rules, 0 UNPROVEN** |
++| Authorization evidence | `authorization_evidence.py --check` | **PASS — 90 rules, 0 UNPROVEN** |
+ 
+ Frozen artifact digests, unchanged since the v0.2.3 freeze:
+ 
+@@ -97,7 +97,7 @@ those counts from the OpenAPI so the policy cannot drift from it.
+ 
+ ---
+ 
+-## 4. Test breakdown — 314 cases, 245 distinct functions
++## 4. Test breakdown — 329 cases, 256 distinct functions
+ 
+ | File | Cases | Covers |
+ |---|---:|---|
+@@ -119,11 +119,12 @@ those counts from the OpenAPI so the policy cannot drift from it.
+ | `test_inv1_claim_authority.py` | 12 | INV-1 |
+ | `test_slice1_bola.py` | 10 | DEFECT-001, each exploit asserted closed |
+ | `test_version_consistency.py` | 9 | D6 baseline hygiene |
++| `test_migrations.py` | 15 | R14.4–R14.7, the frozen baseline as revision 0001 |
+ | `test_transaction_audit_context.py` | 3 | R6.2 actor attribution |
+-| **Total** | **314** | |
++| **Total** | **329** | |
+ 
+ Counts are pytest CASES, taken from `reports/junit.xml`; a parametrised
+-function contributes one case per parameter, which is why they exceed the 245
++function contributes one case per parameter, which is why they exceed the 256
+ distinct test functions.
+ 
+ Evidence per rule: `docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`, generated
+@@ -204,10 +205,10 @@ self-service (8), AI assist (9, behind Stop Gate E).
+ - `GET /requests/{request_id}` returns 501 after passing authorization (Slice 2).
+ - `GET /me/opportunities/{id}` does not join property or contact, so the scope
+   ladder is unit-tested but not yet exercised end to end (Slice 5).
+-- **Alembic is still not initialised.** R14.4 fixes the approach — the frozen
+-  schema is the initial migration, stamped not autogenerated. Slice 1 needed no
+-  schema change, so no migration was owed; **Slice 2 will be the first slice
+-  that cannot proceed without it.**
++- ~~Alembic is still not initialised.~~ **Done after this pack was drafted**,
++  as the groundwork Slice 2 cannot proceed without: `db/migrations/` with
++  `schema_v0.2.3.sql` as revision `0001`, digest-guarded, autogenerate refused,
++  and `reset_db.sh` stamping. See `docs/gate/MIGRATION_POLICY.md`.
+ - No rate limiting, no RLS, no field-level encryption, no multi-tenancy
+   (RFC-001 §16).
+ - `interactions` rows are written by nothing yet: the timeline endpoint reads a
+@@ -227,8 +228,14 @@ contract owner's to settle and not the implementer's:
+ 2. **Note the account-provisioning gap (§7)** as product scope, so it is
+    scheduled deliberately rather than discovered at pilot.
+ 
+-Before Slice 2 begins, one piece of groundwork falls due regardless of the
+-above: **initialise Alembic and stamp `schema_v0.2.3.sql` as the initial
+-migration.** Slice 2 adds columns; doing this first keeps the frozen baseline
+-and the migration history honest with each other from the first change rather
+-than reconstructing them afterwards.
++The one piece of groundwork that fell due regardless of the above —
++**initialise Alembic with `schema_v0.2.3.sql` as the initial migration** — was
++completed immediately after this pack was drafted, because Slice 2 adds
++columns and doing it first keeps the frozen baseline and the migration history
++honest with each other from the first change rather than reconstructing them
++afterwards. It changes no domain model, workflow, permission or matching rule,
++so it needed no approval. Policy and evidence:
++`docs/gate/MIGRATION_POLICY.md`.
++
++Nothing else is outstanding on the implementation side. **Slice 2 is blocked
++only on the D7 decision and your instruction to begin.**
+diff --git a/tests/test_migrations.py b/tests/test_migrations.py
+new file mode 100644
+index 0000000..b5d3c91
+--- /dev/null
++++ b/tests/test_migrations.py
+@@ -0,0 +1,282 @@
++"""Alembic: the frozen baseline is the initial migration.
++
++Ref: RFC-001 R14.4-R14.7; `IMPLEMENTATION_SLICES_v0.2.md` slice-completion
++criterion "migration can rebuild an empty environment".
++
++The interesting test here is not "does the migration run" — it applies the
++frozen SQL file, so of course it does. It is whether the database the
++migration PRODUCES matches what the static audit independently counted by
++PARSING that file. Those two numbers are derived by different means from
++different representations, so agreement is evidence rather than tautology:
++the audit reads text and counts statements, PostgreSQL reads statements and
++builds a catalog.
++"""
++from __future__ import annotations
++
++import json
++import os
++import pathlib
++import shutil
++import subprocess
++
++import pytest
++from sqlalchemy import create_engine, text
++
++REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
++AUDIT_RESULTS = (
++    REPO_ROOT / "docs" / "handoff" / "07_QA_ACCEPTANCE"
++    / "STATIC_AUDIT_RESULTS_v0.2.3.json"
++)
++VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
++
++PGHOST = os.environ.get("PGHOST", "127.0.0.1")
++PGUSER = os.environ.get("PGUSER", "turab")
++PGPASSWORD = os.environ.get("PGPASSWORD", "turab")
++MIGRATION_DB = os.environ.get("TURAB_MIGRATION_DB", "turab_migration_test")
++URL = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{MIGRATION_DB}"
++
++
++def _alembic(*args: str, env_extra: dict | None = None) -> subprocess.CompletedProcess:
++    exe = REPO_ROOT / ".venv" / "bin" / "alembic"
++    return subprocess.run(
++        [str(exe) if exe.exists() else "alembic", *args],
++        cwd=REPO_ROOT, capture_output=True, text=True,
++        env={**os.environ, "TURAB_DATABASE_URL": URL, **(env_extra or {})},
++    )
++
++
++@pytest.fixture(scope="module")
++def migrated():
++    """An empty database brought up by `alembic upgrade head`, and nothing else.
++
++    Deliberately NOT the suite's usual test database: that one is built by
++    running the frozen SQL directly, which is the very thing this file is
++    checking the migration against.
++    """
++    env = {**os.environ, "PGPASSWORD": PGPASSWORD}
++    base = ["-h", PGHOST, "-U", PGUSER]
++    subprocess.run(["dropdb", *base, "--if-exists", MIGRATION_DB],
++                   check=True, env=env, capture_output=True)
++    subprocess.run(["createdb", *base, MIGRATION_DB],
++                   check=True, env=env, capture_output=True)
++
++    result = _alembic("upgrade", "head")
++    assert result.returncode == 0, result.stderr
++
++    engine = create_engine(URL, future=True)
++    yield engine
++    engine.dispose()
++    subprocess.run(["dropdb", *base, "--if-exists", MIGRATION_DB],
++                   check=True, env=env, capture_output=True)
++
++
++@pytest.fixture(scope="module")
++def audit() -> dict:
++    return json.loads(AUDIT_RESULTS.read_text(encoding="utf-8"))["metrics"]
++
++
++# --- the migration rebuilds an empty environment ---------------------------
++
++def test_a_migration_rebuilds_an_empty_environment(migrated):
++    """The slice-completion criterion, taken literally."""
++    with migrated.connect() as c:
++        version = c.execute(
++            text("SELECT value FROM turab.schema_metadata WHERE key='schema_version'")
++        ).scalar_one()
++        stamp = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
++    assert version == "0.2.3"
++    assert stamp == "0001_frozen_baseline_v0_2_3"
++
++
++@pytest.mark.parametrize(
++    "metric, query",
++    [
++        ("tables",
++         "SELECT count(*) FROM information_schema.tables "
++         "WHERE table_schema='turab' AND table_type='BASE TABLE'"),
++        ("types",
++         "SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace "
++         "WHERE n.nspname='turab' AND t.typtype='e'"),
++        ("functions",
++         "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
++         "WHERE n.nspname='turab'"),
++        ("triggers",
++         "SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid "
++         "JOIN pg_namespace n ON n.oid=c.relnamespace "
++         "WHERE n.nspname='turab' AND NOT t.tgisinternal"),
++        ("foreign_key_refs",
++         "SELECT count(*) FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace "
++         "WHERE n.nspname='turab' AND c.contype='f'"),
++    ],
++)
++def test_the_migrated_catalog_matches_the_static_audit(migrated, audit, metric, query):
++    """Two independent derivations of the same baseline must agree.
++
++    The audit counts statements in the SQL text; PostgreSQL reports what it
++    actually built. A migration that applied a truncated or partly-failed
++    file would pass "did it run" and fail here.
++    """
++    with migrated.connect() as c:
++        assert c.execute(text(query)).scalar_one() == audit[metric], (
++            f"{metric}: the migrated database disagrees with the static audit"
++        )
++
++
++# --- the baseline cannot be altered under the migration's feet -------------
++
++def test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one(tmp_path):
++    """Otherwise editing the vendored package would silently become an
++    approved schema change (R14.6)."""
++    from importlib import util as importlib_util
++
++    spec = importlib_util.spec_from_file_location(
++        "frozen_baseline_rev", VERSIONS / "0001_frozen_baseline_v0_2_3.py"
++    )
++    module = importlib_util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++
++    original = module.SCHEMA
++    tampered = tmp_path / "schema_v0.2.3.sql"
++    shutil.copy(original, tampered)
++    tampered.write_text(tampered.read_text() + "\n-- one added comment\n")
++
++    module.SCHEMA = tampered
++    try:
++        with pytest.raises(SystemExit) as exc:
++            module._frozen_sql()
++    finally:
++        module.SCHEMA = original
++    assert "not the frozen baseline" in str(exc.value)
++
++
++def test_the_declared_digest_is_the_frozen_one():
++    """The guard is only as good as the constant it compares against."""
++    import hashlib
++    from importlib import util as importlib_util
++
++    spec = importlib_util.spec_from_file_location(
++        "frozen_baseline_rev2", VERSIONS / "0001_frozen_baseline_v0_2_3.py"
++    )
++    module = importlib_util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    actual = hashlib.sha256(module.SCHEMA.read_bytes()).hexdigest()
++    assert module.SCHEMA_SHA256 == actual
++
++
++# --- the migration graph ---------------------------------------------------
++
++def test_there_is_exactly_one_head():
++    """Two heads mean two people added a root and neither noticed."""
++    result = _alembic("heads")
++    assert result.returncode == 0, result.stderr
++    heads = [ln for ln in result.stdout.splitlines() if ln.strip()]
++    assert len(heads) == 1, f"expected one head, got {heads}"
++    assert "0001_frozen_baseline_v0_2_3" in heads[0]
++
++
++def test_autogenerate_is_refused():
++    """R14.4. With no declarative metadata to diff against, autogenerate would
++    propose dropping the frozen baseline.
++
++    Alembic itself refuses, because `env.py` sets `target_metadata = None`.
++    That is the guard — it fires before any revision file is written. This
++    test exists because the guard is a deliberate absence, and a deliberate
++    absence is exactly the kind of thing a later "helpful" edit restores.
++    """
++    result = _alembic("revision", "--autogenerate", "-m", "should not be possible")
++    output = result.stderr + result.stdout
++    assert result.returncode != 0, output
++    assert "--autogenerate" in output and "MetaData" in output, output
++    created = [p for p in VERSIONS.glob("*.py")
++               if p.name != "0001_frozen_baseline_v0_2_3.py"]
++    assert not created, f"autogenerate left files behind: {created}"
++
++
++def test_env_declares_no_metadata_to_diff_against():
++    """The companion to the test above: it pins WHY autogenerate is refused,
++    so the refusal cannot be silently converted into an empty migration by
++    someone wiring up a MetaData object without reading R14.4."""
++    env = (REPO_ROOT / "db" / "migrations" / "env.py").read_text(encoding="utf-8")
++    assert "target_metadata = None" in env
++
++
++def test_there_is_no_downgrade_from_the_baseline():
++    from importlib import util as importlib_util
++
++    spec = importlib_util.spec_from_file_location(
++        "frozen_baseline_rev3", VERSIONS / "0001_frozen_baseline_v0_2_3.py"
++    )
++    module = importlib_util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    with pytest.raises(NotImplementedError):
++        module.downgrade()
++
++
++# --- the stamp path, which is how a real database is actually built --------
++#
++# `db/dev/reset_db.sh` applies the frozen SQL directly and then STAMPS the
++# initial revision, because R14.4 says the schema IS that revision rather than
++# something to migrate up to. Skip the stamp and the database carries no
++# `alembic_version` at all — so the next `alembic upgrade head` cheerfully
++# applies the whole baseline on top of itself and dies on the first duplicate
++# object. That is the trap Slice 2 would have walked into.
++
++@pytest.fixture(scope="module")
++def stamped():
++    """A database built the way reset_db.sh builds one: SQL, then stamp."""
++    db = f"{MIGRATION_DB}_stamped"
++    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
++    env = {**os.environ, "PGPASSWORD": PGPASSWORD}
++    base = ["-h", PGHOST, "-U", PGUSER]
++    schema = (REPO_ROOT / "docs" / "handoff" / "04_DATABASE" / "schema_v0.2.3.sql")
++
++    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
++                   capture_output=True)
++    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
++    subprocess.run(["psql", *base, "-d", db, "-v", "ON_ERROR_STOP=1", "-q",
++                    "-f", str(schema)], check=True, env=env, capture_output=True)
++    stamp = _alembic("stamp", "head", env_extra={"TURAB_DATABASE_URL": url})
++    assert stamp.returncode == 0, stamp.stderr
++
++    engine = create_engine(url, future=True)
++    yield engine, url
++    engine.dispose()
++    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
++                   capture_output=True)
++
++
++def test_a_stamped_database_is_already_at_head(stamped):
++    engine, _ = stamped
++    with engine.connect() as c:
++        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar_one() \
++            == "0001_frozen_baseline_v0_2_3"
++
++
++def test_upgrading_a_stamped_database_is_a_no_op(stamped):
++    """The whole point of stamping: the baseline is not applied twice."""
++    engine, url = stamped
++    with engine.connect() as c:
++        before = c.execute(
++            text("SELECT count(*) FROM information_schema.tables "
++                 "WHERE table_schema='turab'")
++        ).scalar_one()
++
++    result = _alembic("upgrade", "head", env_extra={"TURAB_DATABASE_URL": url})
++    assert result.returncode == 0, result.stderr
++
++    with engine.connect() as c:
++        after = c.execute(
++            text("SELECT count(*) FROM information_schema.tables "
++                 "WHERE table_schema='turab'")
++        ).scalar_one()
++    assert after == before > 0
++
++
++def test_the_dev_reset_script_stamps(stamped):
++    """A text check, and named as one: it pins the step above into the script
++    developers actually run, which no database assertion can reach."""
++    script = (REPO_ROOT / "db" / "dev" / "reset_db.sh").read_text(encoding="utf-8")
++    assert "stamp head" in script, (
++        "reset_db.sh must stamp the initial revision, or every development "
++        "database it builds is invisible to Alembic"
++    )

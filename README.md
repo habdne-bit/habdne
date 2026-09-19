@@ -12,7 +12,7 @@
 | Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
-| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, submitted for closure review** — all 11 contract operations wired, 329 tests, 90 rules evidenced |
+| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed, submitted for closure review** — all 11 contract operations wired, 355 tests, 97 rules evidenced |
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -23,6 +23,10 @@ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 - Slice 0 closure: **[`docs/gate/SLICE_0_CLOSURE_PACK.md`](docs/gate/SLICE_0_CLOSURE_PACK.md)**
 - Slice 1 closure: **[`docs/gate/SLICE_1_CLOSURE_PACK.md`](docs/gate/SLICE_1_CLOSURE_PACK.md)**
 - Migration policy (R14.4–R14.7): **[`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md)**
+- Alembic evidence pack and stated limits: **[`docs/gate/ALEMBIC_EVIDENCE_PACK.md`](docs/gate/ALEMBIC_EVIDENCE_PACK.md)**
+- **Design Ledger** — adopted, deferred and blocked decisions: **[`docs/DESIGN_LEDGER.md`](docs/DESIGN_LEDGER.md)**
+- Contract corrections (never edit the frozen package): **[`docs/contract/`](docs/contract/)**
+- Environment notes: **[`docs/gate/ENVIRONMENT_NOTES.md`](docs/gate/ENVIRONMENT_NOTES.md)**
 - Defect record (BOLA on the Slice 1 command surface, closed): **[`docs/gate/DEFECT-001-command-surface-object-gate.md`](docs/gate/DEFECT-001-command-surface-object-gate.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
@@ -39,6 +43,7 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 | `db/migrations/` | Alembic. The frozen schema **is** the initial migration; autogenerate is refused. See [`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md) |
 | `db/fixtures/` | Developer fixtures — a coherent Adrar world, authorization edge cases EC1–EC8, market edge cases MF1–MF8 |
 | `docs/rfc/` | Design RFCs awaiting or carrying decisions |
+| `docs/contract/` | Numbered contract corrections applied on top of the frozen OpenAPI. A correction may only **narrow**; the published package is never edited |
 | `docs/api/` | Generated API inventory (do not edit) |
 | `src/turab/` | The service. `auth/` holds actor resolution, the policy layer, scoped loaders and access audit; `services/` the application layer; `api/` the HTTP edge |
 | `tests/` | Architecture, policy, authorization, INV-1/INV-2, audit and HTTP tests |
@@ -66,7 +71,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 329 tests
+./.venv/bin/pytest -q                  # 355 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 
