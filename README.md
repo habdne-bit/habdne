@@ -11,13 +11,14 @@
 | **PostgreSQL 16+ Execution Gate** | **PASS** — twice, 70/70 assertions |
 | Technical database baseline | **FROZEN** at `schema_v0.2.1.sql` |
 | Slice −1 — Tooling baseline | Complete |
-| Slice 0 — Application Skeleton + Security Boundaries | **Open** — authorization portion blocked on RFC-001 |
+| Slice 0 — object-level authorization | **Implemented** — 106/106 tests, 40 rules evidenced |
 
 Handoff package: **v1.0.1** (official), vendored unmodified.
 
 - Gate results and artifact digests: **[`docs/gate/GATE_RUN_REPORT.md`](docs/gate/GATE_RUN_REPORT.md)**
 - Freeze record and pinned commit: **[`docs/gate/TECHNICAL_BASELINE_FROZEN.md`](docs/gate/TECHNICAL_BASELINE_FROZEN.md)**
-- Object-level authorization design, **revision 3 awaiting final approval**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
+- Object-level authorization design, **FINAL / APPROVED**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
+- Authorization evidence: **[`docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`](docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
 advanced AI work begins before the Core Hypothesis Stop Gate passes.
@@ -33,7 +34,9 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 | `db/fixtures/` | Developer fixtures — a coherent Adrar world, authorization edge cases EC1–EC8, market edge cases MF1–MF8 |
 | `docs/rfc/` | Design RFCs awaiting or carrying decisions |
 | `docs/api/` | Generated API inventory (do not edit) |
-| `.github/workflows/` | CI — rebuilds a clean database from zero on every push |
+| `src/turab/` | The service. `auth/` holds actor resolution, the policy layer, scoped loaders and access audit; `services/` the application layer; `api/` the HTTP edge |
+| `tests/` | Architecture, policy, authorization, INV-1/INV-2, audit and HTTP tests |
+| `.github/workflows/` | CI — rebuilds a clean database from zero, then runs the authorization suite |
 
 Authority order when two documents disagree is fixed by
 `docs/handoff/00_START_HERE/FILE_AUTHORITY_AND_VERSION_POLICY.md`. Contradictions
@@ -50,3 +53,18 @@ The runner verifies package integrity, runs the static audit, rebuilds a clean
 database, applies the schema, applies the seed twice for idempotency, runs the
 database-level contract tests, and lints the OpenAPI contract. Any failure is a
 release blocker.
+
+
+## Running the service and its tests
+
+```bash
+python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
+db/dev/reset_db.sh --fixtures          # a database to work against
+./.venv/bin/pytest -q                  # 106 tests
+./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
+```
+
+Authorization is enforced structurally: routes import no session, repository or
+SQLAlchemy, and reach data only through application services backed by
+actor-scoped, policy-checked loaders. Architecture tests hold that line; the
+cross-account 404 sweep proves it end to end.
