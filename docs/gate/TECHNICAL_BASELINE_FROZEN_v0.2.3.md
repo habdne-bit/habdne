@@ -7,6 +7,16 @@ stood against it. Earlier records are retained as history.
 
 ---
 
+### Pinned commit
+
+```
+a9cef841d56035b6a0a88883505cf04244f15970
+```
+
+Branch `claude/postgresql-execution-gate-yqifk7`.
+
+---
+
 ## What is frozen
 
 | | |
