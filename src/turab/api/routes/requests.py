@@ -24,7 +24,7 @@ from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Header, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ...auth.loaders import ResourceKind
 from ...services import freshness as freshness_service
@@ -39,12 +39,26 @@ router = APIRouter(tags=["Requests"])
 
 IMPORTANCE = "^(REQUIRED|PREFERRED|FLEXIBLE)$"
 
+#: The contract's `property_type` enumeration, and the columns that are NOT
+#: nullable in the frozen schema. Declared once so the create and patch models
+#: cannot drift apart from each other or from the contract.
+PROPERTY_TYPES = (
+    "HOUSE_VILLA", "APARTMENT", "LAND", "SHOP_COMMERCIAL",
+    "AGRICULTURAL_PROPERTY", "BUILDING", "OTHER",
+)
+PROPERTY_TYPE_PATTERN = "^(" + "|".join(PROPERTY_TYPES) + ")$"
+
 
 class _Body(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
 class RequestCriterionInput(_Body):
+    #: Declared by the contract's `RequestCriterion`. Present -> CHANGE that
+    #: criterion; absent -> ADD one. The endpoint "adds/changes structured
+    #: criteria" (API_CONTRACTS v0.2), and this is the field that selects
+    #: which, so no new field is invented to carry it (R-S2-03).
+    request_criterion_id: uuid.UUID | None = None
     criterion_code: str
     importance: str = Field(pattern=IMPORTANCE)
     operator: str = Field(
@@ -63,7 +77,7 @@ class RequestCreate(_Body):
     management_mode: str = Field(pattern="^(SELF_MANAGED|ASSISTED|SHARED_MANAGEMENT)$")
     claim_status: str = Field(pattern="^(UNCLAIMED|CLAIMED)$")
     payment: str | None = Field(default=None, pattern="^(CASH|BANK_FINANCING|MIXED|UNDECIDED)$")
-    desired_property_type: str | None = None
+    desired_property_type: str | None = Field(default=None, pattern=PROPERTY_TYPE_PATTERN)
     property_type_importance: str | None = Field(default=None, pattern=IMPORTANCE)
     primary_location_id: uuid.UUID | None = None
     location_importance: str | None = Field(default=None, pattern=IMPORTANCE)
@@ -76,18 +90,49 @@ class RequestCreate(_Body):
     )
     criteria: list[RequestCriterionInput] | None = None
 
+    @model_validator(mode="after")
+    def _budgets_are_coherent(self):
+        """`CHECK (budget_target_dzd <= budget_max_dzd)`, enforced where both
+        values are present in the body.
+
+        On a create the pair is fully supplied, so the model can decide it and
+        the caller gets a field-level error. A PATCH may supply only one, and
+        the coherence of the RESULT depends on the current row — that check
+        lives in the route, against the merged values.
+        """
+        conflict = _budget_conflict(self.budget_target_dzd, self.budget_max_dzd)
+        if conflict:
+            raise ValueError(conflict)
+        return self
+
 
 class RequestPatch(_Body):
-    intent: str | None = Field(default=None, pattern="^(EXPLORING|ACTIVE_SEARCH|READY_TO_ACT)$")
-    payment: str | None = Field(default=None, pattern="^(CASH|BANK_FINANCING|MIXED|UNDECIDED)$")
-    desired_property_type: str | None = None
+    """Every field here is OPTIONAL, and `None` means "not supplied" only for
+    the columns the schema actually allows to be null.
+
+    `intent`, `payment` and `budget_flexibility` are `NOT NULL` in the frozen
+    schema and non-nullable in the contract, so they are typed as plain
+    strings with a default sentinel rather than `str | None` — an earlier
+    version accepted `{"intent": null}`, which passed validation and then
+    reached PostgreSQL as a NOT NULL violation, surfacing as a 500 (R-S2-05).
+
+    `desired_property_type`, `primary_location_id` and the budgets ARE
+    nullable in the schema and in the contract, so `null` is a real value for
+    them: it clears the field.
+    """
+
+    # Non-nullable: absent or a valid value, never null.
+    intent: str = Field(default="", pattern="^(EXPLORING|ACTIVE_SEARCH|READY_TO_ACT)$")
+    payment: str = Field(default="", pattern="^(CASH|BANK_FINANCING|MIXED|UNDECIDED)$")
+    budget_flexibility: str = Field(
+        default="", pattern="^(STRICT|LOW|MODERATE|HIGH|UNSPECIFIED)$"
+    )
+    # Nullable in the schema: null clears the value.
+    desired_property_type: str | None = Field(default=None, pattern=PROPERTY_TYPE_PATTERN)
     primary_location_id: uuid.UUID | None = None
     local_location_detail: str | None = None
     budget_target_dzd: int | None = Field(default=None, ge=0)
     budget_max_dzd: int | None = Field(default=None, ge=0)
-    budget_flexibility: str | None = Field(
-        default=None, pattern="^(STRICT|LOW|MODERATE|HIGH|UNSPECIFIED)$"
-    )
 
 
 class RequestStateCommand(_Body):
@@ -106,6 +151,37 @@ class RequestStateCommand(_Body):
 class StateReconfirm(_Body):
     confirmed_at: datetime | None = None
     notes: str | None = None
+
+
+def access_free_budget_check(command, request_id, changes) -> str | None:
+    """Merge the patch over the current row and check the budget pair.
+
+    Read on the command's READ session, the same one its object checks use:
+    the write session must own the transaction the command commits.
+    """
+    current = command.read_current(
+        "requests", request_id, ("budget_target_dzd", "budget_max_dzd")
+    )
+    if current is None:
+        return None
+    target = changes.get("budget_target_dzd", current["budget_target_dzd"])
+    maximum = changes.get("budget_max_dzd", current["budget_max_dzd"])
+    return _budget_conflict(target, maximum)
+
+
+def _budget_conflict(target, maximum) -> str | None:
+    """The schema's `CHECK (budget_target_dzd <= budget_max_dzd)`, checked
+    before SQL so it is a typed 422 rather than a constraint violation.
+
+    For a PATCH this must be evaluated on the MERGED values — the supplied
+    fields applied over the current row — because a patch that sets only the
+    target can still break the pair (R-S2-05).
+    """
+    if target is not None and maximum is not None and target > maximum:
+        return (
+            f"budget_target_dzd ({target}) cannot exceed budget_max_dzd ({maximum})"
+        )
+    return None
 
 
 def _channel(command) -> UpdateChannel:
@@ -205,6 +281,10 @@ def create_request(request: Request, body: RequestCreate, command: Command):
     # moment: SELF_MANAGED/CLAIMED. ASSISTED means staff are operating a
     # record on someone's behalf, and that record is UNCLAIMED until the
     # person claims it — which is a different flow, not a different flag.
+    conflict = _budget_conflict(body.budget_target_dzd, body.budget_max_dzd)
+    if conflict:
+        return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request), conflict)
+
     if not command.is_staff and body.management_mode != "SELF_MANAGED":
         return coded(
             ProblemCode.VALIDATION_FAILED, trace_id_of(request),
@@ -240,6 +320,7 @@ def create_request(request: Request, body: RequestCreate, command: Command):
                 value=criterion.value, unit=criterion.unit,
                 blocking_if_unknown=criterion.blocking_if_unknown,
                 sort_order=criterion.sort_order,
+                request_criterion_id=criterion.request_criterion_id,
                 recorded_by_account_id=command.subject.account_id,
                 channel=_channel(command),
             )
@@ -323,9 +404,24 @@ def update_request(
                      f"{HEADER} must be the integer version last read.")
 
     changes = body.model_dump(exclude_unset=True)
+    # The non-nullable fields use "" as their "not supplied" sentinel, so an
+    # explicit `null` for one of them arrives here as "" and is refused by
+    # name rather than reaching a NOT NULL column (R-S2-05).
+    nulled = [k for k, v in changes.items() if v == ""]
+    if nulled:
+        return coded(
+            ProblemCode.VALIDATION_FAILED, trace_id_of(request),
+            f"{sorted(nulled)} cannot be null; omit the field to leave it unchanged.",
+        )
     if not changes:
         return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request),
                      "at least one field must be supplied.")
+
+    # The budget pair must be coherent AFTER the patch is applied, so it is
+    # checked against the merged values, not against the submitted ones.
+    merged = access_free_budget_check(command, request_id, changes)
+    if merged:
+        return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request), merged)
 
     def handler(session):
         row = request_service.patch_request(
@@ -365,6 +461,7 @@ def add_criterion(request: Request, request_id: uuid.UUID,
             operator=body.operator, value=body.value, unit=body.unit,
             blocking_if_unknown=body.blocking_if_unknown,
             sort_order=body.sort_order,
+            request_criterion_id=body.request_criterion_id,
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
         )

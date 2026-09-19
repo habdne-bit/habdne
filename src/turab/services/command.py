@@ -136,6 +136,20 @@ class CommandService:
             return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not your party")
         return ALLOW_DECISION
 
+    def read_current(self, table: str, resource_id: uuid.UUID, columns):
+        """Read named columns on the READ session, for pre-command validation.
+
+        Never the write session: a read there opens the transaction the
+        command must own outright (the ordering that produced a 500 on every
+        guarded command earlier in Slice 2).
+        """
+        id_column = {"requests": "request_id", "parties": "party_id"}[table]
+        names = ", ".join(columns)
+        return self._read_session.execute(
+            text(f"SELECT {names} FROM turab.{table} WHERE {id_column} = :id"),
+            {"id": resource_id},
+        ).mappings().first()
+
     def authorize_request_scope(self, request_id: uuid.UUID) -> Decision:
         """A CUSTOMER may command only a REQUEST belonging to their own party.
 

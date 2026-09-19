@@ -93,17 +93,33 @@ def parse_if_match(value: str | None) -> int:
 def check(
     session: Session, table: str, resource_id: uuid.UUID, provided: int
 ) -> VersionGuard:
-    """Verify the caller's version matches, BEFORE any change is applied.
+    """Lock the row, then verify the caller's version against it.
 
-    §2.4 requires that a stale version apply nothing, so this is called first
-    and the caller runs inside one transaction — a partial apply is not a
-    thing that can happen rather than a thing that is cleaned up.
+    §2.4 requires that a stale version apply nothing. Being inside one
+    transaction is NOT enough to deliver that: PostgreSQL's default isolation
+    is Read Committed, where each statement takes its own snapshot and a plain
+    `SELECT` acquires no lasting lock (PostgreSQL 16, "Transaction
+    Isolation"). Two transactions could therefore read the same version, both
+    pass this check, and both write — the second overwriting a change the
+    caller never saw, with the version bumped by the trigger rather than by
+    anything that re-examined what the client sent.
+
+    `FOR UPDATE` closes that window. The lock is taken BEFORE the version is
+    read and is held by the caller's transaction until it commits, so the
+    read and the write that follows it are one decision. The second
+    transaction blocks here, then sees the bumped version and is refused with
+    the 409 it should have had.
+
+    Found by independent review (R-S2-01); the earlier implementation read
+    without a lock.
     """
     if table not in VERSIONED_TABLES:
         raise ValueError(f"{table} carries no version column in the frozen schema")
     id_column = VERSIONED_TABLES[table]
     current = session.execute(
-        text(f"SELECT version FROM turab.{table} WHERE {id_column} = :id"),
+        text(
+            f"SELECT version FROM turab.{table} WHERE {id_column} = :id FOR UPDATE"
+        ),
         {"id": resource_id},
     ).scalar_one_or_none()
     if current is None or current != provided:

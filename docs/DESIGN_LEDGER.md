@@ -165,8 +165,10 @@ is missing is the normative text. The remedy is to fold both into RFC-001 as
 numbered rules, which edits an approved document and therefore needs a
 decision.
 
-Meanwhile: `docs/gate/INV-1-and-INV-2.md` states the approved text and maps
-each half to the code and tests that enforce it.
+**Answered 2026-09-20** by `docs/rfc/RFC-001-APPENDIX-A-invariants.md`, a
+numbered appendix carrying the approved text and naming its source, with the
+body of RFC-001 left unedited — the handling the independent review asked
+for. `docs/gate/INV-1-and-INV-2.md` remains as the enforcement map.
 
 ---
 

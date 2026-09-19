@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **120**
-- Distinct tests cited: **312**
-- Suite total: **446/446** test cases passing (361 distinct test functions)
+- Rules and invariants covered: **125**
+- Distinct tests cited: **337**
+- Suite total: **471/471** test cases passing (386 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -132,6 +132,11 @@ matrix, because it reads as assurance.
 | `Slice 2 / K01 applied` | A customer commands only their own request; staff reads are audited | `test_a_customer_cannot_command_another_partys_request`<br>`test_a_customer_cannot_read_a_request_internally`<br>`test_the_staff_read_is_audited`<br>`test_a_stale_version_applies_nothing` | PASS |
 | `Slice 2 registry` | Criteria are structured: an unknown code is refused, not stored | `test_an_unknown_criterion_code_is_a_typed_error` | PASS |
 | `STOP GATE B` | An operator can state what the buyer wants, what is hard vs preferred, and when it was last confirmed — from one staff read | `test_stop_gate_b_a_staff_operator_can_understand_the_request`<br>`test_the_gate_scenario_would_fail_if_importance_were_not_carried` | PASS |
+| `R-S2-01` | The version guard locks the row, so two patches holding the same version yield one success and one 409 on real PostgreSQL | `test_two_patches_holding_the_same_version_yield_one_success_and_one_409`<br>`test_the_refused_patch_leaves_the_value_it_tried_to_write_absent` | PASS |
+| `R-S2-02` | State and staleness decisions hold their conditions at write time, under two connections | `test_reconfirm_racing_a_close_does_not_reopen_the_closed_request`<br>`test_two_transitions_from_the_same_state_do_not_both_apply`<br>`test_the_staleness_pass_does_not_mark_a_concurrently_reconfirmed_request`<br>`test_the_staleness_pass_does_not_reopen_a_concurrently_closed_request` | PASS |
+| `R-S2-03` | The criteria endpoint adds AND changes, by the contract's declared id | `test_the_contracts_criterion_id_is_accepted`<br>`test_changing_a_criterion_does_not_duplicate_it`<br>`test_changing_a_criterion_bumps_the_request_version`<br>`test_a_criterion_id_from_another_request_is_refused`<br>`test_an_unknown_criterion_id_is_refused`<br>`test_re_adding_the_same_slot_points_at_the_change_path`<br>`test_the_change_is_recorded_with_its_previous_value` | PASS |
+| `R-S2-04` | Reactivation applies the active freshness policy; a future confirmation is refused and a historical one accepted | `test_a_stale_paused_request_cannot_be_reactivated`<br>`test_a_never_confirmed_paused_request_cannot_be_reactivated`<br>`test_reconfirm_then_reactivate_is_the_two_step_path`<br>`test_the_freshness_check_on_reactivation_reads_the_active_policy`<br>`test_a_future_confirmation_is_refused`<br>`test_a_historical_confirmation_is_still_accepted` | PASS |
+| `R-S2-05` | Input models match the contract; expected errors are 4xx, write nothing, consume no key and leak no database text | `test_a_null_non_nullable_field_is_a_422_not_a_500`<br>`test_an_unknown_enum_value_is_a_422_not_a_500`<br>`test_an_incoherent_budget_pair_is_refused_on_create`<br>`test_the_budget_pair_is_checked_on_the_merged_values`<br>`test_a_refused_input_consumes_no_idempotency_key`<br>`test_a_refused_input_leaks_no_database_text` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 
 ## Reading this table

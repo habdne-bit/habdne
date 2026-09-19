@@ -411,9 +411,14 @@ def test_reactivation_is_the_explicit_command_itself(session, ids, new_request):
     explicit act. An earlier draft demanded an extra `reactivate` flag — an
     undeclared field, and a second way of saying what the contract already
     expresses.
+
+    The request is reconfirmed first because reactivation is also subject to
+    the freshness condition (R-S2-04); the refusal path is below.
     """
     rid = new_request["request_id"]
     _advance_to_active(session, rid, ids)
+    request_service.reconfirm(session, request_id=rid,
+                              recorded_by_account_id=ids.ACC_OPERATOR)
     request_service.transition(
         session, request_id=rid, target_status="PAUSED",
         recorded_by_account_id=ids.ACC_OPERATOR,
@@ -428,14 +433,11 @@ def test_reactivation_is_the_explicit_command_itself(session, ids, new_request):
 
 
 def test_reactivation_does_not_refresh_the_confirmation(session, ids, new_request):
-    """A request paused for six months is not made current by restarting it."""
+    """Reactivating must not silently renew the confirmation date."""
     rid = new_request["request_id"]
     _advance_to_active(session, rid, ids)
-    session.execute(
-        text("UPDATE turab.requests SET last_confirmed_at = :t WHERE request_id = :r"),
-        {"t": datetime(2026, 1, 1, tzinfo=UTC), "r": rid},
-    )
-    session.flush()
+    request_service.reconfirm(session, request_id=rid,
+                              recorded_by_account_id=ids.ACC_OPERATOR)
     request_service.transition(
         session, request_id=rid, target_status="PAUSED",
         recorded_by_account_id=ids.ACC_OPERATOR,
@@ -449,9 +451,135 @@ def test_reactivation_does_not_refresh_the_confirmation(session, ids, new_reques
     )
     session.flush()
     assert request_service.read_request(session, rid)["last_confirmed_at"] == before
-    assert freshness.evaluate_request(session, rid).is_stale, (
-        "a reactivated request is subject to the freshness rules like any other"
+
+
+# --- R-S2-04: reactivation is subject to the freshness condition ----------
+
+def test_a_stale_paused_request_cannot_be_reactivated(session, ids, new_request):
+    """The closing decision kept reactivation "subject to the activation and
+    freshness conditions". The transition table alone does not deliver that: a
+    request paused two years ago would come back ACTIVE carrying a
+    confirmation nobody has checked since."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    days, _ = freshness.request_threshold_days(session)
+    session.execute(
+        text("UPDATE turab.requests SET last_confirmed_at = :t WHERE request_id = :r"),
+        {"t": datetime.now(UTC) - timedelta(days=days + 1), "r": rid},
     )
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
+
+    with pytest.raises(request_service.ReactivationNeedsConfirmation) as exc:
+        request_service.transition(
+            session, request_id=rid, target_status="ACTIVE",
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+    assert "Reconfirm it first" in str(exc.value)
+    assert request_service.read_request(session, rid)["status"] == "PAUSED"
+
+
+def test_a_never_confirmed_paused_request_cannot_be_reactivated(
+    session, ids, new_request
+):
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
+    assert request_service.read_request(session, rid)["last_confirmed_at"] is None
+
+    with pytest.raises(request_service.ReactivationNeedsConfirmation) as exc:
+        request_service.transition(
+            session, request_id=rid, target_status="ACTIVE",
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+    assert "never confirmed" in str(exc.value)
+
+
+def test_reconfirm_then_reactivate_is_the_two_step_path(session, ids, new_request):
+    """`/reconfirm` deliberately does not move a PAUSED request, so the
+    operator takes both steps explicitly and each is recorded."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    days, _ = freshness.request_threshold_days(session)
+    session.execute(
+        text("UPDATE turab.requests SET last_confirmed_at = :t WHERE request_id = :r"),
+        {"t": datetime.now(UTC) - timedelta(days=days + 1), "r": rid},
+    )
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
+
+    request_service.reconfirm(session, request_id=rid,
+                              recorded_by_account_id=ids.ACC_OPERATOR)
+    session.flush()
+    assert request_service.read_request(session, rid)["status"] == "PAUSED", (
+        "reconfirming must not reactivate on its own"
+    )
+
+    row = request_service.transition(
+        session, request_id=rid, target_status="ACTIVE",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    assert row["status"] == "ACTIVE"
+
+
+def test_the_freshness_check_on_reactivation_reads_the_active_policy(
+    session, ids, new_request
+):
+    """Not a constant in the transition code: with no active policy the
+    reactivation cannot be judged, and fails rather than assuming."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    request_service.reconfirm(session, request_id=rid,
+                              recorded_by_account_id=ids.ACC_OPERATOR)
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.execute(text("UPDATE turab.matching_policies SET active = false"))
+    session.flush()
+
+    with pytest.raises(freshness.NoActiveFreshnessPolicy):
+        request_service.transition(
+            session, request_id=rid, target_status="ACTIVE",
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+
+
+def test_a_future_confirmation_is_refused(session, ids, new_request):
+    """A confirmation records something that has already happened. Accepting a
+    future date would let one call place a request outside the freshness
+    window indefinitely."""
+    rid = new_request["request_id"]
+    with pytest.raises(request_service.ConfirmationInTheFuture):
+        request_service.reconfirm(
+            session, request_id=rid,
+            confirmed_at=datetime(2099, 1, 1, tzinfo=UTC),
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+    assert request_service.read_request(session, rid)["last_confirmed_at"] is None
+
+
+def test_a_historical_confirmation_is_still_accepted(session, ids, new_request):
+    """Only the future is refused: recording that someone confirmed last week
+    is legitimate and must keep working."""
+    rid = new_request["request_id"]
+    when = datetime.now(UTC) - timedelta(days=7)
+    row = request_service.reconfirm(
+        session, request_id=rid, confirmed_at=when,
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    assert row["last_confirmed_at"] is not None
+    assert row["last_confirmed_at"] < datetime.now(UTC)
 
 
 def test_reconfirming_does_not_resurrect_a_paused_or_closed_request(

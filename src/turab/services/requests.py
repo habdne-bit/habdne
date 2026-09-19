@@ -165,6 +165,84 @@ class ClosureNoteRequired(RequestError):
         )
 
 
+class ReactivationNeedsConfirmation(RequestError):
+    """Reactivation is subject to the freshness policy, as decided.
+
+    The closing decision permitted `/state` with `target_status=ACTIVE` to BE
+    the explicit reactivation request, "with reactivation remaining subject to
+    the activation and freshness conditions". The transition table alone does
+    not deliver the second half: a request paused two years ago would come
+    back ACTIVE carrying a confirmation nobody has checked since.
+
+    So reactivation reads the ACTIVE policy. A request whose information is
+    stale, or was never confirmed, stays where it is until someone reconfirms
+    it — and `/reconfirm` deliberately does not move it, so the operator has
+    to take both steps explicitly.
+
+    Found by independent review (R-S2-04).
+    """
+
+    def __init__(self, state: str, threshold_days: int, policy_version: str) -> None:
+        self.state = state
+        detail = (
+            "never confirmed" if state == "NEVER_CONFIRMED"
+            else f"last confirmed more than {threshold_days} days ago"
+        )
+        super().__init__(
+            "VALIDATION_FAILED",
+            f"this request cannot be reactivated: it was {detail} "
+            f"(policy {policy_version}). Reconfirm it first, then reactivate.",
+        )
+
+
+class ConfirmationInTheFuture(RequestError):
+    """`confirmed_at` is after now.
+
+    A confirmation is a record that someone checked — it cannot have happened
+    later than the moment it is being recorded. Accepting one would let a
+    single call place a request outside the freshness window indefinitely.
+    Historical confirmations are still accepted: only the future is refused.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            "VALIDATION_FAILED",
+            "confirmed_at cannot be in the future; a confirmation records "
+            "something that has already happened",
+        )
+
+
+class CriterionNotOnThisRequest(RequestError):
+    """The criterion id names nothing on this request.
+
+    One message whether the id does not exist or belongs to a DIFFERENT
+    request: distinguishing them would let a caller probe which criteria
+    belong to which request.
+    """
+
+    def __init__(self, request_criterion_id: uuid.UUID) -> None:
+        super().__init__(
+            "NOT_FOUND",
+            f"criterion {request_criterion_id} is not a criterion of this request",
+        )
+
+
+class DuplicateCriterionSlot(RequestError):
+    """`UNIQUE(request_id, criterion_code, sort_order)` already taken.
+
+    Surfaced as a typed error rather than a constraint violation, and it
+    points at the change path: a caller who wants to alter an existing
+    criterion sends its `request_criterion_id`.
+    """
+
+    def __init__(self, criterion_code: str, sort_order: int) -> None:
+        super().__init__(
+            "DUPLICATE_CRITERION_SLOT",
+            f"this request already has {criterion_code!r} at sort_order "
+            f"{sort_order}; to change it, send its request_criterion_id",
+        )
+
+
 class UndefinedTransition(RequestError):
     """The contract permits the target; the documented state machine does not.
 
@@ -182,7 +260,21 @@ class UndefinedTransition(RequestError):
         )
 
 
-def _row(session: Session, request_id: uuid.UUID) -> Mapping[str, Any]:
+def _row(
+    session: Session, request_id: uuid.UUID, *, for_update: bool = False
+) -> Mapping[str, Any]:
+    """Read a request. With `for_update`, lock it first.
+
+    Every command that DECIDES from the row it reads must lock it (R-S2-02):
+    under Read Committed a plain read is a snapshot, so a decision taken from
+    it can be applied after another transaction has changed the thing the
+    decision was about. A read for rendering does not need the lock and does
+    not take it.
+    """
+    return _read_row(session, request_id, for_update)
+
+
+def _read_row(session: Session, request_id: uuid.UUID, for_update: bool):
     row = session.execute(
         text(
             """SELECT request_id, party_id, status::text AS status,
@@ -199,6 +291,7 @@ def _row(session: Session, request_id: uuid.UUID) -> Mapping[str, Any]:
                       claim_status::text AS claim_status,
                       version, created_by_account_id, created_at, updated_at
                  FROM turab.requests WHERE request_id = :r"""
+            + (" FOR UPDATE" if for_update else "")
         ),
         {"r": request_id},
     ).mappings().first()
@@ -475,18 +568,29 @@ def add_criterion(
     unit: str | None = None,
     blocking_if_unknown: bool = False,
     sort_order: int = 100,
+    request_criterion_id: uuid.UUID | None = None,
     recorded_by_account_id: uuid.UUID | None = None,
     channel: UpdateChannel = UpdateChannel.STAFF_RECORDED,
     source_reference: uuid.UUID | None = None,
 ) -> Mapping[str, Any]:
-    """Add a structured criterion, and bump the request's version.
+    """Add a structured criterion, or CHANGE one, and bump the request version.
+
+    `API_CONTRACTS_v0.2` §`POST /requests/{request_id}/criteria`: "Adds/changes
+    structured criteria." The change half is selected by
+    `request_criterion_id`, which `RequestCriterion` declares — so no new field
+    is invented to carry an identifier the contract already has.
+
+    Found by independent review (R-S2-03): the earlier implementation always
+    inserted, so changing a criterion's value was impossible — a resend hit
+    `UNIQUE(request_id, criterion_code, sort_order)`, and changing
+    `sort_order` to get around it left the old criterion in place and
+    duplicated the meaning.
 
     The bump is explicit. `request_criteria` has its own `set_updated_at`
-    trigger and does NOT touch `requests.version`, so without this a criterion
+    trigger and does NOT touch `requests.version`, so without it a criteria
     change would leave the request's version unmoved — and every consumer that
     uses the version to detect change, optimistic concurrency included, would
-    miss it. Slice 2's mandatory test says criteria mutation bumps the
-    request's version; this is where that happens.
+    miss it.
     """
     if importance not in IMPORTANCE_VALUES:
         raise RequestError("VALIDATION_FAILED", f"importance must be one of {IMPORTANCE_VALUES}")
@@ -497,34 +601,100 @@ def add_criterion(
         raise UnknownCriterionCode(criterion_code, list(known))
     before = _row(session, request_id)
 
-    row = session.execute(
-        text(
-            """INSERT INTO turab.request_criteria
-                      (request_id, criterion_code, importance, operator, value,
-                       unit, blocking_if_unknown, sort_order)
-               VALUES (:request_id, :code,
-                       CAST(:importance AS turab.criterion_importance),
-                       CAST(:operator AS turab.criterion_operator),
-                       CAST(:value AS jsonb), :unit, :blocking, :sort_order)
-            RETURNING request_criterion_id, criterion_code,
-                      importance::text AS importance, operator::text AS operator,
-                      value, unit, blocking_if_unknown, sort_order, created_at"""
-        ),
-        {
-            "request_id": request_id, "code": criterion_code,
-            "importance": importance, "operator": operator,
-            "value": json.dumps(value, default=str), "unit": unit,
-            "blocking": blocking_if_unknown, "sort_order": sort_order,
-        },
-    ).mappings().one()
+    params = {
+        "request_id": request_id, "code": criterion_code,
+        "importance": importance, "operator": operator,
+        "value": json.dumps(value, default=str), "unit": unit,
+        "blocking": blocking_if_unknown, "sort_order": sort_order,
+    }
+    returning = """RETURNING request_criterion_id, criterion_code,
+                             importance::text AS importance,
+                             operator::text AS operator,
+                             value, unit, blocking_if_unknown, sort_order,
+                             created_at"""
+
+    if request_criterion_id is not None:
+        # CHANGE. The id is matched together with the request id, so a
+        # criterion belonging to another request simply does not match —
+        # ownership is part of the predicate, not a separate check that could
+        # be skipped.
+        previous = session.execute(
+            text(
+                """SELECT criterion_code, importance::text AS importance,
+                          operator::text AS operator, value, unit,
+                          blocking_if_unknown, sort_order
+                     FROM turab.request_criteria
+                    WHERE request_criterion_id = :cid AND request_id = :request_id
+                    FOR UPDATE"""
+            ),
+            {"cid": request_criterion_id, "request_id": request_id},
+        ).mappings().first()
+        if previous is None:
+            raise CriterionNotOnThisRequest(request_criterion_id)
+
+        row = session.execute(
+            text(
+                f"""UPDATE turab.request_criteria
+                       SET criterion_code = :code,
+                           importance = CAST(:importance AS turab.criterion_importance),
+                           operator = CAST(:operator AS turab.criterion_operator),
+                           value = CAST(:value AS jsonb),
+                           unit = :unit,
+                           blocking_if_unknown = :blocking,
+                           sort_order = :sort_order
+                     WHERE request_criterion_id = :cid AND request_id = :request_id
+                    {returning}"""
+            ),
+            {**params, "cid": request_criterion_id},
+        ).mappings().one()
+        change = {
+            "importance": importance, "operator": operator, "value": value,
+            "sort_order": sort_order,
+        }
+        was = {
+            "importance": previous["importance"], "operator": previous["operator"],
+            "value": previous["value"], "sort_order": previous["sort_order"],
+        }
+    else:
+        # ADD. A collision on the unique slot is a typed error pointing at the
+        # change path, not a constraint violation reaching the caller as a 500.
+        taken = session.execute(
+            text(
+                """SELECT 1 FROM turab.request_criteria
+                    WHERE request_id = :request_id AND criterion_code = :code
+                      AND sort_order = :sort_order"""
+            ),
+            {"request_id": request_id, "code": criterion_code,
+             "sort_order": sort_order},
+        ).first()
+        if taken is not None:
+            raise DuplicateCriterionSlot(criterion_code, sort_order)
+
+        row = session.execute(
+            text(
+                f"""INSERT INTO turab.request_criteria
+                           (request_id, criterion_code, importance, operator, value,
+                            unit, blocking_if_unknown, sort_order)
+                    VALUES (:request_id, :code,
+                            CAST(:importance AS turab.criterion_importance),
+                            CAST(:operator AS turab.criterion_operator),
+                            CAST(:value AS jsonb), :unit, :blocking, :sort_order)
+                   {returning}"""
+            ),
+            params,
+        ).mappings().one()
+        change = {
+            "importance": importance, "operator": operator, "value": value,
+            "sort_order": sort_order,
+        }
+        was = None
 
     _touch_request(session, request_id)
     record_provenance(
         session, request_id=request_id, party_id=before["party_id"],
-        changes={f"criterion.{criterion_code}": {
-            "importance": importance, "operator": operator, "value": value,
-        }},
-        previous=None, recorded_by_account_id=recorded_by_account_id,
+        changes={f"criterion.{criterion_code}": change},
+        previous=({f"criterion.{criterion_code}": was} if was is not None else None),
+        recorded_by_account_id=recorded_by_account_id,
         channel=channel, source_reference=source_reference,
     )
     return row
@@ -571,13 +741,25 @@ def transition(
     not made current by restarting it, and the freshness rules apply to it
     from the moment it is active again exactly as they do to any other.
     """
-    before = _row(session, request_id)
+    # Locked: this command DECIDES from `current`, and the decision must
+    # still hold when the UPDATE lands (R-S2-02).
+    before = _row(session, request_id, for_update=True)
     current = before["status"]
 
     if target_status == current:
         raise RequestError("VALIDATION_FAILED", f"the request is already {current}")
     if target_status not in TRANSITIONS.get(current, frozenset()):
         raise UndefinedTransition(current, target_status)
+    if current in REACTIVATION_FROM and target_status == "ACTIVE":
+        # Reactivation is subject to the freshness condition, per the closing
+        # decision. Read from the ACTIVE policy, never a constant here.
+        state = freshness.evaluate(
+            session, last_confirmed_at=before["last_confirmed_at"]
+        )
+        if state.state is not freshness.FreshnessState.FRESH:
+            raise ReactivationNeedsConfirmation(
+                state.state.value, state.threshold_days, state.policy_version
+            )
     closing = target_status == "CLOSED"
     if closing:
         known = session.execute(
@@ -597,10 +779,12 @@ def transition(
                   SET status = CAST(:status AS turab.request_status),
                       closed_at = CASE WHEN :closing THEN clock_timestamp() ELSE NULL END,
                       close_reason_code = CASE WHEN :closing THEN :reason ELSE NULL END
-                WHERE request_id = :r"""
+                WHERE request_id = :r
+                  AND status = CAST(:expected AS turab.request_status)"""
         ),
         {"status": target_status, "closing": closing,
-         "reason": reason_code if closing else None, "r": request_id},
+         "reason": reason_code if closing else None, "r": request_id,
+         "expected": current},
     )
     record_provenance(
         session, request_id=request_id, party_id=before["party_id"],
@@ -632,7 +816,14 @@ def reconfirm(
     the transition is a consequence of the confirmation, not a separate
     caller-chosen state change.
     """
-    before = _row(session, request_id)
+    if confirmed_at is not None:
+        now = session.execute(text("SELECT clock_timestamp()")).scalar_one()
+        if confirmed_at > now:
+            raise ConfirmationInTheFuture()
+
+    # Locked: the decision below is taken from `before["status"]`, so the row
+    # must not change between reading it and acting on it (R-S2-02).
+    before = _row(session, request_id, for_update=True)
     session.execute(
         text(
             """UPDATE turab.requests
@@ -646,8 +837,14 @@ def reconfirm(
         # returned to ACTIVE by confirming that its details are still true —
         # it was stopped for a reason unrelated to freshness, and undoing that
         # implicitly would reverse a decision nobody revisited.
+        #
+        # The predicate is repeated in the UPDATE, not only checked in Python:
+        # the row is locked here, but restating it means this statement is
+        # correct on its own terms and cannot reopen a CLOSED request if it is
+        # ever reached with a weaker guarantee.
         session.execute(
-            text("UPDATE turab.requests SET status = 'ACTIVE' WHERE request_id = :r"),
+            text("""UPDATE turab.requests SET status = 'ACTIVE'
+                     WHERE request_id = :r AND status = 'NEEDS_CONFIRMATION'"""),
             {"r": request_id},
         )
     record_provenance(
@@ -696,19 +893,34 @@ def mark_stale_as_needing_confirmation(
     still open.
     """
     days, _ = freshness.request_threshold_days(session)
+    # The subquery SELECTS candidates; the outer UPDATE RE-ASSERTS the
+    # conditions on the row it is about to change (R-S2-02).
+    #
+    # Selecting ids and then updating by id alone is not enough. Between the
+    # select and the write, another transaction can reconfirm the request or
+    # close it — the row this pass then marks stale would be one that is no
+    # longer stale, or no longer active. `FOR UPDATE SKIP LOCKED` takes the
+    # candidates that are free, and repeating the predicates makes the write
+    # correct on the row as it stands rather than as it was sampled.
     moved = session.execute(
         text(
-            """UPDATE turab.requests
+            """UPDATE turab.requests r
                   SET status = 'NEEDS_CONFIRMATION'
-                WHERE request_id IN (
+                 FROM (
                       SELECT request_id FROM turab.requests
                        WHERE status = 'ACTIVE'
                          AND last_confirmed_at IS NOT NULL
                          AND last_confirmed_at < COALESCE(:now, clock_timestamp())
                              - make_interval(days => :days)
                        ORDER BY last_confirmed_at
-                       LIMIT :limit)
-            RETURNING request_id"""
+                       LIMIT :limit
+                       FOR UPDATE SKIP LOCKED) AS candidate
+                WHERE r.request_id = candidate.request_id
+                  AND r.status = 'ACTIVE'
+                  AND r.last_confirmed_at IS NOT NULL
+                  AND r.last_confirmed_at < COALESCE(:now, clock_timestamp())
+                      - make_interval(days => :days)
+            RETURNING r.request_id"""
         ),
         {"now": now, "days": days, "limit": limit},
     ).scalars().all()

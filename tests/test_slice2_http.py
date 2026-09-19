@@ -499,3 +499,192 @@ def _unclaim(engine, request_id) -> None:
             {"r": request_id},
         )
         s.commit()
+
+
+# --- R-S2-03: the criteria endpoint adds AND changes -----------------------
+#
+# API_CONTRACTS v0.2: "Adds/changes structured criteria." The change half is
+# selected by `request_criterion_id`, which the contract's `RequestCriterion`
+# already declares — so nothing new is invented to carry it.
+
+def _new_request(client, ids, tag):
+    r = client.post("/requests", json=body(ids, local_location_detail=f"s2-{tag}"),
+                    headers={**cust(ids), **key(f"s2-{tag}")})
+    assert r.status_code == 201, r.text
+    return r.json()["request_id"]
+
+
+def _criterion(client, ids, rid, tag, **over):
+    payload = {"criterion_code": "ROOMS_MIN", "importance": "REQUIRED",
+               "operator": "GTE", "value": 3}
+    payload.update(over)
+    return client.post(f"/requests/{rid}/criteria", json=payload,
+                       headers={**cust(ids), **key(f"s2-crit-{tag}")})
+
+
+def test_the_contracts_criterion_id_is_accepted(client, ids):
+    """It was declared by the contract and rejected by the model."""
+    rid = _new_request(client, ids, "c-accept")
+    created = _criterion(client, ids, rid, "c1")
+    assert created.status_code == 201, created.text
+    cid = created.json()["request_criterion_id"]
+
+    changed = _criterion(client, ids, rid, "c2",
+                         request_criterion_id=cid, value=5)
+    assert changed.status_code == 201, changed.text
+    assert changed.json()["request_criterion_id"] == cid
+
+
+def test_changing_a_criterion_does_not_duplicate_it(client, ids):
+    rid = _new_request(client, ids, "c-nodup")
+    cid = _criterion(client, ids, rid, "d1").json()["request_criterion_id"]
+    _criterion(client, ids, rid, "d2", request_criterion_id=cid,
+               value=6, importance="PREFERRED")
+
+    view = client.get(f"/requests/{rid}", headers=staff(ids)).json()
+    rooms = [c for c in view["criteria"] if c["criterion_code"] == "ROOMS_MIN"]
+    assert len(rooms) == 1, "changing a criterion must not leave the old one"
+    assert rooms[0]["value"] == 6
+    assert rooms[0]["importance"] == "PREFERRED"
+
+
+def test_changing_a_criterion_bumps_the_request_version(client, ids):
+    rid = _new_request(client, ids, "c-version")
+    cid = _criterion(client, ids, rid, "v1").json()["request_criterion_id"]
+    before = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    _criterion(client, ids, rid, "v2", request_criterion_id=cid, value=4)
+    after = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    assert after > before
+
+
+def test_a_criterion_id_from_another_request_is_refused(client, ids, engine):
+    """Ownership is part of the predicate, not a separate check."""
+    mine = _new_request(client, ids, "c-mine")
+    theirs = _new_request(client, ids, "c-theirs")
+    foreign = _criterion(client, ids, theirs, "f1").json()["request_criterion_id"]
+
+    r = _criterion(client, ids, mine, "f2",
+                   request_criterion_id=foreign, value=9)
+    assert r.status_code == 404
+    # and the other request's criterion is untouched
+    other = client.get(f"/requests/{theirs}", headers=staff(ids)).json()
+    assert other["criteria"][0]["value"] == 3
+
+
+def test_an_unknown_criterion_id_is_refused(client, ids):
+    rid = _new_request(client, ids, "c-unknown")
+    r = _criterion(client, ids, rid, "u1",
+                   request_criterion_id=str(uuid.uuid4()))
+    assert r.status_code == 404
+
+
+def test_re_adding_the_same_slot_points_at_the_change_path(client, ids):
+    """`UNIQUE(request_id, criterion_code, sort_order)` surfaces as a typed
+    conflict naming the change path, not as a database error."""
+    rid = _new_request(client, ids, "c-slot")
+    _criterion(client, ids, rid, "s1")
+    again = _criterion(client, ids, rid, "s2", value=7)
+    assert again.status_code == 409, again.text
+    assert again.json()["code"] == "DUPLICATE_CRITERION_SLOT"
+    assert "request_criterion_id" in again.json()["detail"]
+
+
+def test_the_change_is_recorded_with_its_previous_value(client, ids, engine):
+    rid = _new_request(client, ids, "c-prov")
+    cid = _criterion(client, ids, rid, "p1").json()["request_criterion_id"]
+    _criterion(client, ids, rid, "p2", request_criterion_id=cid, value=8)
+
+    entries = [
+        p for p in client.get(f"/requests/{rid}", headers=staff(ids)).json()["provenance"]
+        if p["attribute_code"] == "criterion.ROOMS_MIN"
+    ]
+    assert len(entries) == 2, "the add and the change are both recorded"
+    assert entries[-1]["previous"] is not None
+    assert entries[-1]["previous"]["value"] == 3
+
+
+# --- R-S2-05: input contracts --------------------------------------------
+
+def test_a_null_non_nullable_field_is_a_422_not_a_500(client, ids, engine):
+    """`intent` is NOT NULL in the schema and non-nullable in the contract."""
+    rid = _new_request(client, ids, "n-null")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    r = client.patch(f"/requests/{rid}", json={"intent": None},
+                     headers={**cust(ids), "If-Match-Version": str(version)})
+    assert r.status_code == 422, r.text
+    assert r.json()["code"] == "VALIDATION_FAILED"
+    # The field is named in field_errors, never the value (K04).
+    fields = [e["field"] for e in r.json()["field_errors"]]
+    assert "intent" in fields, r.json()
+
+
+def test_an_unknown_enum_value_is_a_422_not_a_500(client, ids):
+    rid = _new_request(client, ids, "n-enum")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    r = client.patch(f"/requests/{rid}",
+                     json={"desired_property_type": "NOT_A_PROPERTY_TYPE"},
+                     headers={**cust(ids), "If-Match-Version": str(version)})
+    assert r.status_code == 422, r.text
+
+
+def test_an_incoherent_budget_pair_is_refused_on_create(client, ids, engine):
+    before = _count(engine)
+    r = client.post("/requests",
+                    json=body(ids, budget_target_dzd=200, budget_max_dzd=100),
+                    headers={**cust(ids), **key("s2-budget-create")})
+    assert r.status_code == 422, r.text
+    # Both values are in the body, so the MODEL decides it and the caller
+    # gets a field-level error rather than a generic message.
+    blob = r.text
+    assert "budget_target_dzd" in blob, blob
+    assert _count(engine) == before, "a refused create must write nothing"
+
+
+def test_the_budget_pair_is_checked_on_the_merged_values(client, ids):
+    """A patch that sets only the target can still break the pair, so the
+    check runs against the patch applied over the current row."""
+    rid = _new_request(client, ids, "n-merge")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    # current max is unset in the base body; give it one first
+    set_max = client.patch(f"/requests/{rid}", json={"budget_max_dzd": 1_000},
+                           headers={**cust(ids), "If-Match-Version": str(version)})
+    assert set_max.status_code == 200, set_max.text
+    version = set_max.json()["version"]
+
+    r = client.patch(f"/requests/{rid}", json={"budget_target_dzd": 9_999},
+                     headers={**cust(ids), "If-Match-Version": str(version)})
+    assert r.status_code == 422, r.text
+    assert "budget_target_dzd" in r.json()["detail"]
+
+
+def test_a_refused_input_consumes_no_idempotency_key(client, ids, engine):
+    """A rejected command must leave its key free for a corrected retry."""
+    k = "s2-budget-retry"
+    bad = client.post("/requests",
+                      json=body(ids, budget_target_dzd=500, budget_max_dzd=100,
+                                local_location_detail="s2-retry"),
+                      headers={**cust(ids), "Idempotency-Key": k})
+    assert bad.status_code == 422
+    with Session(bind=engine, future=True) as s:
+        assert s.execute(
+            text("SELECT count(*) FROM turab.idempotency_records "
+                 "WHERE idempotency_key = :k"), {"k": k},
+        ).scalar_one() == 0
+
+    good = client.post("/requests",
+                       json=body(ids, budget_target_dzd=100, budget_max_dzd=500,
+                                 local_location_detail="s2-retry"),
+                       headers={**cust(ids), "Idempotency-Key": k})
+    assert good.status_code == 201, good.text
+
+
+def test_a_refused_input_leaks_no_database_text(client, ids):
+    rid = _new_request(client, ids, "n-leak")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    r = client.patch(f"/requests/{rid}",
+                     json={"desired_property_type": "NOPE"},
+                     headers={**cust(ids), "If-Match-Version": str(version)})
+    blob = r.text.lower()
+    for forbidden in ("psycopg", "sqlalchemy", "turab.requests", "constraint",
+                      "traceback"):
+        assert forbidden not in blob, forbidden

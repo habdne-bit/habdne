@@ -45,6 +45,10 @@ class ProblemCode(StrEnum):
     IDENTITY_ALIAS_NOT_CANONICAL = "IDENTITY_ALIAS_NOT_CANONICAL"
     RESOURCE_ALREADY_CLAIMED = "RESOURCE_ALREADY_CLAIMED"
     RESOURCE_NOT_CLAIMABLE = "RESOURCE_NOT_CLAIMABLE"
+    #: A criterion already occupies (request, code, sort_order). 409, not
+    #: 422: the body is well formed and the request is refused because of
+    #: the resource's current state, which is what a conflict is.
+    DUPLICATE_CRITERION_SLOT = "DUPLICATE_CRITERION_SLOT"
     #: The contract's declared condition on `postRecordsClaim` is not met.
     #: 403, not 404: the caller already named a record they may not claim,
     #: and concealing it would leave them unable to tell a wrong id from a
@@ -78,6 +82,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.IDENTITY_ALIAS_NOT_CANONICAL: (409, "Alias is not canonical"),
     ProblemCode.RESOURCE_ALREADY_CLAIMED: (409, "Already claimed"),
     ProblemCode.RESOURCE_NOT_CLAIMABLE: (409, "Not claimable"),
+    ProblemCode.DUPLICATE_CRITERION_SLOT: (409, "Duplicate criterion"),
     ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),

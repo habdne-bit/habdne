@@ -1,0 +1,37 @@
+TURAB — run provenance, recorded AT RUN TIME
+============================================
+Recorded    : 2026-09-19 22:32:27 UTC
+Branch      : claude/postgresql-execution-gate-yqifk7
+Parent commit (this run's code is this + the staged changes):
+              7244ac7882b85944a8d2713929c88dbe6f546d56
+Source fingerprint (sha256 over the sha256 of every .py/.sql/.sh/.ini/.mako
+under src/ tests/ db/ plus alembic.ini, sorted):
+              b377a673ff44047d460c4dc0c4cc7b781e06c8f4fc06b743c873df0b818258aa
+
+Commands
+--------
+  pytest -q --junitxml=reports/junit.xml
+  db/gate/run_gate.sh
+  db/gate/authorization_evidence.py --check
+
+Connection
+----------
+  PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab
+  server: 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+Dependencies
+------------
+Python 3.12.3
+  PyYAML==6.0.3
+  SQLAlchemy==2.0.54
+  alembic==1.20.0
+  anyio==4.15.1
+  fastapi==0.141.1
+  httpx==0.28.1
+  psycopg-binary==3.3.6
+  psycopg==3.3.6
+  pydantic==2.13.5
+  pydantic_core==2.46.5
+  pytest==9.1.1
+  starlette==1.6.0
+  uvicorn==0.53.0
