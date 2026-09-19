@@ -171,7 +171,11 @@ def test_nothing_writes_to_the_frozen_contract():
 # first shipped PATCH /parties, phone attachment and consent granting with the
 # role gate and no object gate, which let a customer act on any party id.
 
-_SCOPE_GUARDS = ("authorize_party_scope", "authorize_staff_only")
+_SCOPE_GUARDS = (
+    "authorize_party_scope",
+    "authorize_request_scope",
+    "authorize_staff_only",
+)
 
 #: Commands whose object rule lives elsewhere, each with its reason. A route
 #: may only be here deliberately; the test below fails for anything else.

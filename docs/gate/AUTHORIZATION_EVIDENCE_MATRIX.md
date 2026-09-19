@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **98**
-- Distinct tests cited: **240**
-- Suite total: **360/360** test cases passing (285 distinct test functions)
+- Rules and invariants covered: **113**
+- Distinct tests cited: **285**
+- Suite total: **415/415** test cases passing (333 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -110,6 +110,21 @@ matrix, because it reads as assurance.
 | `D7 defence in depth` | The object gate on party creation is retained, not deleted as redundant | `test_the_object_gate_on_party_creation_is_still_present`<br>`test_customer_cannot_create_an_arbitrary_party` | PASS |
 | `R14.4 structural` | The migrated database is structurally identical to the frozen schema, function bodies included | `test_the_migrated_database_is_structurally_identical_to_the_frozen_schema`<br>`test_the_fingerprint_notices_a_changed_function_body`<br>`test_the_version_table_is_pinned_to_public` | PASS |
 | `R14.4 stamp guard` | A database that is not the baseline cannot be stamped as if it were | `test_stamping_a_database_that_is_not_the_baseline_is_refused`<br>`test_stamping_the_real_baseline_succeeds`<br>`test_the_dev_reset_script_stamps_through_the_guard` | PASS |
+| `Slice 2 mandatory 1` | INTEREST never silently creates a REQUEST | `test_recording_an_interest_creates_no_request`<br>`test_no_application_code_creates_a_request_from_an_interest` | PASS |
+| `Slice 2 mandatory 2` | Criteria mutation bumps the request version | `test_adding_a_criterion_bumps_the_request_version`<br>`test_the_criterion_is_actually_stored` | PASS |
+| `Slice 2 mandatory 3` | Required/Preferred/Flexible are the buyer's word; no code path chooses one | `test_importance_is_restricted_to_the_three_declared_values`<br>`test_no_code_path_rewrites_importance_from_an_inference`<br>`test_patch_cannot_reach_importance_fields` | PASS |
+| `Slice 2 mandatory 4` | A stale ACTIVE request becomes NEEDS_CONFIRMATION per the active policy | `test_a_stale_active_request_becomes_needs_confirmation`<br>`test_a_fresh_request_is_left_alone`<br>`test_only_active_requests_are_moved`<br>`test_a_never_confirmed_request_is_not_stale` | PASS |
+| `Slice 2 / §15.1` | The freshness window is read from the active policy, never hard-coded | `test_the_threshold_comes_from_the_active_policy_not_from_code`<br>`test_a_request_past_the_window_is_stale`<br>`test_a_missing_policy_is_an_error_not_a_default`<br>`test_staff_read_carries_derived_freshness` | PASS |
+| `Slice 2 mandatory 5` | An assisted request cannot be CLAIMED | `test_the_management_pair_is_refused_when_incoherent`<br>`test_the_database_refuses_it_too`<br>`test_an_assisted_request_is_created_unclaimed`<br>`test_an_assisted_record_cannot_be_created_claimed` | PASS |
+| `Slice 2 / §5.2` | Only the documented state machine's edges exist; others are refused | `test_the_documented_path_works_end_to_end`<br>`test_an_undefined_transition_is_refused_not_guessed`<br>`test_an_undefined_transition_is_refused_over_http`<br>`test_leaving_paused_requires_explicit_reactivation` | PASS |
+| `Slice 2 separation` | Data update, state transition and reconfirmation are three commands | `test_a_data_update_does_not_touch_status_or_confirmation`<br>`test_a_state_transition_does_not_touch_the_data_or_confirmation`<br>`test_a_reconfirmation_does_not_change_what_the_buyer_wants`<br>`test_reconfirming_returns_a_needs_confirmation_request_to_active`<br>`test_the_three_commands_are_three_endpoints` | PASS |
+| `Slice 2 provenance` | A typed update records who said what, when, one observation per update | `test_a_typed_update_records_who_said_what_and_when`<br>`test_each_changed_field_gets_its_own_claim`<br>`test_one_update_is_one_observation`<br>`test_a_state_change_is_also_recorded` | PASS |
+| `Slice 2 claim flow` | Claiming converts the record in place; it never duplicates it | `test_claiming_converts_the_record_in_place`<br>`test_a_second_claim_by_another_account_is_rejected`<br>`test_a_self_managed_record_is_not_claimable` | PASS |
+| `Slice 2 / DL-02` | Party and ownership are never inferred from a shared phone | `test_a_customer_cannot_create_a_request_for_another_party`<br>`test_claiming_does_not_infer_ownership_from_the_phone` | PASS |
+| `Slice 2 / K01 applied` | A customer commands only their own request; staff reads are audited | `test_a_customer_cannot_command_another_partys_request`<br>`test_a_customer_cannot_read_a_request_internally`<br>`test_the_staff_read_is_audited`<br>`test_a_stale_version_applies_nothing` | PASS |
+| `Slice 2 registry` | Criteria are structured: an unknown code is refused, not stored | `test_an_unknown_criterion_code_is_a_typed_error` | PASS |
+| `STOP GATE B` | An operator can state what the buyer wants, what is hard vs preferred, and when it was last confirmed — from one staff read | `test_stop_gate_b_a_staff_operator_can_understand_the_request`<br>`test_the_gate_scenario_would_fail_if_importance_were_not_carried` | PASS |
+| `Slice 2 gap pinned` | No master reason code describes closing a REQUEST | `test_no_master_reason_code_describes_closing_a_request` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 
 ## Reading this table

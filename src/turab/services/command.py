@@ -18,6 +18,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..auth.audit import AccessAuditor
@@ -52,8 +53,15 @@ class CommandService:
         auditor: AccessAuditor,
         trace_id: str,
         idempotency_key: str | None = None,
+        read_session: Session | None = None,
     ) -> None:
         self._session = session
+        # Pre-command object checks query HERE, never on the write session.
+        # A SELECT on the write session opens a transaction, and the command
+        # must own its transaction outright so the idempotency claim, the work
+        # and the stored result commit or roll back as one. `get_subject_for_write`
+        # already resolves the actor on the read session for the same reason.
+        self._read_session = read_session if read_session is not None else session
         self._subject = subject
         self._policies = policies
         self._auditor = auditor
@@ -126,6 +134,38 @@ class CommandService:
                 resource_kind="PARTY", resource_id=party_id,
             )
             return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not your party")
+        return ALLOW_DECISION
+
+    def authorize_request_scope(self, request_id: uuid.UUID) -> Decision:
+        """A CUSTOMER may command only a REQUEST belonging to their own party.
+
+        The party comes from the ACCOUNT's binding, resolved per request
+        (R3.2) — never from a phone number, a contact point or any other
+        shared attribute (Design Ledger DL-02). Two people on one line reach
+        two parties, and neither inherits the other's records.
+
+        Staff are authorized by role and recorded. A customer whose account
+        has no party is authorized over nothing, which is the explicit guard
+        R3.1 requires rather than a NULL comparison that quietly matches.
+        """
+        if self.is_staff:
+            return ALLOW_DECISION
+        owner = self._read_session.execute(
+            text("SELECT party_id FROM turab.requests WHERE request_id = :r"),
+            {"r": request_id},
+        ).scalar_one_or_none()
+        if (
+            owner is None
+            or not self._subject.has_party
+            or self._subject.party_id != owner
+        ):
+            self._auditor.denied(
+                subject=self._subject, operation_id="request-scope",
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind="REQUEST", resource_id=request_id,
+            )
+            return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not your request")
         return ALLOW_DECISION
 
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:

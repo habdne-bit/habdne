@@ -24,7 +24,8 @@ from ..auth.loaders import (
 from ..auth.policy import Decision, DenyReason, PolicyTable
 from ..auth.roles import Role
 from ..auth.subject import Subject
-from . import timeline
+from . import freshness, timeline
+from . import requests as request_service
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,6 +210,26 @@ class AccessService:
                          "page_size": page_result.page_size},
         )
         return page_result
+
+    def evaluate_request_freshness(self, last_confirmed_at):
+        """Freshness as a DERIVED value, computed on the read session.
+
+        Not stored: the contract has no field for it, and a copy of a derived
+        value is a second truth that can disagree with `last_confirmed_at`.
+        The threshold comes from the active matching policy, never from code
+        (Reference Spec §15.1).
+        """
+        return freshness.evaluate(self._session, last_confirmed_at=last_confirmed_at)
+
+    def request_criteria(self, request_id: uuid.UUID):
+        """The structured criteria of a request already cleared by its gate.
+
+        Called only after `read_staff_resource` has authorized the request, so
+        it carries no gate of its own — and takes the id it was given rather
+        than re-deriving it, so there is no path here that reaches a request
+        the caller was not already handed.
+        """
+        return request_service.criteria_for(self._session, request_id)
 
     def record_list_access(
         self, *, operation_id: str, resource_kind: str, result_count: int,

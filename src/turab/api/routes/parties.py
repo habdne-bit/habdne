@@ -274,8 +274,13 @@ def get_party_timeline(
 
 
 def _run(request, command, operation_id, route_key, payload, handler,
-         success_status, version_guard=None):
-    """Shared command plumbing: idempotency, concurrency and stable errors."""
+         success_status, version_guard=None, extra_errors=None):
+    """Shared command plumbing: idempotency, concurrency and stable errors.
+
+    `extra_errors` lets a caller add one typed domain exception that carries
+    its own problem `code`, so a slice can report its own rules without every
+    route re-implementing the plumbing around them.
+    """
     from ...services.idempotency import IdempotencyKeyConflict, IdempotencyKeyRequired
 
     trace = trace_id_of(request)
@@ -302,8 +307,17 @@ def _run(request, command, operation_id, route_key, payload, handler,
         code = (ProblemCode[exc.code] if exc.code in ProblemCode.__members__
                 else ProblemCode.VALIDATION_FAILED)
         return coded(code, trace, str(exc))
-    except ValueError as exc:
-        return coded(ProblemCode.VALIDATION_FAILED, trace, str(exc))
+    except Exception as exc:
+        if extra_errors is not None and isinstance(exc, extra_errors):
+            code = getattr(exc, "code", "VALIDATION_FAILED")
+            return coded(
+                ProblemCode[code] if code in ProblemCode.__members__
+                else ProblemCode.VALIDATION_FAILED,
+                trace, str(exc),
+            )
+        if isinstance(exc, ValueError):
+            return coded(ProblemCode.VALIDATION_FAILED, trace, str(exc))
+        raise
 
     from fastapi.responses import JSONResponse
 

@@ -371,8 +371,48 @@ def load_party_for_staff(
     )
 
 
+def load_request_for_staff(
+    session: Session, subject: Subject, request_id: uuid.UUID
+) -> LoadResult:
+    """A staff read of any REQUEST, by role and recorded.
+
+    Deliberately separate from `load_request`, which is the CUSTOMER loader
+    and requires party match AND a claimed record (R4.8). Staff need neither,
+    and merging the two would be one `if` away from handing a customer the
+    staff query.
+    """
+    row = session.execute(
+        text(
+            """
+            SELECT request_id, party_id, status::text AS status,
+                   transaction_intent::text AS transaction_intent,
+                   intent::text AS intent, payment::text AS payment,
+                   desired_property_type::text AS desired_property_type,
+                   property_type_importance::text AS property_type_importance,
+                   primary_location_id,
+                   location_importance::text AS location_importance,
+                   local_location_detail, budget_target_dzd, budget_max_dzd,
+                   budget_importance::text AS budget_importance,
+                   budget_flexibility::text AS budget_flexibility,
+                   last_confirmed_at,
+                   management_mode::text AS management_mode,
+                   claim_status::text AS claim_status,
+                   version, created_at, updated_at
+              FROM turab.requests WHERE request_id = :request_id
+            """
+        ),
+        {"request_id": request_id},
+    ).mappings().first()
+    return (
+        LoadResult(ResourceKind.REQUEST, request_id, row)
+        if row
+        else _denied(ResourceKind.REQUEST, request_id)
+    )
+
+
 STAFF_LOADERS = {
     ResourceKind.PARTY: load_party_for_staff,
+    ResourceKind.REQUEST: load_request_for_staff,
 }
 
 

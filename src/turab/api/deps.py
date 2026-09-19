@@ -116,6 +116,7 @@ def get_access(
 def get_command(
     request: Request,
     session: Annotated[Session, Depends(get_write_session)],
+    read: Annotated[Session, Depends(get_session)],
     subject: Annotated[Subject, Depends(get_subject_for_write)],
     policies: Annotated[PolicyTable, Depends(get_policies)],
     auditor: Annotated[AccessAuditor, Depends(get_auditor)],
@@ -128,6 +129,7 @@ def get_command(
         auditor=auditor,
         trace_id=getattr(request.state, "trace_id", "-"),
         idempotency_key=idempotency_key,
+        read_session=read,
     )
 
 

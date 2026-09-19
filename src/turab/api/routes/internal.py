@@ -49,18 +49,3 @@ def get_requests_queue(request: Request, access: Access):
         query_shape={"status": "ACTIVE"},
     )
     return {"items": items}
-
-
-@router.get("/requests/{request_id}", operation_id="getRequestsRequestId")
-def get_request_internal(request: Request, request_id: uuid.UUID, access: Access):
-    """Internal arbitrary-id read. x-roles excludes CUSTOMER (K01)."""
-    decision = access.authorize_operation("getRequestsRequestId")
-    if not decision.allowed:
-        return for_denial(
-            decision.reason, trace_id_of(request), customer_scoped=False,
-            detail=decision.detail,
-        )
-    return problem(
-        501, "NOT_IMPLEMENTED", "Not implemented", trace_id_of(request),
-        "staff request projection belongs to Slice 2",
-    )

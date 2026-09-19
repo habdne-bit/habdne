@@ -102,6 +102,39 @@ what does not, and the proposed minimal mechanism.
 
 ---
 
+### DL-08 · What makes a record claim legitimate
+**Open. Raised by Slice 2, not resolved.**
+
+`POST /records/claim` does not verify that the claimant has any relationship
+to the record: the `verification_contact_point_id` is not checked for verified
+control, for belonging to the claiming account, or for reaching the record's
+party. INV-1 governs conflicts BETWEEN claimants; it says nothing about
+whether a claimant is the right person.
+
+No disclosure results — read access still follows the account's own party
+binding, so a wrongful claimant gains an ownership event and no readable
+record. The exposure is a **denial of claim**: INV-1 then refuses the
+rightful person's claim.
+
+Resolving it is a Workflow and Permissions decision. DL-02 rules out the
+obvious shortcut: "this phone reaches that party" must never become "this
+account owns that party's records". See `docs/gate/SLICE_2_PROGRESS.md` §5 G-6.
+
+### DL-09 · Undefined REQUEST state transitions
+**Open. Fail-closed meanwhile.**
+
+`RequestStateCommand` accepts six target states; Reference Spec §5.2 defines
+far fewer edges. Undefined ones — `ACTIVE -> CLOSED` directly, `RAW -> PAUSED`
+and others — are refused rather than guessed. Adding any of them is a Workflow
+decision. See `SLICE_2_PROGRESS.md` §5 G-2.
+
+### DL-10 · Nothing schedules the staleness pass
+**Open.** `mark_stale_as_needing_confirmation()` exists and is tested; the
+contract declares no scheduled-job operation and the handoff names no
+schedule, so what calls it and how often is undecided. No timer was invented.
+
+---
+
 ## Superseded
 
 | Entry | Was | Now |
