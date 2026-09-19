@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **85**
-- Distinct tests cited: **200**
-- Suite total: **314/314** test cases passing (245 distinct test functions)
+- Rules and invariants covered: **90**
+- Distinct tests cited: **211**
+- Suite total: **329/329** test cases passing (256 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -97,6 +97,11 @@ matrix, because it reads as assurance.
 | `R6.3c / R6.3b applied` | The page is audited once, by shape and count, never by row | `test_the_page_is_audited_once_not_per_row`<br>`test_the_audit_records_the_query_shape_not_the_rows` | PASS |
 | `Slice 1 / A01 x A02` | A party contact-point link is not a login path | `test_attaching_a_phone_to_a_party_creates_no_login_path`<br>`test_a_shared_line_does_not_authenticate_as_the_party_that_shares_it` | PASS |
 | `D6 / baseline hygiene` | Version drift in any single claim is caught mechanically | `test_a_consistent_package_passes`<br>`test_drift_in_any_single_place_is_caught`<br>`test_a_missing_artifact_is_an_error` | PASS |
+| `R14.4` | The frozen schema IS the initial migration; it rebuilds an empty environment and stamps at head | `test_a_migration_rebuilds_an_empty_environment`<br>`test_there_is_exactly_one_head` | PASS |
+| `R14.4 / R14.7` | The migrated catalog agrees with the static audit's own parse | `test_the_migrated_catalog_matches_the_static_audit` | PASS |
+| `R14.6` | A baseline that is not the frozen one refuses to migrate | `test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one`<br>`test_the_declared_digest_is_the_frozen_one` | PASS |
+| `R14.4 / R14.5` | Autogenerate is refused; there is no metadata to diff the baseline against | `test_autogenerate_is_refused`<br>`test_env_declares_no_metadata_to_diff_against`<br>`test_there_is_no_downgrade_from_the_baseline` | PASS |
+| `R14.4 stamp` | A database built from the frozen SQL is stamped, so upgrade is a no-op | `test_a_stamped_database_is_already_at_head`<br>`test_upgrading_a_stamped_database_is_a_no_op`<br>`test_the_dev_reset_script_stamps` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 
 ## Reading this table

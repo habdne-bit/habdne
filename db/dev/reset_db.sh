@@ -39,6 +39,22 @@ step "Applying frozen baseline"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.3.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
 
+# R14.4: the frozen schema IS the initial migration, so the database is
+# STAMPED at that revision rather than migrated up to it. Without this the
+# database carries no alembic_version, and the next `alembic upgrade head`
+# would try to apply the baseline again on top of itself and fail.
+step "Stamping the initial Alembic revision"
+if [[ -x "$REPO_ROOT/.venv/bin/alembic" ]]; then
+  ALEMBIC="$REPO_ROOT/.venv/bin/alembic"
+else
+  ALEMBIC="alembic"
+fi
+# Built from the same PG* variables psql just used, so the stamp cannot land
+# on a different database than the schema did. PGPORT is included: omitting it
+# would let a non-default port succeed for psql and silently fail here.
+STAMP_URL="${TURAB_DATABASE_URL:-postgresql+psycopg://${PGUSER:-$USER}@${PGHOST:-/var/run/postgresql}:${PGPORT:-5432}/$PGDATABASE}"
+( cd "$REPO_ROOT" && TURAB_DATABASE_URL="$STAMP_URL" "$ALEMBIC" stamp head )
+
 if [[ $WITH_FIXTURES -eq 1 ]]; then
   step "Loading development fixtures"
   psql -v ON_ERROR_STOP=1 -q -f "$REPO_ROOT/db/fixtures/dev_fixtures.sql"

@@ -12,7 +12,7 @@
 | Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
-| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, submitted for closure review** — all 11 contract operations wired, 314 tests, 85 rules evidenced |
+| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete, submitted for closure review** — all 11 contract operations wired, 329 tests, 90 rules evidenced |
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -22,6 +22,7 @@ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 - Authorization evidence: **[`docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`](docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md)**
 - Slice 0 closure: **[`docs/gate/SLICE_0_CLOSURE_PACK.md`](docs/gate/SLICE_0_CLOSURE_PACK.md)**
 - Slice 1 closure: **[`docs/gate/SLICE_1_CLOSURE_PACK.md`](docs/gate/SLICE_1_CLOSURE_PACK.md)**
+- Migration policy (R14.4–R14.7): **[`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md)**
 - Defect record (BOLA on the Slice 1 command surface, closed): **[`docs/gate/DEFECT-001-command-surface-object-gate.md`](docs/gate/DEFECT-001-command-surface-object-gate.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
@@ -34,7 +35,8 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 | `docs/handoff/` | The official Developer Handoff **v1.0.3** package, vendored **unmodified** — the authority baseline. Read `docs/handoff/README.md` first. Never edited in place: corrections arrive as a new official package. |
 | `docs/gate/` | Execution gate run reports |
 | `db/gate/` | Gate harness: contract tests, runner, OpenAPI lint, API inventory generator |
-| `db/dev/` | Development database reset (`reset_db.sh`) |
+| `db/dev/` | Development database reset (`reset_db.sh`) — applies the frozen baseline, then **stamps** the initial Alembic revision |
+| `db/migrations/` | Alembic. The frozen schema **is** the initial migration; autogenerate is refused. See [`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md) |
 | `db/fixtures/` | Developer fixtures — a coherent Adrar world, authorization edge cases EC1–EC8, market edge cases MF1–MF8 |
 | `docs/rfc/` | Design RFCs awaiting or carrying decisions |
 | `docs/api/` | Generated API inventory (do not edit) |
@@ -64,7 +66,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 314 tests
+./.venv/bin/pytest -q                  # 329 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 
