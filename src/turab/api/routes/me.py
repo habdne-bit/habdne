@@ -13,10 +13,35 @@ import uuid
 from fastapi import APIRouter, Request, Response
 
 from ...auth.loaders import ResourceKind
+from ...dto import (
+    Audience,
+    CustomerPartyView,
+    CustomerPropertyView,
+    CustomerRequestView,
+    assert_no_forbidden_fields,
+    render_opportunity_for_scope,
+)
 from ..deps import Access
 from ..problems import for_denial, trace_id_of
 
 router = APIRouter(prefix="/me", tags=["Me"])
+
+
+#: A row is never returned as-is. Each kind is rendered through its customer
+#: type, so an internal column added to a table cannot reach a customer (R9.1).
+_RENDERERS = {
+    ResourceKind.PARTY: CustomerPartyView.render,
+    ResourceKind.REQUEST: CustomerRequestView.render,
+    ResourceKind.PROPERTY: CustomerPropertyView.render,
+}
+
+
+def _render(kind: ResourceKind, row) -> dict:
+    payload = _RENDERERS[kind](row).model_dump(mode="json")
+    # Belt and braces: the type already constrains this, and this makes a
+    # regression loud rather than silent.
+    assert_no_forbidden_fields(payload, Audience.CUSTOMER)
+    return payload
 
 
 def _respond(access: Access, request: Request, kind: ResourceKind,
@@ -32,7 +57,7 @@ def _respond(access: Access, request: Request, kind: ResourceKind,
         return for_denial(
             result.reason, trace_id_of(request), customer_scoped=True,
         )
-    return dict(result.row)
+    return _render(kind, result.row)
 
 
 @router.get("/party", operation_id="getMeParty")
@@ -49,7 +74,7 @@ def get_me_party(request: Request, access: Access):
     )
     if not result.authorized:
         return for_denial(result.reason, trace_id_of(request), customer_scoped=True)
-    return dict(result.row)
+    return _render(ResourceKind.PARTY, result.row)
 
 
 @router.get("/requests/{request_id}", operation_id="getMeRequestsRequestId")
@@ -66,5 +91,23 @@ def get_me_property(request: Request, property_id: uuid.UUID, access: Access):
 
 @router.get("/opportunities/{opportunity_id}", operation_id="getMeOpportunitiesOpportunityId")
 def get_me_opportunity(request: Request, opportunity_id: uuid.UUID, access: Access):
-    return _respond(access, request, ResourceKind.OPPORTUNITY, opportunity_id,
-                    "getMeOpportunitiesOpportunityId")
+    """Rendered through the sharing-scope ladder (R8.2).
+
+    The opportunity's property and contact are not joined here: that belongs to
+    Slice 5, and inventing a partial join now would make the scope ladder look
+    exercised when it is not.
+    """
+    decision = access.authorize_operation("getMeOpportunitiesOpportunityId")
+    if not decision.allowed:
+        return for_denial(
+            decision.reason, trace_id_of(request), customer_scoped=True,
+            detail=decision.detail,
+        )
+    result = access.read_resource(
+        ResourceKind.OPPORTUNITY, opportunity_id, "getMeOpportunitiesOpportunityId"
+    )
+    if not result.authorized:
+        return for_denial(result.reason, trace_id_of(request), customer_scoped=True)
+    payload = render_opportunity_for_scope(result.row).model_dump(mode="json")
+    assert_no_forbidden_fields(payload, Audience.CUSTOMER)
+    return payload

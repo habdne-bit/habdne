@@ -11,7 +11,8 @@
 | **PostgreSQL 16+ Execution Gate** | **PASS** — twice, 70/70 assertions |
 | Technical database baseline | **FROZEN** at `schema_v0.2.1.sql` |
 | Slice −1 — Tooling baseline | Complete |
-| Slice 0 — object-level authorization | **Implemented** — 106/106 tests, 40 rules evidenced |
+| Slice 0 — Application Skeleton + Security Boundaries | **Complete** — 211 tests, 60 rules evidenced |
+| Slice 1 — PARTY / Contact / Account / Consent | Not started |
 
 Handoff package: **v1.0.1** (official), vendored unmodified.
 
@@ -19,6 +20,7 @@ Handoff package: **v1.0.1** (official), vendored unmodified.
 - Freeze record and pinned commit: **[`docs/gate/TECHNICAL_BASELINE_FROZEN.md`](docs/gate/TECHNICAL_BASELINE_FROZEN.md)**
 - Object-level authorization design, **FINAL / APPROVED**: **[`docs/rfc/RFC-001-object-level-authorization.md`](docs/rfc/RFC-001-object-level-authorization.md)**
 - Authorization evidence: **[`docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md`](docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md)**
+- Slice 0 closure: **[`docs/gate/SLICE_0_CLOSURE_PACK.md`](docs/gate/SLICE_0_CLOSURE_PACK.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no
 advanced AI work begins before the Core Hypothesis Stop Gate passes.
@@ -60,7 +62,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 106 tests
+./.venv/bin/pytest -q                  # 211 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

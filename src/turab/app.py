@@ -8,17 +8,27 @@ import logging
 import uuid
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy import text as sa_text
 
+from .api import handlers
 from .api.routes import internal, me
 from .auth.audit import AccessAuditor
 from .auth.contract import build_policy_table, verify_policy_matches_contract
 from .auth.roles import verify_separation_sensitive_operations
 from .db.session import create_app_engine, session_factory
+from .observability import configure_logging
 
 logger = logging.getLogger("turab")
 
 
-def create_app(engine=None, auditor: AccessAuditor | None = None) -> FastAPI:
+def create_app(
+    engine=None,
+    auditor: AccessAuditor | None = None,
+    configure_logs: bool = False,
+) -> FastAPI:
+    if configure_logs:
+        configure_logging()
     app = FastAPI(title="TURAB", version="0.1.0")
 
     # R10.2. The cross-check runs at startup, not only in CI: a policy table
@@ -42,12 +52,31 @@ def create_app(engine=None, auditor: AccessAuditor | None = None) -> FastAPI:
 
     @app.get("/health", operation_id="getHealth", include_in_schema=False)
     def health():
+        """Liveness: the process is up. No dependencies are touched."""
         return {"status": "ok"}
 
     @app.get("/ready", operation_id="getReady", include_in_schema=False)
     def ready():
-        return {"status": "ready", "policy_operations": len(app.state.policies)}
+        """Readiness: the database answers and the policy table is loaded.
 
+        A readiness probe that only reports the process is alive will keep a
+        broken instance in the load balancer, so this checks the one dependency
+        every request needs.
+        """
+        checks = {"policy_operations": len(app.state.policies)}
+        try:
+            with app.state.session_factory() as session:
+                session.execute(sa_text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception:
+            logger.exception("readiness check failed")
+            checks["database"] = "unavailable"
+            return JSONResponse(
+                status_code=503, content={"status": "not_ready", **checks}
+            )
+        return {"status": "ready", **checks}
+
+    handlers.install(app)
     app.include_router(me.router)
     app.include_router(internal.router)
     return app

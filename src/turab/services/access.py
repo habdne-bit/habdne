@@ -21,6 +21,7 @@ from ..auth.loaders import (
     ResourceKind,
 )
 from ..auth.policy import Decision, DenyReason, PolicyTable
+from ..auth.roles import Role
 from ..auth.subject import Subject
 
 
@@ -74,6 +75,22 @@ class AccessService:
             )
         return decision
 
+    def _may_learn_of_conflict(self, conflict: ClaimAuthorityConflict) -> bool:
+        """Who may be told that a claim conflict exists.
+
+        A known conflicting claimant already knows they claimed the resource,
+        so confirming that the claim is contested tells them nothing they could
+        not infer, and leaves them able to act on it. Authorized staff need it
+        to resolve the condition. Everyone else is an unrelated actor and gets
+        the ordinary concealment.
+
+        This says only WHETHER a conflict exists. The other claimant's identity
+        and the conflict's details never leave the audit record.
+        """
+        if self._subject.account_id in conflict.accounts:
+            return True
+        return bool(self._subject.roles - {Role.CUSTOMER})
+
     def read_resource(
         self, kind: ResourceKind, resource_id: uuid.UUID, operation_id: str
     ) -> LoadResult:
@@ -86,8 +103,10 @@ class AccessService:
         try:
             result = loader(self._session, self._subject, resource_id)
         except ClaimAuthorityConflict as conflict:
-            # INV-1. Ambiguous authority: granted to nobody, audited, surfaced
-            # as an operational condition rather than silently concealed.
+            # INV-1. The condition is always explicit INTERNALLY: the audit
+            # record below carries the full detail for operations regardless of
+            # what the caller is told.
+            entitled = self._may_learn_of_conflict(conflict)
             self._auditor.claim_authority_conflict(
                 subject=self._subject,
                 operation_id=operation_id,
@@ -95,10 +114,17 @@ class AccessService:
                 resource_kind=conflict.kind.value,
                 resource_id=conflict.resource_id,
                 accounts=conflict.accounts,
+                disclosed=entitled,
             )
+            if not entitled:
+                # An unrelated actor learns nothing: a 409 here would reveal
+                # that the id exists and that something notable is true of it,
+                # which is the disclosure /me/* concealment exists to prevent.
+                return LoadResult(
+                    kind, resource_id, None, DenyReason.OBJECT_NOT_AUTHORIZED,
+                )
             return LoadResult(
                 kind, resource_id, None, DenyReason.CLAIM_AUTHORITY_CONFLICT,
-                "claim authority requires operational resolution",
             )
 
         if result.authorized:

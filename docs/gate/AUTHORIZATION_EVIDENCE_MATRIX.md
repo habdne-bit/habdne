@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **40**
-- Distinct tests cited: **73**
-- Suite total: **106/106** test cases passing (90 distinct test functions)
+- Rules and invariants covered: **60**
+- Distinct tests cited: **124**
+- Suite total: **211/211** test cases passing (162 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -53,6 +53,26 @@ matrix, because it reads as assurance.
 | `R6.2 / S23` | A write with no actor is refused, not recorded anonymously | `test_write_without_an_actor_is_refused`<br>`test_actor_and_context_are_visible_to_the_audit_trigger`<br>`test_a_write_inside_the_wrapper_is_attributed` | PASS |
 | `R14.1-R14.2` | Generated OpenAPI is checked against the frozen contract | `test_generated_paths_exist_in_the_frozen_contract`<br>`test_nothing_writes_to_the_frozen_contract` | PASS |
 | `§12` | Problem responses carry the contract fields and leak no DB text | `test_problem_responses_carry_the_required_fields`<br>`test_problem_detail_never_leaks_database_text` | PASS |
+| `INV-1 disclosure` | A conflicting claimant or staff may learn a conflict exists | `test_conflicting_claimant_is_told`<br>`test_the_other_claimant_is_also_told`<br>`test_authorized_staff_are_told`<br>`test_http_claimant_gets_409` | PASS |
+| `INV-1 disclosure` | An unrelated actor gets ordinary concealment (404) | `test_an_unrelated_customer_is_not_told`<br>`test_http_unrelated_customer_gets_404` | PASS |
+| `INV-1 disclosure` | The 409 reveals no claimant identity or conflict detail | `test_the_409_body_discloses_no_claimant_and_no_details`<br>`test_conflict_detail_is_a_fixed_string` | PASS |
+| `INV-1 disclosure` | Internally explicit regardless of what the caller saw | `test_audit_is_full_even_when_the_caller_is_told_nothing`<br>`test_audit_marks_when_the_caller_was_told`<br>`test_conflict_is_audited_at_http_level` | PASS |
+| `§2.5 / §8` | Error contract: stable codes, no DB or sensitive text | `test_every_catalogued_code_has_one_status`<br>`test_required_fields_match_the_frozen_problem_schema`<br>`test_detail_refuses_implementation_and_sensitive_text`<br>`test_an_unhandled_error_returns_a_code_and_a_trace_id` | PASS |
+| `§2.5` | Transport status is preserved, never rewritten from a code | `test_transport_status_is_preserved_not_rewritten`<br>`test_method_not_allowed_is_problem_json` | PASS |
+| `K04` | Validation echoes field locations, never input values | `test_validation_errors_carry_field_errors_not_values` | PASS |
+| `§2.3 / ADR-09` | Same key + same payload replays the stored result | `test_same_key_same_payload_replays_the_result`<br>`test_key_order_does_not_change_the_hash` | PASS |
+| `§2.3 / ADR-09` | Same key + different payload is a 409 conflict | `test_same_key_different_payload_is_a_conflict`<br>`test_a_claimed_but_incomplete_key_is_a_conflict` | PASS |
+| `§2.3` | Idempotency scope is per actor and per route | `test_the_same_key_is_independent_per_actor`<br>`test_the_same_key_is_independent_per_route`<br>`test_the_record_lands_in_the_frozen_table` | PASS |
+| `§2.4` | If-Match required; stale version rejected with nothing applied | `test_a_missing_header_is_rejected`<br>`test_stale_version_is_rejected`<br>`test_a_concurrent_bump_makes_the_held_version_stale` | PASS |
+| `§2.4 / §1` | Header name follows the OpenAPI contract, prose accepted as alias | `test_header_name_follows_the_openapi_contract`<br>`test_the_prose_header_name_is_accepted_as_an_alias`<br>`test_parties_is_not_versioned_in_the_frozen_schema` | PASS |
+| `ADR-06 / R9.1` | Public/Customer/Internal are separate types, extras refused | `test_constructing_a_dto_with_an_internal_field_is_an_error`<br>`test_no_dto_declares_a_forbidden_field` | PASS |
+| `R9.5 / K03` | DTO allow-lists are exact and match the frozen contract | `test_dto_field_sets_are_exactly_the_allow_list`<br>`test_the_public_schema_matches_the_frozen_contract`<br>`test_a_new_column_does_not_silently_reach_the_public_dto` | PASS |
+| `D02` | Seller expectation never reaches a public or customer payload | `test_public_offer_never_carries_seller_expectation`<br>`test_public_render_from_a_real_property_row_leaks_nothing` | PASS |
+| `R9.4 / S35` | price_visibility redacts price independently of scope | `test_price_is_redacted_when_visibility_is_not_public`<br>`test_public_price_is_shown_when_visibility_is_public` | PASS |
+| `R8.2 / R8.2a` | Scope ladder adds; no scope lifts the never-serialized floor | `test_summary_only_withholds_property_detail`<br>`test_property_details_allowed_adds_the_customer_view`<br>`test_no_scope_lifts_the_never_serialized_floor` | PASS |
+| `R8.3 / S34` | Contact released only after a recorded confirmation | `test_contact_is_withheld_without_a_recorded_confirmation`<br>`test_contact_is_released_after_a_recorded_confirmation` | PASS |
+| `§8` | Structured logs redact OTP codes and sensitive payloads | `test_sensitive_keys_are_redacted`<br>`test_redaction_reaches_nested_structures`<br>`test_exceptions_log_type_and_message_not_a_traceback` | PASS |
+| `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 
 ## Reading this table
 

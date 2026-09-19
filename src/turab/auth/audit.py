@@ -233,8 +233,14 @@ class AccessAuditor:
     def claim_authority_conflict(
         self, *, subject, operation_id: str, trace_id: str,
         resource_kind: str, resource_id: uuid.UUID, accounts: frozenset[uuid.UUID],
+        disclosed: bool = False,
     ) -> AccessRecord:
-        """INV-1. Ambiguous claim authority; nobody is granted access."""
+        """INV-1. Ambiguous claim authority; nobody is granted access.
+
+        Always full detail here: the clarification makes the condition explicit
+        internally while keeping external disclosure concealment-safe, so the
+        split lives between this record and the HTTP response, not inside it.
+        """
         return self._emit(
             event=AccessEvent.CLAIM_AUTHORITY_CONFLICT,
             trace_id=trace_id,
@@ -249,6 +255,7 @@ class AccessAuditor:
                 "claim_account_count": len(accounts),
                 "claim_account_ids": sorted(str(a) for a in accounts),
                 "requires": "OPERATIONAL_RESOLUTION",
+                "disclosed_to_caller": disclosed,
             },
         )
 
