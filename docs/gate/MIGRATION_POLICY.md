@@ -36,6 +36,35 @@ text, and PostgreSQL reports what it actually built. Agreement across 48
 tables, 54 enum types, 17 functions, 37 triggers and 131 foreign keys is
 evidence; a single run of the file compared against itself would not be.
 
+
+## 2a. The approved stamping path, and what lies outside it
+
+Stated exactly, because a protection described more broadly than it is becomes
+a false assurance:
+
+| | |
+|---|---|
+| **Protected** | the approved administrative path: `db/dev/reset_db.sh`, and any direct use of `db/dev/stamp_baseline.py`. A stamp there is refused unless the database is structurally identical to one built from the frozen schema, and refused if the database is already stamped at a different revision. |
+| **Outside it** | a hand-run `alembic stamp`, or any direct `INSERT` into `alembic_version`. Whoever holds database credentials can do either. |
+
+**This is not treated as a gap to close.** The project does not attempt to
+prevent a database administrator from bypassing the project's own tooling —
+that person can already run arbitrary DDL, so a tool-level guard would be
+theatre. What is in scope is that TURAB's own tooling never stamps blindly,
+and that the approved path is documented so it can be the one people use.
+
+The two kinds of evidence stay complementary and neither substitutes for the
+other:
+
+- the **structural fingerprint** compares definitions — columns, constraints,
+  indexes, triggers, function bodies, enum labels;
+- the **70-assertion gate** tests BEHAVIOUR against the frozen SQL (R14.7).
+
+Two schemas can be structurally identical and still behave differently under
+data and concurrency, which is why the gate is not replaced by the
+fingerprint; and behaviour tests can pass on a schema with a silently renamed
+index, which is why the fingerprint is not replaced by the gate.
+
 ## 3. Deliberate absences
 
 Two things are missing on purpose, and both are pinned by a test, because a

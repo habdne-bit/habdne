@@ -8,11 +8,11 @@
 | Gate | Status |
 |---|---|
 | Hardened static audit (v0.2.3) | PASS — 131 FK references |
-| **PostgreSQL 16+ Execution Gate** | **PASS** — twice on v0.2.3, 7 steps, 70/70 assertions |
+| **PostgreSQL 16+ Execution Gate** | **PASS** — 8 steps, 70/70 assertions |
 | Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
-| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed, submitted for closure review** — all 11 contract operations wired, 355 tests, 97 rules evidenced |
+| Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed, submitted for closure review** — all 11 contract operations wired, 360 tests, 98 rules evidenced |
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -44,7 +44,7 @@ advanced AI work begins before the Core Hypothesis Stop Gate passes.
 | `db/fixtures/` | Developer fixtures — a coherent Adrar world, authorization edge cases EC1–EC8, market edge cases MF1–MF8 |
 | `docs/rfc/` | Design RFCs awaiting or carrying decisions |
 | `docs/contract/` | Numbered contract corrections applied on top of the frozen OpenAPI. A correction may only **narrow**; the published package is never edited |
-| `docs/api/` | Generated API inventory (do not edit) |
+| `docs/api/` | Generated, do not edit: the **effective contract** (frozen package + approved corrections) and the API inventory derived from it |
 | `src/turab/` | The service. `auth/` holds actor resolution, the policy layer, scoped loaders and access audit; `services/` the application layer; `api/` the HTTP edge |
 | `tests/` | Architecture, policy, authorization, INV-1/INV-2, audit and HTTP tests |
 | `.github/workflows/` | CI — rebuilds a clean database from zero, then runs the authorization suite |
@@ -71,7 +71,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 355 tests
+./.venv/bin/pytest -q                  # 360 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

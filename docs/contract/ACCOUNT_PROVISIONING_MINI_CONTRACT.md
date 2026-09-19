@@ -74,7 +74,7 @@ Creates the first ADMIN account for an environment.
 
 | | |
 |---|---|
-| **Inputs** | `--phone` (E.164), or `--email` |
+| **Inputs** | `--phone` (E.164), or `--email`; `--roles` (default `ADMIN`; `ADMIN,OPERATOR` for a single-operator pilot, recorded as such) |
 | **Preconditions** | **Refuses if any account already holds ADMIN.** This is the whole safety property: the command works exactly once per environment. |
 | **Effect** | creates `user_accounts` row (`party_id` NULL — staff have no party), creates or reuses the contact point, sets `login_contact_point_id`, status `INVITED`, grants `ADMIN` |
 | **Activation** | **not** performed here. The holder activates by completing the normal OTP LOGIN flow, so account creation and proof of phone control stay separate — an account created by a command is inert until someone proves they hold the number. |
@@ -85,8 +85,8 @@ Creates the first ADMIN account for an environment.
 
 | | |
 |---|---|
-| **Authorization** | `--actor` must be an **ACTIVATED account holding ADMIN**. Checked against the database, not asserted on the command line. |
-| **Self-escalation** | **Refused when `--actor == --account` for any role.** An ADMIN may not grant to themselves, including re-granting what they already hold. Every grant therefore has two distinct accounts in its audit record, which is what makes the trail readable. |
+| **Attribution check** | `--actor` must name an **ACTIVATED account holding ADMIN**. This checks the id, not the operator — see §3.5.1. |
+| **Self-grant** | **Refused when `--actor == --account` for any role.** Not a security barrier — one operator can hold both accounts — but it keeps any post-bootstrap privilege change out of a single unattributable step (§3.5.2). |
 | **INV-2** | delegates to the existing `grant_role`: `OPERATOR + REVIEWER` is rejected at assignment time |
 | **CUSTOMER role** | refused by this command — a customer role follows from a customer account, not from staff action |
 | **Duplication** | `ON CONFLICT DO NOTHING` already makes a repeat grant a no-op; the command reports "already held" rather than claiming to have granted |
@@ -99,7 +99,7 @@ Creates a customer account bound to an existing party.
 
 | | |
 |---|---|
-| **Authorization** | an ACTIVATED ADMIN or OPERATOR account, passed as `--actor` and checked against the database |
+| **Attribution check** | `--actor` must name an ACTIVATED ADMIN or OPERATOR account (§3.5.1) |
 | **Party** | must already exist. The command never creates one — that is `POST /parties`, restricted by DL-01. |
 | **Binding** | `user_accounts.party_id = --party`, in the same transaction as the account row. A customer account with a null party is authorized over nothing (R3.1), so a half-completed provision must not be possible. |
 | **Login contact point** | created or reused for the phone. **Reuse never transfers verified control** (DL-02) — an account bound to a shared number is still inert until its own holder completes OTP LOGIN. |
@@ -108,10 +108,72 @@ Creates a customer account bound to an existing party.
 | **Role** | grants `CUSTOMER` only |
 | **Audit** | actor, party, account, contact point reference — never the number itself in metadata |
 
+## 3.5 Two questions the review asked, answered
+
+### 3.5.1 How is the operator's identity and authority proven?
+
+**It is not, and the earlier draft overstated it.** That draft said `--actor`
+is "verified against the database, not trusted from the command line". What
+the database can verify is that the id *exists* and *holds ADMIN*. It cannot
+verify that the person running the command **is** that account. Anyone able to
+run the command can pass somebody else's id.
+
+So the honest model is:
+
+| Layer | What it is | What it proves |
+|---|---|---|
+| **Authority** | possession of database and deployment credentials | that the operator is entitled to run the command at all. This is the real trust boundary, and it is the same boundary that already lets that person run arbitrary SQL. |
+| **`--actor`** | an **asserted** attribution | nothing about identity. It is checked only for *existence* and *role*, which prevents attributing an action to an account that could not have performed it. |
+
+Two consequences are adopted rather than papered over:
+
+1. The audit record must say what it knows. It records `asserted_actor` —
+   never `actor_account_id` as if authenticated — alongside the operating
+   system user, the host and the timestamp. A reader must be able to see that
+   the attribution is a claim, not a proof.
+2. **Nothing in this contract should be read as an authorization control.**
+   These commands do not raise anyone's privileges beyond what database
+   credentials already grant. Their value is that role assignment leaves a
+   legible, INV-2-checked trail instead of being an ad-hoc `INSERT`.
+
+Real operator authentication only becomes possible when the action moves
+behind an authenticated session — i.e. if role assignment becomes an API
+operation. That is a contract change, and §3.1 already says it arrives as one.
+
+### 3.5.2 How does bootstrap work in a pilot run by one person?
+
+The earlier draft refused `--actor == --account` for every grant and called it
+self-escalation prevention. The review is right on both counts: a difference
+between two account ids is **not** proof that two people are involved — one
+operator with database access can hold both — and the rule must not, without
+an explicit decision, make a two-person team a precondition for running a
+pilot at all.
+
+Adopted instead:
+
+- **`bootstrap-admin` takes `--roles`,** defaulting to `ADMIN`. A
+  single-operator pilot runs `--roles ADMIN,OPERATOR`. The combination is
+  granted **once, at bootstrap, in the open**, and recorded as
+  `bootstrap_mode: single_operator` in the audit record and in
+  `schema_metadata`.
+- **`grant-role` still refuses `--actor == --account`.** After bootstrap,
+  self-grant is refused — not because it stops a determined operator, but so
+  that a later privilege change is never invisible: it has to go through
+  `bootstrap-admin` (which refuses to run twice) or through a second account.
+- **INV-2 is not relaxed for anybody.** `OPERATOR + REVIEWER` remains
+  rejected at assignment time, single-operator mode included. A pilot that
+  needs both must accept that one person cannot be maker and checker, which is
+  a real operating constraint and not a software limitation to route around.
+
+The distinction being drawn: the separation rule stays, and the *bootstrap
+exception to it is explicit, once-only and recorded* rather than arrived at by
+someone quietly granting themselves a second role.
+
 ## 4. Properties the three share
 
-- **Every command names an actor**, and for the two non-bootstrap commands the
-  actor is verified against the database, not trusted from the argument.
+- **Every command names an asserted actor.** For the two non-bootstrap
+  commands that id is checked for existence and role, which is an attribution
+  check and not an authentication one (§3.5.1).
 - **No command activates an account.** Activation requires proving control of
   the login contact point, always, through the flow that already exists. This
   keeps the Slice 1 invariant intact: a verified phone proves control of a
@@ -120,8 +182,10 @@ Creates a customer account bound to an existing party.
 - **No command creates a PARTY.** DL-01 and DL-04 hold.
 - **Every command is audited** through the same `audited_transaction` wrapper
   as the request path, so R6.2's actor attribution applies unchanged.
-- **Self-escalation is refused structurally**, by requiring two distinct
-  accounts, rather than by a rule an implementation could forget.
+- **Self-grant after bootstrap is refused**, so a privilege change is never
+  invisible — while single-operator pilots stay possible through the explicit,
+  once-only, recorded bootstrap path (§3.5.2). This is a legibility control,
+  not a barrier against someone who holds database credentials.
 
 ## 5. What this specification does NOT propose
 

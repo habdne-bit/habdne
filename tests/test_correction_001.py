@@ -19,6 +19,8 @@ change what the contract says is only safe while it can only ever say less.
 from __future__ import annotations
 
 import pathlib
+import subprocess
+import sys
 import uuid
 
 import pytest
@@ -135,24 +137,38 @@ def test_a_refusal_creates_no_party_no_account_and_no_role(
     assert _counts(engine) == before
 
 
-def test_a_refusal_leaves_no_idempotency_record_to_replay(client, ids, engine):
-    """A denied command must not consume its key: the caller has to be able to
-    retry with authority, and a claimed-but-never-executed key would answer a
-    later legitimate request with a stale conflict."""
-    key = "c001-denied-key"
-    client.post("/parties", json=body("c001-denied"),
-                headers={"Authorization": f"Bearer {ids.ACC_AMINA}",
-                         "Idempotency-Key": key})
-    with Session(bind=engine, future=True) as s:
-        assert s.execute(
-            text("SELECT count(*) FROM turab.idempotency_records WHERE idempotency_key = :k"),
-            {"k": key},
-        ).scalar_one() == 0
+def test_a_refusal_claims_no_idempotency_record_in_its_own_scope(client, ids, engine):
+    """A denied command must not consume its key.
 
-    ok = client.post("/parties", json=body("c001-denied"),
-                     headers={"Authorization": f"Bearer {ids.ACC_OPERATOR}",
-                              "Idempotency-Key": key})
-    assert ok.status_code == 201, ok.text
+    Checked DIRECTLY, in the scope the contract defines: §2.3 keys the record
+    on (actor, route, key), so the question is whether a row exists for THAT
+    actor on THAT route with THAT key. An earlier version of this test also
+    retried with a different actor and treated the success as proof; it was
+    not, because a different actor is a different scope and would have
+    succeeded either way. The claim has been narrowed to what is tested.
+    """
+    key = "c001-denied-key"
+    denied = client.post(
+        "/parties", json=body("c001-denied"),
+        headers={"Authorization": f"Bearer {ids.ACC_AMINA}", "Idempotency-Key": key},
+    )
+    assert denied.status_code == 403
+
+    with Session(bind=engine, future=True) as s:
+        in_scope = s.execute(
+            text("""SELECT count(*) FROM turab.idempotency_records
+                     WHERE actor_account_id = :a
+                       AND route_key = :r
+                       AND idempotency_key = :k"""),
+            {"a": ids.ACC_AMINA, "r": "POST /parties", "k": key},
+        ).scalar_one()
+        anywhere = s.execute(
+            text("SELECT count(*) FROM turab.idempotency_records "
+                 "WHERE idempotency_key = :k"),
+            {"k": key},
+        ).scalar_one()
+    assert in_scope == 0, "the refused attempt claimed a key it never executed"
+    assert anywhere == 0
 
 
 def test_the_refusal_is_audited(client, ids, sink):
@@ -303,3 +319,98 @@ def test_the_committed_correction_describes_the_contract_as_it_stands():
     }
     for entry in doc["corrections"]:
         assert sorted(entry["frozen"]) == sorted(by_id[entry["operation_id"]]["x-roles"])
+
+
+# --- the effective contract -----------------------------------------------
+#
+# Applying a correction to the runtime policy table alone leaves everyone who
+# READS a contract — developers, documentation, client generators — looking at
+# roles that are not the ones enforced. The effective contract is the derived
+# artifact that says what is actually in force; these tests keep it derived.
+
+EFFECTIVE = pathlib.Path("docs/api/openapi_effective_v0.2.3.yaml")
+
+
+def _effective() -> dict:
+    return yaml.safe_load(EFFECTIVE.read_text(encoding="utf-8"))
+
+
+def _operations(doc: dict):
+    for path, item in doc["paths"].items():
+        for method, op in item.items():
+            if isinstance(op, dict) and "operationId" in op:
+                yield path, method, op
+
+
+def test_the_effective_contract_is_current():
+    """It is generated; a stale copy is worse than none, because it reads as
+    authoritative while describing something that is no longer enforced."""
+    result = subprocess.run(
+        [sys.executable, "db/gate/generate_effective_contract.py", "--check"],
+        capture_output=True, text=True, cwd=pathlib.Path.cwd(),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_the_effective_contract_matches_the_policy_table():
+    """The binding claim. The policy table is built from frozen + corrections;
+    the effective contract is generated from the same two inputs by different
+    code. If they ever disagree, one of them is lying to somebody."""
+    table = build_policy_table()
+    problems = []
+    for _, _, op in _operations(_effective()):
+        policy = table.get(op["operationId"])
+        if policy is None:
+            problems.append(f"{op['operationId']}: absent from the policy table")
+            continue
+        if op.get("security") == []:
+            continue
+        declared = op.get("x-roles")
+        if declared is None:
+            continue
+        if policy.roles != frozenset(Role(r) for r in declared):
+            problems.append(
+                f"{op['operationId']}: effective {sorted(declared)} != policy "
+                f"{sorted(r.value for r in policy.roles)}"
+            )
+    assert not problems, problems
+
+
+def test_every_corrected_operation_carries_its_correction_identity():
+    """The published text must stay recoverable from the generated file."""
+    corrected = {
+        op["operationId"]: op for _, _, op in _operations(_effective())
+        if "x-turab-correction" in op
+    }
+    assert set(corrected) == set(load_corrections())
+    marker = corrected["postParties"]["x-turab-correction"]
+    assert marker["id"] == "CORRECTION-001"
+    assert marker["decision"] == "D7"
+    assert sorted(marker["frozen-x-roles"]) == ["ADMIN", "CUSTOMER", "OPERATOR"]
+    assert sorted(corrected["postParties"]["x-roles"]) == ["ADMIN", "OPERATOR"]
+
+
+def test_the_effective_contract_changes_nothing_else():
+    """A generated contract is a blunt instrument too: prove it edited one
+    operation and copied the rest."""
+    frozen = yaml.safe_load(
+        pathlib.Path("docs/handoff/05_API/openapi_v0.2.3.yaml").read_text(encoding="utf-8")
+    )
+    effective = _effective()
+    assert set(frozen["paths"]) == set(effective["paths"])
+    for path, method, op in _operations(frozen):
+        other = effective["paths"][path][method]
+        if op["operationId"] == "postParties":
+            continue
+        assert other == op, f"{op['operationId']} changed unexpectedly"
+
+
+def test_the_api_inventory_is_generated_from_the_effective_contract():
+    """Developer-facing documentation must show enforced roles, not narrowed
+    ones. The inventory is what a developer reads to know who may call what."""
+    inventory = pathlib.Path("docs/api/API_INVENTORY_GENERATED.md").read_text(
+        encoding="utf-8"
+    )
+    row = next(ln for ln in inventory.splitlines() if "`postParties`" in ln)
+    assert "`ADMIN`, `OPERATOR`" in row
+    assert "CUSTOMER" not in row.split("|")[4]

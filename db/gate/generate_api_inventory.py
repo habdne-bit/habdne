@@ -102,7 +102,16 @@ def main():
     raw = src.read_bytes()
     digest = hashlib.sha256(raw).hexdigest()
     doc = yaml.safe_load(raw)
-    content = render(doc, args.openapi, digest)
+    # Recorded relative to the repository root, never as invoked: otherwise
+    # the SAME source produces a different document depending on whether the
+    # caller passed an absolute or a relative path, and `--check` reports
+    # staleness that is really just a different command line.
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    try:
+        source_label = str(src.resolve().relative_to(repo_root))
+    except ValueError:
+        source_label = str(src)
+    content = render(doc, source_label, digest)
 
     out = pathlib.Path(args.out)
     if args.check:

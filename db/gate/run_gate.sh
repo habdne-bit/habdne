@@ -22,31 +22,36 @@ export PGDATABASE
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
-step "0/7  Handoff package integrity"
+step "0/8  Handoff package integrity"
 ( cd "$REPO_ROOT/docs/handoff" && python3 verify_handoff.py )
 
-step "1/7  Static audit of the technical pack"
+step "1/8  Static audit of the technical pack"
 ( cd "$QA_DIR" && python3 technical_pack_static_audit_v0.2.3.py )
 
-step "2/7  Rebuild a clean database from zero"
+step "2/8  Rebuild a clean database from zero"
 dropdb --if-exists "$PGDATABASE"
 createdb "$PGDATABASE"
 psql -tAc 'SHOW server_version'
 
-step "3/7  Apply schema_v0.2.3.sql"
+step "3/8  Apply schema_v0.2.3.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.3.sql"
 
-step "4/7  Apply seed_master_data_v0.2.3.sql twice (idempotency)"
+step "4/8  Apply seed_master_data_v0.2.3.sql twice (idempotency)"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.3.sql"
 
-step "5/7  Database-level contract tests"
+step "5/8  Database-level contract tests"
 psql -v ON_ERROR_STOP=1 -q -f "$GATE_DIR/postgres_execution_gate_tests.sql"
 
-step "6/7  OpenAPI parse / lint"
+step "6/8  OpenAPI parse / lint"
 python3 "$GATE_DIR/lint_openapi.py" "$API_DIR/openapi_v0.2.3.yaml"
 
-step "7/7  Baseline version consistency"
+step "7/8  Effective contract (frozen package + approved corrections)"
+python3 "$GATE_DIR/generate_effective_contract.py" --check
+python3 "$GATE_DIR/generate_api_inventory.py" \
+  "$REPO_ROOT/docs/api/openapi_effective_v0.2.3.yaml" --check
+
+step "8/8  Baseline version consistency"
 # D6 was a version stated in eleven places and wrong in one, and every runtime
 # test passed over it because nothing executable reads it. This closes that
 # class of defect mechanically.

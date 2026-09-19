@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **97**
-- Distinct tests cited: **235**
-- Suite total: **355/355** test cases passing (280 distinct test functions)
+- Rules and invariants covered: **98**
+- Distinct tests cited: **240**
+- Suite total: **360/360** test cases passing (285 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -103,9 +103,10 @@ matrix, because it reads as assurance.
 | `R14.4 / R14.5` | Autogenerate is refused; there is no metadata to diff the baseline against | `test_autogenerate_is_refused`<br>`test_env_declares_no_metadata_to_diff_against`<br>`test_there_is_no_downgrade_from_the_baseline` | PASS |
 | `R14.4 stamp` | A database built from the frozen SQL is stamped, so upgrade is a no-op | `test_a_stamped_database_is_already_at_head`<br>`test_upgrading_a_stamped_database_is_a_no_op`<br>`test_the_dev_reset_script_stamps_through_the_guard` | PASS |
 | `D7 / CORRECTION-001` | POST /parties succeeds for ADMIN and OPERATOR only | `test_an_authorized_staff_role_creates_a_party`<br>`test_a_customer_is_refused_403`<br>`test_an_unauthenticated_caller_is_refused_401`<br>`test_a_reviewer_is_also_refused` | PASS |
-| `D7 acceptance` | A refusal creates no party, no account and no role, and frees its key | `test_a_refusal_creates_no_party_no_account_and_no_role`<br>`test_a_refusal_leaves_no_idempotency_record_to_replay`<br>`test_the_refusal_is_audited` | PASS |
+| `D7 acceptance` | A refusal creates no party, no account and no role, and frees its key | `test_a_refusal_creates_no_party_no_account_and_no_role`<br>`test_a_refusal_claims_no_idempotency_record_in_its_own_scope`<br>`test_the_refusal_is_audited` | PASS |
 | `D7 acceptance` | Idempotency and the customer's own REQUEST path are unaffected | `test_idempotency_is_unchanged_for_an_authorized_caller`<br>`test_the_key_is_still_required`<br>`test_the_customer_may_still_create_their_own_request`<br>`test_no_other_operation_lost_a_role` | PASS |
 | `DL-03 / R14.1` | A correction may only narrow, must name a decision, and the frozen package is never edited | `test_a_correction_may_only_narrow`<br>`test_a_correction_must_name_a_decision`<br>`test_a_correction_cannot_empty_an_operation`<br>`test_the_committed_correction_describes_the_contract_as_it_stands`<br>`test_the_frozen_contract_is_not_edited`<br>`test_the_policy_table_still_matches_the_contract_as_corrected`<br>`test_the_correction_touched_exactly_one_operation` | PASS |
+| `Effective contract` | Frozen package + approved corrections is derived, current, and equals what is enforced | `test_the_effective_contract_is_current`<br>`test_the_effective_contract_matches_the_policy_table`<br>`test_the_effective_contract_changes_nothing_else`<br>`test_every_corrected_operation_carries_its_correction_identity`<br>`test_the_api_inventory_is_generated_from_the_effective_contract` | PASS |
 | `D7 defence in depth` | The object gate on party creation is retained, not deleted as redundant | `test_the_object_gate_on_party_creation_is_still_present`<br>`test_customer_cannot_create_an_arbitrary_party` | PASS |
 | `R14.4 structural` | The migrated database is structurally identical to the frozen schema, function bodies included | `test_the_migrated_database_is_structurally_identical_to_the_frozen_schema`<br>`test_the_fingerprint_notices_a_changed_function_body`<br>`test_the_version_table_is_pinned_to_public` | PASS |
 | `R14.4 stamp guard` | A database that is not the baseline cannot be stamped as if it were | `test_stamping_a_database_that_is_not_the_baseline_is_refused`<br>`test_stamping_the_real_baseline_succeeds`<br>`test_the_dev_reset_script_stamps_through_the_guard` | PASS |

@@ -66,10 +66,13 @@ All in `tests/test_correction_001.py` unless noted. 20 tests, all passing.
 Beyond the stated criteria, three further properties are asserted because the
 mechanism is new:
 
-- `test_a_refusal_leaves_no_idempotency_record_to_replay` — a denied command
-  must not consume its key. A claimed-but-never-executed key would answer a
-  later legitimate request with a stale conflict; the test proves the same key
-  then succeeds for an authorized caller.
+- `test_a_refusal_claims_no_idempotency_record_in_its_own_scope` — a denied
+  command must not consume its key. **Corrected after review:** the first
+  version also retried with a *different* actor and treated the success as
+  proof. It was not — §2.3 keys the record on (actor, route, key), so a
+  different actor is a different scope and would have succeeded either way.
+  The test now verifies directly that no row exists for that actor, that
+  route and that key, and the claim has been narrowed to what is tested.
 - `test_no_other_operation_lost_a_role` — walks all 64 contract operations and
   asserts every one except `postParties` still equals its frozen `x-roles`. A
   correction file is a blunt instrument; this proves it cut once.
@@ -112,6 +115,46 @@ openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c
 
 Alembic history: one head, `0001_frozen_baseline_v0_2_3`, unchanged.
 
+## 5a. The effective contract
+
+**Added after review.** Applying the correction to the runtime policy table
+alone was not enough: everyone who *reads* a contract — developers,
+documentation, client generators — would still have seen `CUSTOMER` on an
+operation that refuses it.
+
+`db/gate/generate_effective_contract.py` now derives
+`docs/api/openapi_effective_v0.2.3.yaml` from the frozen package plus the
+approved corrections. The frozen file is untouched; the generated one carries,
+on every corrected operation, the identity of the correction that changed it:
+
+```yaml
+x-roles: [ADMIN, OPERATOR]
+x-turab-correction:
+  id: CORRECTION-001
+  decision: D7
+  approved: '2026-09-19'
+  frozen-x-roles: [ADMIN, OPERATOR, CUSTOMER]
+```
+
+so the published text stays recoverable from the file that supersedes it.
+
+| Use | Which contract |
+|---|---|
+| The authority; what is frozen | `docs/handoff/05_API/openapi_v0.2.3.yaml` |
+| Documentation, client generation, API inventory | the effective contract |
+| Building the policy table | frozen + corrections, in `auth/contract.py` |
+
+The two are bound together rather than merely coexisting:
+`test_the_effective_contract_matches_the_policy_table` walks every operation
+and asserts the generated contract's roles equal the enforced ones — the
+artifact and the runtime are produced from the same inputs by different code,
+so a disagreement means one of them is lying. `--check` runs as **gate step
+7/8** and in CI, and the API inventory is regenerated from the effective
+contract, so `postParties` now documents `ADMIN, OPERATOR`.
+
+`test_the_effective_contract_changes_nothing_else` asserts every other
+operation is copied unchanged.
+
 ## 6. Synchronised artifacts
 
 | Artifact | Change |
@@ -123,5 +166,9 @@ Alembic history: one head, `0001_frozen_baseline_v0_2_3`, unchanged.
 | `src/turab/services/command.py` | `authorize_staff_only` docstring updated |
 | `tests/test_correction_001.py` | new, 20 tests |
 | `tests/test_slice1_bola.py` | expected denial reason updated; object-gate-still-present test added |
+| `db/gate/generate_effective_contract.py` | new — derives the effective contract |
+| `docs/api/openapi_effective_v0.2.3.yaml` | new, generated |
+| `docs/api/API_INVENTORY_GENERATED.md` | now generated from the effective contract |
+| `db/gate/run_gate.sh`, CI | effective-contract check added as step 7/8 |
 | `docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md` | regenerated from a real run |
 | `docs/DESIGN_LEDGER.md` | DL-01, DL-02, DL-03, DL-04 |

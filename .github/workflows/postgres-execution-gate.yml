@@ -59,10 +59,14 @@ jobs:
       - name: Baseline version consistency
         run: db/gate/verify_version_consistency.py docs/handoff
 
-      - name: Verify the generated API inventory is current
+      # The EFFECTIVE contract is the frozen package plus approved corrections.
+      # Documentation and generated clients must read the roles that are
+      # enforced, not ones a correction has since narrowed.
+      - name: Verify the effective contract and API inventory are current
         run: |
+          db/gate/generate_effective_contract.py --check
           db/gate/generate_api_inventory.py \
-            docs/handoff/05_API/openapi_v0.2.3.yaml --check
+            docs/api/openapi_effective_v0.2.3.yaml --check
 
       # The development reset path must keep working, fixtures included, and
       # loading the fixtures twice must be idempotent.

@@ -2,8 +2,8 @@
 
 **Do not edit.** Regenerate with `db/gate/generate_api_inventory.py`.
 
-- Source: `docs/handoff/05_API/openapi_v0.2.3.yaml`
-- Source SHA-256: `b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72`
+- Source: `docs/api/openapi_effective_v0.2.3.yaml`
+- Source SHA-256: `dfe40693b4e3f4e9e8087064b8549954a1b1bb5c8c6826408980f1791408f823`
 - Operations: 64 · role-annotated: 57 · unauthenticated: 6
 
 ## Unauthenticated operations
@@ -82,7 +82,7 @@ Each needs an explicit policy decision before implementation.
 | `postOpportunitiesOpportunityIdResponses` | POST | `/opportunities/{opportunity_id}/responses` | `CUSTOMER`, `ADMIN`, `OPERATOR` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postOpportunitiesOpportunityIdRevalidate` | POST | `/opportunities/{opportunity_id}/revalidate` | `ADMIN`, `OPERATOR`, `REVIEWER` | — |
 | `postOpportunitiesOpportunityIdShare` | POST | `/opportunities/{opportunity_id}/share` | `ADMIN`, `OPERATOR` | — |
-| `postParties` | POST | `/parties` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
+| `postParties` | POST | `/parties` | `ADMIN`, `OPERATOR` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postPartiesPartyIdConsents` | POST | `/parties/{party_id}/consents` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postProperties` | POST | `/properties` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postPropertiesPropertyIdOffers` | POST | `/properties/{property_id}/offers` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |

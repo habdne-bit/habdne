@@ -98,6 +98,13 @@ So the honest claim is: *the same tables, columns, types, constraints,
 indexes, triggers and function bodies, as PostgreSQL reports them.* Not
 "the databases are interchangeable".
 
+The fingerprint and the 70-assertion gate are **complementary, and neither
+replaces the other**. Two schemas can be structurally identical and behave
+differently under data and concurrency — which the gate catches and the
+fingerprint cannot. Behaviour tests can pass on a schema with a silently
+renamed index or a widened column — which the fingerprint catches and the gate
+need not. Both are kept, and each is cited for what it actually shows.
+
 ### 3.3 How a stamp of a non-matching database is prevented
 
 The question was well aimed: as committed in `779417b`, **it was not**.
@@ -126,10 +133,16 @@ command lines — comments stripped — and fails on any bare `stamp`. That last
 test was itself checked by reverting the script to `alembic stamp head` and
 confirming it fails.
 
-**Residual limit, stated:** the guard binds `reset_db.sh` and anything using
-`stamp_baseline.py`. A developer who runs `alembic stamp head` by hand still
-bypasses it. Nothing in Alembic can prevent that; what is prevented is the
-project's own tooling doing it silently.
+**Scope of the protection, stated exactly:** the **approved administrative
+path** — `reset_db.sh` and any direct use of `stamp_baseline.py` — is guarded
+by the structural comparison. A hand-run `alembic stamp`, or a direct `INSERT`
+into `alembic_version`, lies **outside** it.
+
+That boundary is deliberate and is not being treated as work to do. Someone
+holding database credentials can already run arbitrary DDL, so a tool-level
+attempt to stop them bypassing the project's tooling would be theatre. What is
+in scope: TURAB's own tooling never stamps blindly, and the approved path is
+documented so it is the one people use.
 
 ### 3.4 A defect the fingerprint found immediately
 
