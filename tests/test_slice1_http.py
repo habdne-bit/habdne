@@ -27,10 +27,17 @@ def sink():
 
 
 @pytest.fixture
-def client(engine, sink):
+def provider():
+    from turab.services.otp import FakeVerificationProvider
+
+    return FakeVerificationProvider()
+
+
+@pytest.fixture
+def client(engine, sink, provider):
     from turab.app import create_app
 
-    app = create_app(engine=engine, auditor=AccessAuditor(sink))
+    app = create_app(engine=engine, auditor=AccessAuditor(sink), provider=provider)
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
 
@@ -229,6 +236,56 @@ def test_otp_verify_with_a_wrong_code_is_rejected(client):
     r = client.post("/auth/otp/verify",
                     json={"challenge_id": start["challenge_id"], "code": "000000"})
     assert r.status_code == 422
+
+
+def test_challenge_id_is_the_providers_verification_id(client, provider):
+    """The decision: no TURAB challenge table, so the id must be the
+    provider's own."""
+    import uuid as _uuid
+
+    start = client.post("/auth/otp/start",
+                        json={"phone_e164": "+213770009010",
+                              "purpose": "VERIFY_PHONE_CONTROL"}).json()
+    verification_id = _uuid.UUID(start["challenge_id"])
+    # the provider recognises it as its own, and holds the code we never saw
+    assert provider.code_for(verification_id)
+
+
+def test_otp_verify_succeeds_end_to_end(client, provider, engine):
+    start = client.post("/auth/otp/start",
+                        json={"phone_e164": "+213770009011",
+                              "purpose": "VERIFY_PHONE_CONTROL"}).json()
+    import uuid as _uuid
+
+    code = provider.code_for(_uuid.UUID(start["challenge_id"]))
+    r = client.post("/auth/otp/verify",
+                    json={"challenge_id": start["challenge_id"], "code": code})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["verification_result"] == "PHONE_CONTROL_VERIFIED"
+    assert body["account_id"] is None and body["access_token"] is None
+    try:
+        with Session(bind=engine, future=True) as s:
+            assert s.execute(
+                text("SELECT control_status::text FROM turab.contact_points "
+                     "WHERE normalized_value=:v"),
+                {"v": "+213770009011"},
+            ).scalar_one() == "VERIFIED_CONTROL"
+    finally:
+        with Session(bind=engine, future=True) as s:
+            s.execute(text("DELETE FROM turab.contact_points WHERE normalized_value=:v"),
+                      {"v": "+213770009011"})
+            s.commit()
+
+
+def test_a_provider_outage_is_503_not_a_rejection(client, provider):
+    """A refused caller should not retry; a caller whose provider is down
+    should. Collapsing the two would make that impossible to tell."""
+    provider.unavailable = True
+    r = client.post("/auth/otp/start",
+                    json={"phone_e164": "+213770009012", "purpose": "LOGIN"})
+    assert r.status_code == 503
+    assert r.json()["code"] == "PROVIDER_UNAVAILABLE"
 
 
 def test_otp_verify_with_an_unknown_challenge_is_indistinguishable(client):

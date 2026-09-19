@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **71**
-- Distinct tests cited: **162**
-- Suite total: **267/267** test cases passing (206 distinct test functions)
+- Rules and invariants covered: **73**
+- Distinct tests cited: **169**
+- Suite total: **275/275** test cases passing (214 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -75,6 +75,8 @@ matrix, because it reads as assurance.
 | `R8.3 / S34` | Contact released only after a recorded confirmation | `test_contact_is_withheld_without_a_recorded_confirmation`<br>`test_contact_is_released_after_a_recorded_confirmation` | PASS |
 | `§8` | Structured logs redact OTP codes and sensitive payloads | `test_sensitive_keys_are_redacted`<br>`test_redaction_reaches_nested_structures`<br>`test_exceptions_log_type_and_message_not_a_traceback` | PASS |
 | `Slice 1 / A02` | Phone verification alone creates no party and no account | `test_verify_phone_control_creates_no_account`<br>`test_login_purpose_creates_no_account_when_none_exists`<br>`test_otp_is_unauthenticated_and_creates_nothing` | PASS |
+| `Slice 1 / provider boundary` | The provider owns the challenge; TURAB stores none of it | `test_turab_stores_no_challenge_state`<br>`test_challenge_id_is_the_providers_verification_id`<br>`test_attempt_limits_belong_to_the_provider`<br>`test_a_provider_outage_is_503_not_a_rejection` | PASS |
+| `Slice 1 / fail closed` | An unestablished purpose never yields a session | `test_an_unestablished_purpose_fails_closed`<br>`test_a_rejected_code_changes_nothing`<br>`test_an_unknown_verification_is_rejected` | PASS |
 | `Slice 1` | LOGIN activates only an account that already exists | `test_login_activates_an_existing_invited_account`<br>`test_login_does_not_resurrect_a_disabled_account` | PASS |
 | `Slice 1 / A01` | One phone reaches two parties without merging them | `test_one_phone_can_reach_two_parties_without_merging`<br>`test_the_same_number_in_a_different_format_is_the_same_contact_point`<br>`test_reusing_a_contact_point_does_not_transfer_its_verified_control` | PASS |
 | `Slice 1 / B03` | Revoked consent authorizes nothing new; history survives | `test_revoked_consent_cannot_bind`<br>`test_revocation_leaves_history_intact`<br>`test_revoking_twice_is_not_an_error` | PASS |

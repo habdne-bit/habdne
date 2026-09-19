@@ -46,6 +46,7 @@ class ProblemCode(StrEnum):
     RESOURCE_ALREADY_CLAIMED = "RESOURCE_ALREADY_CLAIMED"
     RESOURCE_NOT_CLAIMABLE = "RESOURCE_NOT_CLAIMABLE"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
@@ -72,6 +73,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.RESOURCE_ALREADY_CLAIMED: (409, "Already claimed"),
     ProblemCode.RESOURCE_NOT_CLAIMABLE: (409, "Not claimable"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
+    ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),
     ProblemCode.NOT_IMPLEMENTED: (501, "Not implemented"),
     ProblemCode.INTERNAL_ERROR: (500, "Internal error"),
 }

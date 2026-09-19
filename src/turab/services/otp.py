@@ -1,42 +1,35 @@
 """Phone control verification and account activation — Slice 1.
 
-Ref: IMPLEMENTATION_SLICES_v0.2.md Slice 1; API_CONTRACTS v0.2 §4.1;
-ADR-07; red-team A02, A03.
+Ref: IMPLEMENTATION_SLICES_v0.2.md Slice 1; API_CONTRACTS v0.2 §4.1; ADR-07;
+red-team A02, A03; Foundation §8 (the official provider integration boundary).
 
-The invariant this module protects, from Master §4 (11) and ADR-07:
+The invariant, from Master §4 (11) and ADR-07:
 
     a verified phone proves control of a CONTACT_POINT.
     It does not create a PARTY, and it does not create a USER_ACCOUNT.
 
-`VERIFY_PHONE_CONTROL` therefore changes exactly one thing — the contact
-point's control status — and `LOGIN` creates a session only where an account
-already exists for that contact point. Neither purpose ever manufactures one.
+## Where challenge state lives — decided
 
-## Where challenge state lives — an open gap, raised not invented
+The frozen schema has no table for OTP challenges, and the approved resolution
+is **delegation**: the SMS/WhatsApp provider issues the code, holds the
+challenge, counts attempts and expires it. `challenge_id` in the contract *is*
+the provider's verification id, and TURAB stores nothing about the challenge.
 
-The frozen schema has **no table for OTP challenges**, yet the contract's
-`POST /auth/otp/start` returns a `challenge_id` and `expires_at`, and
-`/verify` takes that id back. Nothing in `schema_v0.2.3.sql` can hold it.
+That leaves this module with only the domain half, which is the half that
+belongs here: recording verified control of a contact point, and activating an
+account that already exists. Attempt limits, code generation, expiry and
+throttling are the provider's, and deliberately not reimplemented.
 
-That is a real gap of the same kind as delegated authority (RFC-001 Q7), so it
-is not resolved here by inventing a table. Instead the carrier is a protocol
-with a development implementation, and the production choice is a decision:
-
-  (a) delegate to the SMS/WhatsApp provider's verification API, which issues
-      and checks the code and needs no table — `challenge_id` becomes the
-      provider's verification id, and it fits the integration boundary the
-      Foundation already describes; or
-  (b) add a table, which is a schema change with its own approval and package.
-
-`InMemoryChallengeStore` is (a)-shaped but local: it is correct for a single
-process and **wrong for more than one**, so it is not production-viable and is
-named so that nobody mistakes it for a finished choice. What is finished, and
-fully tested, is the domain outcome: the contact point's verified control, and
-activation strictly from an existing account.
+One consequence worth stating: `purpose` is TURAB's concept, not the
+provider's. It is sent when the verification starts and read back when it is
+checked, so a provider must be able to carry it — real verification APIs do,
+as metadata or as separate templates. Where a provider cannot, `check()`
+returns `purpose=None` and this module **fails closed to
+VERIFY_PHONE_CONTROL**: no session is ever created from a verification whose
+purpose could not be established.
 """
 from __future__ import annotations
 
-import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -47,10 +40,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .parties import normalize_phone
-
-CHALLENGE_TTL = timedelta(minutes=10)
-CODE_LENGTH = 6
-MAX_ATTEMPTS = 5
 
 
 class OtpPurpose(StrEnum):
@@ -69,117 +58,159 @@ class OtpError(Exception):
         super().__init__(message)
 
 
-class ChallengeNotFound(OtpError):
-    def __init__(self) -> None:
-        # Deliberately indistinguishable from a wrong code: telling a caller
-        # that a challenge id exists is itself information.
-        super().__init__("OTP_INVALID", "the challenge is unknown, expired or used")
+class VerificationRejected(OtpError):
+    """Unknown, expired, exhausted or wrong code.
 
-
-class ChallengeExpired(ChallengeNotFound):
-    pass
-
-
-class WrongCode(OtpError):
-    def __init__(self) -> None:
-        super().__init__("OTP_INVALID", "the challenge is unknown, expired or used")
-
-
-@dataclass(slots=True)
-class Challenge:
-    challenge_id: uuid.UUID
-    phone_e164: str
-    purpose: OtpPurpose
-    code: str
-    expires_at: datetime
-    attempts: int = 0
-
-
-class ChallengeStore(Protocol):
-    def put(self, challenge: Challenge) -> None: ...
-    def take(self, challenge_id: uuid.UUID) -> Challenge | None: ...
-    def discard(self, challenge_id: uuid.UUID) -> None: ...
-
-
-class InMemoryChallengeStore:
-    """Development carrier. NOT production-viable: see the module docstring.
-
-    Single-process only. With more than one worker a challenge issued by one
-    would be unknown to another, so verification would fail at random.
+    Deliberately one error for all of them: distinguishing "no such
+    verification" from "wrong code" tells a caller which ids exist.
     """
 
     def __init__(self) -> None:
-        self._challenges: dict[uuid.UUID, Challenge] = {}
-
-    def put(self, challenge: Challenge) -> None:
-        self._challenges[challenge.challenge_id] = challenge
-
-    def take(self, challenge_id: uuid.UUID) -> Challenge | None:
-        return self._challenges.get(challenge_id)
-
-    def discard(self, challenge_id: uuid.UUID) -> None:
-        self._challenges.pop(challenge_id, None)
+        super().__init__(
+            "OTP_INVALID", "the verification is unknown, expired or the code is wrong"
+        )
 
 
-def start_challenge(
-    store: ChallengeStore, *, phone_e164: str, purpose: str,
-    now: datetime | None = None,
-) -> Challenge:
-    """Issue a challenge. Creates no party, no contact point and no account."""
+class ProviderUnavailable(OtpError):
+    """The verification provider could not be reached.
+
+    Distinct from a rejection on purpose: a caller who was refused should not
+    retry, and a caller whose provider is down should.
+    """
+
+    def __init__(self, detail: str = "the verification provider is unavailable") -> None:
+        super().__init__("PROVIDER_UNAVAILABLE", detail)
+
+
+# ---------------------------------------------------------------------------
+# The provider boundary
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class StartedVerification:
+    """What the provider returns when a verification begins."""
+
+    verification_id: uuid.UUID
+    expires_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class CheckedVerification:
+    """What the provider returns when a code is checked.
+
+    `purpose` is None when the provider cannot carry TURAB's purpose; the
+    caller then fails closed (see the module docstring).
+    """
+
+    approved: bool
+    phone_e164: str | None = None
+    purpose: OtpPurpose | None = None
+
+
+class VerificationProvider(Protocol):
+    """The official SMS/WhatsApp verification boundary.
+
+    TURAB never sees the code. It asks for a verification, and later asks
+    whether a code was accepted.
+    """
+
+    def start(self, *, phone_e164: str, purpose: OtpPurpose) -> StartedVerification: ...
+
+    def check(self, *, verification_id: uuid.UUID, code: str) -> CheckedVerification: ...
+
+
+class FakeVerificationProvider:
+    """A stand-in for the provider, for development and tests.
+
+    This holds challenge state in memory, and that is now legitimate: it is
+    standing in for the external system that owns that state, not for a TURAB
+    table. Nothing in the service depends on it.
+    """
+
+    TTL = timedelta(minutes=10)
+    MAX_ATTEMPTS = 5
+
+    def __init__(self) -> None:
+        self._verifications: dict[uuid.UUID, dict] = {}
+        self.unavailable = False
+
+    def start(self, *, phone_e164: str, purpose: OtpPurpose) -> StartedVerification:
+        if self.unavailable:
+            raise ProviderUnavailable()
+        verification_id = uuid.uuid4()
+        self._verifications[verification_id] = {
+            "phone_e164": phone_e164,
+            "purpose": purpose,
+            "code": "424242",  # fixed in the fake; a real provider generates it
+            "expires_at": datetime.now(UTC) + self.TTL,
+            "attempts": 0,
+        }
+        return StartedVerification(
+            verification_id, self._verifications[verification_id]["expires_at"]
+        )
+
+    def check(self, *, verification_id: uuid.UUID, code: str) -> CheckedVerification:
+        if self.unavailable:
+            raise ProviderUnavailable()
+        record = self._verifications.get(verification_id)
+        if record is None or record["expires_at"] <= datetime.now(UTC):
+            return CheckedVerification(approved=False)
+        record["attempts"] += 1
+        if record["attempts"] > self.MAX_ATTEMPTS:
+            self._verifications.pop(verification_id, None)
+            return CheckedVerification(approved=False)
+        if code.strip() != record["code"]:
+            return CheckedVerification(approved=False)
+        self._verifications.pop(verification_id, None)
+        return CheckedVerification(
+            approved=True, phone_e164=record["phone_e164"], purpose=record["purpose"]
+        )
+
+    # test affordance, not part of the protocol
+    def code_for(self, verification_id: uuid.UUID) -> str:
+        return self._verifications[verification_id]["code"]
+
+
+# ---------------------------------------------------------------------------
+# Domain
+# ---------------------------------------------------------------------------
+
+def start_verification(
+    provider: VerificationProvider, *, phone_e164: str, purpose: str
+) -> StartedVerification:
+    """Ask the provider to begin. Creates nothing in TURAB."""
     normalized = normalize_phone(phone_e164)
     try:
         parsed = OtpPurpose(purpose)
     except ValueError as exc:
         raise OtpError(
-            "VALIDATION_FAILED", f"purpose must be one of {list(OtpPurpose)}"
+            "VALIDATION_FAILED", f"purpose must be one of {[p.value for p in OtpPurpose]}"
         ) from exc
-
-    now = now or datetime.now(UTC)
-    challenge = Challenge(
-        challenge_id=uuid.uuid4(),
-        phone_e164=normalized,
-        purpose=parsed,
-        code=f"{secrets.randbelow(10 ** CODE_LENGTH):0{CODE_LENGTH}d}",
-        expires_at=now + CHALLENGE_TTL,
-    )
-    store.put(challenge)
-    return challenge
+    return provider.start(phone_e164=normalized, purpose=parsed)
 
 
-def verify_challenge(
+def apply_verification(
     session: Session,
-    store: ChallengeStore,
+    provider: VerificationProvider,
     *,
-    challenge_id: uuid.UUID,
+    verification_id: uuid.UUID,
     code: str,
-    now: datetime | None = None,
 ) -> Mapping[str, object]:
-    """Check the code and apply the outcome the purpose allows.
+    """Check with the provider, then apply what the purpose permits.
 
-    A02: `VERIFY_PHONE_CONTROL` marks the contact point verified and stops
-    there. `LOGIN` may open a session only when an account already exists;
-    where none does, the result is still `PHONE_CONTROL_VERIFIED` and the
-    caller learns that control was proved but no session was created. That is
-    the contract's `account_id` being nullable "by design" (§4.1).
+    A02: `VERIFY_PHONE_CONTROL` marks the contact point verified and stops.
+    `LOGIN` may open a session only where an account already exists; where none
+    does, the result is still `PHONE_CONTROL_VERIFIED`, which is the contract's
+    `account_id` being nullable "by design" (§4.1).
     """
-    now = now or datetime.now(UTC)
-    challenge = store.take(challenge_id)
-    if challenge is None:
-        raise ChallengeNotFound()
-    if challenge.expires_at <= now:
-        store.discard(challenge_id)
-        raise ChallengeExpired()
+    checked = provider.check(verification_id=verification_id, code=code)
+    if not checked.approved or not checked.phone_e164:
+        raise VerificationRejected()
 
-    if not secrets.compare_digest(challenge.code, (code or "").strip()):
-        challenge.attempts += 1
-        if challenge.attempts >= MAX_ATTEMPTS:
-            # Burn the challenge rather than let it be brute-forced.
-            store.discard(challenge_id)
-        raise WrongCode()
+    # Fail closed: an unestablished purpose never yields a session.
+    purpose = checked.purpose or OtpPurpose.VERIFY_PHONE_CONTROL
 
-    store.discard(challenge_id)
-
-    contact_point_id = _mark_control_verified(session, challenge.phone_e164)
+    contact_point_id = _mark_control_verified(session, checked.phone_e164)
     result: dict[str, object] = {
         "verification_result": VerificationResult.PHONE_CONTROL_VERIFIED.value,
         "contact_point_id": contact_point_id,
@@ -187,41 +218,39 @@ def verify_challenge(
         "access_token": None,
     }
 
-    if challenge.purpose is OtpPurpose.LOGIN:
+    if purpose is OtpPurpose.LOGIN:
         account_id = _activate_existing_account(session, contact_point_id)
         if account_id is not None:
             result["verification_result"] = VerificationResult.SESSION_CREATED.value
             result["account_id"] = account_id
             # Token issuance belongs to the authentication workstream (D4).
-            # The bearer is currently the account id; see api/deps.py.
             result["access_token"] = str(account_id)
 
     return result
 
 
 def _mark_control_verified(session: Session, phone_e164: str) -> uuid.UUID:
-    """Record verified control of the contact point, creating it if needed.
+    """Record verified control, creating the contact point if needed.
 
-    Creating the CONTACT_POINT is not creating a party or an account: it is
-    the record of the thing whose control was just proved.
+    Creating a CONTACT_POINT is not creating a party or an account: it is the
+    record of the thing whose control was just proved.
     """
-    row = session.execute(
+    return session.execute(
         text(
             """
             INSERT INTO turab.contact_points
                    (kind, normalized_value, display_value, control_status,
                     control_verified_at, verification_method)
-            VALUES ('PHONE', :value, :value, 'VERIFIED_CONTROL', now(), 'OTP')
+            VALUES ('PHONE', :value, :value, 'VERIFIED_CONTROL', now(), 'OTP_PROVIDER')
             ON CONFLICT (kind, normalized_value) DO UPDATE
                SET control_status = 'VERIFIED_CONTROL',
                    control_verified_at = now(),
-                   verification_method = 'OTP'
+                   verification_method = 'OTP_PROVIDER'
             RETURNING contact_point_id
             """
         ),
         {"value": phone_e164},
     ).scalar_one()
-    return row
 
 
 def _activate_existing_account(
@@ -231,15 +260,12 @@ def _activate_existing_account(
 
     A02/A03: no account is created here under any circumstance. `INVITED`
     becomes `ACTIVATED`; `SUSPENDED` and `DISABLED` are left alone, because
-    proving control of a phone must not resurrect an account someone disabled.
+    proving control of a phone must not undo an administrative decision.
     """
     account = session.execute(
         text(
-            """
-            SELECT account_id, status::text AS status
-              FROM turab.user_accounts
-             WHERE login_contact_point_id = :cp
-            """
+            """SELECT account_id, status::text AS status
+                 FROM turab.user_accounts WHERE login_contact_point_id = :cp"""
         ),
         {"cp": contact_point_id},
     ).mappings().first()
@@ -250,9 +276,8 @@ def _activate_existing_account(
         session.execute(
             text(
                 """UPDATE turab.user_accounts
-                      SET status = 'ACTIVATED', activated_at = now(),
-                          last_login_at = now()
-                    WHERE account_id = :a"""
+                      SET status='ACTIVATED', activated_at=now(), last_login_at=now()
+                    WHERE account_id=:a"""
             ),
             {"a": account["account_id"]},
         )
@@ -260,7 +285,7 @@ def _activate_existing_account(
 
     if account["status"] == "ACTIVATED":
         session.execute(
-            text("UPDATE turab.user_accounts SET last_login_at = now() WHERE account_id = :a"),
+            text("UPDATE turab.user_accounts SET last_login_at=now() WHERE account_id=:a"),
             {"a": account["account_id"]},
         )
         return account["account_id"]
@@ -272,22 +297,24 @@ class OtpService:
     """The application service the OTP routes talk to.
 
     It exists so the routes hold no session. The verify path writes, so it
-    opens the audited transaction here rather than in the route — with a null
-    actor, which is the honest record of an anonymous verification, and the one
-    place `require_actor=False` is legitimately used.
+    opens the audited transaction here — with a null actor, which is the
+    honest record of an anonymous verification and the one place
+    `require_actor=False` is legitimate.
     """
 
     def __init__(
-        self, session: Session, store: ChallengeStore, trace_id: str
+        self, session: Session, provider: VerificationProvider, trace_id: str
     ) -> None:
         self._session = session
-        self._store = store
+        self._provider = provider
         self._trace_id = trace_id
 
-    def start(self, *, phone_e164: str, purpose: str) -> Challenge:
-        return start_challenge(self._store, phone_e164=phone_e164, purpose=purpose)
+    def start(self, *, phone_e164: str, purpose: str) -> StartedVerification:
+        return start_verification(
+            self._provider, phone_e164=phone_e164, purpose=purpose
+        )
 
-    def verify(self, *, challenge_id: uuid.UUID, code: str) -> Mapping[str, object]:
+    def verify(self, *, verification_id: uuid.UUID, code: str) -> Mapping[str, object]:
         from ..db.session import audited_transaction
 
         with audited_transaction(
@@ -295,6 +322,6 @@ class OtpService:
             {"operation": "postAuthOtpVerify", "trace_id": self._trace_id},
             require_actor=False,
         ) as session:
-            return verify_challenge(
-                session, self._store, challenge_id=challenge_id, code=code
+            return apply_verification(
+                session, self._provider, verification_id=verification_id, code=code
             )

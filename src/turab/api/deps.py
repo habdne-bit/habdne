@@ -19,7 +19,7 @@ from ..auth.subject import AccountNotResolvable, Subject, resolve_subject
 from ..db.session import read_session
 from ..services.access import AccessService
 from ..services.command import CommandService
-from ..services.otp import ChallengeStore, OtpService
+from ..services.otp import OtpService, VerificationProvider
 
 
 def get_policies(request: Request) -> PolicyTable:
@@ -57,8 +57,13 @@ def get_write_session(request: Request) -> Iterator[Session]:
         session.close()
 
 
-def get_challenge_store(request: Request) -> ChallengeStore:
-    return request.app.state.challenge_store
+def get_verification_provider(request: Request) -> VerificationProvider:
+    """The SMS/WhatsApp verification boundary.
+
+    An integration, not a TURAB table: the provider owns the challenge, the
+    code, the attempt count and the expiry.
+    """
+    return request.app.state.verification_provider
 
 
 def get_subject(
@@ -144,9 +149,9 @@ def get_subject_for_write(
 def get_otp(
     request: Request,
     session: Annotated[Session, Depends(get_write_session)],
-    store: Annotated[ChallengeStore, Depends(get_challenge_store)],
+    provider: Annotated[VerificationProvider, Depends(get_verification_provider)],
 ) -> OtpService:
-    return OtpService(session, store, getattr(request.state, "trace_id", "-"))
+    return OtpService(session, provider, getattr(request.state, "trace_id", "-"))
 
 
 Access = Annotated[AccessService, Depends(get_access)]

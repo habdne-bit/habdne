@@ -18,7 +18,7 @@ from .auth.contract import build_policy_table, verify_policy_matches_contract
 from .auth.roles import verify_separation_sensitive_operations
 from .db.session import create_app_engine, session_factory
 from .observability import configure_logging
-from .services.otp import InMemoryChallengeStore
+from .services.otp import FakeVerificationProvider
 
 logger = logging.getLogger("turab")
 
@@ -27,6 +27,7 @@ def create_app(
     engine=None,
     auditor: AccessAuditor | None = None,
     configure_logs: bool = False,
+    provider=None,
 ) -> FastAPI:
     if configure_logs:
         configure_logging()
@@ -43,9 +44,10 @@ def create_app(
     app.state.auditor = auditor or AccessAuditor()
     app.state.engine = engine or create_app_engine()
     app.state.session_factory = session_factory(app.state.engine)
-    # Development carrier for OTP challenges; see services/otp.py for the
-    # open question about where this belongs in production.
-    app.state.challenge_store = InMemoryChallengeStore()
+    # The verification provider is an integration boundary. A real deployment
+    # injects the SMS/WhatsApp client here; this stand-in keeps the default
+    # runnable without one. TURAB stores no challenge state either way.
+    app.state.verification_provider = provider or FakeVerificationProvider()
 
     @app.middleware("http")
     async def attach_trace_id(request: Request, call_next):

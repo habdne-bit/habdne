@@ -36,18 +36,23 @@ class OtpVerify(_Body):
 
 @router.post("/start", operation_id="postAuthOtpStart", status_code=201)
 def otp_start(request: Request, body: OtpStart, otp: Otp):
-    """Issue a challenge. Creates nothing in the domain."""
-    try:
-        challenge = otp.start(phone_e164=body.phone_e164, purpose=body.purpose)
-    except otp_service.OtpError as exc:
-        return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request), str(exc))
-    except ValueError as exc:
-        return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request), str(exc))
+    """Ask the provider to begin a verification. Creates nothing in TURAB.
 
-    # The code itself is never returned and never logged (§8).
+    The contract's `challenge_id` is the provider's verification id: TURAB
+    holds no challenge state of its own.
+    """
+    trace = trace_id_of(request)
+    try:
+        started = otp.start(phone_e164=body.phone_e164, purpose=body.purpose)
+    except otp_service.ProviderUnavailable as exc:
+        return coded(ProblemCode.PROVIDER_UNAVAILABLE, trace, str(exc))
+    except (otp_service.OtpError, ValueError) as exc:
+        return coded(ProblemCode.VALIDATION_FAILED, trace, str(exc))
+
+    # TURAB never sees the code, so it cannot return or log one (§8).
     return {
-        "challenge_id": str(challenge.challenge_id),
-        "expires_at": challenge.expires_at.isoformat(),
+        "challenge_id": str(started.verification_id),
+        "expires_at": started.expires_at.isoformat(),
     }
 
 
@@ -62,10 +67,14 @@ def otp_verify(request: Request, body: OtpVerify, otp: Otp):
     """
     trace = trace_id_of(request)
     try:
-        result = otp.verify(challenge_id=body.challenge_id, code=body.code)
+        result = otp.verify(verification_id=body.challenge_id, code=body.code)
+    except otp_service.ProviderUnavailable as exc:
+        # Distinct from a rejection: a refused caller should not retry, a
+        # caller whose provider is down should.
+        return coded(ProblemCode.PROVIDER_UNAVAILABLE, trace, str(exc))
     except otp_service.OtpError as exc:
         # One code for unknown, expired and wrong: distinguishing them would
-        # tell a caller which challenge ids exist.
+        # tell a caller which verification ids exist.
         return coded(ProblemCode.VALIDATION_FAILED, trace, str(exc))
 
     return {
