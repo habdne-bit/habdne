@@ -61,6 +61,13 @@ fi
 STAMP_URL="${TURAB_DATABASE_URL:-postgresql+psycopg://${PGUSER:-$USER}@${PGHOST:-/var/run/postgresql}:${PGPORT:-5432}/$PGDATABASE}"
 TURAB_DATABASE_URL="$STAMP_URL" "$PYTHON" "$REPO_ROOT/db/dev/stamp_baseline.py"
 
+# The stamp marks the BASELINE. Migrations after it (additive data, new
+# objects) still have to run, or a freshly reset database would be missing
+# everything added since the freeze.
+step "Applying migrations after the baseline"
+if [[ -x "$REPO_ROOT/.venv/bin/alembic" ]]; then ALEMBIC="$REPO_ROOT/.venv/bin/alembic"; else ALEMBIC="alembic"; fi
+( cd "$REPO_ROOT" && TURAB_DATABASE_URL="$STAMP_URL" "$ALEMBIC" upgrade head )
+
 if [[ $WITH_FIXTURES -eq 1 ]]; then
   step "Loading development fixtures"
   psql -v ON_ERROR_STOP=1 -q -f "$REPO_ROOT/db/fixtures/dev_fixtures.sql"

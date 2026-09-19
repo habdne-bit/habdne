@@ -45,6 +45,12 @@ class ProblemCode(StrEnum):
     IDENTITY_ALIAS_NOT_CANONICAL = "IDENTITY_ALIAS_NOT_CANONICAL"
     RESOURCE_ALREADY_CLAIMED = "RESOURCE_ALREADY_CLAIMED"
     RESOURCE_NOT_CLAIMABLE = "RESOURCE_NOT_CLAIMABLE"
+    #: The contract's declared condition on `postRecordsClaim` is not met.
+    #: 403, not 404: the caller already named a record they may not claim,
+    #: and concealing it would leave them unable to tell a wrong id from a
+    #: wrong account. One message covers every failing reason, so the code
+    #: cannot be used to map which records belong to which party.
+    CLAIM_NOT_ELIGIBLE = "CLAIM_NOT_ELIGIBLE"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -72,6 +78,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.IDENTITY_ALIAS_NOT_CANONICAL: (409, "Alias is not canonical"),
     ProblemCode.RESOURCE_ALREADY_CLAIMED: (409, "Already claimed"),
     ProblemCode.RESOURCE_NOT_CLAIMABLE: (409, "Not claimable"),
+    ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),
     ProblemCode.NOT_IMPLEMENTED: (501, "Not implemented"),

@@ -11,9 +11,15 @@ the API alone. The three questions are asserted explicitly at the end, each
 against the single staff read an operator actually performs.
 
 Scenario. Khadija rings the office about renting a flat. An operator records
-an assisted request while she is on the phone. She later claims it. Her budget
-changes. Four months pass without contact and the request goes stale. The
-operator rings to check, and reconfirms.
+an assisted request while she is on the phone. She later claims it — and
+before she does, an unrelated account tries to claim it and is refused
+without leaving a trace that would block her. Her budget changes. Four months
+pass without contact and the request goes stale. The operator rings to check,
+and reconfirms.
+
+The counter-scenario is part of the gate, not an extra: an operator's
+understanding of a record is worth nothing if the record could have been
+captured by whoever asked first.
 """
 from __future__ import annotations
 
@@ -89,15 +95,33 @@ def test_stop_gate_b_a_staff_operator_can_understand_the_request(client, ids, en
     assert created.json()["management_mode"] == "ASSISTED"
     assert created.json()["claim_status"] == "UNCLAIMED"
 
-    # --- 2. Khadija claims the record. Same row, no duplicate.
+    # --- 2a. an unrelated account tries first, and is refused with no trace
     total_before = _count(engine)
-    claimed = client.post(
+    intruder = client.post(
         "/records/claim",
         json={"resource_type": "REQUEST", "resource_id": rid,
               "verification_contact_point_id": str(ids.CP_AMINA)},
+        headers={"Authorization": f"Bearer {ids.ACC_AMINA}",
+                 "Idempotency-Key": "sgb-intruder"},
+    )
+    assert intruder.status_code == 403, intruder.text
+    assert intruder.json()["code"] == "CLAIM_NOT_ELIGIBLE"
+    with Session(bind=engine, future=True) as s:
+        assert s.execute(
+            text("SELECT count(*) FROM turab.record_claim_events "
+                 "WHERE request_id = :r"),
+            {"r": uuid.UUID(rid)},
+        ).scalar_one() == 0, "a refused claim must leave no blocking trace"
+
+    # --- 2b. Khadija claims it. Same row, no duplicate.
+    claimed = client.post(
+        "/records/claim",
+        json={"resource_type": "REQUEST", "resource_id": rid,
+              "verification_contact_point_id": str(ids.CP_KHADIJA)},
         headers={**khadija(ids), "Idempotency-Key": "sgb-claim"},
     )
     assert claimed.status_code == 200, claimed.text
+    assert claimed.json()["outcome"] == "CLAIMED"
     assert _count(engine) == total_before, "claiming must not duplicate the record"
 
     # --- 3. it is qualified and activated through the documented path

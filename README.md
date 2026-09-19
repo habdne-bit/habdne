@@ -13,9 +13,9 @@
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
 | Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed**, submitted for closure review — all 11 contract operations wired |
-| Slice 2 — REQUEST / Criteria / Freshness | **Implemented; STOP GATE B demonstrated**, submitted for review — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
+| Slice 2 — REQUEST / Criteria / Freshness | **Closing round applied; not yet closed** — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
 
-Across both: **415 tests, 113 rules evidenced**, 23 of 64 contract operations wired.
+Across both: **446 tests, 120 rules evidenced**, 23 of 64 contract operations wired.
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -26,6 +26,7 @@ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 - Slice 0 closure: **[`docs/gate/SLICE_0_CLOSURE_PACK.md`](docs/gate/SLICE_0_CLOSURE_PACK.md)**
 - Slice 1 closure: **[`docs/gate/SLICE_1_CLOSURE_PACK.md`](docs/gate/SLICE_1_CLOSURE_PACK.md)**
 - Slice 2 progress, gaps and STOP GATE B: **[`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md)**
+- Adopted REQUEST state transitions: **[`docs/gate/REQUEST_STATE_TRANSITIONS.md`](docs/gate/REQUEST_STATE_TRANSITIONS.md)**
 - Migration policy (R14.4–R14.7): **[`docs/gate/MIGRATION_POLICY.md`](docs/gate/MIGRATION_POLICY.md)**
 - Alembic evidence pack and stated limits: **[`docs/gate/ALEMBIC_EVIDENCE_PACK.md`](docs/gate/ALEMBIC_EVIDENCE_PACK.md)**
 - **Design Ledger** — adopted, deferred and blocked decisions: **[`docs/DESIGN_LEDGER.md`](docs/DESIGN_LEDGER.md)**
@@ -75,7 +76,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 415 tests
+./.venv/bin/pytest -q                  # 446 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

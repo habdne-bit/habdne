@@ -65,7 +65,21 @@ def database_url() -> str:
     _psql(TEST_DB, "-f", str(DB_DIR / "schema_v0.2.3.sql"))
     _psql(TEST_DB, "-f", str(DB_DIR / "seed_master_data_v0.2.3.sql"))
     _psql(TEST_DB, "-f", str(FIXTURES))
-    return f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{TEST_DB}"
+
+    # Build it the way a real database is built: the frozen baseline is
+    # revision 0001, stamped rather than replayed, then every migration after
+    # it runs forward. Without this the suite would test a database no
+    # deployment can produce — one holding the baseline and nothing since.
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{TEST_DB}"
+    alembic = REPO_ROOT / ".venv" / "bin" / "alembic"
+    exe = str(alembic) if alembic.exists() else "alembic"
+    child = {**os.environ, "TURAB_DATABASE_URL": url,
+             "PGHOST": PGHOST, "PGUSER": PGUSER, "PGPASSWORD": PGPASSWORD}
+    subprocess.run([exe, "stamp", "0001_frozen_baseline_v0_2_3"],
+                   cwd=REPO_ROOT, check=True, env=child, capture_output=True)
+    subprocess.run([exe, "upgrade", "head"],
+                   cwd=REPO_ROOT, check=True, env=child, capture_output=True)
+    return url
 
 
 @pytest.fixture(scope="session")
@@ -109,6 +123,9 @@ class Ids:
     ACC_KHADIJA = uuid.UUID("f3000000-0000-4000-8000-000000000004")
     ACC_ADMIN = uuid.UUID("f3000000-0000-4000-8000-000000000005")
     ACC_AMINA_SECOND = uuid.UUID("f3000000-0000-4000-8000-000000000006")
+    #: Bound to BRAHIM, login contact point is the SHARED line that also
+    #: reaches the agency — the shared-phone claim test (DL-02).
+    ACC_BRAHIM = uuid.UUID("f3000000-0000-4000-8000-000000000007")
     # properties
     # SELF_MANAGED/CLAIMED, created by the OPERATOR account: related parties
     # exist but nobody claimed it, so no customer is authorized.
@@ -128,8 +145,19 @@ class Ids:
     REQ_AMINA = uuid.UUID("f7000000-0000-4000-8000-000000000001")
     REQ_AGENCY_ASSISTED = uuid.UUID("f7000000-0000-4000-8000-000000000002")
     REQ_KHADIJA = uuid.UUID("f7000000-0000-4000-8000-000000000003")
+    #: ASSISTED/UNCLAIMED for KHADIJA's party — the one record in the fixture
+    #: world that an account may LEGITIMATELY claim (contract x-authorization).
+    REQ_KHADIJA_ASSISTED = uuid.UUID("f7000000-0000-4000-8000-000000000005")
+    #: ASSISTED/UNCLAIMED for AMINA's party — claimable by EITHER of the two
+    #: accounts bound to that party, which is what makes INV-1's write half
+    #: testable now that eligibility is enforced.
+    REQ_AMINA_ASSISTED = uuid.UUID("f7000000-0000-4000-8000-000000000006")
     # contact points
     CP_AMINA = uuid.UUID("f2000000-0000-4000-8000-000000000001")
+    #: The shared line: reaches BRAHIM and the AGENCY, and is ACC_BRAHIM's login.
+    CP_SHARED = uuid.UUID("f2000000-0000-4000-8000-000000000002")
+    CP_KHADIJA = uuid.UUID("f2000000-0000-4000-8000-000000000004")
+    CP_AMINA_SECOND = uuid.UUID("f2000000-0000-4000-8000-000000000005")
 
 
 @pytest.fixture

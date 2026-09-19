@@ -38,6 +38,8 @@ AUDIT_RESULTS = (
     / "STATIC_AUDIT_RESULTS_v0.2.3.json"
 )
 VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
+BASELINE = "0001_frozen_baseline_v0_2_3"
+HEAD = "0002_request_closure_reasons"
 
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGUSER = os.environ.get("PGUSER", "turab")
@@ -101,7 +103,7 @@ def test_a_migration_rebuilds_an_empty_environment(migrated):
         ).scalar_one()
         stamp = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
     assert version == "0.2.3"
-    assert stamp == "0001_frozen_baseline_v0_2_3"
+    assert stamp == HEAD, "upgrade head must land on the current head"
 
 
 @pytest.mark.parametrize(
@@ -187,7 +189,7 @@ def test_there_is_exactly_one_head():
     assert result.returncode == 0, result.stderr
     heads = [ln for ln in result.stdout.splitlines() if ln.strip()]
     assert len(heads) == 1, f"expected one head, got {heads}"
-    assert "0001_frozen_baseline_v0_2_3" in heads[0]
+    assert HEAD in heads[0]
 
 
 def test_autogenerate_is_refused():
@@ -203,9 +205,10 @@ def test_autogenerate_is_refused():
     output = result.stderr + result.stdout
     assert result.returncode != 0, output
     assert "--autogenerate" in output and "MetaData" in output, output
-    created = [p for p in VERSIONS.glob("*.py")
-               if p.name != "0001_frozen_baseline_v0_2_3.py"]
-    assert not created, f"autogenerate left files behind: {created}"
+    created = [p.name for p in VERSIONS.glob("*.py")] 
+    assert set(created) == {
+        "0001_frozen_baseline_v0_2_3.py", "0002_request_closure_reasons.py"
+    }, f"autogenerate left files behind: {created}"
 
 
 def test_env_declares_no_metadata_to_diff_against():
@@ -251,7 +254,7 @@ def stamped():
     subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
     subprocess.run(["psql", *base, "-d", db, "-v", "ON_ERROR_STOP=1", "-q",
                     "-f", str(schema)], check=True, env=env, capture_output=True)
-    stamp = _alembic("stamp", "head", env_extra={"TURAB_DATABASE_URL": url})
+    stamp = _alembic("stamp", BASELINE, env_extra={"TURAB_DATABASE_URL": url})
     assert stamp.returncode == 0, stamp.stderr
 
     engine = create_engine(url, future=True)
@@ -265,7 +268,7 @@ def test_a_stamped_database_is_already_at_head(stamped):
     engine, _ = stamped
     with engine.connect() as c:
         assert c.execute(text("SELECT version_num FROM alembic_version")).scalar_one() \
-            == "0001_frozen_baseline_v0_2_3"
+            == BASELINE, "stamping marks the BASELINE, not the head"
 
 
 def test_upgrading_a_stamped_database_is_a_no_op(stamped):
@@ -449,9 +452,50 @@ def test_stamping_the_real_baseline_succeeds(reference):
             with engine.connect() as c:
                 assert c.execute(
                     text("SELECT version_num FROM public.alembic_version")
-                ).scalar_one() == "0001_frozen_baseline_v0_2_3"
+                ).scalar_one() == BASELINE
         finally:
             engine.dispose()
     finally:
         subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
                        capture_output=True)
+
+
+def test_every_revision_id_fits_the_version_column():
+    """`alembic_version.version_num` is varchar(32).
+
+    A longer id passes every local check and then fails at the moment the
+    migration is recorded — after its work has run. Found the hard way by a
+    33-character id.
+    """
+    import re
+
+    too_long = []
+    for path in VERSIONS.glob("*.py"):
+        match = re.search(r'^revision = "([^"]+)"', path.read_text(encoding="utf-8"),
+                          re.M)
+        assert match, f"{path.name} declares no revision id"
+        if len(match.group(1)) > 32:
+            too_long.append((path.name, len(match.group(1))))
+    assert not too_long, f"revision ids exceed varchar(32): {too_long}"
+
+
+def test_the_closure_reason_migration_is_additive_and_re_runnable(migrated):
+    """It adds rows; it changes nothing that was seeded."""
+    with migrated.connect() as c:
+        adopted = c.execute(text(
+            "SELECT code FROM turab.reason_codes WHERE category = 'REQUEST_CLOSURE' "
+            "ORDER BY code"
+        )).scalars().all()
+        touched_other = c.execute(text(
+            "SELECT count(*) FROM turab.reason_codes WHERE code = 'OTHER'"
+        )).scalar_one()
+    assert adopted == [
+        "REQUEST_CLOSED_OTHER", "REQUEST_FULFILLED", "REQUEST_WITHDRAWN"
+    ]
+    # This database has the schema but not the master seed, so the historical
+    # OTHER row is absent — and the migration must not have invented one.
+    assert touched_other == 0, "the migration must not create or alter OTHER"
+
+    # Running the whole chain again is a no-op, not a duplicate-key failure.
+    again = _alembic("upgrade", "head")
+    assert again.returncode == 0, again.stderr

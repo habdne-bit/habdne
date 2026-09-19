@@ -221,6 +221,10 @@ class AccessService:
         """
         return freshness.evaluate(self._session, last_confirmed_at=last_confirmed_at)
 
+    def request_provenance(self, request_id: uuid.UUID):
+        """The change history of a request already cleared by its gate."""
+        return request_service.provenance_for(self._session, request_id)
+
     def request_criteria(self, request_id: uuid.UUID):
         """The structured criteria of a request already cleared by its gate.
 

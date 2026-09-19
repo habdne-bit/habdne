@@ -802,3 +802,105 @@ UNION ALL SELECT 'MF8 CONFIRMED_DISTINCT pairs with no alias',
          WHERE c.review_status='CONFIRMED_DISTINCT'
            AND NOT EXISTS (SELECT 1 FROM property_identity_aliases a
                             WHERE a.source_identity_candidate_id=c.identity_candidate_id));
+
+-- ---------------------------------------------------------------------------
+-- Claim eligibility fixtures (contract x-authorization on postRecordsClaim)
+--
+-- The contract requires, for a customer claim, "verified contact point and
+-- resource party relationship". The base fixtures had no record that a real
+-- account could legitimately claim — every assisted record belonged to a party
+-- with no account — so the condition could only ever be tested negatively.
+--
+--   * f7...005  an ASSISTED/UNCLAIMED request for KHADIJA's party, which
+--               account f3...004 (bound to that party, login contact point
+--               f2...004, which reaches that party) may legitimately claim;
+--   * f3...007  an account for BRAHIM whose login contact point is the SHARED
+--               line f2...002. That line also reaches the agency, so this
+--               account is the test that a shared phone does not let one
+--               party's account claim another party's record (DL-02).
+-- ---------------------------------------------------------------------------
+
+INSERT INTO user_accounts (account_id, party_id, status, login_contact_point_id,
+                           email, activated_at)
+SELECT 'f3000000-0000-4000-8000-000000000007'::uuid,
+       'f1000000-0000-4000-8000-000000000002'::uuid, 'ACTIVATED',
+       'f2000000-0000-4000-8000-000000000002'::uuid, NULL, now()
+WHERE NOT EXISTS (
+  SELECT 1 FROM user_accounts WHERE account_id='f3000000-0000-4000-8000-000000000007');
+
+INSERT INTO user_account_roles (account_id, role)
+SELECT 'f3000000-0000-4000-8000-000000000007'::uuid, 'CUSTOMER'::account_role
+WHERE NOT EXISTS (
+  SELECT 1 FROM user_account_roles
+   WHERE account_id='f3000000-0000-4000-8000-000000000007' AND role='CUSTOMER');
+
+INSERT INTO requests (request_id, party_id, status, transaction_intent, intent,
+                      payment, desired_property_type, primary_location_id,
+                      budget_target_dzd, budget_max_dzd, budget_flexibility,
+                      last_confirmed_at, management_mode, claim_status,
+                      created_by_account_id)
+SELECT 'f7000000-0000-4000-8000-000000000005'::uuid,
+       'f1000000-0000-4000-8000-000000000004'::uuid,
+       'QUALIFIED','BUY','ACTIVE_SEARCH','CASH','APARTMENT',
+       (SELECT location_id FROM locations WHERE code='ADR-CENTER'),
+       18000000::bigint, 22000000::bigint,'MODERATE', now() - interval '3 days',
+       'ASSISTED','UNCLAIMED','f3000000-0000-4000-8000-000000000002'::uuid
+WHERE NOT EXISTS (
+  SELECT 1 FROM requests WHERE request_id='f7000000-0000-4000-8000-000000000005');
+
+DO $$
+DECLARE eligible int;
+BEGIN
+  -- The point of the fixture: exactly one account may legitimately claim
+  -- f7...005, and it is the one bound to that request's party.
+  SELECT count(*) INTO eligible
+  FROM user_accounts a
+  JOIN requests r ON r.party_id = a.party_id
+  JOIN party_contact_points pcp
+    ON pcp.party_id = r.party_id AND pcp.contact_point_id = a.login_contact_point_id
+  JOIN contact_points cp
+    ON cp.contact_point_id = a.login_contact_point_id
+   AND cp.control_status = 'VERIFIED_CONTROL'
+  WHERE r.request_id = 'f7000000-0000-4000-8000-000000000005'
+    AND a.status = 'ACTIVATED';
+  IF eligible <> 1 THEN
+    RAISE EXCEPTION 'claim fixture: expected exactly one eligible claimant, found %', eligible;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- EC1 extended: TWO eligible accounts for ONE party.
+--
+-- `user_accounts` f3...001 and f3...006 are both bound to party f1...001. For
+-- INV-1's write half to be testable AFTER claim eligibility is enforced, both
+-- must be able to pass eligibility — otherwise "a second claim by another
+-- account is rejected" can only be reached by an ineligible account, and the
+-- test would be proving eligibility rather than INV-1.
+--
+-- So f3...006's login contact point is linked to the same party, and f7...006
+-- is an ASSISTED/UNCLAIMED request for it that either account may claim.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO party_contact_points (party_id, contact_point_id, is_primary,
+                                  relationship_note)
+SELECT 'f1000000-0000-4000-8000-000000000001'::uuid,
+       'f2000000-0000-4000-8000-000000000005'::uuid, false,
+       'second account for the same party (EC1)'
+WHERE NOT EXISTS (
+  SELECT 1 FROM party_contact_points
+   WHERE party_id='f1000000-0000-4000-8000-000000000001'
+     AND contact_point_id='f2000000-0000-4000-8000-000000000005');
+
+INSERT INTO requests (request_id, party_id, status, transaction_intent, intent,
+                      payment, desired_property_type, primary_location_id,
+                      budget_target_dzd, budget_max_dzd, budget_flexibility,
+                      last_confirmed_at, management_mode, claim_status,
+                      created_by_account_id)
+SELECT 'f7000000-0000-4000-8000-000000000006'::uuid,
+       'f1000000-0000-4000-8000-000000000001'::uuid,
+       'QUALIFIED','RENT','EXPLORING','UNDECIDED','APARTMENT',
+       (SELECT location_id FROM locations WHERE code='ADR-CENTER'),
+       30000::bigint, 40000::bigint,'MODERATE', now() - interval '5 days',
+       'ASSISTED','UNCLAIMED','f3000000-0000-4000-8000-000000000002'::uuid
+WHERE NOT EXISTS (
+  SELECT 1 FROM requests WHERE request_id='f7000000-0000-4000-8000-000000000006');

@@ -14,13 +14,16 @@ reconfirmation are three different commands and none does another's work.
 """
 from __future__ import annotations
 
+import subprocess
 import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from turab.services import freshness, requests as request_service
+from turab.services.requests import UpdateChannel
 
 
 @pytest.fixture
@@ -159,6 +162,7 @@ def test_patch_cannot_reach_importance_fields(session, ids, new_request):
             session, request_id=new_request["request_id"],
             changes={"budget_importance": "FLEXIBLE"},
             recorded_by_account_id=ids.ACC_AMINA,
+            channel=UpdateChannel.SELF_SERVICE,
         )
 
 
@@ -310,6 +314,7 @@ def test_a_data_update_does_not_touch_status_or_confirmation(session, ids, new_r
     request_service.patch_request(
         session, request_id=rid, changes={"budget_max_dzd": 26_000_000},
         recorded_by_account_id=ids.ACC_AMINA,
+            channel=UpdateChannel.SELF_SERVICE,
     )
     session.flush()
     after = request_service.read_request(session, rid)
@@ -385,6 +390,9 @@ def test_the_documented_path_works_end_to_end(session, ids, new_request):
 def test_an_undefined_transition_is_refused_not_guessed(
     session, ids, new_request, target
 ):
+    # From RAW, none of these is defined: the only edge out of RAW is
+    # CONTACTED. ACTIVE -> PAUSED and ACTIVE -> CLOSED are adopted, and are
+    # tested as permitted below.
     """The contract's RequestStateCommand accepts six targets; §5.2 defines
     far fewer edges. Inventing one would add a workflow rule to TURAB by
     implementation accident."""
@@ -396,39 +404,96 @@ def test_an_undefined_transition_is_refused_not_guessed(
     assert "not a transition defined" in str(exc.value)
 
 
-def test_leaving_paused_requires_explicit_reactivation(session, ids, new_request):
+def test_reactivation_is_the_explicit_command_itself(session, ids, new_request):
+    """§5.2: "PAUSED/CLOSED -> ACTIVE only by explicit reactivation".
+
+    Sending `target_status=ACTIVE` to the state command from PAUSED IS that
+    explicit act. An earlier draft demanded an extra `reactivate` flag — an
+    undeclared field, and a second way of saying what the contract already
+    expresses.
+    """
     rid = new_request["request_id"]
     _advance_to_active(session, rid, ids)
-    for target in ("NEEDS_CONFIRMATION", "PAUSED"):
-        request_service.transition(
-            session, request_id=rid, target_status=target,
-            recorded_by_account_id=ids.ACC_OPERATOR,
-        )
-        session.flush()
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
 
-    with pytest.raises(request_service.ReactivationNotRequested):
-        request_service.transition(
-            session, request_id=rid, target_status="ACTIVE",
-            recorded_by_account_id=ids.ACC_OPERATOR,
-        )
     row = request_service.transition(
-        session, request_id=rid, target_status="ACTIVE", reactivate=True,
-        reason_code=None, recorded_by_account_id=ids.ACC_OPERATOR,
+        session, request_id=rid, target_status="ACTIVE",
+        recorded_by_account_id=ids.ACC_OPERATOR,
     )
     assert row["status"] == "ACTIVE"
+
+
+def test_reactivation_does_not_refresh_the_confirmation(session, ids, new_request):
+    """A request paused for six months is not made current by restarting it."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    session.execute(
+        text("UPDATE turab.requests SET last_confirmed_at = :t WHERE request_id = :r"),
+        {"t": datetime(2026, 1, 1, tzinfo=UTC), "r": rid},
+    )
+    session.flush()
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
+    before = request_service.read_request(session, rid)["last_confirmed_at"]
+
+    request_service.transition(
+        session, request_id=rid, target_status="ACTIVE",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
+    assert request_service.read_request(session, rid)["last_confirmed_at"] == before
+    assert freshness.evaluate_request(session, rid).is_stale, (
+        "a reactivated request is subject to the freshness rules like any other"
+    )
+
+
+def test_reconfirming_does_not_resurrect_a_paused_or_closed_request(
+    session, ids, new_request
+):
+    """It was stopped for a reason unrelated to freshness; confirming that its
+    details are still true must not reverse a decision nobody revisited."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    request_service.transition(
+        session, request_id=rid, target_status="PAUSED",
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    session.flush()
+    request_service.reconfirm(session, request_id=rid,
+                              recorded_by_account_id=ids.ACC_OPERATOR)
+    session.flush()
+    assert request_service.read_request(session, rid)["status"] == "PAUSED"
+
+
+@pytest.mark.parametrize("target", ["PAUSED", "CLOSED"])
+def test_an_active_request_may_be_paused_or_closed_directly(
+    session, ids, new_request, target
+):
+    """Adopted: a request is not required to pass through NEEDS_CONFIRMATION
+    in order to be paused or closed."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    row = request_service.transition(
+        session, request_id=rid, target_status=target,
+        reason_code="REQUEST_WITHDRAWN" if target == "CLOSED" else None,
+        recorded_by_account_id=ids.ACC_OPERATOR,
+    )
+    assert row["status"] == target
 
 
 def test_closing_records_the_reason_and_the_moment(session, ids, new_request):
     rid = new_request["request_id"]
     _advance_to_active(session, rid, ids)
     request_service.transition(
-        session, request_id=rid, target_status="NEEDS_CONFIRMATION",
-        recorded_by_account_id=ids.ACC_OPERATOR,
-    )
-    session.flush()
-    request_service.transition(
         session, request_id=rid, target_status="CLOSED",
-        reason_code="OTHER", recorded_by_account_id=ids.ACC_OPERATOR,
+        reason_code="REQUEST_FULFILLED", recorded_by_account_id=ids.ACC_OPERATOR,
     )
     session.flush()
     row = session.execute(
@@ -445,7 +510,8 @@ def test_a_typed_update_records_who_said_what_and_when(session, ids, new_request
     rid = new_request["request_id"]
     request_service.patch_request(
         session, request_id=rid, changes={"budget_max_dzd": 27_000_000},
-        recorded_by_account_id=ids.ACC_AMINA, note="said so on the phone",
+        recorded_by_account_id=ids.ACC_AMINA,
+            channel=UpdateChannel.SELF_SERVICE, note="said so on the phone",
     )
     session.flush()
     trail = request_service.provenance_for(session, rid)
@@ -462,6 +528,7 @@ def test_each_changed_field_gets_its_own_claim(session, ids, new_request):
         session, request_id=rid,
         changes={"budget_max_dzd": 28_000_000, "budget_flexibility": "HIGH"},
         recorded_by_account_id=ids.ACC_AMINA,
+            channel=UpdateChannel.SELF_SERVICE,
     )
     session.flush()
     codes = {c["attribute_code"] for c in request_service.provenance_for(session, rid)}
@@ -475,6 +542,7 @@ def test_one_update_is_one_observation(session, ids, new_request):
         session, request_id=rid,
         changes={"budget_max_dzd": 29_000_000, "budget_flexibility": "LOW"},
         recorded_by_account_id=ids.ACC_AMINA,
+            channel=UpdateChannel.SELF_SERVICE,
     )
     session.flush()
     trail = request_service.provenance_for(session, rid)
@@ -506,27 +574,280 @@ def _advance_to_active(session, request_id, ids) -> None:
 
 # --- a contractual gap, surfaced rather than filled ------------------------
 
-def test_no_master_reason_code_describes_closing_a_request(session):
-    """`requests.close_reason_code` is FK-constrained to `reason_codes`, but
-    the frozen master data carries no category for REQUEST closure.
+def test_the_adopted_closure_reasons_exist(session):
+    codes = session.execute(
+        text("""SELECT code FROM turab.reason_codes
+                 WHERE category = 'REQUEST_CLOSURE' AND active ORDER BY code""")
+    ).scalars().all()
+    assert codes == [
+        "REQUEST_CLOSED_OTHER", "REQUEST_FULFILLED", "REQUEST_WITHDRAWN"
+    ]
 
-    Categories present: FRESHNESS, GENERAL, IDENTITY, MATCH, OPPORTUNITY,
-    PERMISSION. An operator closing a request can therefore only record
-    `OTHER`, or misuse an OPPORTUNITY code that means something about a
-    different entity.
 
-    This test does not fix that — adding codes means editing the frozen seed,
-    which is forbidden. It PINS the gap so it is visible, and it will fail the
-    day a REQUEST closure category is added, which is the moment to revisit
-    the closing flow.
-    """
-    categories = set(session.execute(
-        text("SELECT DISTINCT category FROM turab.reason_codes")
-    ).scalars().all())
-    assert "REQUEST_CLOSURE" not in categories, (
-        "a REQUEST closure category now exists in the master data — revisit "
-        "the closing flow and this test"
+def test_closing_requires_a_reason(session, ids, new_request):
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    with pytest.raises(request_service.ClosureReasonRequired):
+        request_service.transition(
+            session, request_id=rid, target_status="CLOSED",
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+
+
+@pytest.mark.parametrize("code", ["OTHER", "BUYER_REJECTED", "REQUEST_STALE"])
+def test_a_reason_from_another_category_is_refused(session, ids, new_request, code):
+    """An OPPORTUNITY code describes a different entity; the historical
+    GENERAL/OTHER keeps its own meaning and is not repurposed."""
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    with pytest.raises(request_service.UnknownReasonCode):
+        request_service.transition(
+            session, request_id=rid, target_status="CLOSED", reason_code=code,
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+
+
+def test_the_other_closure_reason_requires_a_note(session, ids, new_request):
+    rid = new_request["request_id"]
+    _advance_to_active(session, rid, ids)
+    with pytest.raises(request_service.ClosureNoteRequired):
+        request_service.transition(
+            session, request_id=rid, target_status="CLOSED",
+            reason_code="REQUEST_CLOSED_OTHER", note="   ",
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+    row = request_service.transition(
+        session, request_id=rid, target_status="CLOSED",
+        reason_code="REQUEST_CLOSED_OTHER", note="moved to another city",
+        recorded_by_account_id=ids.ACC_OPERATOR,
     )
-    assert session.execute(
-        text("SELECT 1 FROM turab.reason_codes WHERE code = 'OTHER'")
-    ).first() is not None, "not even OTHER is available"
+    assert row["status"] == "CLOSED"
+
+
+def test_closing_is_not_a_substitute_for_staleness_or_pausing(session):
+    """The adopted codes describe what the REQUESTER reported. None of them
+    means 'we lost track of it' — that is NEEDS_CONFIRMATION — and none means
+    'on hold', which is PAUSED."""
+    assert set(request_service.TRANSITIONS["ACTIVE"]) == {
+        "NEEDS_CONFIRMATION", "PAUSED", "CLOSED"
+    }
+    assert request_service.CLOSURE_CATEGORY == "REQUEST_CLOSURE"
+
+
+# --- G-1: the actor is not the source ------------------------------------
+
+def test_a_self_service_change_is_attributed_to_the_party(session, ids, new_request):
+    rid = new_request["request_id"]
+    request_service.patch_request(
+        session, request_id=rid, changes={"budget_max_dzd": 31_000_000},
+        recorded_by_account_id=ids.ACC_AMINA,
+        channel=UpdateChannel.SELF_SERVICE,
+    )
+    session.flush()
+    entry = _entry(session, rid, "budget_max_dzd")
+    assert entry["channel"] == "SELF_SERVICE"
+    assert entry["asserted_by_party_id"] == ids.AMINA
+    assert entry["recorded_by_account_id"] == ids.ACC_AMINA
+
+
+def test_a_staff_recorded_change_asserts_nothing_about_the_party(
+    session, ids, new_request
+):
+    """The rule this whole mechanism exists for: a staff member typing a value
+    is NOT evidence that the customer asked for it."""
+    rid = new_request["request_id"]
+    request_service.patch_request(
+        session, request_id=rid, changes={"budget_max_dzd": 32_000_000},
+        recorded_by_account_id=ids.ACC_OPERATOR,
+        channel=UpdateChannel.STAFF_RECORDED,
+    )
+    session.flush()
+    entry = _entry(session, rid, "budget_max_dzd")
+    assert entry["channel"] == "STAFF_RECORDED"
+    assert entry["recorded_by_account_id"] == ids.ACC_OPERATOR
+    assert entry["asserted_by_party_id"] is None, (
+        "a staff-recorded change must not be attributed to the party"
+    )
+
+
+def test_the_absence_of_a_source_is_recorded_as_such(session, ids, new_request):
+    """`RequestPatch` carries no field for a call or message reference, so
+    there is none to record. The record says so rather than staying silent."""
+    rid = new_request["request_id"]
+    request_service.patch_request(
+        session, request_id=rid, changes={"budget_max_dzd": 33_000_000},
+        recorded_by_account_id=ids.ACC_OPERATOR,
+        channel=UpdateChannel.STAFF_RECORDED,
+    )
+    session.flush()
+    entry = _entry(session, rid, "budget_max_dzd")
+    assert entry["source_recorded"] is False
+    assert entry["source_id"] is None
+
+
+def test_a_recorded_source_is_carried_when_one_exists(session, ids, new_request):
+    """The service can carry one; only the contract cannot yet supply it."""
+    rid = new_request["request_id"]
+    source_id = session.execute(
+        text("""INSERT INTO turab.sources (kind, title)
+                VALUES ('PHONE_CALL', 'call note') RETURNING source_id"""),
+    ).scalar_one()
+    request_service.patch_request(
+        session, request_id=rid, changes={"budget_max_dzd": 34_000_000},
+        recorded_by_account_id=ids.ACC_OPERATOR,
+        channel=UpdateChannel.STAFF_RECORDED, source_reference=source_id,
+    )
+    session.flush()
+    entry = _entry(session, rid, "budget_max_dzd")
+    assert entry["source_recorded"] is True
+    assert entry["source_id"] == source_id
+
+
+def test_the_previous_value_is_recorded(session, ids, new_request):
+    rid = new_request["request_id"]
+    before = request_service.read_request(session, rid)["budget_target_dzd"]
+    request_service.patch_request(
+        session, request_id=rid, changes={"budget_target_dzd": 21_000_000},
+        recorded_by_account_id=ids.ACC_AMINA,
+        channel=UpdateChannel.SELF_SERVICE,
+    )
+    session.flush()
+    entry = _entry(session, rid, "budget_target_dzd")
+    assert entry["observation_payload"]["before"]["budget_target_dzd"] == before
+    assert entry["observation_payload"]["after"]["budget_target_dzd"] == 21_000_000
+
+
+def test_no_update_raises_the_verification_level(session, ids, new_request):
+    """Raising it is what `verification_events` is for. A staff member
+    retyping a value is not a verification of it."""
+    rid = new_request["request_id"]
+    for channel, account in (
+        (UpdateChannel.SELF_SERVICE, ids.ACC_AMINA),
+        (UpdateChannel.STAFF_RECORDED, ids.ACC_OPERATOR),
+    ):
+        request_service.patch_request(
+            session, request_id=rid, changes={"budget_max_dzd": 35_000_000},
+            recorded_by_account_id=account, channel=channel,
+        )
+        session.flush()
+    levels = {
+        c["verification_level"]
+        for c in request_service.provenance_for(session, rid)
+    }
+    assert levels == {"DECLARED"}
+
+
+def _entry(session, request_id, attribute_code):
+    entries = [
+        c for c in request_service.provenance_for(session, request_id)
+        if c["attribute_code"] == attribute_code
+    ]
+    assert entries, f"no provenance recorded for {attribute_code}"
+    return entries[-1]
+
+
+# --- G-5: the freshness pass is a command someone runs --------------------
+#
+# These four tests run the real command in a SUBPROCESS, so their data has to
+# be genuinely committed — the `session` fixture wraps each test in a rolled
+# back transaction that another connection cannot see.
+
+def _committed_active_request(engine, ids, *, confirmed_days_ago: int):
+    """A committed ACTIVE request, aged as asked. Left behind afterwards:
+    `prevent_core_delete()` forbids hard-deleting a core record, and a test
+    that worked around that trigger would be testing an impossible database.
+    """
+    with Session(bind=engine, future=True) as s:
+        row = request_service.create_request(
+            s, party_id=ids.AMINA, transaction_intent="BUY",
+            intent="ACTIVE_SEARCH", management_mode="SELF_MANAGED",
+            claim_status="CLAIMED", created_by_account_id=ids.ACC_AMINA,
+        )
+        rid = row["request_id"]
+        for target in ("CONTACTED", "QUALIFIED", "ACTIVE"):
+            request_service.transition(
+                s, request_id=rid, target_status=target,
+                recorded_by_account_id=ids.ACC_OPERATOR,
+            )
+        s.execute(
+            text("UPDATE turab.requests SET last_confirmed_at = :t "
+                 "WHERE request_id = :r"),
+            {"t": datetime.now(UTC) - timedelta(days=confirmed_days_ago), "r": rid},
+        )
+        s.commit()
+    return rid
+
+
+def _status(engine, request_id) -> str:
+    with Session(bind=engine, future=True) as s:
+        return s.execute(
+            text("SELECT status::text FROM turab.requests WHERE request_id = :r"),
+            {"r": request_id},
+        ).scalar_one()
+
+
+def _run_pass(engine, *args) -> subprocess.CompletedProcess:
+    import os
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    url = engine.url.render_as_string(hide_password=False)
+    return subprocess.run(
+        [str(root / ".venv" / "bin" / "python"),
+         str(root / "db" / "dev" / "run_freshness_pass.py"), *args],
+        cwd=root, capture_output=True, text=True,
+        env={**os.environ, "TURAB_DATABASE_URL": url},
+    )
+
+
+def test_the_freshness_command_moves_stale_requests(engine, ids):
+    rid = _committed_active_request(engine, ids, confirmed_days_ago=40)
+    result = _run_pass(engine)
+    assert result.returncode == 0, result.stderr
+    assert str(rid) in result.stdout
+    assert _status(engine, rid) == "NEEDS_CONFIRMATION"
+
+
+def test_running_it_twice_moves_nothing_the_second_time(engine, ids):
+    """Re-running must be safe: the first run leaves nothing for the second."""
+    rid = _committed_active_request(engine, ids, confirmed_days_ago=45)
+    first = _run_pass(engine)
+    second = _run_pass(engine)
+    assert first.returncode == second.returncode == 0, first.stderr + second.stderr
+    assert str(rid) in first.stdout
+    assert str(rid) not in second.stdout
+    assert _status(engine, rid) == "NEEDS_CONFIRMATION"
+
+
+def test_a_reconfirmed_request_is_left_alone_by_the_pass(engine, ids):
+    rid = _committed_active_request(engine, ids, confirmed_days_ago=50)
+    with Session(bind=engine, future=True) as s:
+        request_service.reconfirm(s, request_id=rid,
+                                  recorded_by_account_id=ids.ACC_OPERATOR)
+        s.commit()
+
+    result = _run_pass(engine)
+    assert result.returncode == 0, result.stderr
+    assert str(rid) not in result.stdout
+    assert _status(engine, rid) == "ACTIVE"
+
+
+def test_the_dry_run_changes_nothing(engine, ids):
+    rid = _committed_active_request(engine, ids, confirmed_days_ago=55)
+    result = _run_pass(engine, "--dry-run")
+    assert result.returncode == 0, result.stderr
+    assert str(rid) in result.stdout
+    assert _status(engine, rid) == "ACTIVE", "a dry run must not move anything"
+
+
+def test_nothing_in_the_application_calls_the_pass_by_itself():
+    """There is no scheduler. A report claiming self-maintaining freshness
+    would be wrong, and this test is what keeps that honest."""
+    import pathlib
+
+    callers = [
+        path.name for path in pathlib.Path("src/turab").rglob("*.py")
+        if "mark_stale_as_needing_confirmation(" in path.read_text(encoding="utf-8")
+        and path.name != "requests.py"
+    ]
+    assert not callers, f"{callers} invoke the pass; there is no scheduler"

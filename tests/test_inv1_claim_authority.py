@@ -89,78 +89,110 @@ def test_duplicate_claim_rows_by_the_same_account_are_not_a_conflict(session, su
 
 def test_claiming_an_assisted_record_succeeds(session, ids):
     result = claim_record(
-        session, kind=ResourceKind.PROPERTY, resource_id=ids.ASSISTED_APARTMENT,
-        account_id=ids.ACC_KHADIJA,
+        session, kind=ResourceKind.REQUEST, resource_id=ids.REQ_KHADIJA_ASSISTED,
+        account_id=ids.ACC_KHADIJA, verification_contact_point_id=ids.CP_KHADIJA,
     )
     assert result.outcome is ClaimOutcome.CLAIMED
     state = session.execute(
         text(
             """SELECT management_mode::text AS m, claim_status::text AS c
-                 FROM turab.properties WHERE property_id=:p"""
+                 FROM turab.requests WHERE request_id=:p"""
         ),
-        {"p": ids.ASSISTED_APARTMENT},
+        {"p": ids.REQ_KHADIJA_ASSISTED},
     ).mappings().one()
     assert state["m"] == "SHARED_MANAGEMENT" and state["c"] == "CLAIMED"
 
 
 def test_second_claim_by_another_account_is_rejected(session, ids):
-    """INV-1 write half. The second claim is refused, not layered on."""
-    claim_record(session, kind=ResourceKind.PROPERTY,
-                 resource_id=ids.ASSISTED_APARTMENT, account_id=ids.ACC_KHADIJA)
+    """INV-1 write half. The second claim is refused, not layered on.
+
+    Both accounts here are ELIGIBLE — two accounts bound to the same party
+    (EC1). That matters now that eligibility is enforced: an ineligible second
+    claimant would be refused by the contract's condition, and the test would
+    be proving eligibility instead of INV-1.
+    """
+    claim_record(session, kind=ResourceKind.REQUEST,
+                 resource_id=ids.REQ_AMINA_ASSISTED, account_id=ids.ACC_AMINA,
+                 verification_contact_point_id=ids.CP_AMINA)
     with pytest.raises(ResourceAlreadyClaimed) as exc:
-        claim_record(session, kind=ResourceKind.PROPERTY,
-                     resource_id=ids.ASSISTED_APARTMENT, account_id=ids.ACC_AMINA)
+        claim_record(session, kind=ResourceKind.REQUEST,
+                     resource_id=ids.REQ_AMINA_ASSISTED,
+                     account_id=ids.ACC_AMINA_SECOND,
+                     verification_contact_point_id=ids.CP_AMINA_SECOND)
     assert exc.value.code == "RESOURCE_ALREADY_CLAIMED"
     # and no ambiguity was created by the attempt
     assert len(claim_authority_accounts(
-        session, ResourceKind.PROPERTY, ids.ASSISTED_APARTMENT)) == 1
+        session, ResourceKind.REQUEST, ids.REQ_AMINA_ASSISTED)) == 1
 
 
 def test_replay_by_the_same_actor_is_idempotent(session, ids):
     """The one permitted exception: same actor, same resource."""
-    first = claim_record(session, kind=ResourceKind.PROPERTY,
-                         resource_id=ids.ASSISTED_APARTMENT, account_id=ids.ACC_KHADIJA)
+    first = claim_record(session, kind=ResourceKind.REQUEST,
+                         resource_id=ids.REQ_KHADIJA_ASSISTED, account_id=ids.ACC_KHADIJA,
+                         verification_contact_point_id=ids.CP_KHADIJA)
     before = session.execute(
         text("SELECT count(*) FROM turab.record_claim_events WHERE property_id=:p"),
-        {"p": ids.ASSISTED_APARTMENT},
+        {"p": ids.REQ_KHADIJA_ASSISTED},
     ).scalar_one()
 
-    replay = claim_record(session, kind=ResourceKind.PROPERTY,
-                          resource_id=ids.ASSISTED_APARTMENT, account_id=ids.ACC_KHADIJA)
+    replay = claim_record(session, kind=ResourceKind.REQUEST,
+                          resource_id=ids.REQ_KHADIJA_ASSISTED, account_id=ids.ACC_KHADIJA,
+                          verification_contact_point_id=ids.CP_KHADIJA)
     assert replay.outcome is ClaimOutcome.REPLAYED
     assert replay.claim_event_id == first.claim_event_id
 
     after = session.execute(
         text("SELECT count(*) FROM turab.record_claim_events WHERE property_id=:p"),
-        {"p": ids.ASSISTED_APARTMENT},
+        {"p": ids.REQ_KHADIJA_ASSISTED},
     ).scalar_one()
     assert after == before, "a replay must not append a second claim event"
 
 
 def test_claim_grants_authority_that_did_not_exist_before(session, subject_of, ids):
-    """S14 -> S15. The claim event is what changes, and it is what grants."""
-    from turab.auth.loaders import load_property
+    """S14 -> S15. The claim event is what changes, and it is what grants.
 
-    before = load_property(session, subject_of(ids.ACC_KHADIJA), ids.ASSISTED_APARTMENT)
-    assert not before.authorized
-    claim_record(session, kind=ResourceKind.PROPERTY,
-                 resource_id=ids.ASSISTED_APARTMENT, account_id=ids.ACC_KHADIJA)
-    after = load_property(session, subject_of(ids.ACC_KHADIJA), ids.ASSISTED_APARTMENT)
+    Moved from PROPERTY to REQUEST: PROPERTY claiming now fails closed until
+    its eligibility rule is decided, so the only claim this suite can make is
+    the one whose rule is adopted.
+    """
+    from turab.auth.loaders import load_request
+
+    before = load_request(
+        session, subject_of(ids.ACC_KHADIJA), ids.REQ_KHADIJA_ASSISTED
+    )
+    assert not before.authorized, "an UNCLAIMED assisted record grants nothing"
+    claim_record(session, kind=ResourceKind.REQUEST,
+                 resource_id=ids.REQ_KHADIJA_ASSISTED, account_id=ids.ACC_KHADIJA,
+                 verification_contact_point_id=ids.CP_KHADIJA)
+    after = load_request(
+        session, subject_of(ids.ACC_KHADIJA), ids.REQ_KHADIJA_ASSISTED
+    )
     assert after.authorized
 
 
 def test_claiming_an_already_conflicted_resource_is_rejected(session, ids):
     """A claimant replaying must not make an ambiguous resource look settled."""
-    _add_claim(session, ids.CLAIMED_HOUSE, ids.ACC_KHADIJA)
+    _add_claim_for_request(session, ids.REQ_KHADIJA_ASSISTED, ids.ACC_KHADIJA)
+    _add_claim_for_request(session, ids.REQ_KHADIJA_ASSISTED, ids.ACC_AMINA_SECOND)
     with pytest.raises(ClaimAuthorityConflictExists):
-        claim_record(session, kind=ResourceKind.PROPERTY,
-                     resource_id=ids.CLAIMED_HOUSE, account_id=ids.ACC_AMINA)
+        claim_record(session, kind=ResourceKind.REQUEST,
+                     resource_id=ids.REQ_KHADIJA_ASSISTED,
+                     account_id=ids.ACC_KHADIJA,
+                     verification_contact_point_id=ids.CP_KHADIJA)
 
 
 def test_a_self_managed_record_is_not_claimable(session, ids):
+    """Even by the account that rightfully holds it.
+
+    The claimant here is ELIGIBLE — Amina's own account, her own party, her
+    own verified login contact point — so the refusal comes from the record's
+    STATE, not from the contract's eligibility condition. Using an ineligible
+    claimant would have tested eligibility twice and this rule not at all.
+    """
     with pytest.raises(ClaimRejected) as exc:
         claim_record(session, kind=ResourceKind.REQUEST,
-                     resource_id=ids.REQ_AMINA, account_id=ids.ACC_KHADIJA)
+                     resource_id=ids.REQ_AMINA, account_id=ids.ACC_AMINA,
+                     verification_contact_point_id=ids.CP_AMINA)
     assert exc.value.code == "RESOURCE_NOT_CLAIMABLE"
 
 
@@ -185,3 +217,17 @@ def test_requests_conflict_the_same_way_as_properties(session, subject_of, ids):
         )
     with pytest.raises(ClaimAuthorityConflict):
         load_request(session, subject_of(ids.ACC_AMINA), ids.REQ_AMINA)
+
+
+def _add_claim_for_request(session, request_id, account_id) -> None:
+    """Insert a raw claim event, bypassing the command, to build the ambiguous
+    state INV-1 exists to detect in data that predates the guard."""
+    session.execute(
+        text(
+            """INSERT INTO turab.record_claim_events
+                      (request_id, claimed_by_account_id)
+               VALUES (:r, :a)"""
+        ),
+        {"r": request_id, "a": account_id},
+    )
+    session.flush()

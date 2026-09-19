@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime
+from enum import StrEnum
 from typing import Any, Mapping
 
 from sqlalchemy import text
@@ -47,14 +48,21 @@ TRANSITIONS: dict[str, frozenset[str]] = {
     "RAW": frozenset({"CONTACTED"}),
     "CONTACTED": frozenset({"QUALIFIED"}),
     "QUALIFIED": frozenset({"ACTIVE"}),
-    "ACTIVE": frozenset({"NEEDS_CONFIRMATION"}),
+    # ACTIVE -> PAUSED and ACTIVE -> CLOSED are ADOPTED additions: a request
+    # is not required to pass through NEEDS_CONFIRMATION in order to be
+    # paused or closed. Recorded in docs/gate/REQUEST_STATE_TRANSITIONS.md.
+    "ACTIVE": frozenset({"NEEDS_CONFIRMATION", "PAUSED", "CLOSED"}),
     "NEEDS_CONFIRMATION": frozenset({"ACTIVE", "PAUSED", "CLOSED"}),
     "PAUSED": frozenset({"ACTIVE"}),
     "CLOSED": frozenset({"ACTIVE"}),
 }
 
-#: §5.2: "PAUSED/CLOSED -> ACTIVE only by explicit reactivation". Marked so the
-#: caller must say it meant it, rather than reactivating by ordinary command.
+#: §5.2: "PAUSED/CLOSED -> ACTIVE only by explicit reactivation".
+#:
+#: The explicit act IS the command: a caller sending `target_status=ACTIVE` to
+#: `/requests/{id}/state` from PAUSED or CLOSED has said so. An earlier draft
+#: added a `reactivate` flag for the same meaning — an undeclared field, and a
+#: second way of saying something the contract already expresses.
 REACTIVATION_FROM = frozenset({"PAUSED", "CLOSED"})
 
 #: The columns `RequestPatch` may touch. Anything else is not patchable, and
@@ -118,13 +126,42 @@ class UnknownCriterionCode(RequestError):
         )
 
 
+#: Adopted closure reasons (migration 0002). A request is closed with one of
+#: these and no other: an OPPORTUNITY code describes a different entity, and
+#: the historical GENERAL/OTHER keeps its own meaning untouched.
+CLOSURE_CATEGORY = "REQUEST_CLOSURE"
+
+#: Requires a note, by its own definition ("another reason, explained in a
+#: mandatory note"). A free-text escape hatch with nothing written in it is
+#: the same as no reason at all.
+CLOSURE_REASON_NEEDING_NOTE = "REQUEST_CLOSED_OTHER"
+
+
 class UnknownReasonCode(RequestError):
     """`close_reason_code` is FK-constrained to `reason_codes`."""
 
-    def __init__(self, code: str) -> None:
+    def __init__(self, code: str, known: list[str]) -> None:
         super().__init__(
             "VALIDATION_FAILED",
-            f"{code!r} is not a code in the master reason registry",
+            f"{code!r} is not a REQUEST_CLOSURE reason; the adopted codes are "
+            f"{known}",
+        )
+
+
+class ClosureReasonRequired(RequestError):
+    def __init__(self) -> None:
+        super().__init__(
+            "VALIDATION_FAILED",
+            "closing a request requires a reason_code from the REQUEST_CLOSURE "
+            "category",
+        )
+
+
+class ClosureNoteRequired(RequestError):
+    def __init__(self) -> None:
+        super().__init__(
+            "VALIDATION_FAILED",
+            f"{CLOSURE_REASON_NEEDING_NOTE} requires a note explaining it",
         )
 
 
@@ -142,17 +179,6 @@ class UndefinedTransition(RequestError):
             "VALIDATION_FAILED",
             f"{current} -> {target} is not a transition defined by the request "
             f"state machine; from {current} the defined targets are {allowed}",
-        )
-
-
-class ReactivationNotRequested(RequestError):
-    """§5.2: leaving PAUSED or CLOSED needs explicit reactivation."""
-
-    def __init__(self, current: str) -> None:
-        super().__init__(
-            "VALIDATION_FAILED",
-            f"a {current} request returns to ACTIVE only by explicit "
-            "reactivation; set reactivate=true and give a reason",
         )
 
 
@@ -253,49 +279,87 @@ def read_request(session: Session, request_id: uuid.UUID) -> Mapping[str, Any]:
 
 # --- provenance ------------------------------------------------------------
 
+#: How a recorded change reached TURAB. Distinct from WHO recorded it.
+class UpdateChannel(StrEnum):
+    #: The party's own account submitted it.
+    SELF_SERVICE = "SELF_SERVICE"
+    #: A member of staff typed it in. This says who typed it — NOT that the
+    #: party said it. See `source_reference`.
+    STAFF_RECORDED = "STAFF_RECORDED"
+
+
 def record_provenance(
     session: Session,
     *,
     request_id: uuid.UUID,
     party_id: uuid.UUID,
     changes: Mapping[str, Any],
+    previous: Mapping[str, Any] | None,
     recorded_by_account_id: uuid.UUID | None,
+    channel: UpdateChannel,
+    source_reference: uuid.UUID | None = None,
     note: str | None = None,
     observation_kind: str = "FORM_SUBMISSION",
 ) -> uuid.UUID:
-    """Record WHO said WHAT about a request, and WHEN — one claim per field.
+    """Record WHO acted, WHAT changed, WHEN, HOW it arrived — and whether any
+    source backs it.
 
-    The frozen schema already models this and it is used as modelled rather
-    than reinvented: an `observations` row is the utterance (who reported it,
-    when, in what form), and a `claims` row per changed attribute is the
-    assertion about this request (`idx_claims_request_attr` exists for exactly
-    this lookup).
+    The distinction this function exists to keep, and the reason it takes
+    `channel` and `source_reference` separately:
 
-    **Contractual gap, surfaced not filled.** `RequestPatch` carries no
-    provenance field: a client cannot say where a value came from, or attach
-    an observation it already recorded. So the provenance captured here is
-    what the server itself can witness — the acting account, the moment, and
-    the submitted values — and `extracted_by` records that a human submitted
-    it through the API. Richer provenance (a call note, a forwarded message, a
-    document) needs a contract change to accept an `observation_id`, and that
-    is recorded in the Slice 2 report rather than invented as an undeclared
-    field.
+        **A staff member typing a value is not evidence that the customer
+        asked for it.**
+
+    So an `observations` row carries:
+
+      * `recorded_by_account_id` — the authenticated actor. Never inferred.
+      * `channel` — SELF_SERVICE when the party's own account submitted it,
+        STAFF_RECORDED when a member of staff did.
+      * `source_reference` — an id for the call, message or document the staff
+        member was working from, when there is one, and NULL when there is
+        not. A NULL here is the honest statement that nobody recorded where
+        this came from.
+      * `payload.before` / `payload.after` — the previous and new values, so a
+        reader can see what actually changed rather than only what it is now.
+
+    And `claims.effective_verification_level` is left at its schema default of
+    `DECLARED` for every row written here. **Nothing in this path raises a
+    verification level.** Raising it is what `verification_events` is for, and
+    a staff member retyping a value is not a verification of it.
+
+    **Contractual gap, surfaced not filled.** `RequestPatch` carries no field
+    for a source reference, so a client cannot attach the call or message it
+    was working from. `source_reference` is therefore NULL on every update
+    that arrives through the contract as frozen today — which the read
+    surfaces as `source_recorded: false` rather than hiding. Accepting one
+    needs a contract change.
     """
+    channel = UpdateChannel(channel)
+    payload = {
+        "channel": channel.value,
+        "source_recorded": source_reference is not None,
+        "after": changes,
+    }
+    if previous is not None:
+        payload["before"] = {k: previous.get(k) for k in changes}
+
     observation_id = session.execute(
         text(
             """INSERT INTO turab.observations
                       (kind, party_id, observed_at, raw_text, payload,
-                       recorded_by_account_id)
+                       recorded_by_account_id, source_id)
                VALUES (CAST(:kind AS turab.observation_kind), :party_id,
-                       clock_timestamp(), :note, CAST(:payload AS jsonb), :account)
+                       clock_timestamp(), :note, CAST(:payload AS jsonb),
+                       :account, :source)
             RETURNING observation_id"""
         ),
         {
             "kind": observation_kind,
             "party_id": party_id,
             "note": note,
-            "payload": json.dumps(changes, default=str),
+            "payload": json.dumps(payload, default=str),
             "account": recorded_by_account_id,
+            "source": source_reference,
         },
     ).scalar_one()
 
@@ -304,18 +368,23 @@ def record_provenance(
             text(
                 """INSERT INTO turab.claims
                           (request_id, attribute_code, claimed_value,
-                           asserted_by_party_id, observation_id, extracted_by,
-                           observed_at, recorded_by_account_id)
+                           asserted_by_party_id, observation_id, source_id,
+                           extracted_by, observed_at, recorded_by_account_id)
                    VALUES (:request_id, :code, CAST(:value AS jsonb),
-                           :party_id, :observation_id, 'HUMAN_API',
-                           clock_timestamp(), :account)"""
+                           :asserted_by, :observation_id, :source,
+                           :extracted_by, clock_timestamp(), :account)"""
             ),
             {
                 "request_id": request_id,
                 "code": attribute_code,
                 "value": json.dumps(value, default=str),
-                "party_id": party_id,
+                # Attributed to the party ONLY when the party's own account
+                # submitted it. A staff-recorded change asserts nothing about
+                # what the party said, so it names no asserting party.
+                "asserted_by": party_id if channel is UpdateChannel.SELF_SERVICE else None,
                 "observation_id": observation_id,
+                "source": source_reference,
+                "extracted_by": channel.value,
                 "account": recorded_by_account_id,
             },
         )
@@ -325,12 +394,19 @@ def record_provenance(
 def provenance_for(session: Session, request_id: uuid.UUID) -> list[Mapping[str, Any]]:
     return session.execute(
         text(
-            """SELECT attribute_code, claimed_value, observation_id,
-                      extracted_by, recorded_at, recorded_by_account_id,
-                      status::text AS status
-                 FROM turab.claims
-                WHERE request_id = :r
-                ORDER BY recorded_at, attribute_code"""
+            """SELECT c.attribute_code, c.claimed_value, c.observation_id,
+                      c.extracted_by AS channel, c.recorded_at,
+                      c.recorded_by_account_id, c.asserted_by_party_id,
+                      c.source_id,
+                      (c.source_id IS NOT NULL) AS source_recorded,
+                      c.effective_verification_level::text AS verification_level,
+                      c.status::text AS status,
+                      o.payload AS observation_payload
+                 FROM turab.claims c
+                 LEFT JOIN turab.observations o
+                        ON o.observation_id = c.observation_id
+                WHERE c.request_id = :r
+                ORDER BY c.recorded_at, c.attribute_code"""
         ),
         {"r": request_id},
     ).mappings().all()
@@ -344,6 +420,8 @@ def patch_request(
     request_id: uuid.UUID,
     changes: Mapping[str, Any],
     recorded_by_account_id: uuid.UUID | None,
+    channel: UpdateChannel,
+    source_reference: uuid.UUID | None = None,
     note: str | None = None,
 ) -> Mapping[str, Any]:
     """Change what the buyer wants. Never the status, never the confirmation.
@@ -377,7 +455,9 @@ def patch_request(
     )
     record_provenance(
         session, request_id=request_id, party_id=before["party_id"],
-        changes=changes, recorded_by_account_id=recorded_by_account_id, note=note,
+        changes=changes, previous=before,
+        recorded_by_account_id=recorded_by_account_id,
+        channel=channel, source_reference=source_reference, note=note,
     )
     return _row(session, request_id)
 
@@ -396,6 +476,8 @@ def add_criterion(
     blocking_if_unknown: bool = False,
     sort_order: int = 100,
     recorded_by_account_id: uuid.UUID | None = None,
+    channel: UpdateChannel = UpdateChannel.STAFF_RECORDED,
+    source_reference: uuid.UUID | None = None,
 ) -> Mapping[str, Any]:
     """Add a structured criterion, and bump the request's version.
 
@@ -442,7 +524,8 @@ def add_criterion(
         changes={f"criterion.{criterion_code}": {
             "importance": importance, "operator": operator, "value": value,
         }},
-        recorded_by_account_id=recorded_by_account_id,
+        previous=None, recorded_by_account_id=recorded_by_account_id,
+        channel=channel, source_reference=source_reference,
     )
     return row
 
@@ -477,10 +560,17 @@ def transition(
     target_status: str,
     reason_code: str | None = None,
     note: str | None = None,
-    reactivate: bool = False,
     recorded_by_account_id: uuid.UUID | None = None,
+    channel: UpdateChannel = UpdateChannel.STAFF_RECORDED,
 ) -> Mapping[str, Any]:
-    """Move a request through the documented state machine, and nowhere else."""
+    """Move a request through the documented state machine, and nowhere else.
+
+    Reactivation from PAUSED or CLOSED is this command with
+    `target_status=ACTIVE`; that IS the explicit act §5.2 requires. It does
+    **not** refresh `last_confirmed_at`: a request paused for six months is
+    not made current by restarting it, and the freshness rules apply to it
+    from the moment it is active again exactly as they do to any other.
+    """
     before = _row(session, request_id)
     current = before["status"]
 
@@ -488,17 +578,19 @@ def transition(
         raise RequestError("VALIDATION_FAILED", f"the request is already {current}")
     if target_status not in TRANSITIONS.get(current, frozenset()):
         raise UndefinedTransition(current, target_status)
-    if current in REACTIVATION_FROM and not reactivate:
-        raise ReactivationNotRequested(current)
-
     closing = target_status == "CLOSED"
-    if closing and reason_code is not None:
-        exists = session.execute(
-            text("SELECT 1 FROM turab.reason_codes WHERE code = :c"),
-            {"c": reason_code},
-        ).first()
-        if exists is None:
-            raise UnknownReasonCode(reason_code)
+    if closing:
+        known = session.execute(
+            text("""SELECT code FROM turab.reason_codes
+                     WHERE category = :cat AND active ORDER BY code"""),
+            {"cat": CLOSURE_CATEGORY},
+        ).scalars().all()
+        if reason_code is None:
+            raise ClosureReasonRequired()
+        if reason_code not in known:
+            raise UnknownReasonCode(reason_code, list(known))
+        if reason_code == CLOSURE_REASON_NEEDING_NOTE and not (note or "").strip():
+            raise ClosureNoteRequired()
     session.execute(
         text(
             """UPDATE turab.requests
@@ -514,7 +606,8 @@ def transition(
         session, request_id=request_id, party_id=before["party_id"],
         changes={"status": {"from": current, "to": target_status,
                             "reason_code": reason_code}},
-        recorded_by_account_id=recorded_by_account_id, note=note,
+        previous=None, recorded_by_account_id=recorded_by_account_id,
+        channel=channel, note=note,
         observation_kind="SYSTEM_IMPORT" if not note else "CALL_NOTE",
     )
     return _row(session, request_id)
@@ -529,6 +622,7 @@ def reconfirm(
     confirmed_at: datetime | None = None,
     notes: str | None = None,
     recorded_by_account_id: uuid.UUID | None = None,
+    channel: UpdateChannel = UpdateChannel.STAFF_RECORDED,
 ) -> Mapping[str, Any]:
     """Record that the information is still current.
 
@@ -548,6 +642,10 @@ def reconfirm(
         {"at": confirmed_at, "r": request_id},
     )
     if before["status"] == "NEEDS_CONFIRMATION":
+        # ONLY from NEEDS_CONFIRMATION. A PAUSED or CLOSED request is not
+        # returned to ACTIVE by confirming that its details are still true —
+        # it was stopped for a reason unrelated to freshness, and undoing that
+        # implicitly would reverse a decision nobody revisited.
         session.execute(
             text("UPDATE turab.requests SET status = 'ACTIVE' WHERE request_id = :r"),
             {"r": request_id},
@@ -556,9 +654,29 @@ def reconfirm(
         session, request_id=request_id, party_id=before["party_id"],
         changes={"last_confirmed_at": (confirmed_at.isoformat()
                                        if confirmed_at else "now")},
-        recorded_by_account_id=recorded_by_account_id, note=notes,
+        previous=before, recorded_by_account_id=recorded_by_account_id,
+        channel=channel, note=notes,
     )
     return _row(session, request_id)
+
+
+def stale_active_requests(
+    session: Session, *, now: datetime | None = None, limit: int = 500
+) -> list[uuid.UUID]:
+    """Which ACTIVE requests the current policy considers stale. Reads only."""
+    days, _ = freshness.request_threshold_days(session)
+    return list(session.execute(
+        text(
+            """SELECT request_id FROM turab.requests
+                WHERE status = 'ACTIVE'
+                  AND last_confirmed_at IS NOT NULL
+                  AND last_confirmed_at
+                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
+                ORDER BY last_confirmed_at
+                LIMIT :limit"""
+        ),
+        {"now": now, "days": days, "limit": limit},
+    ).scalars().all())
 
 
 def mark_stale_as_needing_confirmation(
@@ -570,10 +688,12 @@ def mark_stale_as_needing_confirmation(
     according to policy/workflow". Only ACTIVE requests are moved, because
     §5.2 defines the edge only from ACTIVE.
 
-    **Contractual gap, surfaced not filled.** The contract declares no
-    scheduled-job operation and the handoff names no schedule, so this is an
-    invocable operational function rather than a timer invented here. What
-    calls it, and how often, is a decision that has not been taken.
+    **This does not run by itself.** There is no scheduler in this version:
+    the contract declares no scheduled-job operation and the handoff names no
+    schedule, so none was invented. The documented way to run it is
+    `db/dev/run_freshness_pass.py`, and a request becomes NEEDS_CONFIRMATION
+    when someone runs that — not before. What runs it, and how often, is
+    still open.
     """
     days, _ = freshness.request_threshold_days(session)
     moved = session.execute(

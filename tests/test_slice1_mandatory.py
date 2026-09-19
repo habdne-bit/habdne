@@ -501,11 +501,17 @@ def test_a_shared_line_does_not_authenticate_as_the_party_that_shares_it(
                  WHERE cp.normalized_value = :v"""),
         {"v": shared},
     ).scalar_one()
-    assert linked_parties >= 2, "the premise of this test is a shared line"
+    assert linked_parties >= 3, "the premise of this test is a shared line"
 
     result = _verify(session, provider, phone=shared, purpose=OtpPurpose.LOGIN)
-    assert result["account_id"] != ids.ACC_AMINA
-    assert result["account_id"] is None, (
-        "a phone linked to a party must not authenticate as that party's account"
+
+    # The line now has a legitimate OWNER account (Brahim's, whose login
+    # contact point it is). So the assertion is sharper than "nobody": LOGIN
+    # resolves to the account that NAMES this line as its login contact
+    # point, and to nobody else — not to Amina, who merely had it attached to
+    # her party, and not to the agency, which also shares it.
+    assert result["account_id"] == ids.ACC_BRAHIM
+    assert result["account_id"] != ids.ACC_AMINA, (
+        "a phone attached to a party must not authenticate as that party"
     )
-    assert _accounts_for(session, result["contact_point_id"]) == 0
+    assert _accounts_for(session, result["contact_point_id"]) == 1

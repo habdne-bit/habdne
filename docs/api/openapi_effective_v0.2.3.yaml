@@ -13,13 +13,15 @@
 #
 # Every corrected operation carries `x-turab-correction`, naming the
 # correction, the decision behind it, and what the frozen package declared, so
-# the published text is always recoverable from this file.
+# the published text is always recoverable from this file. An operation whose
+# WORKFLOW was adopted rather than whose roles were narrowed carries
+# `x-turab-workflow` instead, pointing at where that workflow is written down.
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    9a0ee6aba849800e43118b4a5745d1189a0cc1e1c8ded71baaaa7e551e6ab083
+#   CONTRACT_CORRECTIONS.yaml    fc7dc7244761a031515a71aec1bbc66e7ded998e2be5f9e0940792b2186aca2e
 #
-# Corrections applied: CORRECTION-001 (postParties)
+# Corrections applied: CORRECTION-001 (postParties), CORRECTION-002 (postRequestsRequestIdState)
 # =============================================================================
 openapi: 3.1.0
 info:
@@ -688,6 +690,16 @@ paths:
       operationId: postRequestsRequestIdState
       x-authorization: Customer may act only on resources owned/managed by authenticated party; service
         MUST enforce object-level authorization in addition to role.
+      x-turab-workflow:
+        id: CORRECTION-002
+        decision: Slice 2 closing round, 2026-09-19
+        approved: '2026-09-19'
+        summary: 'ACTIVE -> PAUSED and ACTIVE -> CLOSED are adopted as direct transitions: a request is
+          not required to pass through NEEDS_CONFIRMATION in order to be paused or closed. Reactivation
+          from PAUSED or CLOSED is the state command itself with target_status=ACTIVE; no additional field
+          is used or accepted. Closing requires a reason_code from the REQUEST_CLOSURE category added
+          by migration 0002_request_closure_reasons, and REQUEST_CLOSED_OTHER requires a note.'
+        reference: docs/gate/REQUEST_STATE_TRANSITIONS.md
   /requests/{request_id}/reconfirm:
     post:
       summary: Reconfirm request freshness

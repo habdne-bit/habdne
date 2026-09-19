@@ -390,19 +390,69 @@ def test_every_corrected_operation_carries_its_correction_identity():
     assert sorted(corrected["postParties"]["x-roles"]) == ["ADMIN", "OPERATOR"]
 
 
+ANNOTATIONS = ("x-turab-correction", "x-turab-workflow")
+
+
 def test_the_effective_contract_changes_nothing_else():
-    """A generated contract is a blunt instrument too: prove it edited one
-    operation and copied the rest."""
+    """A generated contract is a blunt instrument too: prove it edited exactly
+    what the corrections name and copied the rest verbatim.
+
+    TURAB's own annotations are stripped before comparing — they are additive
+    metadata, not a change to the contract's shape — and asserted separately
+    below so stripping them cannot hide an edit.
+    """
     frozen = yaml.safe_load(
         pathlib.Path("docs/handoff/05_API/openapi_v0.2.3.yaml").read_text(encoding="utf-8")
     )
     effective = _effective()
     assert set(frozen["paths"]) == set(effective["paths"])
+
+    role_corrected = set(load_corrections())
     for path, method, op in _operations(frozen):
-        other = effective["paths"][path][method]
-        if op["operationId"] == "postParties":
-            continue
-        assert other == op, f"{op['operationId']} changed unexpectedly"
+        other = {
+            k: v for k, v in effective["paths"][path][method].items()
+            if k not in ANNOTATIONS
+        }
+        if op["operationId"] in role_corrected:
+            # Only x-roles may differ, and it is asserted exactly elsewhere.
+            other.pop("x-roles", None)
+            expected = {k: v for k, v in op.items() if k != "x-roles"}
+            assert other == expected, f"{op['operationId']} changed beyond its roles"
+        else:
+            assert other == op, f"{op['operationId']} changed unexpectedly"
+
+
+def test_annotations_appear_only_where_a_correction_names_them():
+    """Stripping the annotations above is only safe if they are accounted for."""
+    corrections = yaml.safe_load(CORRECTIONS_PATH.read_text(encoding="utf-8"))
+    named = {
+        "x-turab-correction": {
+            e["operation_id"] for e in (corrections.get("corrections") or [])
+        },
+        "x-turab-workflow": {
+            e["operation_id"] for e in (corrections.get("workflow_adoptions") or [])
+        },
+    }
+    for annotation, expected in named.items():
+        carrying = {
+            op["operationId"] for _, _, op in _operations(_effective())
+            if annotation in op
+        }
+        assert carrying == expected, (annotation, carrying, expected)
+
+
+def test_the_adopted_workflow_is_recorded_in_the_effective_contract():
+    """A reader of the contract must be able to learn that ACTIVE -> PAUSED
+    was adopted, and where it is written down."""
+    state_op = next(
+        op for _, _, op in _operations(_effective())
+        if op["operationId"] == "postRequestsRequestIdState"
+    )
+    marker = state_op["x-turab-workflow"]
+    assert marker["id"] == "CORRECTION-002"
+    assert "ACTIVE -> PAUSED" in marker["summary"]
+    assert marker["reference"] == "docs/gate/REQUEST_STATE_TRANSITIONS.md"
+    assert pathlib.Path(marker["reference"]).exists()
 
 
 def test_the_api_inventory_is_generated_from_the_effective_contract():

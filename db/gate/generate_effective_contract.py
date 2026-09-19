@@ -69,7 +69,9 @@ HEADER = """\
 #
 # Every corrected operation carries `x-turab-correction`, naming the
 # correction, the decision behind it, and what the frozen package declared, so
-# the published text is always recoverable from this file.
+# the published text is always recoverable from this file. An operation whose
+# WORKFLOW was adopted rather than whose roles were narrowed carries
+# `x-turab-workflow` instead, pointing at where that workflow is written down.
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          {frozen_sha}
@@ -91,6 +93,31 @@ def build() -> tuple[str, list[str]]:
         entry["operation_id"]: entry
         for entry in (corrections.get("corrections") or [])
     }
+
+    # Workflow adoptions change no roles, so they are annotated rather than
+    # applied: a reader of the effective contract must still be able to learn
+    # that ACTIVE -> PAUSED was adopted, and where it is written down.
+    adoptions = {
+        entry["operation_id"]: entry
+        for entry in (corrections.get("workflow_adoptions") or [])
+    }
+    adopted: list[str] = []
+    for item in doc.get("paths", {}).values():
+        for method in _METHODS:
+            op = item.get(method)
+            if not isinstance(op, dict):
+                continue
+            entry = adoptions.get(op.get("operationId"))
+            if entry is None:
+                continue
+            op["x-turab-workflow"] = {
+                "id": entry["id"],
+                "decision": entry["decision"],
+                "approved": str(entry.get("approved", "")),
+                "summary": " ".join(entry["summary"].split()),
+                "reference": entry.get("reference"),
+            }
+            adopted.append(f"{entry['id']} ({op['operationId']})")
 
     applied: list[str] = []
     for item in doc.get("paths", {}).values():
@@ -134,10 +161,10 @@ def build() -> tuple[str, list[str]]:
     header = HEADER.format(
         frozen_sha=_sha(FROZEN),
         corrections_sha=_sha(CORRECTIONS),
-        applied=", ".join(applied) if applied else "none",
+        applied=", ".join(applied + adopted) if (applied or adopted) else "none",
     )
     body = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=100)
-    return header + body, applied
+    return header + body, applied + adopted
 
 
 def main() -> int:

@@ -102,36 +102,47 @@ what does not, and the proposed minimal mechanism.
 
 ---
 
-### DL-08 · What makes a record claim legitimate
-**Open. Raised by Slice 2, not resolved.**
+### DL-08 · ~~What makes a record claim legitimate~~ — WITHDRAWN
+**Withdrawn 2026-09-19. It was not an open decision.**
 
-`POST /records/claim` does not verify that the claimant has any relationship
-to the record: the `verification_contact_point_id` is not checked for verified
-control, for belonging to the claiming account, or for reaching the record's
-party. INV-1 governs conflicts BETWEEN claimants; it says nothing about
-whether a claimant is the right person.
+The frozen contract's `x-authorization` on `postRecordsClaim` already declares
+the rule: *"For customer, verified contact point and resource party
+relationship are mandatory."* Recording it as an open decision was a
+misclassification; it was an unimplemented requirement. Enforced by
+CORRECTION-003 (`docs/contract/CORRECTION-003-claim-eligibility.md`).
 
-No disclosure results — read access still follows the account's own party
-binding, so a wrongful claimant gains an ownership event and no readable
-record. The exposure is a **denial of claim**: INV-1 then refuses the
-rightful person's claim.
+### DL-08a · Claim eligibility for a PROPERTY
+**Open. Fail-closed meanwhile. Not a Slice 2 deliverable.**
 
-Resolving it is a Workflow and Permissions decision. DL-02 rules out the
-obvious shortcut: "this phone reaches that party" must never become "this
-account owns that party's records". See `docs/gate/SLICE_2_PROGRESS.md` §5 G-6.
+The adopted rule is for REQUEST claims and does not transfer: `properties` has
+no `party_id`, and a property's party relationship is
+`party_property_relations`, which RFC-001 decision 1 / R4.5 forbids as an
+authorization source. `POST /records/claim` with `resource_type=PROPERTY` is
+refused, naming the undecided rule. This will block PROPERTY claiming in
+Slice 3.
 
-### DL-09 · Undefined REQUEST state transitions
-**Open. Fail-closed meanwhile.**
-
-`RequestStateCommand` accepts six target states; Reference Spec §5.2 defines
-far fewer edges. Undefined ones — `ACTIVE -> CLOSED` directly, `RAW -> PAUSED`
-and others — are refused rather than guessed. Adding any of them is a Workflow
-decision. See `SLICE_2_PROGRESS.md` §5 G-2.
+### DL-09 · ~~Undefined REQUEST state transitions~~ — RESOLVED
+**Adopted 2026-09-19 as CORRECTION-002.** `ACTIVE → PAUSED` and
+`ACTIVE → CLOSED` are direct transitions; a request need not pass through
+`NEEDS_CONFIRMATION` to be paused or closed. Reactivation is the state command
+itself with `target_status=ACTIVE`; the undeclared `reactivate` field has been
+removed. Table: `docs/gate/REQUEST_STATE_TRANSITIONS.md`.
 
 ### DL-10 · Nothing schedules the staleness pass
-**Open.** `mark_stale_as_needing_confirmation()` exists and is tested; the
-contract declares no scheduled-job operation and the handoff names no
-schedule, so what calls it and how often is undecided. No timer was invented.
+**Open, and narrowed.** Accepted for this slice: a documented administrative
+command, `db/dev/run_freshness_pass.py`, which someone runs. **Freshness does
+not maintain itself** — a request becomes `NEEDS_CONFIRMATION` when that
+command is run and not before. What runs it, and how often, is still
+undecided.
+
+### DL-11 · `RequestPatch` cannot carry a source reference
+**Open, and narrowed.** The service records the actor, the channel
+(SELF_SERVICE vs STAFF_RECORDED), the previous and new values, and whether a
+source was recorded. It can carry a `source_id` when one is supplied, and a
+staff-recorded change asserts nothing about what the party said. What the
+contract cannot yet express is the client attaching the call or message it was
+working from, so `source_recorded` is `false` on every update arriving through
+the contract as frozen. Accepting one needs a contract change.
 
 ---
 

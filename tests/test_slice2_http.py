@@ -128,96 +128,221 @@ def test_an_assisted_record_cannot_be_created_claimed(client, ids):
 
 
 # --- the claim flow --------------------------------------------------------
+#
+# The frozen contract's own x-authorization on postRecordsClaim:
+#
+#   "For customer, verified contact point and resource party relationship are
+#    mandatory."
+#
+# That is a DECLARED CONDITION. Slice 2 first shipped INV-1 (which governs
+# conflicts between claimants) with this half unenforced. The tests below are
+# the adopted rule, case by case.
 
-def test_claiming_converts_the_record_in_place(client, ids, engine):
-    """No second request, no copy: the same row changes management mode.
-
-    Slice 2 says 'converting assisted record to shared/claimed management
-    without duplication', and duplication is the failure this guards: a
-    claimed copy would split one person's search across two records that
-    then drift.
-    """
-    before_total = _count(engine)
-    before = _request(engine, ids.REQ_AGENCY_ASSISTED)
-
-    r = client.post(
+def _claim(client, ids, *, account, resource, contact_point, key_suffix):
+    return client.post(
         "/records/claim",
-        json={"resource_type": "REQUEST", "resource_id": str(ids.REQ_AGENCY_ASSISTED),
-              "verification_contact_point_id": str(ids.CP_AMINA)},
-        headers={**{"Authorization": f"Bearer {ids.ACC_KHADIJA}"}, **key("s2-claim")},
+        json={"resource_type": "REQUEST", "resource_id": str(resource),
+              "verification_contact_point_id": str(contact_point)},
+        headers={"Authorization": f"Bearer {account}",
+                 "Idempotency-Key": f"s2-claim-{key_suffix}"},
     )
+
+
+def test_the_rightful_claimant_converts_the_record_in_place(client, ids, engine):
+    """No second request, no copy: the same row changes management mode."""
+    before_total = _count(engine)
+    before = _request(engine, ids.REQ_KHADIJA_ASSISTED)
+
+    r = _claim(client, ids, account=ids.ACC_KHADIJA,
+               resource=ids.REQ_KHADIJA_ASSISTED, contact_point=ids.CP_KHADIJA,
+               key_suffix="ok")
     assert r.status_code == 200, r.text
     assert r.json()["outcome"] == "CLAIMED"
 
-    after = _request(engine, ids.REQ_AGENCY_ASSISTED)
+    after = _request(engine, ids.REQ_KHADIJA_ASSISTED)
     assert _count(engine) == before_total, "claiming must not create a request"
     assert after["management_mode"] == "SHARED_MANAGEMENT"
     assert after["claim_status"] == "CLAIMED"
-    # Everything that describes the search survives untouched.
     assert after["party_id"] == before["party_id"]
     assert after["budget_target_dzd"] == before["budget_target_dzd"]
-    assert after["status"] == before["status"]
-    _unclaim(engine, ids.REQ_AGENCY_ASSISTED)
+    _unclaim(engine, ids.REQ_KHADIJA_ASSISTED)
 
 
-def test_a_second_claim_by_another_account_is_rejected(client, ids, engine):
-    """INV-1, at the Slice 2 surface."""
-    first = client.post(
-        "/records/claim",
-        json={"resource_type": "REQUEST", "resource_id": str(ids.REQ_AGENCY_ASSISTED),
-              "verification_contact_point_id": str(ids.CP_AMINA)},
-        headers={"Authorization": f"Bearer {ids.ACC_KHADIJA}", **key("s2-c1")},
-    )
-    assert first.status_code == 200
-    second = client.post(
-        "/records/claim",
-        json={"resource_type": "REQUEST", "resource_id": str(ids.REQ_AGENCY_ASSISTED),
-              "verification_contact_point_id": str(ids.CP_AMINA)},
-        headers={**cust(ids), **key("s2-c2")},
-    )
+# --- acceptance case 1: a different party ---------------------------------
+
+def test_an_account_of_a_different_party_cannot_claim(client, ids, engine):
+    before = _request(engine, ids.REQ_KHADIJA_ASSISTED)
+    r = _claim(client, ids, account=ids.ACC_AMINA,
+               resource=ids.REQ_KHADIJA_ASSISTED, contact_point=ids.CP_AMINA,
+               key_suffix="wrongparty")
+    assert r.status_code == 403
+    assert r.json()["code"] == "CLAIM_NOT_ELIGIBLE"
+    _assert_no_trace(engine, ids.REQ_KHADIJA_ASSISTED, before)
+
+
+# --- acceptance case 2: a phone shared by two parties ---------------------
+
+def test_a_shared_phone_does_not_make_one_party_the_other(client, ids, engine):
+    """DL-02, at the surface that most invites the inference.
+
+    Brahim's account holds the line that ALSO reaches the agency. Holding a
+    number the agency is reachable on does not make him the agency, so he
+    cannot claim the agency's record.
+    """
+    before = _request(engine, ids.REQ_AGENCY_ASSISTED)
+    r = _claim(client, ids, account=ids.ACC_BRAHIM,
+               resource=ids.REQ_AGENCY_ASSISTED, contact_point=ids.CP_SHARED,
+               key_suffix="shared")
+    assert r.status_code == 403
+    assert r.json()["code"] == "CLAIM_NOT_ELIGIBLE"
+    _assert_no_trace(engine, ids.REQ_AGENCY_ASSISTED, before)
+
+
+# --- acceptance case 3: a contact point belonging to another account ------
+
+def test_a_contact_point_of_another_account_does_not_prove_control(
+    client, ids, engine
+):
+    """Passing a VERIFIED_CONTROL id proves somebody controls it, not that
+    this account does. The trusted link is the account's own login contact
+    point, which the OTP flow is what sets."""
+    before = _request(engine, ids.REQ_KHADIJA_ASSISTED)
+    r = _claim(client, ids, account=ids.ACC_KHADIJA,
+               resource=ids.REQ_KHADIJA_ASSISTED, contact_point=ids.CP_AMINA,
+               key_suffix="notmine")
+    assert r.status_code == 403
+    assert r.json()["code"] == "CLAIM_NOT_ELIGIBLE"
+    _assert_no_trace(engine, ids.REQ_KHADIJA_ASSISTED, before)
+
+
+# --- acceptance case 4: two concurrent attempts ---------------------------
+
+def test_two_concurrent_claims_produce_one_claim_and_no_ambiguity(ids, engine):
+    """The check must hold at the moment the row changes, not before it.
+
+    Two real sessions race on the same record. The row lock serialises them,
+    so exactly one claim event exists afterwards and INV-1's ambiguous state
+    is never created.
+    """
+    import threading
+
+    from turab.db.session import audited_transaction
+    from turab.services.claims import ClaimRejected, claim_record
+    from turab.auth.loaders import ResourceKind
+
+    outcomes: list[str] = []
+    barrier = threading.Barrier(2)
+
+    def attempt(account_id, contact_point_id):
+        with Session(bind=engine, future=True) as s:
+            barrier.wait(timeout=10)
+            try:
+                with audited_transaction(s, account_id):
+                    claim_record(
+                        s, kind=ResourceKind.REQUEST,
+                        resource_id=ids.REQ_AMINA_ASSISTED,
+                        account_id=account_id,
+                        verification_contact_point_id=contact_point_id,
+                    )
+                outcomes.append("CLAIMED")
+            except ClaimRejected as exc:
+                outcomes.append(exc.code)
+            except Exception as exc:  # pragma: no cover - diagnostic
+                outcomes.append(f"{type(exc).__name__}: {exc}")
+
+    threads = [
+        threading.Thread(target=attempt, args=(ids.ACC_AMINA, ids.CP_AMINA)),
+        threading.Thread(target=attempt,
+                         args=(ids.ACC_AMINA_SECOND, ids.CP_AMINA_SECOND)),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=20)
+
+    assert outcomes.count("CLAIMED") == 1, outcomes
+    assert "RESOURCE_ALREADY_CLAIMED" in outcomes, outcomes
+    with Session(bind=engine, future=True) as s:
+        distinct = s.execute(
+            text("""SELECT count(DISTINCT claimed_by_account_id)
+                      FROM turab.record_claim_events WHERE request_id = :r"""),
+            {"r": ids.REQ_AMINA_ASSISTED},
+        ).scalar_one()
+    assert distinct == 1, "a race must not create ambiguous claim authority"
+    _unclaim(engine, ids.REQ_AMINA_ASSISTED)
+
+
+# --- a refused attempt must not block the rightful claimant ---------------
+
+def test_a_refused_attempt_does_not_block_the_rightful_claimant(
+    client, ids, engine
+):
+    """The exposure the old implementation carried: a wrongful claim recorded
+    an ownership event, and INV-1 then refused the rightful person."""
+    refused = _claim(client, ids, account=ids.ACC_AMINA,
+                     resource=ids.REQ_KHADIJA_ASSISTED, contact_point=ids.CP_AMINA,
+                     key_suffix="blocker")
+    assert refused.status_code == 403
+
+    allowed = _claim(client, ids, account=ids.ACC_KHADIJA,
+                     resource=ids.REQ_KHADIJA_ASSISTED,
+                     contact_point=ids.CP_KHADIJA, key_suffix="rightful")
+    assert allowed.status_code == 200, allowed.text
+    assert allowed.json()["outcome"] == "CLAIMED"
+    _unclaim(engine, ids.REQ_KHADIJA_ASSISTED)
+
+
+# --- staff may not claim under their own account --------------------------
+
+def test_staff_roles_alone_do_not_confer_the_right_to_claim(client, ids, engine):
+    """An operator is not the holder of a record. Acting for someone else is
+    delegation, undefined in this version (RFC-001 decision 4)."""
+    before = _request(engine, ids.REQ_KHADIJA_ASSISTED)
+    r = _claim(client, ids, account=ids.ACC_OPERATOR,
+               resource=ids.REQ_KHADIJA_ASSISTED, contact_point=ids.CP_KHADIJA,
+               key_suffix="staff")
+    assert r.status_code == 403
+    assert r.json()["code"] == "CLAIM_NOT_ELIGIBLE"
+    _assert_no_trace(engine, ids.REQ_KHADIJA_ASSISTED, before)
+
+
+# --- INV-1 still holds on top of eligibility ------------------------------
+
+def test_a_second_eligible_claim_is_still_rejected(client, ids, engine):
+    first = _claim(client, ids, account=ids.ACC_AMINA,
+                   resource=ids.REQ_AMINA_ASSISTED, contact_point=ids.CP_AMINA,
+                   key_suffix="inv1a")
+    assert first.status_code == 200, first.text
+    second = _claim(client, ids, account=ids.ACC_AMINA_SECOND,
+                    resource=ids.REQ_AMINA_ASSISTED,
+                    contact_point=ids.CP_AMINA_SECOND, key_suffix="inv1b")
     assert second.status_code == 409
-    _unclaim(engine, ids.REQ_AGENCY_ASSISTED)
+    _unclaim(engine, ids.REQ_AMINA_ASSISTED)
 
 
 def test_a_self_managed_record_is_not_claimable(client, ids):
-    r = client.post(
-        "/records/claim",
-        json={"resource_type": "REQUEST", "resource_id": str(ids.REQ_AMINA),
-              "verification_contact_point_id": str(ids.CP_AMINA)},
-        headers={"Authorization": f"Bearer {ids.ACC_KHADIJA}", **key("s2-c3")},
-    )
+    """Refused for its STATE, by a claimant who passes eligibility."""
+    r = _claim(client, ids, account=ids.ACC_AMINA, resource=ids.REQ_AMINA,
+               contact_point=ids.CP_AMINA, key_suffix="selfmanaged")
     assert r.status_code != 200
     assert "ASSISTED" in r.json()["detail"]
 
 
-def test_claiming_does_not_infer_ownership_from_the_phone(client, ids, engine):
-    """DL-02, checked at the surface that most invites the inference.
-
-    The claim carries a `verification_contact_point_id`, and the temptation is
-    to treat "this phone reaches that party" as "this account owns that
-    party's records". It does not: after claiming, read access is still
-    decided by the account's own party binding, so an account whose party
-    differs from the record's gains an ownership event and no readable record.
-
-    That asymmetry is a REAL GAP, pinned here rather than papered over — see
-    the Slice 2 report. The test asserts the safe half (no read access leaks)
-    and names the unsafe half.
-    """
-    claimed = client.post(
+def test_property_claiming_fails_closed(client, ids):
+    """The adopted rule is for REQUEST. A property has no `party_id`, and its
+    party relationship is `party_property_relations`, which RFC-001 decision 1
+    forbids as an authorization source. Rather than pick one reading, the path
+    refuses."""
+    r = client.post(
         "/records/claim",
-        json={"resource_type": "REQUEST", "resource_id": str(ids.REQ_AGENCY_ASSISTED),
+        json={"resource_type": "PROPERTY",
+              "resource_id": str(ids.ASSISTED_APARTMENT),
               "verification_contact_point_id": str(ids.CP_AMINA)},
-        headers={**cust(ids), **key("s2-c4")},
+        headers={**cust(ids), **key("s2-prop")},
     )
-    assert claimed.status_code == 200
-
-    # Amina's party is AMINA; the record's party is AGENCY. Claiming did not
-    # make the record hers to read.
-    seen = client.get(f"/me/requests/{ids.REQ_AGENCY_ASSISTED}", headers=cust(ids))
-    assert seen.status_code == 404, (
-        "a claim must not hand over a record whose party the claimant is not"
-    )
-    _unclaim(engine, ids.REQ_AGENCY_ASSISTED)
+    assert r.status_code == 403
+    assert r.json()["code"] == "CLAIM_NOT_ELIGIBLE"
+    assert "not been decided" in r.json()["detail"]
 
 
 # --- the three commands, over HTTP ----------------------------------------
@@ -348,6 +473,18 @@ def _request(engine, request_id):
                       FROM turab.requests WHERE request_id = :r"""),
             {"r": request_id},
         ).mappings().one())
+
+
+def _assert_no_trace(engine, request_id, before) -> None:
+    """A refused attempt leaves NOTHING: no claim event, no state change."""
+    with Session(bind=engine, future=True) as s:
+        events = s.execute(
+            text("SELECT count(*) FROM turab.record_claim_events "
+                 "WHERE request_id = :r"),
+            {"r": request_id},
+        ).scalar_one()
+    assert events == 0, "a refused claim must not record an ownership event"
+    assert _request(engine, request_id) == before
 
 
 def _unclaim(engine, request_id) -> None:

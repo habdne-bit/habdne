@@ -1,8 +1,13 @@
 # Slice 2 — REQUEST + Criteria + Freshness · progress report
 
-**Status:** implementation complete for the authorised scope; **STOP GATE B
-demonstrated by an executable scenario**; submitted for review.
-**Prepared:** 2026-09-19. **Baseline:** Handoff v1.0.3 / pack v0.2.3, frozen.
+**Status:** **not closed.** The focused closing round of 2026-09-19 has been
+applied; three items remain open and are named in §5.
+**Baseline:** Handoff v1.0.3 / pack v0.2.3, frozen.
+
+**Revision 2 (2026-09-19, closing round).** This report previously classified
+the claim eligibility gap as an open Workflow decision. That was wrong — the
+frozen contract already declares the rule — and it is corrected throughout.
+Items marked *corrected* below were changed in this round.
 
 Results below are the developer's own run; they stand as reported until the
 evidence is reviewed.
@@ -64,100 +69,77 @@ Configurable وليست hard-coded داخل الكود». It is:
 confirmed has not gone out of date, it has not yet been put in date. They need
 different operational handling.
 
-## 4. Provenance
+## 4. Provenance — the actor is not the source
 
 A typed update writes one `observations` row (the utterance: who, when, in
 what form) and one `claims` row per changed attribute (the assertion about
 this request). The frozen schema already models exactly this —
 `idx_claims_request_attr` exists for the lookup — so it is used as modelled
-rather than reinvented. State changes are recorded the same way, carrying
-`{from, to, reason_code}`.
+rather than reinvented.
 
-## 5. Contractual gaps — surfaced, not filled
+**The distinction the record now keeps**, because a staff member typing a
+value is not evidence that the customer asked for it:
 
-Each is pinned by a test, so it is visible and will announce itself when the
-contract changes.
+| Recorded | Meaning |
+|---|---|
+| `recorded_by_account_id` | the authenticated actor — never inferred |
+| `channel` | `SELF_SERVICE` when the party's own account submitted it; `STAFF_RECORDED` when a member of staff did |
+| `asserted_by_party_id` | the party **only** for a self-service change; **null** for a staff-recorded one, which asserts nothing about what the party said |
+| `source_recorded` / `source_id` | whether a call, message or document was recorded behind the change — and `false` is an honest statement, not silence |
+| `payload.before` / `payload.after` | what the value was and what it became |
+| `effective_verification_level` | `DECLARED` on every row this path writes. **No update raises it.** Raising it is what `verification_events` is for; retyping a value is not verifying it. |
 
-### G-1 · `RequestPatch` carries no provenance field
-A client cannot say where a value came from, or attach an observation it
-already recorded. The provenance captured is therefore what the server itself
-can witness: the acting account, the moment, and the submitted values, with
-`extracted_by = 'HUMAN_API'`. Richer provenance — a call note, a forwarded
-message, a document — needs the contract to accept an `observation_id`.
-**Not invented as an undeclared field.**
+The staff read exposes all of this as `provenance`, so the three states — the
+customer said it, a staff member recorded it with a source, a staff member
+recorded it with none — are distinguishable by a reader rather than
+collapsed.
 
-### G-2 · The state machine defines fewer edges than the contract permits
-`RequestStateCommand` accepts six target states. §5.2 defines:
+## 5. Gaps — what was corrected, and what remains open
 
-```
-RAW -> CONTACTED -> QUALIFIED -> ACTIVE
-ACTIVE -> NEEDS_CONFIRMATION -> ACTIVE | PAUSED | CLOSED
-PAUSED/CLOSED -> ACTIVE only by explicit reactivation
-```
+### Corrected in this round
 
-Undefined edges — `ACTIVE -> CLOSED` directly, `RAW -> PAUSED`, and others —
-are **refused**, naming the defined targets. Inventing one would add a
-workflow rule to TURAB by implementation accident. If any of them is wanted,
-it is a Workflow decision.
+| Was | Now |
+|---|---|
+| **G-6 / DL-08** — claim eligibility described as an open decision | **Declared condition, now enforced.** `CORRECTION-003`. Five conditions checked inside the write transaction under `SELECT … FOR UPDATE`. DL-08 withdrawn. |
+| **G-4** — no closure reason for a REQUEST | **Adopted.** Migration `0002_request_closure_reasons` adds the `REQUEST_CLOSURE` category, re-runnably, without touching the published baseline or the historical `OTHER`. |
+| **G-3** — an undeclared `reactivate` field | **Removed.** The state command with `target_status=ACTIVE` is the explicit reactivation. It does not refresh `last_confirmed_at`, and `/reconfirm` never resurrects `PAUSED` or `CLOSED`. |
+| **G-2** — `ACTIVE → PAUSED` / `CLOSED` undefined | **Adopted** as `CORRECTION-002`, recorded in the transitions table and annotated on the effective contract. |
+| **G-1** — provenance limited to what the contract carries | **Corrected.** The record now distinguishes the ACTOR from the SOURCE: channel (`SELF_SERVICE` / `STAFF_RECORDED`), the asserting party (null for staff-recorded), whether a source was recorded, the previous and new values, and a verification level that no update path raises. |
+| **G-5** — an uncalled function described as a freshness mechanism | **Corrected in fact and in wording.** `db/dev/run_freshness_pass.py` is a documented administrative command. Freshness does **not** maintain itself. |
 
-### G-3 · No way to express "explicit reactivation" in the contract
-§5.2 requires leaving `PAUSED`/`CLOSED` to be explicit, and
-`RequestStateCommand` provides no field to say so. An optional `reactivate`
-flag is accepted **as an extra**, rather than inferring intent from the
-target. It is the only field this slice accepts that the contract does not
-declare, and it is named here for that reason.
+### Still open
 
-### G-4 · No master reason code describes closing a REQUEST
-`requests.close_reason_code` is FK-constrained to `reason_codes`, whose
-categories are FRESHNESS, GENERAL, IDENTITY, MATCH, OPPORTUNITY and
-PERMISSION. An operator closing a request can record only `OTHER`, or misuse
-an OPPORTUNITY code that means something about a different entity. Adding
-codes means editing the frozen seed, which is forbidden.
-`test_no_master_reason_code_describes_closing_a_request` will fail the day a
-`REQUEST_CLOSURE` category appears — which is the moment to revisit the
-closing flow.
+| # | Item | Status |
+|---|---|---|
+| **DL-08a** | Claim eligibility for a **PROPERTY** | The adopted rule does not transfer: `properties` has no `party_id`, and `party_property_relations` is forbidden as an authorization source by RFC-001 decision 1. The path **fails closed** and names the undecided rule. Not a Slice 2 deliverable; it will block PROPERTY claiming in Slice 3. |
+| **DL-10** | What runs the freshness pass | Narrowed to "someone runs the documented command". The schedule is undecided. |
+| **DL-11** | `RequestPatch` cannot carry a source reference | The service can carry a `source_id`; the contract cannot supply one, so `source_recorded` is `false` on every update through the contract as frozen. Accepting one needs a contract change. |
 
-### G-5 · Nothing schedules the staleness pass
-`mark_stale_as_needing_confirmation()` is an invocable operational function,
-fully tested. The contract declares no scheduled-job operation and the handoff
-names no schedule, so **what calls it and how often is an open decision**. No
-timer was invented here.
+### On gap-documenting tests
 
-### G-6 · A claim does not verify the claimant's relationship to the record
-`POST /records/claim` carries a `verification_contact_point_id`, and the
-implementation does not check that the contact point is verified, that it
-belongs to the claiming account, or that it reaches the record's party. INV-1
-governs *conflicts* between claimants; it says nothing about whether a
-claimant is the right person.
-
-The safe half is proved: after claiming, read access is still decided by the
-account's own party binding, so an account whose party differs from the
-record's gains an ownership event and **no readable record**
-(`test_claiming_does_not_infer_ownership_from_the_phone` asserts the 404).
-Nothing leaks.
-
-The unsafe half is real: an account can record an ownership claim over an
-assisted record it has no relationship to, and thereby **block the rightful
-person** from claiming it, since INV-1 refuses the second claim. That is a
-denial-of-claim, not a disclosure.
-
-**Deciding what makes a claim legitimate is a Workflow and Permissions
-decision**, so it is raised rather than resolved: per the standing rule, and
-because DL-02 forbids the obvious shortcut — "this phone reaches that party"
-must not become "this account owns that party's records".
+The earlier revision counted `test_no_master_reason_code_describes_closing_a_request`
+among its evidence. A test that documents an absence is not evidence that the
+requirement is met — it is evidence that it is not. That test has been
+**replaced** by behaviour tests of the adopted codes, and the principle is
+noted here so the same substitution is not made again.
 
 ## 6. Verification
 
 | Check | Result |
 |---|---|
-| Application suite | **415 passing** (52 new) |
-| Authorization Evidence Matrix | **113 rules, 0 UNPROVEN** |
+| Application suite | **446 passing** |
+| Authorization Evidence Matrix | **120 rules, 0 UNPROVEN** |
 | PostgreSQL Execution Gate | **PASS — 8/8**, 70/70 assertions |
 | Effective contract + API inventory | current |
 | Version consistency · handoff integrity | 11/11 · 36/36 |
 
 STOP GATE B: `tests/test_slice2_stop_gate_b.py` runs the scenario in §7 and
 asserts the three questions against one staff read.
+
+Migrations: `0001_frozen_baseline_v0_2_3` → `0002_request_closure_reasons`.
+The test database is now built the way a real one is — the baseline stamped,
+then migrations run forward — so the suite cannot pass against a database no
+deployment can produce.
 
 ## 7. STOP GATE B — the operational scenario
 
@@ -166,8 +148,12 @@ asserts the three questions against one staff read.
 
 Khadija rings the office about renting a flat. An operator records an
 **assisted** request while she is on the phone, with three criteria at three
-different importances. She later **claims** it — the same row converts to
-`SHARED_MANAGEMENT/CLAIMED`, and the request count does not change. It is
+different importances.
+
+**An unrelated account then tries to claim it first, and is refused 403 with
+no claim event written** — so nothing blocks the rightful claimant. Khadija
+**claims** it: the same row converts to `SHARED_MANAGEMENT/CLAIMED`, and the
+request count does not change. It is
 qualified and activated through the documented path. Her budget ceiling rises,
 recorded as a **data update** that leaves the status alone. Four months pass
 with no contact; the staleness pass moves it to `NEEDS_CONFIRMATION`. The
@@ -188,7 +174,19 @@ A companion test guards the gate itself: Q2 would pass vacuously if `criteria`
 were absent and the dict came out empty, so the staff read is asserted to
 always carry the key, with an empty list when there are none.
 
-## 8. One defect found and fixed during this slice
+## 8. On the account bootstrap contract
+
+`docs/contract/ACCOUNT_PROVISIONING_MINI_CONTRACT.md` remains **documentation
+only**. Nothing in it is implemented: no `bootstrap-admin`, no `grant-role`,
+no `provision-customer`. The revisions made to it in the previous round —
+`--roles` at bootstrap, `asserted_actor` in the audit record, the withdrawal
+of the "verified against the database" claim — are **changes to a proposal**,
+not to running code. No authorisation to implement account provisioning has
+been given, and none was assumed.
+
+Accounts and roles still reach the database only through fixtures.
+
+## 9. One defect found and fixed during this slice
 
 `authorize_request_scope` queried the **write** session before
 `CommandService.run()` opened its transaction, producing

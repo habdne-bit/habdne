@@ -29,6 +29,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ...auth.loaders import ResourceKind
 from ...services import freshness as freshness_service
 from ...services import requests as request_service
+from ...services.requests import UpdateChannel
 from ...services.concurrency import HEADER, IfMatchRequired, parse_if_match
 from ..deps import Access, Command
 from ..problems import ProblemCode, coded, for_denial, trace_id_of
@@ -95,15 +96,23 @@ class RequestStateCommand(_Body):
     )
     reason_code: str | None = None
     note: str | None = None
-    #: Not in the frozen schema: §5.2 requires leaving PAUSED/CLOSED to be
-    #: EXPLICIT, and the contract gives no way to say so. Accepted as an
-    #: optional extra rather than inferred, and reported as a contract gap.
-    reactivate: bool = False
+    # No `reactivate` field. An earlier draft added one; it was not in the
+    # contract, and `extra="forbid"` above means every field here is part of
+    # the declared shape. Sending `target_status=ACTIVE` from PAUSED or CLOSED
+    # IS the explicit reactivation §5.2 asks for — a second flag would be a
+    # second way of saying the same thing.
 
 
 class StateReconfirm(_Body):
     confirmed_at: datetime | None = None
     notes: str | None = None
+
+
+def _channel(command) -> UpdateChannel:
+    """Who is recording this, as a fact about the actor's role — not a claim
+    about who asked for the change."""
+    return (UpdateChannel.STAFF_RECORDED if command.is_staff
+            else UpdateChannel.SELF_SERVICE)
 
 
 def _internal_request(row, fresh=None, criteria=None) -> dict[str, Any]:
@@ -232,6 +241,7 @@ def create_request(request: Request, body: RequestCreate, command: Command):
                 blocking_if_unknown=criterion.blocking_if_unknown,
                 sort_order=criterion.sort_order,
                 recorded_by_account_id=command.subject.account_id,
+                channel=_channel(command),
             )
         return 201, _internal_request(
             request_service.read_request(session, row["request_id"])
@@ -257,9 +267,32 @@ def read_request(request: Request, request_id: uuid.UUID, access: Access):
     if not result.authorized:
         return for_denial(result.reason, trace_id_of(request), customer_scoped=False)
     fresh = access.evaluate_request_freshness(result.row["last_confirmed_at"])
-    return _internal_request(
+    body = _internal_request(
         result.row, fresh, access.request_criteria(request_id)
     )
+    # Additive, and the point of it: a reader must be able to tell a change
+    # the party made themselves from one a staff member typed, and whether
+    # any call or message was recorded behind it. Without that distinction a
+    # staff-entered value reads as the customer's own words.
+    body["provenance"] = [
+        {
+            "attribute_code": c["attribute_code"],
+            "value": c["claimed_value"],
+            "channel": c["channel"],
+            "recorded_at": c["recorded_at"].isoformat(),
+            "recorded_by_account_id": (str(c["recorded_by_account_id"])
+                                       if c["recorded_by_account_id"] else None),
+            "asserted_by_party_id": (str(c["asserted_by_party_id"])
+                                     if c["asserted_by_party_id"] else None),
+            "source_recorded": c["source_recorded"],
+            "verification_level": c["verification_level"],
+            "previous": (c["observation_payload"] or {}).get("before", {}).get(
+                c["attribute_code"]
+            ),
+        }
+        for c in access.request_provenance(request_id)
+    ]
+    return body
 
 
 # --- typed update ----------------------------------------------------------
@@ -298,6 +331,7 @@ def update_request(
         row = request_service.patch_request(
             session, request_id=request_id, changes=changes,
             recorded_by_account_id=command.subject.account_id,
+            channel=_channel(command),
         )
         return 200, _internal_request(row)
 
@@ -332,6 +366,7 @@ def add_criterion(request: Request, request_id: uuid.UUID,
             blocking_if_unknown=body.blocking_if_unknown,
             sort_order=body.sort_order,
             recorded_by_account_id=command.subject.account_id,
+            channel=_channel(command),
         )
         return 201, {
             "request_criterion_id": str(row["request_criterion_id"]),
@@ -361,6 +396,9 @@ def change_state(request: Request, request_id: uuid.UUID,
     Targets the contract permits but the state machine does not define are
     refused, naming the defined targets. Inventing an edge would add a
     workflow rule to TURAB by implementation accident.
+
+    Reactivation from PAUSED or CLOSED is this command with
+    `target_status=ACTIVE`. It does not refresh `last_confirmed_at`.
     """
     decision = command.authorize("postRequestsRequestIdState")
     if not decision.allowed:
@@ -375,8 +413,8 @@ def change_state(request: Request, request_id: uuid.UUID,
         row = request_service.transition(
             session, request_id=request_id, target_status=body.target_status,
             reason_code=body.reason_code, note=body.note,
-            reactivate=body.reactivate,
             recorded_by_account_id=command.subject.account_id,
+            channel=_channel(command),
         )
         return 200, _internal_request(row)
 
@@ -407,6 +445,7 @@ def reconfirm_request(request: Request, request_id: uuid.UUID,
             session, request_id=request_id, confirmed_at=body.confirmed_at,
             notes=body.notes,
             recorded_by_account_id=command.subject.account_id,
+            channel=_channel(command),
         )
         return 200, _internal_request(row)
 

@@ -43,3 +43,24 @@ corrections:
       A CUSTOMER creating their own REQUEST remains in scope for Slice 2,
       using an account already bound to the correct party. Restricting PARTY
       creation to staff does not remove that path.
+
+# ---------------------------------------------------------------------------
+# CORRECTION-002 records a WORKFLOW adoption, not a role change, so it carries
+# no x-roles narrowing. It is listed here because the effective contract is
+# where a reader looks to learn what is actually enforced.
+# ---------------------------------------------------------------------------
+
+workflow_adoptions:
+  - id: CORRECTION-002
+    decision: "Slice 2 closing round, 2026-09-19"
+    approved: "2026-09-19"
+    operation_id: postRequestsRequestIdState
+    summary: >-
+      ACTIVE -> PAUSED and ACTIVE -> CLOSED are adopted as direct transitions:
+      a request is not required to pass through NEEDS_CONFIRMATION in order to
+      be paused or closed. Reactivation from PAUSED or CLOSED is the state
+      command itself with target_status=ACTIVE; no additional field is used or
+      accepted. Closing requires a reason_code from the REQUEST_CLOSURE
+      category added by migration 0002_request_closure_reasons, and
+      REQUEST_CLOSED_OTHER requires a note.
+    reference: docs/gate/REQUEST_STATE_TRANSITIONS.md
