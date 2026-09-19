@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: TURAB API
-  version: 0.2.0
+  version: 0.2.2
   description: 'TURAB foundational API contract v0.2 — remediated after Technical Architecture Review.
 
 
@@ -26,6 +26,10 @@ info:
     - Customer/public DTOs are separate from internal DTOs.
 
     - AI never upgrades verification, changes user criteria silently, or creates Opportunity autonomously.
+
+
+    Technical Patch v0.2.2 aligns optimistic concurrency: the canonical header is If-Match-Version and PARTY projections expose
+    an integer version.
 
     '
 servers:
@@ -2906,12 +2910,13 @@ components:
       description: Required for mutating commands. Same key + same request hash must replay the original result; same key
         + different hash returns 409.
     IfMatchVersion:
-      name: If-Match
+      name: If-Match-Version
       in: header
       required: true
       schema:
-        type: string
-      description: Required optimistic concurrency version for mutable resource projection.
+        type: integer
+        minimum: 1
+      description: Required integer optimistic-concurrency version for mutable resource projection.
     Page:
       name: page
       in: query
@@ -3021,6 +3026,7 @@ components:
       - party_id
       - kind
       - status
+      - version
       properties:
         party_id: *id002
         kind:
@@ -3046,6 +3052,9 @@ components:
           - type: 'null'
         created_at: *id003
         updated_at: *id003
+        version:
+          type: integer
+          minimum: 1
     PartyCreate:
       type: object
       required:
@@ -4639,6 +4648,7 @@ components:
       required:
       - party_id
       - display_name
+      - version
       properties:
         party_id:
           type: string
@@ -4651,6 +4661,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ContactPoint'
+        version:
+          type: integer
+          minimum: 1
     CustomerRequestView:
       type: object
       additionalProperties: false

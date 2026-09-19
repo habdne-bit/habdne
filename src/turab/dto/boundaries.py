@@ -164,9 +164,14 @@ class PublicPropertySummary(_Strict):
 # --- Customer --------------------------------------------------------------
 
 class CustomerPartyView(_Strict):
+    """v0.2.2 (D2) adds `version`, so a CUSTOMER can obtain the value that
+    PATCH /parties/{party_id} requires in If-Match-Version. Without it the
+    contract demanded a version the customer had no way to read."""
+
     party_id: uuid.UUID
     display_name: str | None = None
     contact_points: tuple[str, ...] = ()
+    version: int
 
     @classmethod
     def render(cls, row: Mapping[str, Any],
@@ -175,6 +180,7 @@ class CustomerPartyView(_Strict):
             party_id=row["party_id"],
             display_name=row.get("display_name"),
             contact_points=tuple(contact_points or ()),
+            version=int(row["version"]),
         )
 
 

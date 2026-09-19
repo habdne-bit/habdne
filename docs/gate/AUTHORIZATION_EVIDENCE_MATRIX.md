@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **60**
-- Distinct tests cited: **124**
-- Suite total: **211/211** test cases passing (162 distinct test functions)
+- Rules and invariants covered: **62**
+- Distinct tests cited: **130**
+- Suite total: **218/218** test cases passing (167 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -64,7 +64,9 @@ matrix, because it reads as assurance.
 | `§2.3 / ADR-09` | Same key + different payload is a 409 conflict | `test_same_key_different_payload_is_a_conflict`<br>`test_a_claimed_but_incomplete_key_is_a_conflict` | PASS |
 | `§2.3` | Idempotency scope is per actor and per route | `test_the_same_key_is_independent_per_actor`<br>`test_the_same_key_is_independent_per_route`<br>`test_the_record_lands_in_the_frozen_table` | PASS |
 | `§2.4` | If-Match required; stale version rejected with nothing applied | `test_a_missing_header_is_rejected`<br>`test_stale_version_is_rejected`<br>`test_a_concurrent_bump_makes_the_held_version_stale` | PASS |
-| `§2.4 / §1` | Header name follows the OpenAPI contract, prose accepted as alias | `test_header_name_follows_the_openapi_contract`<br>`test_the_prose_header_name_is_accepted_as_an_alias`<br>`test_parties_is_not_versioned_in_the_frozen_schema` | PASS |
+| `§2.4 / D1` | Canonical header is If-Match-Version, integer-typed, no alias | `test_header_name_follows_the_openapi_contract`<br>`test_parse_accepts_a_version_integer`<br>`test_etag_forms_are_no_longer_accepted`<br>`test_the_old_if_match_alias_is_gone` | PASS |
+| `§2.4 / D2` | PARTY is versioned; the version is bumped and unforgeable | `test_parties_is_now_versioned`<br>`test_updating_a_party_bumps_its_version`<br>`test_the_parties_version_check_constraint_holds`<br>`test_a_client_cannot_forge_a_party_version` | PASS |
+| `D2` | CustomerPartyView exposes version so a CUSTOMER can PATCH | `test_customer_party_view_exposes_version` | PASS |
 | `ADR-06 / R9.1` | Public/Customer/Internal are separate types, extras refused | `test_constructing_a_dto_with_an_internal_field_is_an_error`<br>`test_no_dto_declares_a_forbidden_field` | PASS |
 | `R9.5 / K03` | DTO allow-lists are exact and match the frozen contract | `test_dto_field_sets_are_exactly_the_allow_list`<br>`test_the_public_schema_matches_the_frozen_contract`<br>`test_a_new_column_does_not_silently_reach_the_public_dto` | PASS |
 | `D02` | Seller expectation never reaches a public or customer payload | `test_public_offer_never_carries_seller_expectation`<br>`test_public_render_from_a_real_property_row_leaks_nothing` | PASS |

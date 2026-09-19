@@ -1,5 +1,5 @@
--- TURAB — PostgreSQL schema v0.2.1
--- Reference date: 2026-09-18
+-- TURAB — PostgreSQL schema v0.2.2
+-- Reference date: 2026-09-19
 -- Target: PostgreSQL 16+
 -- Purpose: executable baseline schema for the TURAB foundational pilot.
 -- IMPORTANT: this schema implements the product invariants in TURAB Developer Reference Specification v0.1 plus v0.2 remediation decisions.
@@ -212,11 +212,12 @@ CREATE TABLE parties (
   display_name text,
   legal_name text,
   notes text,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_parties_status ON parties(status);
-CREATE TRIGGER trg_parties_updated BEFORE UPDATE ON parties FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_parties_version BEFORE UPDATE ON parties FOR EACH ROW EXECUTE FUNCTION bump_version_and_timestamp();
 
 CREATE TABLE contact_points (
   contact_point_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

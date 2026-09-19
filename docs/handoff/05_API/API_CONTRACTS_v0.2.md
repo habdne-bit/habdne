@@ -1,8 +1,8 @@
 # TURAB — API Contracts v0.2
 
 **Status:** implementation contract after Technical Architecture Review.  
-**Machine-readable source:** `openapi_v0.2.yaml`  
-**Database source:** `schema_v0.2.1.sql` (database patch; API semantics remain v0.2)  
+**Machine-readable source:** `openapi_v0.2.2.yaml`  
+**Database source:** `schema_v0.2.2.sql` (Technical Patch v0.2.2; API semantics remain v0.2 except the explicitly corrected concurrency header and PARTY version projection)  
 **Product source:** TURAB Foundation Baseline v1.0 + Developer Reference Specification v0.1.
 
 ## 1. Contract hierarchy
@@ -50,7 +50,7 @@ Every mutating authenticated POST command MUST accept a required `Idempotency-Ke
 
 ### 2.4 Optimistic concurrency
 
-Mutable projection PATCH requests require `If-Match-Version`. On stale version, return `409` and do not partially apply changes.
+Mutable projection PATCH requests require `If-Match-Version`. On stale version, return `409` and do not partially apply changes. Technical Patch v0.2.2 makes this custom integer-version header canonical in the OpenAPI contract; `If-Match` is not an alias in the corrected baseline. PARTY is also a versioned mutable projection and exposes its current `version` in internal and customer Party response DTOs.
 
 ### 2.5 Error contract
 

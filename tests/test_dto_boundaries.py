@@ -39,6 +39,7 @@ CUSTOMER_PROPERTY_KEYS = {
     "land_area_m2", "built_area_m2", "current_availability",
     "availability_last_confirmed_at", "supply_mode", "version",
 }
+CUSTOMER_PARTY_KEYS = {"party_id", "display_name", "contact_points", "version"}
 CUSTOMER_REQUEST_KEYS = {
     "request_id", "status", "transaction_intent", "intent", "payment",
     "desired_property_type", "primary_location_id", "budget_target_dzd",
@@ -59,6 +60,7 @@ def _row(session, sql, **params):
         (PublicOfferSummary, PUBLIC_OFFER_KEYS),
         (CustomerPropertyView, CUSTOMER_PROPERTY_KEYS),
         (CustomerRequestView, CUSTOMER_REQUEST_KEYS),
+        (CustomerPartyView, CUSTOMER_PARTY_KEYS),
     ],
 )
 def test_dto_field_sets_are_exactly_the_allow_list(model, expected):
@@ -84,6 +86,7 @@ def test_the_public_schema_matches_the_frozen_contract():
     assert set(frozen["PublicOfferSummary"]["properties"]) == PUBLIC_OFFER_KEYS
     assert set(frozen["CustomerPropertyView"]["properties"]) == CUSTOMER_PROPERTY_KEYS
     assert set(frozen["CustomerRequestView"]["properties"]) == CUSTOMER_REQUEST_KEYS
+    assert set(frozen["CustomerPartyView"]["properties"]) == CUSTOMER_PARTY_KEYS
 
 
 # --- rendering from real rows ---------------------------------------------
@@ -250,3 +253,13 @@ def test_no_scope_lifts_the_never_serialized_floor(opportunity_rows, scope):
         contact={"phone": "+213661000002"}, confirmation_recorded=True,
     )
     assert_no_forbidden_fields(view.model_dump(), Audience.CUSTOMER)
+
+
+def test_customer_party_view_exposes_version(session, ids):
+    """D2. Without this a CUSTOMER could not satisfy If-Match-Version on
+    PATCH /parties/{party_id}, which the contract has always required."""
+    row = _row(session, "SELECT * FROM turab.parties WHERE party_id=:p", p=ids.AMINA)
+    dto = CustomerPartyView.render(row).model_dump()
+    assert set(dto) == CUSTOMER_PARTY_KEYS
+    assert dto["version"] == row["version"] == 1
+    assert_no_forbidden_fields(dto, Audience.CUSTOMER)

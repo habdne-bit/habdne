@@ -36,8 +36,8 @@ dropdb --if-exists "$PGDATABASE"
 createdb "$PGDATABASE"
 
 step "Applying frozen baseline"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.1.sql"
-psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.1.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/schema_v0.2.2.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$DB_DIR/seed_master_data_v0.2.2.sql"
 
 if [[ $WITH_FIXTURES -eq 1 ]]; then
   step "Loading development fixtures"

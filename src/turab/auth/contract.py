@@ -30,7 +30,7 @@ CONTRACT_PATH = (
     / "docs"
     / "handoff"
     / "05_API"
-    / "openapi_v0.2.yaml"
+    / "openapi_v0.2.2.yaml"
 )
 
 

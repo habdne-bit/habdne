@@ -1,38 +1,39 @@
 {
   "package": "TURAB Developer Handoff",
-  "version": "1.0.1",
-  "date": "2026-09-18",
-  "status": "CONDITIONAL_GO_POSTGRES_GATE_PENDING_RERUN",
-  "technical_baseline": "v0.2.1 database patch over architecture/API v0.2",
+  "version": "1.0.2",
+  "date": "2026-09-19",
+  "status": "PATCH_CANDIDATE_V0_2_2_FULL_RERUN_REQUIRED_BEFORE_SLICE_1",
+  "technical_baseline": "v0.2.2 candidate over architecture/API v0.2; preserves v0.2.1 FK remediations",
+  "previous_runtime_baseline": "v0.2.1 reported PASS on PostgreSQL 16.13; Slice 0 closure reported PASS",
   "product_baseline": "Foundation v1.0 FINAL",
   "files": [
     {
       "path": "00_START_HERE/DEVELOPER_KICKOFF_CHECKLIST.md",
-      "sha256": "ff4389d291381d0ee20ff2534bf1a19b0c9d371c70dd52bb02a3a71c78e91fe5",
-      "bytes": 2283,
+      "sha256": "15aa5055fa62501f6b200decfd7d395c8328a15b8ce66c8d38d90dd9a291083a",
+      "bytes": 1998,
       "authority": "GATE",
-      "purpose": "Developer preflight and acknowledgement checklist"
+      "purpose": "v0.2.2 adoption/re-freeze checklist"
     },
     {
       "path": "00_START_HERE/FILE_AUTHORITY_AND_VERSION_POLICY.md",
-      "sha256": "3b1a0e9b3992ecc856ead15f2c3ffdc84aff08f182105a213b32d56950e5a944",
-      "bytes": 1548,
+      "sha256": "2caa28397e4ef06b2de5b3d544d87d7ea15fb67456331b091a88183c171d2df6",
+      "bytes": 2086,
       "authority": "AUTHORITY",
-      "purpose": "Conflict/version policy"
+      "purpose": "Conflict, immutability and supersession policy"
     },
     {
-      "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.1.docx",
-      "sha256": "2dc9dbc6de31781fdda5203dae49d82d87b9f0f9fbbd08154a57d3a4c6f2a800",
-      "bytes": 53518,
+      "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.2.docx",
+      "sha256": "c7e7f337f86255d6ec4cd2db1c45254cd1eb96b92207d9770132fde3abb6ca6f",
+      "bytes": 53746,
       "authority": "ENTRY",
       "purpose": "Formatted master handoff guide"
     },
     {
-      "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.1.md",
-      "sha256": "5c501c186e4bcef453f9f9aec977a133aa7a669ef4a1fdb4578cd529b3f55259",
-      "bytes": 26295,
+      "path": "00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.2.md",
+      "sha256": "5a53b629a80b6de47624b2dc548efbcebbcb18cb4668e0e0f1dd2620982378e0",
+      "bytes": 26891,
       "authority": "ENTRY",
-      "purpose": "Master handoff instructions and non-negotiable implementation guidance"
+      "purpose": "Master handoff instructions and current baseline status"
     },
     {
       "path": "01_PRODUCT_BASELINE/TURAB_Foundation_Baseline_v1.0_FINAL.docx",
@@ -71,70 +72,77 @@
     },
     {
       "path": "03_ARCHITECTURE/REMEDIATION_REVIEW_v0.2.md",
-      "sha256": "399f4abcf33530227d904725941dc06120599f4ef7c4602ef939cc5922fb1f92",
-      "bytes": 6247,
+      "sha256": "d25d193ef45d8d64a3a37c465a5ab9f246e71a83186284f996b2d771d42bc58f",
+      "bytes": 6312,
       "authority": "QA_REFERENCE",
-      "purpose": "v0.1→v0.2 remediation evidence; supersession noted"
+      "purpose": "v0.1→v0.2 remediation evidence; latest supersession noted"
     },
     {
       "path": "03_ARCHITECTURE/TECHNICAL_PACK_README_v0.2.md",
-      "sha256": "d12ffb46f7c154fba5a6ad3c39285edc356612dede135a66cc1f8eb2c50efa6b",
-      "bytes": 4033,
+      "sha256": "b4f20a6687ba920b2b8a46f27ec4c5b20fa5951adbe8ac7573c268fb92763eae",
+      "bytes": 4104,
       "authority": "TECH_REFERENCE",
-      "purpose": "Technical pack reading map with v0.2.1 patch note"
+      "purpose": "Technical pack reading map with latest patch note"
     },
     {
       "path": "03_ARCHITECTURE/TECHNICAL_PATCH_v0.2.1.md",
       "sha256": "9b22acae440e089fff96ac40b0ac6b143358f4bb2215aaa75e973bf63a1f137c",
       "bytes": 3396,
+      "authority": "HISTORY_TECH_AUTHORITY",
+      "purpose": "Prior executable FK patch retained for rationale"
+    },
+    {
+      "path": "03_ARCHITECTURE/TECHNICAL_PATCH_v0.2.2.md",
+      "sha256": "b97e89ea7395d19318d2b16f8bd3ae31fcaa20c1d750864d4ff4d501f6c890c0",
+      "bytes": 3629,
       "authority": "TECH_AUTHORITY",
-      "purpose": "Runtime database patch superseding schema v0.2"
+      "purpose": "Latest D1/D2 concurrency and PARTY-version patch"
     },
     {
       "path": "04_DATABASE/POSTGRES_EXECUTION_GATE.md",
-      "sha256": "c7520ebc11144aaec4c95fdbf2e5c7b9b6fd58b3034db959b4b17036830cff0d",
-      "bytes": 995,
-      "authority": "RELEASE_GATE",
-      "purpose": "Mandatory runtime database proof"
+      "sha256": "414a1fcf033378668da98152a9365095067f4c77577cb66d0dccd889eab01887",
+      "bytes": 2193,
+      "authority": "GATE",
+      "purpose": "Mandatory v0.2.2 runtime and contract re-freeze gate"
     },
     {
-      "path": "04_DATABASE/schema_v0.2.1.sql",
-      "sha256": "9fac9fa2552d2963a8fc8c0745eea4c71a12c193c161268a073b64c216b42688",
-      "bytes": 67336,
-      "authority": "EXECUTABLE_AUTHORITY",
-      "purpose": "PostgreSQL 16+ patched schema baseline"
+      "path": "04_DATABASE/schema_v0.2.2.sql",
+      "sha256": "eb1862b1984b7a62e29b1e58a490c2c6c4a1783cab01be66738cd1c97bb032ea",
+      "bytes": 67406,
+      "authority": "DATABASE_AUTHORITY",
+      "purpose": "v0.2.2 PostgreSQL adoption baseline candidate"
     },
     {
-      "path": "04_DATABASE/seed_master_data_v0.2.1.sql",
-      "sha256": "c8edb576500e6726487deab121b85fc1f6b99f6a07cc3f87e557b123807409da",
+      "path": "04_DATABASE/seed_master_data_v0.2.2.sql",
+      "sha256": "132869b4b91a2c07925f352fdd71192cc26a90313a0a19a1844366141fedc553",
       "bytes": 12499,
-      "authority": "EXECUTABLE_AUTHORITY",
-      "purpose": "Controlled master data seed for schema v0.2.1"
+      "authority": "DATABASE_AUTHORITY",
+      "purpose": "v0.2.2 master-data seed; semantics unchanged"
     },
     {
       "path": "05_API/API_CONTRACTS_v0.2.md",
-      "sha256": "e8284ee73a2d15fb2052c92912f1b6e7bdfac1f2be680c4b22e052c69562a2c2",
-      "bytes": 17382,
+      "sha256": "fd33744078786db000b9f4eeba7766a874d0f2268be51e285ddfe9d61fa6c380",
+      "bytes": 17750,
       "authority": "API_AUTHORITY",
-      "purpose": "Behavioral API/domain contract; DB source patched to v0.2.1"
+      "purpose": "Behavioral API contract synchronized with v0.2.2 patch"
     },
     {
       "path": "05_API/API_INVENTORY_v0.2.md",
       "sha256": "786c768a77c8297c8a9804f044656f456aa88d1eef5cd090aa7cc1a9c9c3d4f0",
       "bytes": 8874,
       "authority": "API_REFERENCE",
-      "purpose": "Human-readable API inventory"
+      "purpose": "Stable operationId inventory"
     },
     {
-      "path": "05_API/openapi_v0.2.yaml",
-      "sha256": "8e4bd4fbf171adfb3724d6ebb1acdc5d72fac12503fdf67fa8aa2175bf294724",
-      "bytes": 124280,
-      "authority": "EXECUTABLE_AUTHORITY",
-      "purpose": "OpenAPI 3.1 HTTP contract"
+      "path": "05_API/openapi_v0.2.2.yaml",
+      "sha256": "7e6187ce700c504060a0f0dc724174c35369b39ba6c24b99a64a06cf41005d07",
+      "bytes": 124626,
+      "authority": "API_AUTHORITY",
+      "purpose": "Machine-readable HTTP contract with D1/D2 correction"
     },
     {
       "path": "06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md",
-      "sha256": "bc03f6055c7e5a415a0ae9ff32c6c5f8f41e00a4e9108cd1b7805507684dace8",
+      "sha256": "cecd95894085e764719f88078b0423546cb06e2147aa8c9ffea1e1f9504a9dc5",
       "bytes": 12652,
       "authority": "BUILD_AUTHORITY",
       "purpose": "Required slice sequence and stop gates"
@@ -147,25 +155,32 @@
       "purpose": "Mandatory edge-case acceptance suite"
     },
     {
-      "path": "07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.1.json",
-      "sha256": "4f40e2698e80486ff17fba6c94cc61f446c922731bc6b30bb3ab91b54f0cd98f",
-      "bytes": 702,
+      "path": "07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.2.json",
+      "sha256": "b4e046b906b607cdcef16976716eccea899eb528c1d4854a15ffedf8b3ef7626",
+      "bytes": 704,
       "authority": "QA_RESULT",
-      "purpose": "Latest PASS static audit result with duplicate-FK checks"
+      "purpose": "Static audit PASS result for v0.2.2 candidate"
     },
     {
-      "path": "07_QA_ACCEPTANCE/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.1.txt",
-      "sha256": "a772a3ed27058c43ca19d8804494b0b13fe97b6d9c0297da5adff076df2e171b",
-      "bytes": 1498,
+      "path": "07_QA_ACCEPTANCE/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.2.txt",
+      "sha256": "515a72872aa94330e6cefdd80975e1484e2533d7bb095e1c45499c2bef3ce8e7",
+      "bytes": 1715,
       "authority": "QA_REFERENCE",
-      "purpose": "v0.2.1 technical-pack checksums"
+      "purpose": "v0.2.2 technical-pack checksums"
     },
     {
-      "path": "07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.1.py",
-      "sha256": "10195f34d09acd37016424d42c56b817178141ed3398bd9d96baa88c6de1f3c5",
-      "bytes": 10467,
+      "path": "07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.2.py",
+      "sha256": "4490802fa241826a55d76ad0758233a89c548fee692d2098a103498875541e56",
+      "bytes": 12344,
       "authority": "QA_TOOL",
-      "purpose": "Repeatable static audit hardened for duplicate FK detection"
+      "purpose": "Repeatable static audit including D1/D2 and duplicate-FK checks"
+    },
+    {
+      "path": "07_QA_ACCEPTANCE/verify_v022_baseline.py",
+      "sha256": "573844ec02a8fc02299264b6f591deb103fe2563fe0b7e400a76645b49fd43c4",
+      "bytes": 2848,
+      "authority": "QA_TOOL",
+      "purpose": "Dedicated D1/D2 acceptance checker preserving v0.2.1 FK fixes"
     },
     {
       "path": "99_REFERENCE_HISTORY/CHANGELOG_v0.2.md",
@@ -189,18 +204,25 @@
       "purpose": "Red-team review that motivated v0.2"
     },
     {
+      "path": "99_REFERENCE_HISTORY/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.1.txt",
+      "sha256": "a772a3ed27058c43ca19d8804494b0b13fe97b6d9c0297da5adff076df2e171b",
+      "bytes": 1498,
+      "authority": "HISTORY_ONLY",
+      "purpose": "Prior v0.2.1 hashes; previous executed baseline"
+    },
+    {
       "path": "99_REFERENCE_HISTORY/TECHNICAL_PACK_MANIFEST_SHA256_v0.2.txt",
       "sha256": "e951911f6a464ed913c89056b6d4b898a459e13f2c57d6379871a9400de16b0c",
       "bytes": 1573,
       "authority": "HISTORY_ONLY",
-      "purpose": "Original v0.2 hashes; failed runtime candidate"
+      "purpose": "Original v0.2 hashes; runtime-failed candidate"
     },
     {
       "path": "README.md",
-      "sha256": "aea17afc55ddb17fdd4f1d4e68884fc83ac222b2a8c21491c40267cf9fee4b75",
-      "bytes": 1074,
+      "sha256": "9113cfdade5a4aa972416caf5bc8433e7438a67ae2c9c1cb98b85dd1b8b4ce92",
+      "bytes": 1129,
       "authority": "ENTRY",
-      "purpose": "Root quick-start"
+      "purpose": "Root quick-start and v0.2.2 adoption status"
     },
     {
       "path": "verify_handoff.py",

@@ -1,5 +1,5 @@
--- TURAB — minimum master data seed v0.2.1
--- Run after schema_v0.2.1.sql
+-- TURAB — minimum master data seed v0.2.2
+-- Run after schema_v0.2.2.sql
 BEGIN;
 SET search_path = turab, public;
 

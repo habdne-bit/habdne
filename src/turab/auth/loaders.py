@@ -143,7 +143,7 @@ def load_party(session: Session, subject: Subject, party_id: uuid.UUID) -> LoadR
     row = session.execute(
         text(
             """
-            SELECT party_id, kind::text, status::text, display_name
+            SELECT party_id, kind::text, status::text, display_name, version
               FROM turab.parties
              WHERE party_id = :party_id AND party_id = :subject_party
             """

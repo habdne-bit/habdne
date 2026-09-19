@@ -59,7 +59,7 @@ jobs:
       - name: Verify the generated API inventory is current
         run: |
           db/gate/generate_api_inventory.py \
-            docs/handoff/05_API/openapi_v0.2.yaml --check
+            docs/handoff/05_API/openapi_v0.2.2.yaml --check
 
       # The development reset path must keep working, fixtures included, and
       # loading the fixtures twice must be idempotent.

@@ -20,13 +20,20 @@ import sys
 
 import yaml
 
-# Digests of the CURRENT frozen baseline (v0.2.1 / v1.0.1). The seed and the
-# OpenAPI are expected to change only as D1 requires; the schema only as D2
-# requires. Anything else changing is a finding, not a detail.
+# Digests of the PREVIOUS baseline (v0.2.1 / v1.0.1), kept so the "nothing else
+# moved" checks remain meaningful. v0.2.2 is now adopted; this script stays as
+# the record of how that package was accepted and as the template for the next.
 FROZEN_V021 = {
     "schema": "9fac9fa2552d2963a8fc8c0745eea4c71a12c193c161268a073b64c216b42688",
     "seed": "c8edb576500e6726487deab121b85fc1f6b99f6a07cc3f87e557b123807409da",
     "openapi": "8e4bd4fbf171adfb3724d6ebb1acdc5d72fac12503fdf67fa8aa2175bf294724",
+}
+
+# The adopted v0.2.2 baseline, verified against D1/D2 and re-gated.
+FROZEN_V022 = {
+    "schema": "eb1862b1984b7a62e29b1e58a490c2c6c4a1783cab01be66738cd1c97bb032ea",
+    "seed": "132869b4b91a2c07925f352fdd71192cc26a90313a0a19a1844366141fedc553",
+    "openapi": "7e6187ce700c504060a0f0dc724174c35369b39ba6c24b99a64a06cf41005d07",
 }
 
 #: D1. The canonical concurrency header for TURAB v0.1.

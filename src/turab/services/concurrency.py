@@ -4,13 +4,16 @@ Ref: API_CONTRACTS v0.2 §2.4 ("Mutable projection PATCH requests require
 `If-Match-Version`. On stale version, return 409 and do not partially apply
 changes."); frozen contract component `IfMatchVersion`.
 
-A note on the header name. API_CONTRACTS §2.4 calls it `If-Match-Version`,
-while the frozen `openapi_v0.2.yaml` declares the component `IfMatchVersion`
-with `name: If-Match`. Per the authority order in API_CONTRACTS §1, OpenAPI
-governs HTTP shape, so the wire header is **If-Match**. `If-Match-Version` is
-accepted as an alias so a client following the prose is not silently rejected,
-and the discrepancy is recorded for the contract owner rather than resolved
-unilaterally.
+Technical Patch v0.2.2 settled the header name: the canonical header is
+**If-Match-Version**, and the frozen contract types it `integer, minimum: 1`.
+The undocumented `If-Match` alias carried during v0.2.1 is gone — there was no
+production client depending on it.
+
+Because the contract now types the value as an integer, a weak/quoted ETag form
+is no longer accepted either. `If-Match` conventionally carries an ETag, which
+is why v0.2.1 tolerated `W/"3"`; `If-Match-Version` carries a version integer
+and nothing else, so accepting ETag syntax would be a liberality the contract
+does not describe.
 
 `requests`, `properties` and `property_offers` carry an integer `version`
 bumped by `bump_version_and_timestamp()` in the frozen schema. `parties` does
@@ -25,14 +28,15 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-HEADER = "If-Match"
-HEADER_ALIAS = "If-Match-Version"
+HEADER = "If-Match-Version"
 
 #: table -> primary key column, for resources carrying an integer `version`.
-#: `parties` is deliberately absent: it has no version column in the frozen
-#: schema, so PATCH /parties/{id} cannot be version-checked without a schema
-#: change. Recorded as an accepted deviation rather than faked.
+#: `parties` joined this set in v0.2.2 (decision D2): it gained
+#: `version integer NOT NULL DEFAULT 1 CHECK (version > 0)` and the
+#: `bump_version_and_timestamp()` trigger, so PATCH /parties/{party_id} can now
+#: be version-checked as the contract has always required.
 VERSIONED_TABLES: dict[str, str] = {
+    "parties": "party_id",
     "requests": "request_id",
     "properties": "property_id",
     "property_offers": "offer_id",
@@ -69,17 +73,16 @@ class VersionGuard:
     version: int
 
 
-def parse_if_match(value: str | None, alias: str | None = None) -> int:
-    """Read the version from the header, accepting a weak/quoted ETag form."""
-    raw = value or alias
-    if raw is None or not raw.strip():
+def parse_if_match(value: str | None) -> int:
+    """Read the version from the header.
+
+    The contract types it `integer, minimum: 1`, so that is exactly what is
+    accepted: no ETag quoting, no weak-validator prefix, no alias.
+    """
+    if value is None or not value.strip():
         raise IfMatchRequired(f"{HEADER} header is required")
-    cleaned = raw.strip()
-    if cleaned.startswith("W/"):
-        cleaned = cleaned[2:]
-    cleaned = cleaned.strip('"').strip()
     try:
-        version = int(cleaned)
+        version = int(value.strip())
     except ValueError as exc:
         raise MalformedIfMatch(f"{HEADER} must be a version integer") from exc
     if version < 1:

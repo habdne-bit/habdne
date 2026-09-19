@@ -156,7 +156,7 @@ def test_nothing_writes_to_the_frozen_contract():
     offenders = []
     for path in SRC.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
-        if "openapi_v0.2.yaml" in text and (
+        if "openapi_v0.2.2.yaml" in text and (
             "write_text" in text or "open(" in text and '"w"' in text
         ):
             offenders.append(path.name)

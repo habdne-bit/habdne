@@ -1,6 +1,6 @@
-> **v0.2.1 database patch:** the PostgreSQL execution gate exposed duplicate FK declarations in v0.2. Use `schema_v0.2.1.sql` and `seed_master_data_v0.2.1.sql`. See `TECHNICAL_PATCH_v0.2.1.md`. API/OpenAPI/architecture semantics remain v0.2.
+> **v0.2.2 technical patch:** use `schema_v0.2.2.sql`, `seed_master_data_v0.2.2.sql`, and `openapi_v0.2.2.yaml`. The patch preserves v0.2.1 FK fixes and adds only the approved concurrency-header/PARTY-version corrections. See `TECHNICAL_PATCH_v0.2.2.md`. Full runtime/Slice 0 rerun is required before Slice 1.
 
-> **Handoff layout note:** this is the v0.2 technical README copied into the final developer handoff. Files have been reorganized into numbered folders. Use the root `README.md` and `00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.1.md` for actual paths and authority order.
+> **Handoff layout note:** this is the v0.2 technical README copied into the final developer handoff. Files have been reorganized into numbered folders. Use the root `README.md` and `00_START_HERE/TURAB_Developer_Handoff_Master_v1.0.2.md` for actual paths and authority order.
 
 # TURAB Technical Implementation Pack v0.2
 
@@ -17,17 +17,17 @@ v0.2 closes the P0/P1 architecture findings from `REFERENCE_Architecture_Review_
 
 | File | Purpose |
 |---|---|
-| `schema_v0.2.1.sql` | Clean PostgreSQL 16+ baseline schema with v0.2 invariants |
-| `seed_master_data_v0.2.1.sql` | Adrar location master data, controlled document/right options, reason codes, matching policy |
-| `openapi_v0.2.yaml` | OpenAPI 3.1 contract with DTO separation, operationIds, idempotency and queues |
+| `schema_v0.2.2.sql` | Clean PostgreSQL 16+ baseline schema with v0.2 invariants |
+| `seed_master_data_v0.2.2.sql` | Adrar location master data, controlled document/right options, reason codes, matching policy |
+| `openapi_v0.2.2.yaml` | OpenAPI 3.1 contract with DTO separation, operationIds, idempotency and queues |
 | `API_CONTRACTS_v0.2.md` | Behavioral API/domain contract |
 | `API_INVENTORY_v0.2.md` | Human-readable inventory of all HTTP operations |
 | `ARCHITECTURE_DECISIONS_v0.2.md` | Accepted remediation ADRs |
 | `IMPLEMENTATION_SLICES_v0.2.md` | Slice-by-slice build plan and stop gates |
 | `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | Mandatory edge-case acceptance scenarios |
 | `POSTGRES_EXECUTION_GATE.md` | Required PostgreSQL 16 migration/runtime proof |
-| `technical_pack_static_audit_v0.2.1.py` | Repeatable local static contract audit |
-| `STATIC_AUDIT_RESULTS_v0.2.1.json` | Latest static audit result and file hashes |
+| `technical_pack_static_audit_v0.2.2.py` | Repeatable local static contract audit |
+| `STATIC_AUDIT_RESULTS_v0.2.2.json` | Latest static audit result and file hashes |
 | `CHANGELOG_v0.2.md` | Differences from v0.1 |
 | `REFERENCE_Developer_Spec_v0.1.md` | Product-to-developer reference retained as upstream source |
 | `REFERENCE_Architecture_Review_v0.1.md` | Red-team findings that caused this remediation |
@@ -37,8 +37,8 @@ v0.2 closes the P0/P1 architecture findings from `REFERENCE_Architecture_Review_
 1. `REFERENCE_Developer_Spec_v0.1.md`
 2. `ARCHITECTURE_DECISIONS_v0.2.md`
 3. `API_CONTRACTS_v0.2.md`
-4. `schema_v0.2.1.sql`
-5. `openapi_v0.2.yaml`
+4. `schema_v0.2.2.sql`
+5. `openapi_v0.2.2.yaml`
 6. `IMPLEMENTATION_SLICES_v0.2.md`
 7. `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md`
 
@@ -63,7 +63,7 @@ v0.2 closes the P0/P1 architecture findings from `REFERENCE_Architecture_Review_
 Run:
 
 ```bash
-python technical_pack_static_audit_v0.2.1.py
+python technical_pack_static_audit_v0.2.2.py
 ```
 
 The packaged result is PASS and checks SQL structural references, remediation markers, seed coverage, OpenAPI refs/parameters/operationIds/idempotency/DTO boundaries and file hashes.

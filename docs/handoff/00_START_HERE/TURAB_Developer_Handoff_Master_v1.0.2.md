@@ -1,11 +1,11 @@
 # تُراب — TURAB
-## Developer Handoff Master v1.0.1
+## Developer Handoff Master v1.0.2
 
 **الحالة:** حزمة التسليم الرسمية للمطور  
-**التاريخ:** 2026-09-18  
+**التاريخ:** 2026-09-19  
 **مرجع المنتج:** `TURAB Foundation Baseline v1.0 FINAL`  
-**مرجع التنفيذ التقني:** `Technical Implementation Pack v0.2` + Database Patch `v0.2.1`  
-**قرار البدء:** **Conditional GO** — لا يبدأ التنفيذ الفعلي قبل اجتياز `POSTGRES_EXECUTION_GATE.md` على PostgreSQL 16+.
+**مرجع التنفيذ التقني:** `Technical Implementation Pack v0.2` + Technical Patch `v0.2.2`  
+**قرار البدء:** **Slice 0 PASS / Slice 1 BLOCKED pending v0.2.2 re-freeze** — Patch v0.2.2 يجب أن يجتاز PostgreSQL/OpenAPI/Slice 0 rerun قبل بدء PARTY domain implementation.
 
 ---
 
@@ -25,32 +25,31 @@
 
 # 2. حالة المشروع عند التسليم
 
-تم تجميد الأساس المنتجـي في `Foundation Baseline v1.0 FINAL`. ثم أُعدت مواصفة مطور تفصيلية، وبعدها Schema وOpenAPI وخطة تنفيذ. خضعت الحزمة التقنية v0.1 لمراجعة Red-Team صارمة، وأُغلقت ملاحظات P0/P1 في النسخة التقنية v0.2.
+تم تجميد الأساس المنتجـي في `Foundation Baseline v1.0 FINAL`. أُغلقت ملاحظات Architecture Review الأساسية في v0.2، ثم أصلح Patch v0.2.1 تكرارات FK التي كشفها PostgreSQL Runtime Gate. بعد ذلك أفاد المطور باجتياز v0.2.1 فعليًا على PostgreSQL 16.13، وإغلاق Slice 0 مع اختبارات authorization / DTO / error / idempotency / concurrency foundation دون تعديل الحزمة المجمدة.
 
-الحزمة التقنية v0.2 اجتازت المراجعة الساكنة أولًا، ثم كشف PostgreSQL Execution Gate تكرار FK فعليًا في الـSchema. أُصدر Patch تصحيحي `v0.2.1` دون تغيير دلالات المنتج أو الـAPI، وتم تحسين الفحص الساكن لمنع تكرار هذا النوع. الحالة الحالية لـ`schema_v0.2.1.sql` هي **Static Audit PASS** مع:
+قبل بدء Slice 1 كشف Closure Review تناقضين يجب حسمهما في Baseline نفسها، لا بترقيع محلي:
 
-- 48 جدولًا.
-- 54 Type.
-- 17 Function.
-- 37 Trigger.
-- 55 Index.
-- 131 Foreign-Key Reference.
-- 12 named cross-section FK constraints.
-- 0 duplicate FK names / 0 semantic duplicate FKs detected by hardened audit.
-- 16 بلدية لولاية أدرار ضمن Seed.
-- OpenAPI 3.1.0.
-- 61 Path.
-- 64 Operation.
-- 59 Component Schema.
-- 527 `$ref` داخلية بدون كسر.
+- **D1:** OpenAPI كانت تسمّي header الفعلي `If-Match` بينما النص والعقد التشغيلي يعتمدان `If-Match-Version`.
+- **D2:** `PATCH /parties/{party_id}` يطلب optimistic concurrency لكن جدول `parties` وDTOs الطرف لم تكن تحمل `version`.
 
-ويبقى Gate الإصدار الحاسم: إعادة تشغيل `schema_v0.2.1.sql` والـSeed فعليًا على PostgreSQL 16+ واختبار القيود والـTriggers. فشل v0.2 في هذا الـGate هو الذي أدى إلى Patch v0.2.1. لذلك حالة الحزمة هي:
+لذلك صدر Technical Patch `v0.2.2`، وهو Patch ضيق النطاق:
 
-> **Static Architecture: PASS on database patch v0.2.1**  
-> **PostgreSQL Runtime Gate: PENDING RE-RUN**  
-> **Implementation Status: CONDITIONAL GO**
+- يحافظ على جميع إصلاحات FK السابقة؛
+- يبقي عدد FK = **131**؛
+- يجعل `If-Match-Version` هو header الرسمي الوحيد؛
+- يضيف `parties.version integer NOT NULL DEFAULT 1 CHECK (version > 0)`؛
+- يجعل تحديث PARTY يستخدم `bump_version_and_timestamp()`؛
+- يضيف `version` إلى `Party` و`CustomerPartyView` فقط، لا إلى input schemas.
 
-هذا الـGate Release Blocker وليس خطوة شكلية.
+الحالة الحالية عند نشر هذه الحزمة:
+
+> **Product / Architecture baseline: FROZEN**  
+> **Previous v0.2.1 runtime evidence: PASS (historical prior baseline)**  
+> **Technical Patch v0.2.2: STATIC ADOPTION CANDIDATE**  
+> **v0.2.2 PostgreSQL + OpenAPI + Slice 0 rerun: REQUIRED**  
+> **Slice 1: BLOCKED UNTIL RE-FREEZE**
+
+لا يجوز اعتبار v0.2.2 مجمدة بمجرد اسم الحزمة. يجب أن تمر `verify_v022_baseline.py` والـGate الكامل ثم يسجل المطور commit/hash جديدين.
 
 ---
 
@@ -62,10 +61,10 @@
 |---|---|---|
 | 1 | `TURAB_Foundation_Baseline_v1.0_FINAL.docx` | معنى المنتج، المبادئ، الحدود، القرارات التأسيسية |
 | 2 | `TURAB_Project_Instructions_v1.0.md` | منهج اتخاذ القرار، Design Ledger، منع Feature Creep |
-| 3 | `ARCHITECTURE_DECISIONS_v0.2.md` + `TECHNICAL_PATCH_v0.2.1.md` | القرارات التقنية الملزمة وتصحيح executable database baseline |
+| 3 | `ARCHITECTURE_DECISIONS_v0.2.md` + `TECHNICAL_PATCH_v0.2.2.md` | القرارات التقنية الملزمة وتصحيح executable database baseline |
 | 4 | `TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي المطلوب من النظام |
-| 5 | `API_CONTRACTS_v0.2.md` + `openapi_v0.2.yaml` | حدود الخدمات والعقود والـDTOs والصلاحيات |
-| 6 | `schema_v0.2.1.sql` + `seed_master_data_v0.2.1.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
+| 5 | `API_CONTRACTS_v0.2.md` + `openapi_v0.2.2.yaml` | حدود الخدمات والعقود والـDTOs والصلاحيات |
+| 6 | `schema_v0.2.2.sql` + `seed_master_data_v0.2.2.sql` | النموذج المادي الحالي وقواعد قاعدة البيانات |
 | 7 | `IMPLEMENTATION_SLICES_v0.2.md` | ترتيب التنفيذ وStop Gates |
 | 8 | `RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | حالات القبول الإلزامية |
 | مرجعي فقط | ملفات `99_REFERENCE_HISTORY` | لماذا تغيرت القرارات؛ لا تُستخدم كBaseline تنفيذية |
@@ -353,14 +352,14 @@ Opportunity uniqueness تبقى عند:
 
 1. قراءة هذا الملف كاملًا.
 2. قراءة Foundation Baseline ثم Developer Reference Spec ثم Architecture Decisions.
-3. تشغيل `technical_pack_static_audit_v0.2.1.py` والتأكد من PASS.
-4. تشغيل `schema_v0.2.1.sql` على PostgreSQL 16+ جديد.
-5. تشغيل `seed_master_data_v0.2.1.sql` مرتين للتحقق من idempotency.
-6. تنفيذ اختبارات `POSTGRES_EXECUTION_GATE.md`.
-7. Parse/Lint `openapi_v0.2.yaml` في CI.
-8. إنشاء CI يعيد بناء قاعدة فارغة ويشغل الاختبارات في كل Merge Request.
-9. اعتماد Error Contract وIdempotency وObject Authorization من Slice 0 قبل Domain Features.
-10. عدم البدء في AI قبل اجتياز Stop Gate E.
+3. تشغيل `verify_v022_baseline.py` ثم `technical_pack_static_audit_v0.2.2.py` والتأكد من PASS.
+4. تشغيل `schema_v0.2.2.sql` على PostgreSQL 16+ جديد.
+5. تشغيل `seed_master_data_v0.2.2.sql` مرتين للتحقق من idempotency.
+6. تنفيذ `POSTGRES_EXECUTION_GATE.md` والـexpanded DB gate suite.
+7. Parse/Lint `openapi_v0.2.2.yaml` وتشغيل runtime OpenAPI drift check.
+8. تحديث توقعات Slice 0 إلى `If-Match-Version` فقط وإعادة مجموعة Slice 0 كاملة.
+9. تسجيل baseline commit وSHA-256 الجديدة ثم Re-freeze.
+10. عندها فقط يبدأ Slice 1؛ لا يبدأ PARTY domain implementation قبل ذلك.
 
 إذا فشل PostgreSQL Gate، **لا يبدأ Slice 0 بوصف الحزمة مجمدة**؛ يتم إصلاح الـSchema/Contracts أولًا وتحديث النسخة رسميًا.
 
@@ -411,16 +410,18 @@ Opportunity uniqueness تبقى عند:
 | `02_DEVELOPER_SPEC/TURAB_Developer_Reference_Spec_v0.1.*` | السلوك التفصيلي للمطور |
 | `03_ARCHITECTURE/ARCHITECTURE_DECISIONS_v0.2.md` | ADRs الملزمة |
 | `03_ARCHITECTURE/REMEDIATION_REVIEW_v0.2.md` | إثبات إغلاق ملاحظات v0.1 |
-| `04_DATABASE/schema_v0.2.1.sql` | PostgreSQL 16+ baseline |
-| `04_DATABASE/seed_master_data_v0.2.1.sql` | Master Data / Adrar / reasons / policy |
+| `03_ARCHITECTURE/TECHNICAL_PATCH_v0.2.2.md` | أحدث Patch ملزم لـD1/D2 |
+| `04_DATABASE/schema_v0.2.2.sql` | PostgreSQL 16+ baseline |
+| `04_DATABASE/seed_master_data_v0.2.2.sql` | Master Data / Adrar / reasons / policy |
 | `04_DATABASE/POSTGRES_EXECUTION_GATE.md` | Release gate قبل الكود |
-| `05_API/openapi_v0.2.yaml` | العقد الآلي للـHTTP API |
+| `05_API/openapi_v0.2.2.yaml` | العقد الآلي للـHTTP API |
 | `05_API/API_CONTRACTS_v0.2.md` | السلوك التفصيلي للـAPI |
 | `05_API/API_INVENTORY_v0.2.md` | جرد العمليات |
 | `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` | خطة البناء وStop Gates |
 | `07_QA_ACCEPTANCE/RED_TEAM_ACCEPTANCE_TESTS_v0.2.md` | Edge cases واختبارات القبول |
-| `07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.1.py` | فحص ساكن قابل للتكرار |
-| `07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.1.json` | نتيجة الفحص الحالية |
+| `07_QA_ACCEPTANCE/technical_pack_static_audit_v0.2.2.py` | فحص ساكن قابل للتكرار |
+| `07_QA_ACCEPTANCE/verify_v022_baseline.py` | فحص آلي خاص بقبول D1/D2 |
+| `07_QA_ACCEPTANCE/STATIC_AUDIT_RESULTS_v0.2.2.json` | نتيجة الفحص الحالية |
 | `99_REFERENCE_HISTORY/*` | تاريخ القرارات فقط؛ ليس Baseline تنفيذية |
 
 ---
