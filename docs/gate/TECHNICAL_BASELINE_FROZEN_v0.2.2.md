@@ -11,6 +11,16 @@ package. All did.
 
 ---
 
+### Pinned commit
+
+```
+f28db31dccb4aa46409eb7f971f807ef4da94eec
+```
+
+Branch `claude/postgresql-execution-gate-yqifk7`.
+
+---
+
 ## What is frozen
 
 | | |
