@@ -1,0 +1,559 @@
+TURAB — PostgreSQL Execution Gate, captured for the review bundle
+=================================================================
+Commit    : 50f9961a708b291b208059e68b8d4ed4fc319edd (tree clean)
+Captured  : 2026-09-19 21:51:02 UTC
+
+NOTE. This is a run captured WHILE ASSEMBLING THE BUNDLE, not the one
+quoted in the Slice 2 report. The gate output was not written to a file
+at the time, so rather than cite a result with no artefact behind it,
+the gate was run again against the same, unmodified commit. The test
+suite was NOT re-run: its results are the saved junit.xml in this
+directory (see results-provenance.txt).
+
+Command   : PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab db/gate/run_gate.sh
+=================================================================
+
+
+==> 0/8  Handoff package integrity
+PASS: verified 36 handoff files
+
+==> 1/8  Static audit of the technical pack
+{
+  "status": "PASS",
+  "metrics": {
+    "tables": 48,
+    "types": 54,
+    "functions": 17,
+    "triggers": 37,
+    "indexes": 55,
+    "foreign_key_refs": 131,
+    "named_alter_fks": 12,
+    "seed_commune_codes": 16,
+    "openapi_version": "3.1.0",
+    "openapi_paths": 61,
+    "openapi_operations": 64,
+    "openapi_schemas": 59,
+    "openapi_refs": 527
+  },
+  "errors": [],
+  "warnings": [],
+  "sha256": {
+    "schema_v0.2.3.sql": "789841a1a41d869ca78de256879e62950f0672c9719c40a94408c549e28d98a0",
+    "seed_master_data_v0.2.3.sql": "21b31c4ed338bb4aac24ea5d724b265e5e5b941bc54dd627f3953f3c2ff6cf10",
+    "openapi_v0.2.3.yaml": "b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72"
+  }
+}
+
+==> 2/8  Rebuild a clean database from zero
+16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+==> 3/8  Apply schema_v0.2.3.sql
+
+==> 4/8  Apply seed_master_data_v0.2.3.sql twice (idempotency)
+
+==> 5/8  Database-level contract tests
+
+== T10. exactly one active matching policy ==========================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:121: NOTICE:  PASS | T10.seed-has-one-active | exactly one active policy after double seed
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:125: NOTICE:  PASS | T10.second-active-rejected | blocked: duplicate key value violates unique constraint "ux_matching_policy_one_active"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:128: NOTICE:  PASS | T10.inactive-policy-allowed | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+
+== T7. match commercial context / BUY-RENT =========================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:136: NOTICE:  PASS | T7.buy-request-vs-rent-offer | blocked: Request transaction intent does not match evaluated offer
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:141: NOTICE:  PASS | T7.rent-request-vs-sale-offer | blocked: Request transaction intent does not match evaluated offer
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:146: NOTICE:  PASS | T7.offer-from-another-property | blocked: Evaluated offer must belong to matched property
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:150: NOTICE:  PASS | T7.non-potential-requires-offer | blocked: Non-potential property match requires evaluated_offer_id
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:153: NOTICE:  PASS | T7.potential-property-without-offer | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:164: NOTICE:  PASS | T7.stale-offer-version-snapshot | blocked: offer_version must snapshot evaluated offer version
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:175: NOTICE:  PASS | T7.policy-version-must-match-id | blocked: matching_policy_version must match matching_policy_id
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== T6. alias -> canonical property constraint ======================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:189: NOTICE:  PASS | T6.pair-must-match-identity-candidate | blocked: Alias/canonical pair must match identity candidate pair
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:194: NOTICE:  PASS | T6.confirmed-same-requires-alias-mapping | blocked: CONFIRMED_SAME requires a canonical alias mapping in the same transaction
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:200: NOTICE:  PASS | T6.alias-created-non-destructively | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:204: NOTICE:  PASS | T6.alias-source-rows-preserved | alias property keeps its offers/history (non-destructive merge)
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:211: NOTICE:  PASS | T6.canonical-cannot-itself-be-alias | blocked: Canonical property cannot itself be an alias
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:218: NOTICE:  PASS | T6.existing-canonical-cannot-become-alias | blocked: A property already acting as canonical cannot later become an alias; consolidate explicitly
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:224: NOTICE:  PASS | T7.match-must-target-canonical-not-alias | blocked: Matches must target canonical properties, not identity aliases
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== T5. consent resource binding ====================================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:236: NOTICE:  PASS | T5.purpose-must-match-granted-scope | blocked: Consent grant scope PRIVATE_MATCHING_ONLY does not match binding purpose PUBLIC_LISTING_ALLOWED
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:241: NOTICE:  PASS | T5.consent-of-another-party-rejected | blocked: Request consent party mismatch
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:246: NOTICE:  PASS | T5.revoked-consent-cannot-bind | blocked: Consent grant must exist and be GRANTED
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:251: NOTICE:  PASS | T5.property-binding-needs-active-relation | blocked: Property consent party has no active property relation
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:257: NOTICE:  PASS | T5.binding-must-name-exactly-one-resource | blocked: new row for relation "resource_consent_bindings" violates check constraint "resource_consent_bi
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:261: NOTICE:  PASS | T5.correct-party-resource-purpose-binds | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:265: NOTICE:  PASS | T5.revocation-keeps-history | revoked grant row is retained, not deleted
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+
+== T3. resolution lineage ==========================================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:278: NOTICE:  PASS | T3.attribute-must-match-source-claim | blocked: Resolved value attribute must match source claim attribute
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:284: NOTICE:  PASS | T3.subject-must-match-source-claim | blocked: Resolved value subject must match source claim subject
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:290: NOTICE:  PASS | T3.dangling-source-claim-rejected | blocked: source_claim_id does not exist
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:295: NOTICE:  PASS | T3.matching-lineage-accepted | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:301: NOTICE:  PASS | T3.one-current-resolution-per-subject-attribute | blocked: duplicate key value violates unique constraint "ux_resolved_current_property"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== T4. verification upgrade path ===================================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:307: NOTICE:  PASS | T4.claim-starts-declared | claim begins at DECLARED (declared != verified)
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:313: NOTICE:  PASS | T4.confirmed-event-raises-level | CONFIRMED verification event raised DECLARED -> DOCUMENT_SEEN
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:319: NOTICE:  PASS | T4.level-never-downgraded-silently | a lower-level event does not lower the effective level (GREATEST)
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:325: NOTICE:  PASS | T4.not-confirmed-does-not-upgrade | NOT_CONFIRMED outcome leaves the level untouched
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:331: NOTICE:  PASS | T4.conflict-marks-claim-conflicting | CONFLICT_FOUND marks the claim CONFLICTING instead of upgrading it
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+
+== T8. assisted / claim-state checks ===============================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:338: NOTICE:  PASS | T8.assisted-request-cannot-be-claimed | blocked: new row for relation "requests" violates check constraint "requests_check1"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:342: NOTICE:  PASS | T8.self-managed-request-cannot-be-unclaimed | blocked: new row for relation "requests" violates check constraint "requests_check1"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:346: NOTICE:  PASS | T8.assisted-property-cannot-be-claimed | blocked: new row for relation "properties" violates check constraint "properties_check"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:349: NOTICE:  PASS | T8.shared-management-requires-claimed | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:355: NOTICE:  PASS | T8.property-attribute-claim-must-match-subject | blocked: property_attributes.resolved_claim_id must reference same property and attribute
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== T1. opportunity gate ============================================
+       turab_gate_mk_candidate        
+--------------------------------------
+ 66666666-0000-0000-0000-000000000001
+(1 row)
+
+       turab_gate_mk_candidate        
+--------------------------------------
+ 66666666-0000-0000-0000-000000000002
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:370: NOTICE:  PASS | T1.cannot-approve-a-hard-FAIL-candidate | blocked: Cannot approve match 66666666-0000-0000-0000-000000000002 before all opportunity gates pass
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:374: NOTICE:  PASS | T1.rejecting-a-failing-candidate-is-allowed | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:382: NOTICE:  PASS | T1.no-opportunity-without-human-review | blocked: Opportunity requires the latest human review to be APPROVED
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:390: NOTICE:  PASS | T1.no-opportunity-from-rejected-review | blocked: Opportunity requires the latest human review to be APPROVED
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:403: NOTICE:  PASS | T1.opportunity-pair-must-match-candidate | blocked: Opportunity request/property must match approved candidate
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:411: NOTICE:  PASS | T1.current-offer-must-equal-evaluated-offer | blocked: Opportunity current_offer_id must initially match evaluated offer
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:419: NOTICE:  PASS | T1.unknown-approved-match-rejected | blocked: approved_match_id 66666666-0000-0000-0000-0000000000ee does not exist
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:427: NOTICE:  PASS | T1.approved-candidate-yields-opportunity | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+
+== T2. append-only match review, latest decision wins ==============
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:434: NOTICE:  PASS | T2.match-review-cannot-be-updated | blocked: Historical TURAB record is immutable; append a new decision/event instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:437: NOTICE:  PASS | T2.match-review-cannot-be-deleted | blocked: Historical TURAB record is immutable; append a new decision/event instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:441: NOTICE:  PASS | T2.match-candidate-snapshot-is-immutable | blocked: Historical TURAB record is immutable; append a new decision/event instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:444: NOTICE:  PASS | T2.match-candidate-cannot-be-deleted | blocked: Historical TURAB record is immutable; append a new decision/event instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+       turab_gate_mk_candidate        
+--------------------------------------
+ 66666666-0000-0000-0000-000000000003
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:457: NOTICE:  PASS | T2.review-history-is-appended-not-replaced | both decisions retained in history
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:460: NOTICE:  PASS | T2.latest_match_reviews-view-returns-newest | the view resolves to the most recent decision
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:467: NOTICE:  PASS | T2.superseded-approval-cannot-create-opportunity | blocked: Opportunity requires the latest human review to be APPROVED
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== T11. one open opportunity per Request x canonical Property ======
+       turab_gate_mk_candidate        
+--------------------------------------
+ 66666666-0000-0000-0000-000000000004
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:484: NOTICE:  PASS | T11.second-open-opportunity-blocked | blocked: duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:495: NOTICE:  PASS | T11.after-closing-a-new-opportunity-is-allowed | allowed as required
+ turab_gate_expect_ok 
+----------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:500: NOTICE:  PASS | T11.closed-opportunity-is-retained | closing supersedes without deleting the earlier opportunity
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:508: NOTICE:  PASS | T11.one-opportunity-per-approved-match | blocked: duplicate key value violates unique constraint "opportunities_approved_match_id_key"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== T9. protected hard deletes ======================================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:514: NOTICE:  PASS | T9.requests-not-hard-deletable | blocked: Hard delete prohibited for core TURAB records; close/supersede instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:517: NOTICE:  PASS | T9.properties-not-hard-deletable | blocked: Hard delete prohibited for core TURAB records; close/supersede instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:520: NOTICE:  PASS | T9.offers-not-hard-deletable | blocked: Hard delete prohibited for core TURAB records; close/supersede instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:523: NOTICE:  PASS | T9.claims-not-hard-deletable | blocked: Hard delete prohibited for core TURAB records; close/supersede instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:526: NOTICE:  PASS | T9.resolved-values-not-hard-deletable | blocked: Hard delete prohibited for core TURAB records; close/supersede instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:529: NOTICE:  PASS | T9.opportunities-not-hard-deletable | blocked: Hard delete prohibited for core TURAB records; close/supersede instead
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== Provenance / audit sanity =======================================
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:536: NOTICE:  PASS | AUDIT.critical-mutations-are-recorded | audit_log captured critical-entity mutations
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+
+== T12. Adrar location integrity (Slice -1 mandatory) =============
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:544: NOTICE:  PASS | T12.tililane-pair-both-seeded | both Tililane locations exist after a double seed
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:548: NOTICE:  PASS | T12.tililane-distinct-identities | Ksar Tililane and New City Tililane are two distinct canonical locations
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:552: NOTICE:  PASS | T12.tililane-different-types | the ksar is KSAR and the new city is AREA; a shared name is not a shared place
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:557: NOTICE:  PASS | T12.tililane-aliases-not-crossed | the ksar alias never resolves to the new city
+ turab_gate_expect_true 
+------------------------
+ 
+(1 row)
+
+psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:561: NOTICE:  PASS | T12.location-code-is-unique | blocked: duplicate key value violates unique constraint "locations_code_key"
+ turab_gate_expect_error 
+-------------------------
+ 
+(1 row)
+
+
+== GATE RESULT =====================================================
+               gate_result                
+------------------------------------------
+ ALL DATABASE-LEVEL CONTRACT TESTS PASSED
+(1 row)
+
+
+==> 6/8  OpenAPI parse / lint
+{
+  "status": "PASS",
+  "openapi": "3.1.0",
+  "paths": 61,
+  "operations": 64,
+  "component_schemas": 59,
+  "internal_refs": 527,
+  "errors": []
+}
+
+==> 7/8  Effective contract (frozen package + approved corrections)
+PASS: docs/api/openapi_effective_v0.2.3.yaml is current (2 correction(s) applied)
+PASS: docs/api/API_INVENTORY_GENERATED.md matches /home/user/habdne/docs/api/openapi_effective_v0.2.3.yaml
+
+==> 8/8  Baseline version consistency
+    schema filename                      0.2.3
+    seed filename                        0.2.3
+    openapi filename                     0.2.3
+    static audit script filename         0.2.3
+    static audit results filename        0.2.3
+    technical pack manifest filename     0.2.3
+    schema header                        0.2.3
+    schema_metadata.schema_version       0.2.3
+    seed header                          0.2.3
+    openapi info.version                 0.2.3
+    HANDOFF_MANIFEST.technical_baseline  0.2.3
+
+VERSION CONSISTENCY: PASS — every statement of the baseline version agrees
+
+POSTGRES EXECUTION GATE: PASS

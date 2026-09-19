@@ -32,6 +32,8 @@ Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 - **Design Ledger** — adopted, deferred and blocked decisions: **[`docs/DESIGN_LEDGER.md`](docs/DESIGN_LEDGER.md)**
 - Contract corrections (never edit the frozen package): **[`docs/contract/`](docs/contract/)**
 - Environment notes: **[`docs/gate/ENVIRONMENT_NOTES.md`](docs/gate/ENVIRONMENT_NOTES.md)**
+- INV-1 / INV-2, approved text and where each half is enforced: **[`docs/gate/INV-1-and-INV-2.md`](docs/gate/INV-1-and-INV-2.md)**
+- Run evidence per commit: **[`docs/gate/evidence/`](docs/gate/evidence/)**
 - Defect record (BOLA on the Slice 1 command surface, closed): **[`docs/gate/DEFECT-001-command-surface-object-gate.md`](docs/gate/DEFECT-001-command-surface-object-gate.md)**
 
 Slices follow `06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md` in order; no

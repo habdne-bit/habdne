@@ -1,0 +1,23 @@
+TURAB — provenance of the saved test results
+============================================
+
+Commit under review : 50f9961a708b291b208059e68b8d4ed4fc319edd
+Commit timestamp    : 2026-09-19T21:26:35+00:00
+junit.xml written   : 2026-09-19 21:24:18 UTC
+
+The results predate the commit by about two minutes. What changed in
+between was DOCUMENTATION only. The check below is the evidence:
+
+  $ find src tests db alembic.ini -newer reports/junit.xml -type f \
+        \( -name '*.py' -o -name '*.sql' -o -name '*.sh' -o -name '*.ini' \)
+
+  result at bundle time:
+    (no output — no source, test, fixture, migration or script file was
+     modified after the run, so the results correspond to exactly the code
+     archived in 00_COMMIT/source-50f9961.tar.gz)
+
+Working tree at bundle time:
+    (no output above = clean, HEAD = 50f9961a708b291b208059e68b8d4ed4fc319edd)
+
+Files changed between the run and the commit (documentation only):
+    docs/gate/SLICE_2_PROGRESS.md, docs/DESIGN_LEDGER.md, README.md

@@ -144,6 +144,30 @@ contract cannot yet express is the client attaching the call or message it was
 working from, so `source_recorded` is `false` on every update arriving through
 the contract as frozen. Accepting one needs a contract change.
 
+### DL-12 · RFC-001 carries no text for INV-1 or INV-2
+**Documentation gap, found 2026-09-19 while assembling the Slice 2 review
+bundle. Not a code defect.**
+
+```
+$ grep -c "INV-" docs/rfc/RFC-001-object-level-authorization.md
+0
+```
+
+The two fail-closed invariants the authorization design rests on were added
+**at the moment RFC-001 was approved**, in the approval instruction, and were
+never folded back into the RFC. Their text lives in the approval message, in
+the closure packs, and in the docstrings of the code enforcing them — so a
+reviewer asked to read these constraints from their own source finds no
+canonical paragraph.
+
+Both are enforced and tested; nothing is wrong with the implementation. What
+is missing is the normative text. The remedy is to fold both into RFC-001 as
+numbered rules, which edits an approved document and therefore needs a
+decision.
+
+Meanwhile: `docs/gate/INV-1-and-INV-2.md` states the approved text and maps
+each half to the code and tests that enforce it.
+
 ---
 
 ## Superseded

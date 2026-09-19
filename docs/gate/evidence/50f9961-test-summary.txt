@@ -1,0 +1,35 @@
+TURAB — saved test results for commit 50f9961a708b291b208059e68b8d4ed4fc319edd
+Source: reports/junit.xml, written 2026-09-19 21:24:18 UTC
+
+total cases : 446
+  passed  : 446
+time        : 29.896 s
+
+cases per test file
+----------------------------------------------------
+  test_slice2_mandatory.py                     55
+  test_correction_001.py                       27
+  test_concurrency.py                          26
+  test_dto_boundaries.py                       26
+  test_authorization_integration.py            25
+  test_slice1_http.py                          23
+  test_slice1_mandatory.py                     23
+  test_slice2_http.py                          23
+  test_architecture.py                         22
+  test_migrations.py                           22
+  test_slice1_timeline.py                      19
+  test_error_contract.py                       17
+  test_observability.py                        17
+  test_http_endpoints.py                       16
+  test_audit.py                                15
+  test_inv2_separation.py                      15
+  test_conflict_disclosure.py                  13
+  test_idempotency.py                          13
+  test_contract_policy.py                      12
+  test_inv1_claim_authority.py                 12
+  test_slice1_bola.py                          11
+  test_version_consistency.py                   9
+  test_transaction_audit_context.py             3
+  test_slice2_stop_gate_b.py                    2
+
+failures/errors: none

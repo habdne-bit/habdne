@@ -1,0 +1,37 @@
+TURAB — runtime environment for the recorded run
+================================================
+
+OS              : Ubuntu 24.04.4 LTS
+kernel          : Linux 6.18.44-fc-v37
+python          : Python 3.12.3
+postgres server : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+psql client     : psql (PostgreSQL) 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+Python packages (pinned at run time)
+------------------------------------
+PyYAML==6.0.3
+SQLAlchemy==2.0.54
+alembic==1.20.0
+anyio==4.15.1
+fastapi==0.141.1
+httpx==0.28.1
+psycopg-binary==3.3.6
+psycopg==3.3.6
+pydantic==2.13.5
+pydantic_core==2.46.5
+pytest==9.1.1
+starlette==1.6.0
+uvicorn==0.53.0
+
+Database connection used by the suite (tests/conftest.py defaults)
+------------------------------------------------------------------
+  PGHOST=127.0.0.1  PGUSER=turab  PGPASSWORD=turab
+  TURAB_TEST_DB=turab_authz_test      (built per session: schema + seed +
+                                       fixtures, then baseline stamped and
+                                       migrations run forward)
+  TURAB_MIGRATION_DB=turab_migration_test  (migration tests build their own)
+
+Alembic chain
+-------------
+  0001_frozen_baseline_v0_2_3  -> applies the FROZEN schema_v0.2.3.sql verbatim
+  0002_request_closure_reasons -> adds the REQUEST_CLOSURE reason codes (head)
