@@ -58,6 +58,10 @@ def audited_transaction(
             "otherwise attribute the change to nobody"
         )
 
+    # The session must be pristine: nothing may have opened a transaction on
+    # it yet. The subject is resolved on the read session for exactly this
+    # reason, so the command owns its transaction outright and the idempotency
+    # claim, the work and the stored result commit together.
     with session.begin():
         session.execute(
             text("SELECT set_config('app.account_id', :v, true)"),

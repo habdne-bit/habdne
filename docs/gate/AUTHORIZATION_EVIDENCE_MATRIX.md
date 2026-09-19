@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **63**
-- Distinct tests cited: **133**
-- Suite total: **227/227** test cases passing (171 distinct test functions)
+- Rules and invariants covered: **71**
+- Distinct tests cited: **162**
+- Suite total: **267/267** test cases passing (206 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -74,6 +74,14 @@ matrix, because it reads as assurance.
 | `R8.2 / R8.2a` | Scope ladder adds; no scope lifts the never-serialized floor | `test_summary_only_withholds_property_detail`<br>`test_property_details_allowed_adds_the_customer_view`<br>`test_no_scope_lifts_the_never_serialized_floor` | PASS |
 | `R8.3 / S34` | Contact released only after a recorded confirmation | `test_contact_is_withheld_without_a_recorded_confirmation`<br>`test_contact_is_released_after_a_recorded_confirmation` | PASS |
 | `§8` | Structured logs redact OTP codes and sensitive payloads | `test_sensitive_keys_are_redacted`<br>`test_redaction_reaches_nested_structures`<br>`test_exceptions_log_type_and_message_not_a_traceback` | PASS |
+| `Slice 1 / A02` | Phone verification alone creates no party and no account | `test_verify_phone_control_creates_no_account`<br>`test_login_purpose_creates_no_account_when_none_exists`<br>`test_otp_is_unauthenticated_and_creates_nothing` | PASS |
+| `Slice 1` | LOGIN activates only an account that already exists | `test_login_activates_an_existing_invited_account`<br>`test_login_does_not_resurrect_a_disabled_account` | PASS |
+| `Slice 1 / A01` | One phone reaches two parties without merging them | `test_one_phone_can_reach_two_parties_without_merging`<br>`test_the_same_number_in_a_different_format_is_the_same_contact_point`<br>`test_reusing_a_contact_point_does_not_transfer_its_verified_control` | PASS |
+| `Slice 1 / B03` | Revoked consent authorizes nothing new; history survives | `test_revoked_consent_cannot_bind`<br>`test_revocation_leaves_history_intact`<br>`test_revoking_twice_is_not_an_error` | PASS |
+| `Slice 1 / B01-B02` | Consent binds only to its own party, scope and resource | `test_consent_of_party_a_cannot_bind_to_request_of_party_b`<br>`test_purpose_must_equal_the_granted_scope`<br>`test_property_binding_requires_an_active_party_property_relation`<br>`test_property_binding_succeeds_with_an_active_relation`<br>`test_an_expired_relation_does_not_authorize_a_property_binding` | PASS |
+| `§2.3 applied` | Idempotency is enforced on the commands that declare it | `test_missing_idempotency_key_is_rejected`<br>`test_same_key_same_payload_replays`<br>`test_same_key_different_payload_is_409`<br>`test_a_replay_creates_no_second_row` | PASS |
+| `§2.4 applied` | If-Match-Version is enforced; a stale version applies nothing | `test_patch_requires_the_version_header`<br>`test_patch_with_the_current_version_succeeds_and_bumps_it`<br>`test_patch_with_a_stale_version_is_409_and_changes_nothing`<br>`test_the_old_if_match_header_is_not_accepted` | PASS |
+| `Slice 1 / K01, K04` | Role boundaries and typed PATCH hold on the new surface | `test_customer_cannot_read_a_party_internally`<br>`test_reviewer_can_read_but_not_create`<br>`test_patch_rejects_an_undeclared_field`<br>`test_customer_cannot_create_a_consent_binding`<br>`test_customer_cannot_revoke_another_partys_consent` | PASS |
 | `D6 / baseline hygiene` | Version drift in any single claim is caught mechanically | `test_a_consistent_package_passes`<br>`test_drift_in_any_single_place_is_caught`<br>`test_a_missing_artifact_is_an_error` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 

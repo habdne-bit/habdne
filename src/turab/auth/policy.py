@@ -62,6 +62,11 @@ class RoutePolicy:
     public: bool = False
     #: True when the route is under /me/*, which changes concealment (R5.3).
     customer_scoped: bool = False
+    #: Derived from the contract's parameters, never hardcoded: 34 operations
+    #: declare Idempotency-Key and 4 declare If-Match-Version, and which is
+    #: which is the contract's business, not ours.
+    requires_idempotency: bool = False
+    requires_if_match: bool = False
 
 
 #: R10.4. The closed list of unauthenticated operations. Anything else lacking

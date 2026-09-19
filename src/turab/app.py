@@ -12,12 +12,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text as sa_text
 
 from .api import handlers
-from .api.routes import internal, me
+from .api.routes import auth, consents, internal, me, parties, records
 from .auth.audit import AccessAuditor
 from .auth.contract import build_policy_table, verify_policy_matches_contract
 from .auth.roles import verify_separation_sensitive_operations
 from .db.session import create_app_engine, session_factory
 from .observability import configure_logging
+from .services.otp import InMemoryChallengeStore
 
 logger = logging.getLogger("turab")
 
@@ -42,6 +43,9 @@ def create_app(
     app.state.auditor = auditor or AccessAuditor()
     app.state.engine = engine or create_app_engine()
     app.state.session_factory = session_factory(app.state.engine)
+    # Development carrier for OTP challenges; see services/otp.py for the
+    # open question about where this belongs in production.
+    app.state.challenge_store = InMemoryChallengeStore()
 
     @app.middleware("http")
     async def attach_trace_id(request: Request, call_next):
@@ -79,4 +83,8 @@ def create_app(
     handlers.install(app)
     app.include_router(me.router)
     app.include_router(internal.router)
+    app.include_router(parties.router)
+    app.include_router(consents.router)
+    app.include_router(auth.router)
+    app.include_router(records.router)
     return app

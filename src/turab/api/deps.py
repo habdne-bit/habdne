@@ -18,6 +18,8 @@ from ..auth.policy import PolicyTable
 from ..auth.subject import AccountNotResolvable, Subject, resolve_subject
 from ..db.session import read_session
 from ..services.access import AccessService
+from ..services.command import CommandService
+from ..services.otp import ChallengeStore, OtpService
 
 
 def get_policies(request: Request) -> PolicyTable:
@@ -29,6 +31,7 @@ def get_auditor(request: Request) -> AccessAuditor:
 
 
 def get_session(request: Request) -> Iterator[Session]:
+    """A read-only unit of work for query paths."""
     factory = request.app.state.session_factory
     session = factory()
     try:
@@ -36,6 +39,26 @@ def get_session(request: Request) -> Iterator[Session]:
             yield session
     finally:
         session.close()
+
+
+def get_write_session(request: Request) -> Iterator[Session]:
+    """A session for command paths.
+
+    The transaction is opened by CommandService inside `audited_transaction`,
+    so the actor reaches `audit_row_change()`. Anything left uncommitted when
+    the request ends is rolled back.
+    """
+    factory = request.app.state.session_factory
+    session = factory()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+
+
+def get_challenge_store(request: Request) -> ChallengeStore:
+    return request.app.state.challenge_store
 
 
 def get_subject(
@@ -51,6 +74,10 @@ def get_subject(
     party, roles and status are read from the database per request (R3.2) rather
     than trusted from the token.
     """
+    return _resolve_from_header(session, authorization)
+
+
+def _resolve_from_header(session: Session, authorization: str | None) -> Subject:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="UNAUTHENTICATED")
     raw = authorization.split(" ", 1)[1].strip()
@@ -81,6 +108,52 @@ def get_access(
     )
 
 
-Access = Annotated[AccessService, Depends(get_access)]
+def get_command(
+    request: Request,
+    session: Annotated[Session, Depends(get_write_session)],
+    subject: Annotated[Subject, Depends(get_subject_for_write)],
+    policies: Annotated[PolicyTable, Depends(get_policies)],
+    auditor: Annotated[AccessAuditor, Depends(get_auditor)],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> CommandService:
+    return CommandService(
+        session=session,
+        subject=subject,
+        policies=policies,
+        auditor=auditor,
+        trace_id=getattr(request.state, "trace_id", "-"),
+        idempotency_key=idempotency_key,
+    )
 
-__all__ = ["Access", "get_access", "get_policies", "get_auditor", "build_policy_table"]
+
+def get_subject_for_write(
+    session: Annotated[Session, Depends(get_session)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> Subject:
+    """Resolve the actor on the READ session.
+
+    Deliberately not the write session: resolving there would open a
+    transaction on it, and the command must own its transaction outright so
+    that the idempotency claim, the work and the stored result commit or roll
+    back as one. The subject is committed data either way, so reading it on a
+    separate session loses nothing.
+    """
+    return _resolve_from_header(session, authorization)
+
+
+def get_otp(
+    request: Request,
+    session: Annotated[Session, Depends(get_write_session)],
+    store: Annotated[ChallengeStore, Depends(get_challenge_store)],
+) -> OtpService:
+    return OtpService(session, store, getattr(request.state, "trace_id", "-"))
+
+
+Access = Annotated[AccessService, Depends(get_access)]
+Command = Annotated[CommandService, Depends(get_command)]
+Otp = Annotated[OtpService, Depends(get_otp)]
+
+__all__ = [
+    "Access", "Command", "Otp", "get_access", "get_command", "get_otp",
+    "get_policies", "get_auditor", "build_policy_table",
+]

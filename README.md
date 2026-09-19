@@ -11,8 +11,8 @@
 | **PostgreSQL 16+ Execution Gate** | **PASS** — twice on v0.2.3, 7 steps, 70/70 assertions |
 | Technical database baseline | **FROZEN** at `schema_v0.2.3.sql` |
 | Slice −1 — Tooling baseline | Complete |
-| Slice 0 — Application Skeleton + Security Boundaries | **Complete** — 227 tests, 63 rules evidenced |
-| Slice 1 — PARTY / Contact / Account / Consent | **Open** — D1, D2 and D6 all resolved |
+| Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
+| Slice 1 — PARTY / Contact / Account / Consent | **In progress** — 267 tests, 71 rules evidenced |
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -62,7 +62,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 227 tests
+./.venv/bin/pytest -q                  # 267 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

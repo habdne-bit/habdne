@@ -84,6 +84,9 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
             unannotated.append(f"{operation_id} ({method.upper()} {route})")
             continue
 
+        param_refs = " ".join(
+            p.get("$ref", "") for p in op.get("parameters", [])
+        )
         policies[operation_id] = RoutePolicy(
             operation_id=operation_id,
             method=method.upper(),
@@ -91,6 +94,8 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
             roles=roles,
             public=is_public,
             customer_scoped=route.startswith("/me/"),
+            requires_idempotency="IdempotencyKey" in param_refs,
+            requires_if_match="IfMatchVersion" in param_refs,
         )
 
     if unannotated:

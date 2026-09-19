@@ -341,6 +341,41 @@ def load_thread(session: Session, subject: Subject, thread_id: uuid.UUID) -> Loa
     )
 
 
+# ---------------------------------------------------------------------------
+# Staff reads
+# ---------------------------------------------------------------------------
+#
+# Staff hold no ownership, so their object check has a different shape
+# (RFC-001 §6): the role gate plus a recorded business purpose, which the audit
+# record supplies. These still take a subject — both because the audit needs it
+# and because a loader that accepts an id alone is the bypass the architecture
+# test forbids.
+
+def load_party_for_staff(
+    session: Session, subject: Subject, party_id: uuid.UUID
+) -> LoadResult:
+    row = session.execute(
+        text(
+            """
+            SELECT party_id, kind::text, status::text, display_name, legal_name,
+                   notes, version, created_at, updated_at
+              FROM turab.parties WHERE party_id = :party_id
+            """
+        ),
+        {"party_id": party_id},
+    ).mappings().first()
+    return (
+        LoadResult(ResourceKind.PARTY, party_id, row)
+        if row
+        else _denied(ResourceKind.PARTY, party_id)
+    )
+
+
+STAFF_LOADERS = {
+    ResourceKind.PARTY: load_party_for_staff,
+}
+
+
 LOADERS = {
     ResourceKind.PARTY: load_party,
     ResourceKind.REQUEST: load_request,

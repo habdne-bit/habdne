@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from ..auth.audit import AccessAuditor
 from ..auth.loaders import (
     LOADERS,
+    STAFF_LOADERS,
     ClaimAuthorityConflict,
     LoadResult,
     ResourceKind,
@@ -143,6 +144,31 @@ class AccessService:
                 reason_code=(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED).value,
                 resource_kind=kind.value,
                 resource_id=resource_id,
+            )
+        return result
+
+    def read_staff_resource(
+        self, kind: ResourceKind, resource_id: uuid.UUID, operation_id: str
+    ) -> LoadResult:
+        """A staff read of an arbitrary object.
+
+        Permitted by role, and RECORDED: RFC-001 R6.2 satisfies the
+        business-purpose requirement structurally rather than by asking the
+        caller to assert one, and R6.3 makes the read auditable.
+        """
+        result = STAFF_LOADERS[kind](self._session, self._subject, resource_id)
+        if result.authorized:
+            self._auditor.read(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id, resource_kind=kind.value,
+                resource_id=result.resource_id,
+            )
+        else:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED).value,
+                resource_kind=kind.value, resource_id=resource_id,
             )
         return result
 
