@@ -599,7 +599,14 @@ def add_criterion(
     ).scalars().all()
     if criterion_code not in known:
         raise UnknownCriterionCode(criterion_code, list(known))
-    before = _row(session, request_id)
+
+    # The PARENT request is locked before the slot is inspected. That is what
+    # makes the check below meaningful under concurrency: two criteria
+    # commands on the same request serialise here, so neither can read "the
+    # slot is free" while the other is about to take it. Locking the criterion
+    # row (the CHANGE branch does) protects that row, not the slot a second
+    # command is racing for. Found by follow-up review.
+    before = _row(session, request_id, for_update=True)
 
     params = {
         "request_id": request_id, "code": criterion_code,
@@ -607,11 +614,62 @@ def add_criterion(
         "value": json.dumps(value, default=str), "unit": unit,
         "blocking": blocking_if_unknown, "sort_order": sort_order,
     }
+    def _write(run):
+        """Run the write inside a SAVEPOINT and map the one constraint we
+        expect to a typed 409.
+
+        The pre-check under the parent lock is the primary guarantee; this is
+        the second lock. It exists because a pre-check is a statement about a
+        moment, and because a `UNIQUE` violation escaping here reaches the
+        generic handler as a 500 — which is exactly what the follow-up review
+        reproduced by injection.
+
+        A SAVEPOINT is what makes catching it safe: without one the failed
+        statement poisons the whole transaction, so the caller could not
+        continue to a clean rollback of just this work. ONLY the criteria
+        slot constraint is mapped; every other database error propagates
+        unchanged, because turning all of them into 409 would hide real
+        faults.
+        """
+        from sqlalchemy.exc import IntegrityError
+
+        savepoint = session.begin_nested()
+        try:
+            result = run()
+            savepoint.commit()
+            return result
+        except IntegrityError as exc:
+            savepoint.rollback()
+            constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", "")
+            if constraint == "request_criteria_request_id_criterion_code_sort_order_key":
+                raise DuplicateCriterionSlot(criterion_code, sort_order) from exc
+            raise
+
     returning = """RETURNING request_criterion_id, criterion_code,
                              importance::text AS importance,
                              operator::text AS operator,
                              value, unit, blocking_if_unknown, sort_order,
                              created_at"""
+
+    # One slot check for BOTH branches. The earlier version checked only on
+    # ADD, so MOVING a criterion onto an occupied slot reached the UNIQUE
+    # constraint and surfaced as a 500 (follow-up review, R-S2-03).
+    # `request_criterion_id` is excluded from the check on CHANGE: a criterion
+    # does not collide with itself.
+    occupied = session.execute(
+        text(
+            """SELECT 1 FROM turab.request_criteria
+                WHERE request_id = :request_id
+                  AND criterion_code = :code
+                  AND sort_order = :sort_order
+                  AND (CAST(:cid AS uuid) IS NULL
+                       OR request_criterion_id <> CAST(:cid AS uuid))"""
+        ),
+        {"request_id": request_id, "code": criterion_code,
+         "sort_order": sort_order, "cid": request_criterion_id},
+    ).first()
+    if occupied is not None:
+        raise DuplicateCriterionSlot(criterion_code, sort_order)
 
     if request_criterion_id is not None:
         # CHANGE. The id is matched together with the request id, so a
@@ -632,7 +690,7 @@ def add_criterion(
         if previous is None:
             raise CriterionNotOnThisRequest(request_criterion_id)
 
-        row = session.execute(
+        row = _write(lambda: session.execute(
             text(
                 f"""UPDATE turab.request_criteria
                        SET criterion_code = :code,
@@ -646,7 +704,7 @@ def add_criterion(
                     {returning}"""
             ),
             {**params, "cid": request_criterion_id},
-        ).mappings().one()
+        ).mappings().one())
         change = {
             "importance": importance, "operator": operator, "value": value,
             "sort_order": sort_order,
@@ -656,21 +714,8 @@ def add_criterion(
             "value": previous["value"], "sort_order": previous["sort_order"],
         }
     else:
-        # ADD. A collision on the unique slot is a typed error pointing at the
-        # change path, not a constraint violation reaching the caller as a 500.
-        taken = session.execute(
-            text(
-                """SELECT 1 FROM turab.request_criteria
-                    WHERE request_id = :request_id AND criterion_code = :code
-                      AND sort_order = :sort_order"""
-            ),
-            {"request_id": request_id, "code": criterion_code,
-             "sort_order": sort_order},
-        ).first()
-        if taken is not None:
-            raise DuplicateCriterionSlot(criterion_code, sort_order)
-
-        row = session.execute(
+        # ADD. The slot was checked above, under the parent lock.
+        row = _write(lambda: session.execute(
             text(
                 f"""INSERT INTO turab.request_criteria
                            (request_id, criterion_code, importance, operator, value,
@@ -682,7 +727,7 @@ def add_criterion(
                    {returning}"""
             ),
             params,
-        ).mappings().one()
+        ).mappings().one())
         change = {
             "importance": importance, "operator": operator, "value": value,
             "sort_order": sort_order,

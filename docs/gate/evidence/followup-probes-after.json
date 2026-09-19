@@ -1,0 +1,97 @@
+{
+  "source": "/home/user/habdne",
+  "database_integration": false,
+  "results": [
+    {
+      "probe": "empty_location_detail",
+      "payload": {
+        "local_location_detail": ""
+      },
+      "empty_string_on_a_nullable_free_text_field": {
+        "reached": "access_free_budget_check (past the sentinel gate)",
+        "harness_limit": "AttributeError: 'Command' object has no attribute 'read_current'"
+      },
+      "empty_string_on_a_non_nullable_field": {
+        "reached": "returned before access_free_budget_check",
+        "status": 422,
+        "content_length": 222,
+        "body": {
+          "detail": [
+            {
+              "type": "string_pattern_mismatch",
+              "loc": [
+                "body",
+                "intent"
+              ],
+              "msg": "String should match pattern '^(EXPLORING|ACTIVE_SEARCH|READY_TO_ACT)$'",
+              "input": "",
+              "ctx": {
+                "pattern": "^(EXPLORING|ACTIVE_SEARCH|READY_TO_ACT)$"
+              }
+            }
+          ]
+        }
+      },
+      "model_admits_empty_intent": false,
+      "expected_by_reviewer": 422,
+      "note": "the reviewer asserted 422, which WAS the defect: the generic check equated an empty string with null for EVERY field. The corrected gate is scoped to intent/payment/budget_flexibility, and the free-text field now passes it. Read the second row precisely: that 422 is raised by the MODEL's pattern on `intent`, not by the route gate. Since all three non-nullable fields carry a pattern that an empty string fails, the scoped gate cannot be reached through the HTTP surface at all; it is a residual assertion, not a filter, and the source says so at the call site. This DB-free probe can only show the gate was passed; that the PATCH then returns 200 and stores the empty string is proven on PostgreSQL by tests/test_slice2_http.py::test_an_empty_free_text_field_is_accepted",
+      "scope": "real model and route; authorization and all I/O stubbed; DB not reached"
+    },
+    {
+      "probe": "timezone_missing",
+      "model_accepts": false,
+      "model_error": "ValidationError",
+      "actual": {
+        "status": 422,
+        "content_length": 255,
+        "body": {
+          "detail": [
+            {
+              "type": "value_error",
+              "loc": [
+                "body",
+                "confirmed_at"
+              ],
+              "msg": "Value error, must carry a timezone offset (for example 2026-01-01T12:00:00Z); a local time with no offset does not identify a moment",
+              "input": "2026-01-01T12:00:00",
+              "ctx": {
+                "error": {}
+              }
+            }
+          ]
+        }
+      },
+      "expected_by_reviewer": 500,
+      "note": "the reviewer asserted 500; a 422 field error is the fix",
+      "scope": "real model, route and date comparison; DB clock and command plumbing stubbed"
+    },
+    {
+      "probe": "criterion_update_integrity_error_mapping",
+      "actual": {
+        "status": 409,
+        "content_length": 225,
+        "body": {
+          "type": "about:blank",
+          "title": "Duplicate criterion",
+          "status": 409,
+          "code": "DUPLICATE_CRITERION_SLOT",
+          "trace_id": "-",
+          "detail": "this request already has 'ROOMS_MIN' at sort_order 100; to change it, send its request_criterion_id"
+        }
+      },
+      "expected_by_reviewer": 500,
+      "note": "the injected IntegrityError is now mapped to a typed 409 via SAVEPOINT; the real collision is covered by the two-connection tests",
+      "queries": [
+        "SELECT code FROM turab.criterion_definitions WHERE active ORDER BY code",
+        "SELECT 1 FROM turab.request_criteria\n                WHERE request_id = :request_id\n                  AND criterion_code = :code\n                  AND sort_order = :sort_order\n                  AND (CAST(:cid AS uuid) IS NULL\n                       OR request_criterion_id <> CAST(:cid AS uuid))"
+      ],
+      "scope": "IntegrityError injected at real UPDATE"
+    },
+    {
+      "probe": "stale_reactivation",
+      "result": "rejected",
+      "error": "this request cannot be reactivated: it was last confirmed more than 30 days ago (policy probe-policy). Reconfirm it first, then reactivate.",
+      "scope": "actual freshness evaluator; policy and row I/O stubbed"
+    }
+  ]
+}

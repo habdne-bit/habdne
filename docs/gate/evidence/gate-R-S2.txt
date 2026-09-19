@@ -1,13 +1,8 @@
-TURAB — PostgreSQL Execution Gate after the R-S2 corrections
-Captured: 2026-09-19 22:33:15 UTC
-Source fingerprint: b377a673ff44047d460c4dc0c4cc7b781e06c8f4fc06b743c873df0b818258aa
-Command: PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab db/gate/run_gate.sh
-============================================================
 
-==> 0/8  Handoff package integrity
+[1m==> 0/8  Handoff package integrity[0m
 PASS: verified 36 handoff files
 
-==> 1/8  Static audit of the technical pack
+[1m==> 1/8  Static audit of the technical pack[0m
 {
   "status": "PASS",
   "metrics": {
@@ -34,14 +29,14 @@ PASS: verified 36 handoff files
   }
 }
 
-==> 2/8  Rebuild a clean database from zero
+[1m==> 2/8  Rebuild a clean database from zero[0m
 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 
-==> 3/8  Apply schema_v0.2.3.sql
+[1m==> 3/8  Apply schema_v0.2.3.sql[0m
 
-==> 4/8  Apply seed_master_data_v0.2.3.sql twice (idempotency)
+[1m==> 4/8  Apply seed_master_data_v0.2.3.sql twice (idempotency)[0m
 
-==> 5/8  Database-level contract tests
+[1m==> 5/8  Database-level contract tests[0m
 
 == T10. exactly one active matching policy ==========================
 psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:121: NOTICE:  PASS | T10.seed-has-one-active | exactly one active policy after double seed
@@ -516,7 +511,7 @@ psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:561: NOTICE:  P
 (1 row)
 
 
-==> 6/8  OpenAPI parse / lint
+[1m==> 6/8  OpenAPI parse / lint[0m
 {
   "status": "PASS",
   "openapi": "3.1.0",
@@ -527,11 +522,11 @@ psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:561: NOTICE:  P
   "errors": []
 }
 
-==> 7/8  Effective contract (frozen package + approved corrections)
+[1m==> 7/8  Effective contract (frozen package + approved corrections)[0m
 PASS: docs/api/openapi_effective_v0.2.3.yaml is current (2 correction(s) applied)
 PASS: docs/api/API_INVENTORY_GENERATED.md matches /home/user/habdne/docs/api/openapi_effective_v0.2.3.yaml
 
-==> 8/8  Baseline version consistency
+[1m==> 8/8  Baseline version consistency[0m
     schema filename                      0.2.3
     seed filename                        0.2.3
     openapi filename                     0.2.3
@@ -546,4 +541,4 @@ PASS: docs/api/API_INVENTORY_GENERATED.md matches /home/user/habdne/docs/api/ope
 
 VERSION CONSISTENCY: PASS — every statement of the baseline version agrees
 
-POSTGRES EXECUTION GATE: PASS
+[1;32mPOSTGRES EXECUTION GATE: PASS[0m

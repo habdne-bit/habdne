@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **125**
-- Distinct tests cited: **337**
-- Suite total: **471/471** test cases passing (386 distinct test functions)
+- Rules and invariants covered: **128**
+- Distinct tests cited: **350**
+- Suite total: **485/485** test cases passing (399 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -134,6 +134,9 @@ matrix, because it reads as assurance.
 | `STOP GATE B` | An operator can state what the buyer wants, what is hard vs preferred, and when it was last confirmed — from one staff read | `test_stop_gate_b_a_staff_operator_can_understand_the_request`<br>`test_the_gate_scenario_would_fail_if_importance_were_not_carried` | PASS |
 | `R-S2-01` | The version guard locks the row, so two patches holding the same version yield one success and one 409 on real PostgreSQL | `test_two_patches_holding_the_same_version_yield_one_success_and_one_409`<br>`test_the_refused_patch_leaves_the_value_it_tried_to_write_absent` | PASS |
 | `R-S2-02` | State and staleness decisions hold their conditions at write time, under two connections | `test_reconfirm_racing_a_close_does_not_reopen_the_closed_request`<br>`test_two_transitions_from_the_same_state_do_not_both_apply`<br>`test_the_staleness_pass_does_not_mark_a_concurrently_reconfirmed_request`<br>`test_the_staleness_pass_does_not_reopen_a_concurrently_closed_request` | PASS |
+| `R-S2-03 follow-up` | The slot collision is a typed 409 in BOTH branches, under a parent lock, with no partial change and no key consumed | `test_moving_a_criterion_onto_an_occupied_slot_is_409`<br>`test_the_refused_move_records_no_provenance_and_frees_its_key`<br>`test_a_move_to_a_free_slot_still_succeeds`<br>`test_two_concurrent_adds_of_the_same_slot_yield_one_success_and_one_409`<br>`test_a_concurrent_move_onto_a_slot_being_taken_is_refused` | PASS |
+| `R-S2-05 follow-up` | An empty string is not a null, and a datetime without an offset is a 4xx rather than a 500 | `test_an_empty_free_text_field_is_accepted`<br>`test_null_clears_a_nullable_field`<br>`test_omitting_a_field_leaves_it_unchanged`<br>`test_null_is_still_refused_for_a_non_nullable_field`<br>`test_a_confirmation_without_a_timezone_is_refused`<br>`test_a_historical_confirmation_with_an_offset_is_accepted`<br>`test_a_future_confirmation_with_an_offset_is_still_refused` | PASS |
+| `Concurrency evidence` | Interleaving is observed in pg_stat_activity or by ordering, and an unexpected worker error fails the assertions | `test_an_unexpected_worker_error_fails_the_assertions` | PASS |
 | `R-S2-03` | The criteria endpoint adds AND changes, by the contract's declared id | `test_the_contracts_criterion_id_is_accepted`<br>`test_changing_a_criterion_does_not_duplicate_it`<br>`test_changing_a_criterion_bumps_the_request_version`<br>`test_a_criterion_id_from_another_request_is_refused`<br>`test_an_unknown_criterion_id_is_refused`<br>`test_re_adding_the_same_slot_points_at_the_change_path`<br>`test_the_change_is_recorded_with_its_previous_value` | PASS |
 | `R-S2-04` | Reactivation applies the active freshness policy; a future confirmation is refused and a historical one accepted | `test_a_stale_paused_request_cannot_be_reactivated`<br>`test_a_never_confirmed_paused_request_cannot_be_reactivated`<br>`test_reconfirm_then_reactivate_is_the_two_step_path`<br>`test_the_freshness_check_on_reactivation_reads_the_active_policy`<br>`test_a_future_confirmation_is_refused`<br>`test_a_historical_confirmation_is_still_accepted` | PASS |
 | `R-S2-05` | Input models match the contract; expected errors are 4xx, write nothing, consume no key and leak no database text | `test_a_null_non_nullable_field_is_a_422_not_a_500`<br>`test_an_unknown_enum_value_is_a_422_not_a_500`<br>`test_an_incoherent_budget_pair_is_refused_on_create`<br>`test_the_budget_pair_is_checked_on_the_merged_values`<br>`test_a_refused_input_consumes_no_idempotency_key`<br>`test_a_refused_input_leaks_no_database_text` | PASS |

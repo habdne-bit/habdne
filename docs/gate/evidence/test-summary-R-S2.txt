@@ -1,9 +1,9 @@
-TURAB — test results after the R-S2 corrections
-total cases : 471
-  passed  : 471
+TURAB — test results after the follow-up corrections F-1..F-3
+total cases : 485
+  passed  : 485
 
   test_slice2_mandatory.py                     61
-  test_slice2_http.py                          36
+  test_slice2_http.py                          47
   test_correction_001.py                       27
   test_concurrency.py                          26
   test_dto_boundaries.py                       26
@@ -23,7 +23,7 @@ total cases : 471
   test_contract_policy.py                      12
   test_inv1_claim_authority.py                 12
   test_slice1_bola.py                          11
+  test_slice2_concurrency.py                    9
   test_version_consistency.py                   9
-  test_slice2_concurrency.py                    6
   test_transaction_audit_context.py             3
   test_slice2_stop_gate_b.py                    2

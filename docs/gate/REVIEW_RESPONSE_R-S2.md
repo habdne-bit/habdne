@@ -176,3 +176,141 @@ implementation before the fix was kept.
 - **DL-12** — answered by a numbered appendix that carries the approved text
   and its source without silently editing the original: see
   `docs/rfc/RFC-001-APPENDIX-A-invariants.md`.
+
+
+---
+
+# Follow-up review of `3f84f0e` — the three remaining items
+
+**All three were valid.** R-S2-01, R-S2-02, R-S2-04 and DL-12 were accepted;
+what follows completes R-S2-03 and R-S2-05 and hardens the concurrency
+evidence.
+
+## F-1 · R-S2-03, the slot collision
+
+**Confirmed, both halves.** The pre-check lived only in the ADD branch, so
+moving a criterion onto an occupied slot reached
+`UNIQUE(request_id, criterion_code, sort_order)` and surfaced as a 500 — the
+reviewer's injected `IntegrityError` showed the real path producing it, and
+the reviewer was explicit that the collision itself was not raised on
+PostgreSQL. And the ADD pre-check was unprotected: two concurrent commands
+could both read "the slot is free".
+
+**Fix, two layers.**
+1. **The parent request is locked before the slot is inspected.** That is what
+   makes the check meaningful: criteria commands on one request serialise, so
+   neither can read a free slot the other is about to take. Locking the
+   *criterion* row — which the CHANGE branch did — protects that row, not the
+   slot a second command is racing for.
+2. **One slot check for both branches**, excluding the criterion itself on
+   CHANGE, plus a `SAVEPOINT`-guarded mapping of that **one named
+   constraint** to the typed 409. The savepoint is what makes catching it
+   safe; without one the failed statement poisons the transaction. Every
+   other database error propagates unchanged — turning all of them into 409
+   would hide real faults, which the review warned against.
+
+**Acceptance.** A move onto an occupied slot returns 409 with both criteria
+unchanged; the refused move records no provenance and **frees its key**
+(proved by the same key then succeeding for a legitimate move); a move to a
+free slot still succeeds; and on real PostgreSQL, two concurrent adds of the
+same slot give one success and one `DuplicateCriterionSlot`, and a concurrent
+move onto a slot being filled is refused with the criterion left where it was.
+
+## F-2 · R-S2-05, the two regressions
+
+**a. An empty string is not a null.** Confirmed: the sentinel check was
+applied to *every* field, so `{"local_location_detail": ""}` — which the
+contract allows with no minimum length — was refused with a message that
+wrongly called it null. The reviewer's correction is also accepted: Pydantic
+already rejects an explicit `null` for the three non-nullable fields, and
+`exclude_unset=True` drops them when omitted, so the check could never have
+been doing the job its comment claimed. It is now **scoped to those three
+fields as a narrow assertion that must never fire**.
+
+Tested: the empty string is accepted; `null` clears a nullable field;
+omission changes nothing; and `null` is still refused for each non-nullable
+field, by name.
+
+**b. A datetime without an offset.** Confirmed: the model accepted it and the
+comparison against the database clock raised
+`TypeError: can't compare offset-naive and offset-aware datetimes` → 500.
+`format: date-time` is RFC 3339 and requires an offset; a naive value is a
+wall-clock reading, not a moment. It is refused in the model, as a field
+error on `confirmed_at`. A historical confirmation with `Z` or an offset is
+still accepted; a correctly-offset future one is still refused by the
+service, for its own reason. The rejection writes nothing and consumes no
+key.
+
+## F-3 · the concurrency evidence
+
+**Confirmed — and the strict assertions immediately found a real flaw in the
+harness, not in the locks.** With outcomes actually inspected, it emerged
+that a `Barrier` only starts two threads together; which one acquires the
+contended lock first was still a race, and the tests had assumed an answer
+they had not established.
+
+**What changed.**
+- **A deterministic handshake.** The holder takes its lock and signals; the
+  contender does not begin until that signal arrives.
+- **Interleaving is observed, not assumed.** The holder then waits until
+  `pg_stat_activity` reports a backend on this database with
+  `wait_event_type = 'Lock'` — the database witnessing that the contender
+  really reached the contended point — and the test fails if that never
+  happens within a deadline.
+- **Every worker's outcome is asserted.** `assert_outcome` states, for both
+  workers, either the value they must have returned or exactly which domain
+  exception they must have raised, and fails on anything else.
+- **The harness is self-checked.**
+  `test_an_unexpected_worker_error_fails_the_assertions` injects an error into
+  a worker and asserts the assertions bite — the precise weakness the review
+  identified.
+
+**One claim deliberately narrowed.** The two staleness-pass tests prove the
+`FOR UPDATE SKIP LOCKED` behaviour: a row held by another transaction is
+skipped. They do **not** exercise the repeated predicates in the outer
+`UPDATE`, which guard a window inside a single statement that cannot be opened
+from another connection. Those remain defence in depth, and reverting them
+alone does not fail these tests. That is stated in the test docstrings rather
+than left as an implied claim.
+
+## F-4 · re-running your own probe script against the corrected source
+
+Your `followup_probes.py` is a DB-free instrument that drives the real route
+and model code behind explicit stubs. Re-run unchanged against the corrected
+source it **raises `JSONDecodeError`** before writing any result, because it
+calls `r.json()` on a response whose body is empty. That is worth stating
+plainly rather than quietly working around:
+
+- **Probes 2, 3 and 4 flip as intended.** The naive `confirmed_at` is now a
+  422 field error on `confirmed_at` instead of a 500; the injected
+  `IntegrityError` on the criterion `UPDATE` is now a typed 409
+  (`DUPLICATE_CRITERION_SLOT`) instead of a 500; the stale reactivation is
+  still refused. The recorded queries also show the new slot check running
+  before the write.
+- **Probe 1's 500 is the harness, not the route.** With
+  `raise_server_exceptions=True` the cause is
+  `AttributeError: 'Command' object has no attribute 'read_current'`. The
+  stub `Command` never needed that method before, because the generic sentinel
+  check refused `{"local_location_detail": ""}` and returned first. Reaching
+  `read_current` is therefore the *evidence* that the corrected, scoped gate
+  passes the field.
+
+The adapted script is committed at
+`docs/gate/evidence/followup_probes_rerun.py` with its output at
+`docs/gate/evidence/followup-probes-after.json`. It differs from yours in
+three ways, each annotated in the file: the three `assert` statements that
+pin the *defects* are replaced by recorded outcomes carrying
+`expected_by_reviewer`; a response is recorded without assuming it has a JSON
+body; and probe 1 measures the reached point rather than a status.
+
+**A finding your probe surfaced, reported against ourselves.** Probing
+`{"intent": ""}` returns 422 — but from the **model's pattern**
+(`string_pattern_mismatch` on `body.intent`), not from the route gate. All
+three non-nullable fields carry a pattern that an empty string fails, so the
+scoped gate **cannot be reached through the HTTP surface at all**. It is a
+residual assertion, not a filter. We kept it and said so at the call site and
+in the JSON rather than present it as the thing doing the work. The behaviour
+the correction is actually claimed on — the PATCH returning 200 and storing
+the empty string — is proven on PostgreSQL by
+`tests/test_slice2_http.py::test_an_empty_free_text_field_is_accepted`, not by
+this DB-free probe.

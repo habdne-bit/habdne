@@ -16,10 +16,19 @@ The shape used throughout:
     A: COMMIT
     B: proceeds, and must now SEE what A did
 
-`barrier` orders the start; a short settle lets B reach the lock before A
-commits, so the block is real rather than accidental. Each test also asserts
-the LOSER changed nothing, which is the half that distinguishes "serialised"
-from "both ran".
+**Interleaving is proved, not assumed.** A barrier and a sleep order the
+START; they say nothing about whether the second transaction ever reached the
+contended point. So A holds its lock until `wait_for_blocked_backend` observes,
+in `pg_stat_activity`, a backend on this database actually waiting on a lock
+— and fails the test if that never happens within the deadline. The database
+is the witness.
+
+**Every worker's outcome is asserted.** `_run_pair` captures exceptions and
+returns them as values, so a test that ignores a return value can pass while
+an operation failed for an unrelated reason. Each test below therefore states,
+for BOTH workers, either that they succeeded or exactly which domain refusal
+they raised, and `assert_outcome` fails on any other exception — including one
+injected to check that the assertions bite.
 """
 from __future__ import annotations
 
@@ -36,7 +45,61 @@ from turab.services import freshness, requests as request_service
 from turab.services.concurrency import StaleVersion, check as version_check
 from turab.services.requests import UpdateChannel
 
-SETTLE = 0.35  # seconds for the second transaction to reach the lock
+#: How long a worker holds its lock while waiting for the other to block, and
+#: how long `wait_for_blocked_backend` waits for that to be observable.
+LOCK_WAIT_DEADLINE = 10.0
+
+
+class UnexpectedWorkerError(AssertionError):
+    """A worker raised something no test expected. Never swallowed."""
+
+
+def wait_for_blocked_backend(engine, deadline=LOCK_WAIT_DEADLINE) -> bool:
+    """Wait until PostgreSQL reports a backend waiting on a lock.
+
+    This is the interleaving evidence. `pg_stat_activity.wait_event_type =
+    'Lock'` means a backend is blocked acquiring one — i.e. the second
+    transaction has genuinely reached the contended point, rather than merely
+    having been started.
+
+    Uses its own short-lived connection so it never holds a lock itself.
+    Returns False on timeout, and every caller treats that as a failure.
+    """
+    import time
+
+    deadline_at = time.monotonic() + deadline
+    while time.monotonic() < deadline_at:
+        with Session(bind=engine, future=True) as s:
+            blocked = s.execute(
+                text(
+                    """SELECT count(*) FROM pg_stat_activity
+                        WHERE datname = current_database()
+                          AND pid <> pg_backend_pid()
+                          AND wait_event_type = 'Lock'"""
+                )
+            ).scalar_one()
+        if blocked:
+            return True
+        time.sleep(0.02)
+    return False
+
+
+def assert_outcome(outcome, *, expect=None, raises=None, label=""):
+    """State what a worker must have done, and fail on anything else.
+
+    `expect` — it must have succeeded, returning this value (or any, if None).
+    `raises` — it must have raised this exception type, by name.
+    """
+    kind, payload = outcome
+    if raises is not None:
+        assert kind == "raised", f"{label}: expected {raises}, got success {payload!r}"
+        assert payload.startswith(raises), f"{label}: expected {raises}, got {payload}"
+        return payload
+    if kind == "raised":
+        raise UnexpectedWorkerError(f"{label}: unexpected exception {payload}")
+    if expect is not None:
+        assert payload == expect, f"{label}: expected {expect!r}, got {payload!r}"
+    return payload
 
 
 @pytest.fixture
@@ -77,35 +140,67 @@ def committed_request(engine, ids):
     return rid, version
 
 
-def _run_pair(first, second):
-    """Start both, ordering them so `second` reaches its lock while `first`
-    still holds one. Returns (outcome_first, outcome_second)."""
-    import time
+def _run_ordered(holder, contender, *, holder_waits_for_contender=False):
+    """Run two workers with a DETERMINISTIC order, and return both outcomes.
 
+    A plain barrier only starts them together; which one acquires the
+    contended lock first is then a race, and the first version of these tests
+    assumed an answer it had not established. (The strict assertions added
+    here are what exposed that — the harness was wrong, not the locks.)
+
+    The handshake instead:
+
+      1. `holder(locked)` takes its lock and calls `locked()`;
+      2. the contender does not begin until that signal arrives;
+      3. the holder waits for `wait_for_blocked_backend` to observe the
+         contender actually blocked, then finishes and commits.
+
+    `holder_waits_for_contender` is for the staleness pass, which uses
+    `FOR UPDATE SKIP LOCKED` and therefore never blocks — skipping is the
+    behaviour under test. Lock-waiting is the wrong evidence there, so the
+    holder instead waits until the contender has FINISHED before committing:
+    that proves the pass ran entirely inside the holder's open transaction,
+    which is the interleaving the test needs.
+
+    Outcomes are ("ok", value) or ("raised", "TypeName: message"); nothing is
+    swallowed — `assert_outcome` is how a test states what it expected.
+    """
     out: dict[str, object] = {}
-    barrier = threading.Barrier(2)
+    holds_lock = threading.Event()
+    contender_done = threading.Event()
 
-    def wrap(name, fn, delay):
-        def run():
-            barrier.wait(timeout=15)
-            if delay:
-                time.sleep(delay)
-            try:
-                out[name] = ("ok", fn())
-            except Exception as exc:  # recorded, then asserted on
-                out[name] = ("raised", f"{type(exc).__name__}: {exc}")
-        return run
+    def signal_and_maybe_wait():
+        holds_lock.set()
+        if holder_waits_for_contender:
+            assert contender_done.wait(timeout=60), (
+                "the contender never finished inside the holder's transaction"
+            )
 
-    threads = [
-        threading.Thread(target=wrap("first", first, 0.0)),
-        threading.Thread(target=wrap("second", second, SETTLE / 3)),
-    ]
+    def run_holder():
+        try:
+            out["holder"] = ("ok", holder(signal_and_maybe_wait))
+        except Exception as exc:
+            out["holder"] = ("raised", f"{type(exc).__name__}: {exc}")
+        finally:
+            holds_lock.set()  # never leave the contender waiting on a failure
+
+    def run_contender():
+        assert holds_lock.wait(timeout=30), "the holder never took its lock"
+        try:
+            out["contender"] = ("ok", contender())
+        except Exception as exc:
+            out["contender"] = ("raised", f"{type(exc).__name__}: {exc}")
+        finally:
+            contender_done.set()
+
+    threads = [threading.Thread(target=run_holder),
+               threading.Thread(target=run_contender)]
     for t in threads:
         t.start()
     for t in threads:
-        t.join(timeout=40)
-    assert set(out) == {"first", "second"}, f"a thread did not finish: {out}"
-    return out["first"], out["second"]
+        t.join(timeout=90)
+    assert set(out) == {"holder", "contender"}, f"a thread did not finish: {out}"
+    return out["holder"], out["contender"]
 
 
 def _state(engine, rid) -> dict:
@@ -132,46 +227,50 @@ def _provenance_count(engine, rid, attribute) -> int:
 def test_two_patches_holding_the_same_version_yield_one_success_and_one_409(
     two_engines, engine, ids, committed_request
 ):
-    """The race the previous implementation lost.
+    """The race the original implementation lost.
 
     Both transactions hold version N. Without a lock both read N, both pass
     the check, and both write — the second silently overwriting a change its
-    caller never saw. With `FOR UPDATE` in the guard the second blocks, then
-    sees N+1 and is refused.
+    caller never saw. With `FOR UPDATE` the second blocks, then sees N+1 and
+    is refused.
     """
     rid, version = committed_request
     engine_a, engine_b = two_engines
 
-    def patch(eng, account, value):
-        def run():
-            import time
+    def holder(locked):
+        with Session(bind=engine_a, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR):
+                version_check(s, "requests", rid, version)
+                locked()  # the contender may now start
+                # Hold until the OTHER transaction is observably blocked.
+                assert wait_for_blocked_backend(engine), (
+                    "no backend ever blocked: the two transactions did not "
+                    "contend, so this test proves nothing"
+                )
+                request_service.patch_request(
+                    s, request_id=rid, changes={"budget_max_dzd": 31_000_000},
+                    recorded_by_account_id=ids.ACC_OPERATOR,
+                    channel=UpdateChannel.STAFF_RECORDED,
+                )
+        return 31_000_000
 
-            with Session(bind=eng, future=True) as s:
-                with audited_transaction(s, account):
-                    version_check(s, "requests", rid, version)
-                    time.sleep(SETTLE)  # hold the lock while the other arrives
-                    request_service.patch_request(
-                        s, request_id=rid, changes={"budget_max_dzd": value},
-                        recorded_by_account_id=account,
-                        channel=UpdateChannel.STAFF_RECORDED,
-                    )
-            return value
-        return run
+    def contender():
+        with Session(bind=engine_b, future=True) as s:
+            with audited_transaction(s, ids.ACC_ADMIN):
+                version_check(s, "requests", rid, version)
+                request_service.patch_request(
+                    s, request_id=rid, changes={"budget_max_dzd": 32_000_000},
+                    recorded_by_account_id=ids.ACC_ADMIN,
+                    channel=UpdateChannel.STAFF_RECORDED,
+                )
+        return 32_000_000
 
-    first, second = _run_pair(
-        patch(engine_a, ids.ACC_OPERATOR, 31_000_000),
-        patch(engine_b, ids.ACC_ADMIN, 32_000_000),
-    )
-    outcomes = [first, second]
-    succeeded = [o for o in outcomes if o[0] == "ok"]
-    refused = [o for o in outcomes if o[0] == "raised"]
-
-    assert len(succeeded) == 1, outcomes
-    assert len(refused) == 1, outcomes
-    assert "StaleVersion" in refused[0][1], refused[0][1]
+    first, second = _run_ordered(holder, contender)
+    assert_outcome(first, expect=31_000_000, label="holder")
+    assert_outcome(second, raises="StaleVersion", label="contender")
 
     after = _state(engine, rid)
-    assert after["budget_max_dzd"] == succeeded[0][1]
+    assert after["budget_max_dzd"] == 31_000_000
     assert after["version"] == version + 1, "exactly one write landed"
     assert _provenance_count(engine, rid, "budget_max_dzd") == 1, (
         "the refused attempt must record no provenance"
@@ -184,37 +283,68 @@ def test_the_refused_patch_leaves_the_value_it_tried_to_write_absent(
     """The loser's value must be nowhere: not in the row, not in the trail."""
     rid, version = committed_request
     engine_a, engine_b = two_engines
-    LOSER_VALUE = 99_000_001
+    WINNER, LOSER = 41_000_000, 99_000_001
 
-    def patch(eng, account, value, hold):
-        def run():
-            import time
+    def holder(locked):
+        with Session(bind=engine_a, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR):
+                version_check(s, "requests", rid, version)
+                locked()
+                assert wait_for_blocked_backend(engine), "no contention observed"
+                request_service.patch_request(
+                    s, request_id=rid, changes={"budget_max_dzd": WINNER},
+                    recorded_by_account_id=ids.ACC_OPERATOR,
+                    channel=UpdateChannel.STAFF_RECORDED,
+                )
+        return WINNER
 
-            with Session(bind=eng, future=True) as s:
-                with audited_transaction(s, account):
-                    version_check(s, "requests", rid, version)
-                    if hold:
-                        time.sleep(SETTLE)
-                    request_service.patch_request(
-                        s, request_id=rid, changes={"budget_max_dzd": value},
-                        recorded_by_account_id=account,
-                        channel=UpdateChannel.STAFF_RECORDED,
-                    )
-            return value
-        return run
+    def contender():
+        with Session(bind=engine_b, future=True) as s:
+            with audited_transaction(s, ids.ACC_ADMIN):
+                version_check(s, "requests", rid, version)
+                request_service.patch_request(
+                    s, request_id=rid, changes={"budget_max_dzd": LOSER},
+                    recorded_by_account_id=ids.ACC_ADMIN,
+                    channel=UpdateChannel.STAFF_RECORDED,
+                )
+        return LOSER
 
-    _run_pair(
-        patch(engine_a, ids.ACC_OPERATOR, 41_000_000, True),
-        patch(engine_b, ids.ACC_ADMIN, LOSER_VALUE, False),
-    )
-    assert _state(engine, rid)["budget_max_dzd"] != LOSER_VALUE
+    first, second = _run_ordered(holder, contender)
+    assert_outcome(first, expect=WINNER, label="holder")
+    assert_outcome(second, raises="StaleVersion", label="contender")
+
+    assert _state(engine, rid)["budget_max_dzd"] == WINNER
     with Session(bind=engine, future=True) as s:
         values = s.execute(
             text("""SELECT claimed_value FROM turab.claims
                      WHERE request_id = :r AND attribute_code = 'budget_max_dzd'"""),
             {"r": rid},
         ).scalars().all()
-    assert LOSER_VALUE not in values
+    assert LOSER not in values
+
+
+def test_an_unexpected_worker_error_fails_the_assertions(engine, ids,
+                                                          committed_request):
+    """The harness must bite.
+
+    An injected error in a worker has to fail the test rather than be
+    returned as a value nobody inspects — which is exactly the weakness the
+    follow-up review identified in the first version of these tests.
+    """
+    def explode():
+        raise RuntimeError("injected")
+
+    def fine():
+        return "ok"
+
+    first, second = _run_ordered(explode, fine)
+    with pytest.raises(UnexpectedWorkerError):
+        assert_outcome(first, expect="anything", label="injected")
+    assert_outcome(second, expect="ok", label="control")
+
+    # and a WRONG expected exception type is caught too
+    with pytest.raises(AssertionError):
+        assert_outcome(first, raises="StaleVersion", label="injected")
 
 
 # --- R-S2-02: state decisions --------------------------------------------
@@ -222,10 +352,8 @@ def test_the_refused_patch_leaves_the_value_it_tried_to_write_absent(
 def test_reconfirm_racing_a_close_does_not_reopen_the_closed_request(
     two_engines, engine, ids, committed_request
 ):
-    """The window the review identified: `reconfirm` reads
-    NEEDS_CONFIRMATION, another transaction closes the request, and the first
-    writes ACTIVE anyway — reopening a CLOSED request under concurrency,
-    which the sequential tests could not see."""
+    """`reconfirm` reads NEEDS_CONFIRMATION, another transaction closes the
+    request, and the first must NOT write ACTIVE anyway."""
     rid, _ = committed_request
     engine_a, engine_b = two_engines
     with Session(bind=engine, future=True) as s:
@@ -235,9 +363,7 @@ def test_reconfirm_racing_a_close_does_not_reopen_the_closed_request(
         )
         s.commit()
 
-    def closer():
-        import time
-
+    def closer(locked):
         with Session(bind=engine_a, future=True) as s:
             with audited_transaction(s, ids.ACC_OPERATOR):
                 request_service.transition(
@@ -245,7 +371,8 @@ def test_reconfirm_racing_a_close_does_not_reopen_the_closed_request(
                     reason_code="REQUEST_WITHDRAWN",
                     recorded_by_account_id=ids.ACC_OPERATOR,
                 )
-                time.sleep(SETTLE)
+                locked()
+                assert wait_for_blocked_backend(engine), "no contention observed"
         return "CLOSED"
 
     def reconfirmer():
@@ -256,47 +383,57 @@ def test_reconfirm_racing_a_close_does_not_reopen_the_closed_request(
                 )
         return "RECONFIRMED"
 
-    _run_pair(closer, reconfirmer)
+    first, second = _run_ordered(closer, reconfirmer)
+    # BOTH must succeed: closing wins the row, and reconfirming is a
+    # legitimate act that records a confirmation — it simply must not change
+    # the status it no longer owns.
+    assert_outcome(first, expect="CLOSED", label="closer")
+    assert_outcome(second, expect="RECONFIRMED", label="reconfirmer")
 
-    assert _state(engine, rid)["status"] == "CLOSED", (
+    after = _state(engine, rid)
+    assert after["status"] == "CLOSED", (
         "a CLOSED request must not be reopened by a concurrent reconfirmation"
     )
+    assert after["last_confirmed_at"] is not None
 
 
 def test_two_transitions_from_the_same_state_do_not_both_apply(
     two_engines, engine, ids, committed_request
 ):
-    """Both read ACTIVE and pick a different target. One must win outright."""
+    """Both read ACTIVE and pick a different target. One wins outright, and
+    the loser is refused by the STATE MACHINE — named exactly, not "some
+    exception"."""
     rid, _ = committed_request
     engine_a, engine_b = two_engines
 
-    def move(eng, account, target, reason, hold):
-        def run():
-            import time
+    def pauser(locked):
+        with Session(bind=engine_a, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR):
+                request_service.transition(
+                    s, request_id=rid, target_status="PAUSED",
+                    recorded_by_account_id=ids.ACC_OPERATOR,
+                )
+                locked()
+                assert wait_for_blocked_backend(engine), "no contention observed"
+        return "PAUSED"
 
-            with Session(bind=eng, future=True) as s:
-                with audited_transaction(s, account):
-                    request_service.transition(
-                        s, request_id=rid, target_status=target,
-                        reason_code=reason, recorded_by_account_id=account,
-                    )
-                    if hold:
-                        time.sleep(SETTLE)
-            return target
-        return run
+    def closer():
+        with Session(bind=engine_b, future=True) as s:
+            with audited_transaction(s, ids.ACC_ADMIN):
+                request_service.transition(
+                    s, request_id=rid, target_status="CLOSED",
+                    reason_code="REQUEST_WITHDRAWN",
+                    recorded_by_account_id=ids.ACC_ADMIN,
+                )
+        return "CLOSED"
 
-    first, second = _run_pair(
-        move(engine_a, ids.ACC_OPERATOR, "PAUSED", None, True),
-        move(engine_b, ids.ACC_ADMIN, "CLOSED", "REQUEST_WITHDRAWN", False),
-    )
-    final = _state(engine, rid)["status"]
-    assert final in ("PAUSED", "CLOSED")
-
-    # The loser must have been refused, not silently ignored: from PAUSED,
-    # CLOSED is not a defined edge, so the second transaction — which now
-    # sees PAUSED rather than the ACTIVE it started from — is rejected.
-    outcomes = [first, second]
-    assert any(o[0] == "raised" for o in outcomes), outcomes
+    first, second = _run_ordered(pauser, closer)
+    assert_outcome(first, expect="PAUSED", label="pauser")
+    # From PAUSED, CLOSED is not a defined edge. The second transaction, which
+    # now sees PAUSED rather than the ACTIVE it started from, must be refused
+    # with that specific domain error.
+    assert_outcome(second, raises="UndefinedTransition", label="closer")
+    assert _state(engine, rid)["status"] == "PAUSED"
 
 
 # --- R-S2-02: the staleness pass -----------------------------------------
@@ -304,31 +441,33 @@ def test_two_transitions_from_the_same_state_do_not_both_apply(
 def test_the_staleness_pass_does_not_mark_a_concurrently_reconfirmed_request(
     two_engines, engine, ids, committed_request
 ):
-    """The pass selects candidates, then writes. Between the two, another
-    transaction reconfirms — and the row it is about to mark stale is no
-    longer stale."""
+    """A row another transaction is holding is not marked by the pass.
+
+    What this proves, exactly: `FOR UPDATE SKIP LOCKED` causes the pass to
+    SKIP a row that is concurrently held, so a request reconfirmed inside an
+    open transaction is left alone.
+
+    What it does NOT prove: the repeated predicates in the outer `UPDATE`.
+    Those guard a window inside a single statement, which cannot be opened
+    from another connection, so they are defence in depth — the statement
+    stays correct on its own terms — rather than something these tests
+    exercise. Reverting them alone does not fail this test, and saying
+    otherwise would be claiming evidence that does not exist.
+    """
     rid, _ = committed_request
     engine_a, engine_b = two_engines
-    days, _policy = freshness.request_threshold_days(
-        Session(bind=engine, future=True)
-    )
-    with Session(bind=engine, future=True) as s:
-        s.execute(
-            text("UPDATE turab.requests SET last_confirmed_at = :t "
-                 "WHERE request_id = :r"),
-            {"t": datetime.now(UTC) - timedelta(days=days + 5), "r": rid},
-        )
-        s.commit()
+    _age(engine, rid, extra_days=5)
 
-    def reconfirmer():
-        import time
-
+    def reconfirmer(locked):
         with Session(bind=engine_a, future=True) as s:
             with audited_transaction(s, ids.ACC_OPERATOR):
                 request_service.reconfirm(
                     s, request_id=rid, recorded_by_account_id=ids.ACC_OPERATOR,
                 )
-                time.sleep(SETTLE)
+                # The pass SKIPS a locked row rather than blocking, so the
+                # evidence is ordering, not lock-waiting: this returns only
+                # once the pass has finished, inside this transaction.
+                locked()
         return "RECONFIRMED"
 
     def pass_runner():
@@ -337,35 +476,25 @@ def test_the_staleness_pass_does_not_mark_a_concurrently_reconfirmed_request(
                 return [str(x) for x in
                         request_service.mark_stale_as_needing_confirmation(s)]
 
-    _first, second = _run_pair(reconfirmer, pass_runner)
-
-    after = _state(engine, rid)
-    if second[0] == "ok":
-        assert str(rid) not in second[1], (
-            "the pass must not mark a request reconfirmed under it"
-        )
-    assert after["status"] == "ACTIVE", (
-        "a request reconfirmed concurrently must not end up NEEDS_CONFIRMATION"
+    first, second = _run_ordered(reconfirmer, pass_runner,
+                                 holder_waits_for_contender=True)
+    assert_outcome(first, expect="RECONFIRMED", label="reconfirmer")
+    moved = assert_outcome(second, label="staleness pass")
+    assert str(rid) not in moved, (
+        "the pass must not mark a request reconfirmed under it"
     )
+    assert _state(engine, rid)["status"] == "ACTIVE"
 
 
 def test_the_staleness_pass_does_not_reopen_a_concurrently_closed_request(
     two_engines, engine, ids, committed_request
 ):
+    """As above: the SKIP LOCKED behaviour, on a row closed under the pass."""
     rid, _ = committed_request
     engine_a, engine_b = two_engines
-    with Session(bind=engine, future=True) as s:
-        days, _ = freshness.request_threshold_days(s)
-        s.execute(
-            text("UPDATE turab.requests SET last_confirmed_at = :t "
-                 "WHERE request_id = :r"),
-            {"t": datetime.now(UTC) - timedelta(days=days + 5), "r": rid},
-        )
-        s.commit()
+    _age(engine, rid, extra_days=5)
 
-    def closer():
-        import time
-
+    def closer(locked):
         with Session(bind=engine_a, future=True) as s:
             with audited_transaction(s, ids.ACC_OPERATOR):
                 request_service.transition(
@@ -373,7 +502,7 @@ def test_the_staleness_pass_does_not_reopen_a_concurrently_closed_request(
                     reason_code="REQUEST_FULFILLED",
                     recorded_by_account_id=ids.ACC_OPERATOR,
                 )
-                time.sleep(SETTLE)
+                locked()
         return "CLOSED"
 
     def pass_runner():
@@ -382,7 +511,129 @@ def test_the_staleness_pass_does_not_reopen_a_concurrently_closed_request(
                 return [str(x) for x in
                         request_service.mark_stale_as_needing_confirmation(s)]
 
-    _run_pair(closer, pass_runner)
+    first, second = _run_ordered(closer, pass_runner,
+                                 holder_waits_for_contender=True)
+    assert_outcome(first, expect="CLOSED", label="closer")
+    moved = assert_outcome(second, label="staleness pass")
+    assert str(rid) not in moved
     assert _state(engine, rid)["status"] == "CLOSED", (
         "the pass must not move a request closed under it"
     )
+
+
+# --- follow-up R-S2-03: concurrent criteria on the same slot -------------
+
+def test_two_concurrent_adds_of_the_same_slot_yield_one_success_and_one_409(
+    two_engines, engine, ids, committed_request
+):
+    """The unprotected pre-check: both could read "the slot is free".
+
+    The parent request is now locked before the slot is inspected, so the
+    second command blocks, then sees the slot taken and is refused with the
+    typed conflict — not a constraint violation surfacing as a 500.
+    """
+    rid, _ = committed_request
+    engine_a, engine_b = two_engines
+
+    def holder(locked):
+        with Session(bind=engine_a, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR):
+                row = request_service.add_criterion(
+                    s, request_id=rid, criterion_code="ROOMS_MIN",
+                    importance="REQUIRED", operator="GTE", value=3,
+                    sort_order=100, recorded_by_account_id=ids.ACC_OPERATOR,
+                )
+                locked()
+                assert wait_for_blocked_backend(engine), "no contention observed"
+        return row["value"]
+
+    def contender():
+        with Session(bind=engine_b, future=True) as s:
+            with audited_transaction(s, ids.ACC_ADMIN):
+                row = request_service.add_criterion(
+                    s, request_id=rid, criterion_code="ROOMS_MIN",
+                    importance="REQUIRED", operator="GTE", value=4,
+                    sort_order=100, recorded_by_account_id=ids.ACC_ADMIN,
+                )
+        return row["value"]
+
+    first, second = _run_ordered(holder, contender)
+    assert_outcome(first, expect=3, label="first add")
+    assert_outcome(second, raises="DuplicateCriterionSlot", label="second add")
+
+    with Session(bind=engine, future=True) as s:
+        rows = s.execute(
+            text("""SELECT value, sort_order FROM turab.request_criteria
+                     WHERE request_id = :r AND criterion_code = 'ROOMS_MIN'"""),
+            {"r": rid},
+        ).mappings().all()
+    assert len(rows) == 1, f"exactly one criterion may exist in the slot: {rows}"
+    assert rows[0]["value"] == 3
+    assert _provenance_count(engine, rid, "criterion.ROOMS_MIN") == 1, (
+        "the refused add must record no provenance"
+    )
+
+
+def test_a_concurrent_move_onto_a_slot_being_taken_is_refused(
+    two_engines, engine, ids, committed_request
+):
+    """The CHANGE branch under contention: a move onto a slot another
+    transaction is filling must be refused, not reach the constraint."""
+    rid, _ = committed_request
+    engine_a, engine_b = two_engines
+    with Session(bind=engine, future=True) as s:
+        mover = request_service.add_criterion(
+            s, request_id=rid, criterion_code="ROOMS_MIN", importance="REQUIRED",
+            operator="GTE", value=9, sort_order=200,
+            recorded_by_account_id=ids.ACC_OPERATOR,
+        )
+        s.commit()
+        mover_id = mover["request_criterion_id"]
+
+    def filler(locked):
+        with Session(bind=engine_a, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR):
+                request_service.add_criterion(
+                    s, request_id=rid, criterion_code="ROOMS_MIN",
+                    importance="REQUIRED", operator="GTE", value=3,
+                    sort_order=100, recorded_by_account_id=ids.ACC_OPERATOR,
+                )
+                locked()
+                assert wait_for_blocked_backend(engine), "no contention observed"
+        return "FILLED"
+
+    def move():
+        with Session(bind=engine_b, future=True) as s:
+            with audited_transaction(s, ids.ACC_ADMIN):
+                request_service.add_criterion(
+                    s, request_id=rid, criterion_code="ROOMS_MIN",
+                    importance="REQUIRED", operator="GTE", value=9,
+                    sort_order=100, request_criterion_id=mover_id,
+                    recorded_by_account_id=ids.ACC_ADMIN,
+                )
+        return "MOVED"
+
+    first, second = _run_ordered(filler, move)
+    assert_outcome(first, expect="FILLED", label="filler")
+    assert_outcome(second, raises="DuplicateCriterionSlot", label="mover")
+
+    with Session(bind=engine, future=True) as s:
+        slots = sorted(s.execute(
+            text("""SELECT sort_order FROM turab.request_criteria
+                     WHERE request_id = :r AND criterion_code = 'ROOMS_MIN'"""),
+            {"r": rid},
+        ).scalars().all())
+    assert slots == [100, 200], (
+        "the refused move must leave the criterion where it was"
+    )
+
+
+def _age(engine, rid, *, extra_days: int) -> None:
+    with Session(bind=engine, future=True) as s:
+        days, _ = freshness.request_threshold_days(s)
+        s.execute(
+            text("UPDATE turab.requests SET last_confirmed_at = :t "
+                 "WHERE request_id = :r"),
+            {"t": datetime.now(UTC) - timedelta(days=days + extra_days), "r": rid},
+        )
+        s.commit()

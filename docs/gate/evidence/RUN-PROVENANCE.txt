@@ -1,18 +1,34 @@
 TURAB — run provenance, recorded AT RUN TIME
+Follow-up corrections F-1..F-4 on top of 3f84f0e
 ============================================
-Recorded    : 2026-09-19 22:32:27 UTC
+Recorded    : 2026-09-19 23:27:17 UTC
 Branch      : claude/postgresql-execution-gate-yqifk7
-Parent commit (this run's code is this + the staged changes):
-              7244ac7882b85944a8d2713929c88dbe6f546d56
-Source fingerprint (sha256 over the sha256 of every .py/.sql/.sh/.ini/.mako
-under src/ tests/ db/ plus alembic.ini, sorted):
-              b377a673ff44047d460c4dc0c4cc7b781e06c8f4fc06b743c873df0b818258aa
+Parent      : 3f84f0ec9c145200d262bcd37bfe7c3071987f95
+
+Source fingerprint
+------------------
+  110c8456b734a46f45e8b0ac81a5318f120190b988b7de2072fec57590dd5871
+
+  Produced by, and reproducible with:
+      python db/dev/source_fingerprint.py .
+  Add --list to print the per-file digests the value is built from.
+
+  NOTE ON THE PREVIOUS VALUE. The earlier record in this file carried
+  a9a670a80f883b0f9be455b3610d74a4d0a0770d35964b456b11bf865d72b052, computed
+  by an ad-hoc shell pipeline that was never committed. A reviewer could not
+  reproduce it, so it is superseded rather than carried forward. The recipe is
+  now a committed script and the value above is that script's output on this
+  tree; the two numbers are not comparable, because the recipe differs and
+  because the script itself is part of the tree it measures.
 
 Commands
 --------
-  pytest -q --junitxml=reports/junit.xml
-  db/gate/run_gate.sh
-  db/gate/authorization_evidence.py --check
+  pytest -q --junitxml=reports/junit.xml          -> 485 passed
+  PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab \
+      db/gate/run_gate.sh                         -> 8/8 PASS
+  python db/gate/authorization_evidence.py --check -> matrix current, 128 rules
+  python docs/gate/evidence/followup_probes_rerun.py .
+                                                  -> followup-probes-after.json
 
 Connection
 ----------
@@ -22,16 +38,16 @@ Connection
 Dependencies
 ------------
 Python 3.12.3
-  PyYAML==6.0.3
-  SQLAlchemy==2.0.54
   alembic==1.20.0
   anyio==4.15.1
   fastapi==0.141.1
   httpx==0.28.1
-  psycopg-binary==3.3.6
   psycopg==3.3.6
+  psycopg-binary==3.3.6
   pydantic==2.13.5
   pydantic_core==2.46.5
   pytest==9.1.1
+  PyYAML==6.0.3
+  SQLAlchemy==2.0.54
   starlette==1.6.0
   uvicorn==0.53.0

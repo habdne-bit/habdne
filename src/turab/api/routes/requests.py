@@ -24,7 +24,7 @@ from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Header, Request
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ...auth.loaders import ResourceKind
 from ...services import freshness as freshness_service
@@ -47,6 +47,10 @@ PROPERTY_TYPES = (
     "AGRICULTURAL_PROPERTY", "BUILDING", "OTHER",
 )
 PROPERTY_TYPE_PATTERN = "^(" + "|".join(PROPERTY_TYPES) + ")$"
+
+#: `NOT NULL` in the frozen schema and non-nullable in the contract. Typed as
+#: plain strings so Pydantic refuses an explicit `null` with a field error.
+NON_NULLABLE_PATCH_FIELDS = ("intent", "payment", "budget_flexibility")
 
 
 class _Body(BaseModel):
@@ -151,6 +155,28 @@ class RequestStateCommand(_Body):
 class StateReconfirm(_Body):
     confirmed_at: datetime | None = None
     notes: str | None = None
+
+    @field_validator("confirmed_at")
+    @classmethod
+    def _confirmation_is_an_instant(cls, value: datetime | None):
+        """`format: date-time` is RFC 3339, which requires an offset.
+
+        A naive datetime is not a moment — it is a wall-clock reading with no
+        statement of where. The service compares it against the database
+        clock, which is timezone-aware, so accepting one produced
+        `TypeError: can't compare offset-naive and offset-aware datetimes`
+        and a 500 (follow-up review, R-S2-05b).
+
+        Refused here, as the input error it is. A correctly-offset historical
+        confirmation is still accepted; a correctly-offset future one is still
+        refused later, by the service, for a different reason.
+        """
+        if value is not None and value.tzinfo is None:
+            raise ValueError(
+                "must carry a timezone offset (for example 2026-01-01T12:00:00Z); "
+                "a local time with no offset does not identify a moment"
+            )
+        return value
 
 
 def access_free_budget_check(command, request_id, changes) -> str | None:
@@ -404,14 +430,21 @@ def update_request(
                      f"{HEADER} must be the integer version last read.")
 
     changes = body.model_dump(exclude_unset=True)
-    # The non-nullable fields use "" as their "not supplied" sentinel, so an
-    # explicit `null` for one of them arrives here as "" and is refused by
-    # name rather than reaching a NOT NULL column (R-S2-05).
-    nulled = [k for k, v in changes.items() if v == ""]
-    if nulled:
+    # Scoped to the three NON-NULLABLE fields, which carry "" as their
+    # "not supplied" default. It must never fire: Pydantic rejects `null` for
+    # them before the route, and `exclude_unset=True` drops them when they are
+    # omitted. It is kept as a narrow assertion, not a filter.
+    #
+    # The earlier version applied this to EVERY field, so
+    # `{"local_location_detail": ""}` — a value the contract allows, with no
+    # minimum length — was refused with a message that wrongly called it null
+    # (follow-up review, R-S2-05a). An empty string is not a null.
+    impossible = [k for k in NON_NULLABLE_PATCH_FIELDS if changes.get(k) == ""]
+    if impossible:
         return coded(
             ProblemCode.VALIDATION_FAILED, trace_id_of(request),
-            f"{sorted(nulled)} cannot be null; omit the field to leave it unchanged.",
+            f"{sorted(impossible)} cannot be empty; omit the field to leave it "
+            "unchanged.",
         )
     if not changes:
         return coded(ProblemCode.VALIDATION_FAILED, trace_id_of(request),

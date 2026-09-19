@@ -688,3 +688,168 @@ def test_a_refused_input_leaks_no_database_text(client, ids):
     for forbidden in ("psycopg", "sqlalchemy", "turab.requests", "constraint",
                       "traceback"):
         assert forbidden not in blob, forbidden
+
+
+# --- follow-up R-S2-03: the slot collision, both branches -----------------
+
+def test_moving_a_criterion_onto_an_occupied_slot_is_409(client, ids, engine):
+    """The case the first fix missed: the pre-check lived only in the ADD
+    branch, so a MOVE reached the UNIQUE constraint and surfaced as a 500."""
+    rid = _new_request(client, ids, "c-move")
+    first = _criterion(client, ids, rid, "m1", sort_order=100)
+    second = _criterion(client, ids, rid, "m2", sort_order=200, value=4)
+    assert first.status_code == 201 and second.status_code == 201
+    cid_second = second.json()["request_criterion_id"]
+
+    moved = _criterion(client, ids, rid, "m3",
+                       request_criterion_id=cid_second, sort_order=100, value=4)
+    assert moved.status_code == 409, moved.text
+    assert moved.json()["code"] == "DUPLICATE_CRITERION_SLOT"
+
+    # Nothing partially applied: both criteria are exactly as they were.
+    view = client.get(f"/requests/{rid}", headers=staff(ids)).json()
+    slots = sorted((c["sort_order"], c["value"]) for c in view["criteria"])
+    assert slots == [(100, 3), (200, 4)], view["criteria"]
+
+
+def test_the_refused_move_records_no_provenance_and_frees_its_key(
+    client, ids, engine
+):
+    rid = _new_request(client, ids, "c-move2")
+    _criterion(client, ids, rid, "n1", sort_order=100)
+    cid = _criterion(client, ids, rid, "n2", sort_order=200,
+                     value=4).json()["request_criterion_id"]
+    before = len([
+        p for p in client.get(f"/requests/{rid}", headers=staff(ids)).json()["provenance"]
+        if p["attribute_code"] == "criterion.ROOMS_MIN"
+    ])
+
+    k = "s2-move-refused"
+    bad = client.post(f"/requests/{rid}/criteria",
+                      json={"request_criterion_id": cid, "criterion_code": "ROOMS_MIN",
+                            "importance": "REQUIRED", "operator": "GTE",
+                            "value": 4, "sort_order": 100},
+                      headers={**cust(ids), "Idempotency-Key": k})
+    assert bad.status_code == 409
+
+    after = client.get(f"/requests/{rid}", headers=staff(ids)).json()
+    assert len([p for p in after["provenance"]
+                if p["attribute_code"] == "criterion.ROOMS_MIN"]) == before, (
+        "a refused move must record no provenance"
+    )
+    with Session(bind=engine, future=True) as s:
+        assert s.execute(
+            text("SELECT count(*) FROM turab.idempotency_records "
+                 "WHERE idempotency_key = :k"), {"k": k},
+        ).scalar_one() == 0, "a refused move must not consume its key"
+
+    # and the same key still works for a legitimate move to a free slot
+    good = client.post(f"/requests/{rid}/criteria",
+                       json={"request_criterion_id": cid, "criterion_code": "ROOMS_MIN",
+                             "importance": "REQUIRED", "operator": "GTE",
+                             "value": 4, "sort_order": 300},
+                       headers={**cust(ids), "Idempotency-Key": k})
+    assert good.status_code == 201, good.text
+    assert good.json()["sort_order"] == 300
+
+
+def test_a_move_to_a_free_slot_still_succeeds(client, ids):
+    """The fix must not refuse the case it exists to allow."""
+    rid = _new_request(client, ids, "c-free")
+    cid = _criterion(client, ids, rid, "f1",
+                     sort_order=100).json()["request_criterion_id"]
+    moved = _criterion(client, ids, rid, "f2",
+                       request_criterion_id=cid, sort_order=150, value=5)
+    assert moved.status_code == 201, moved.text
+    view = client.get(f"/requests/{rid}", headers=staff(ids)).json()
+    assert len(view["criteria"]) == 1
+    assert view["criteria"][0]["sort_order"] == 150
+
+
+# --- follow-up R-S2-05a: an empty string is not a null --------------------
+
+def test_an_empty_free_text_field_is_accepted(client, ids):
+    """`local_location_detail` is a free-text string with no minimum length in
+    the contract. The generic sentinel check refused it and called it null."""
+    rid = _new_request(client, ids, "e-empty")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    r = client.patch(f"/requests/{rid}", json={"local_location_detail": ""},
+                     headers={**cust(ids), "If-Match-Version": str(version)})
+    assert r.status_code == 200, r.text
+    assert r.json()["local_location_detail"] == ""
+
+
+def test_null_clears_a_nullable_field(client, ids):
+    rid = _new_request(client, ids, "e-clear")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    r = client.patch(f"/requests/{rid}", json={"local_location_detail": None},
+                     headers={**cust(ids), "If-Match-Version": str(version)})
+    assert r.status_code == 200, r.text
+    assert r.json()["local_location_detail"] is None
+
+
+def test_omitting_a_field_leaves_it_unchanged(client, ids):
+    rid = _new_request(client, ids, "e-omit")
+    before = client.get(f"/requests/{rid}", headers=staff(ids)).json()
+    r = client.patch(f"/requests/{rid}", json={"budget_max_dzd": 77_000},
+                     headers={**cust(ids), "If-Match-Version": str(before["version"])})
+    assert r.status_code == 200, r.text
+    assert r.json()["local_location_detail"] == before["local_location_detail"]
+    assert r.json()["intent"] == before["intent"]
+
+
+def test_null_is_still_refused_for_a_non_nullable_field(client, ids):
+    """The guarantee the sentinel was there for, kept."""
+    rid = _new_request(client, ids, "e-nonnull")
+    version = client.get(f"/requests/{rid}", headers=staff(ids)).json()["version"]
+    for field in ("intent", "payment", "budget_flexibility"):
+        r = client.patch(f"/requests/{rid}", json={field: None},
+                         headers={**cust(ids), "If-Match-Version": str(version)})
+        assert r.status_code == 422, (field, r.text)
+        assert field in [e["field"] for e in r.json()["field_errors"]]
+
+
+# --- follow-up R-S2-05b: a datetime without an offset --------------------
+
+def test_a_confirmation_without_a_timezone_is_refused(client, ids, engine):
+    """It produced `TypeError: can't compare offset-naive and offset-aware
+    datetimes` and a 500. It is an input error, refused as one."""
+    rid = _new_request(client, ids, "tz-naive")
+    # A key distinct from the one `_new_request` used for the creation: they
+    # are different commands, and reusing the string would make this test
+    # measure its own helper.
+    k = "s2-tz-naive-reconfirm"
+    r = client.post(f"/requests/{rid}/reconfirm",
+                    json={"confirmed_at": "2026-01-01T12:00:00"},
+                    headers={**cust(ids), "Idempotency-Key": k})
+    assert r.status_code == 422, r.text
+    assert "confirmed_at" in [e["field"] for e in r.json()["field_errors"]]
+
+    with Session(bind=engine, future=True) as s:
+        assert s.execute(
+            text("SELECT last_confirmed_at FROM turab.requests WHERE request_id = :r"),
+            {"r": uuid.UUID(rid)},
+        ).scalar_one() is None, "a refused confirmation must write nothing"
+        assert s.execute(
+            text("SELECT count(*) FROM turab.idempotency_records "
+                 "WHERE idempotency_key = :k"), {"k": k},
+        ).scalar_one() == 0, "a refused confirmation must not consume its key"
+
+
+@pytest.mark.parametrize("stamp", ["2026-01-01T12:00:00Z",
+                                   "2026-01-01T12:00:00+01:00"])
+def test_a_historical_confirmation_with_an_offset_is_accepted(client, ids, stamp):
+    rid = _new_request(client, ids, f"tz-ok-{stamp[-3:]}")
+    r = client.post(f"/requests/{rid}/reconfirm", json={"confirmed_at": stamp},
+                    headers={**cust(ids), **key(f"s2-tz-{stamp[-3:]}")})
+    assert r.status_code == 200, r.text
+    assert r.json()["last_confirmed_at"] is not None
+
+
+def test_a_future_confirmation_with_an_offset_is_still_refused(client, ids):
+    rid = _new_request(client, ids, "tz-future")
+    r = client.post(f"/requests/{rid}/reconfirm",
+                    json={"confirmed_at": "2099-01-01T12:00:00Z"},
+                    headers={**cust(ids), **key("s2-tz-future")})
+    assert r.status_code == 422, r.text
+    assert "future" in r.json()["detail"]

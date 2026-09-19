@@ -13,9 +13,9 @@
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
 | Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed**, submitted for closure review — all 11 contract operations wired |
-| Slice 2 — REQUEST / Criteria / Freshness | **Independent review R-S2-01…05 corrected; not yet closed** — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
+| Slice 2 — REQUEST / Criteria / Freshness | **Independent review R-S2-01…05 corrected, plus the follow-up on `3f84f0e`; not yet closed** — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
 
-Across both: **471 tests, 125 rules evidenced**, 23 of 64 contract operations wired.
+Across both: **485 tests, 128 rules evidenced**, 23 of 64 contract operations wired.
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -80,7 +80,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 471 tests
+./.venv/bin/pytest -q                  # 485 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 
