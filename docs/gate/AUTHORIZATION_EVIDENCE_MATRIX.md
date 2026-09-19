@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **62**
-- Distinct tests cited: **130**
-- Suite total: **218/218** test cases passing (167 distinct test functions)
+- Rules and invariants covered: **63**
+- Distinct tests cited: **133**
+- Suite total: **228/228** test cases passing (172 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -74,6 +74,7 @@ matrix, because it reads as assurance.
 | `R8.2 / R8.2a` | Scope ladder adds; no scope lifts the never-serialized floor | `test_summary_only_withholds_property_detail`<br>`test_property_details_allowed_adds_the_customer_view`<br>`test_no_scope_lifts_the_never_serialized_floor` | PASS |
 | `R8.3 / S34` | Contact released only after a recorded confirmation | `test_contact_is_withheld_without_a_recorded_confirmation`<br>`test_contact_is_released_after_a_recorded_confirmation` | PASS |
 | `§8` | Structured logs redact OTP codes and sensitive payloads | `test_sensitive_keys_are_redacted`<br>`test_redaction_reaches_nested_structures`<br>`test_exceptions_log_type_and_message_not_a_traceback` | PASS |
+| `D6 / baseline hygiene` | Version drift in any single claim is caught mechanically | `test_a_consistent_package_passes`<br>`test_drift_in_any_single_place_is_caught`<br>`test_a_missing_artifact_is_an_error` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
 
 ## Reading this table
