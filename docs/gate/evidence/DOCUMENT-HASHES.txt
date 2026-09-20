@@ -1,0 +1,22 @@
+TURAB — sha256 of every document delivered for review
+=====================================================
+A revision of the Slice 3 plan was reported delivered while the reviewer held
+the previous one. An approval could therefore have been recorded against a text
+nobody had read. Every delivered document is now named with its commit and
+accompanied by its hash, and the hashes are recorded here so the claim is
+checkable rather than asserted.
+
+Verify any delivered file with:
+    sha256sum <file>
+
+docs/gate/SLICE_3_PLAN.md
+-------------------------
+  rev 1  c0e6ed5  36f569f72b0769f29d9b5c48b9483db0a0f7690639696ef06bd9187a7fe014e7
+  rev 2  3447a7d  607bd2050aecbb7e5253ae5a8b8008357be49040d68f2bd839e078bdb30d5a12
+                  (this revision never reached the reviewer; the hash they
+                   reported was rev 1's, which is how the fault was caught)
+  rev 3  THIS     d96a276b7e533e1f392ed7972c15c585d9498356275e6e46ae6d60c6a34488c8
+
+docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
+---------------------------------------------------------
+  rev 1  THIS     be52322fda7e3ce9f210c091a00212401c25e2b5e420f69ca47c8a72e18a321d

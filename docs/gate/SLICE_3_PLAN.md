@@ -1,10 +1,35 @@
 # Slice 3 — PROPERTY / OFFER / SOURCE / Truth Layer / Identity Lite
-## Implementation plan — **revision 2**, submitted for a second review
+## Implementation plan — **revision 3**
 
-**Status:** proposal. Nothing in this plan has been implemented.
+**Status:** **steps 1–8 authorised**; G3-6 awaits its Contract Delta.
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:127–166`.
 **Predecessor:** Slice 2, closed within its agreed scope at `94639a6`.
+
+### Revision 3 — the authorisation and the two corrections
+
+Steps 1–8 are authorised on the scope reported, under five standing limits,
+each of which is an acceptance condition in §7:
+
+1. No Matching, and nothing written to `match_candidates`.
+2. No party-property relation inferred from any act.
+3. `party_property_relations` never used as an authorization source.
+4. No code on the G3-6 path before its contract addition is approved (§4.4).
+5. **Slice 3 is not declared closed** until G3-6 is delivered or its deferral
+   is explicitly approved in a later decision.
+
+The 485 tests and the 8/8 gate remain **our own saved run**; the reviewer
+states they did not independently re-run commit `3447a7d`, and we do not
+present the authorisation as confirmation that they did.
+
+Two things changed in the plan itself:
+
+- **G3-6 is decided** — option A, delivered as a Contract Delta before any code
+  on that path (§4.4).
+- **The contention claim is corrected, in four places not one** (§2.1, §3.6,
+  §6.3). A unique index is not a concurrency contract: where a lock serialises
+  two paths, both succeed. We found the same flawed claim in the resolution
+  test, which the review had not named, and corrected it too.
 
 ### What changed in revision 2
 
@@ -168,6 +193,13 @@ We will not match on an exception's message text to identify a P0001 — a
 message is not an interface. The pre-check is the mapping; the trigger is what
 makes a missed pre-check safe rather than silent.
 
+**And a unique index is not a concurrency contract.** Mapping a named index to
+a typed 409 says what happens *if* it is violated. It does not make a violation
+the expected outcome of contention: where a lock serialises two paths, both
+succeed, and only a **declared** version guard produces a winner and a loser.
+Revision 2 confused the two; §6.3 states the corrected expectation for each
+concurrency test.
+
 ---
 
 ## 3. Rules, as ratified and as derived
@@ -324,10 +356,37 @@ cleaner rather than redundant:
 3. Because this is a **named** index, the collision maps by `constraint_name`
    inside a SAVEPOINT, exactly as `DUPLICATE_CRITERION_SLOT` does. It is in the
    first row of §2.1's table, not the second.
-4. The contention test the review asks for is added
-   (`test_two_concurrent_primary_source_links_leave_exactly_one_primary`), and
-   it is the *right* test: the parent-offer lock is what makes it deterministic,
-   and the index is what makes a missed lock safe.
+4. The contention test is added — **but with the assertion the second review
+   corrected, not the one revision 2 first wrote.**
+
+**The corrected contention claim.** Revision 2 implied that two concurrent
+primary links produce a winner and a 409 loser. That was wrong, and the reason
+matters: **the parent-offer lock is precisely what prevents the collision.**
+Two transactions that both follow the clear-then-set path serialise on that
+lock, and the second then clears the primary the first has just set before
+setting its own. With no `expected_version` and no declared compare-and-set in
+the contract for this operation, **both legitimately succeed**, and the final
+primary is the one the last committer set. Demanding a 409 would have been a
+test asserting a behaviour the contract does not specify — and, worse, one that
+could only be made to pass by *removing* the lock.
+
+The SAVEPOINT mapping of `ux_offer_primary_source` to a typed 409 stays
+required for when the index is genuinely violated. It is simply not the normal
+outcome of two lock-serialised paths.
+
+So `test_two_concurrent_primary_source_links_leave_exactly_one_primary` asserts:
+
+1. **No committed moment and no final state has more than one primary** — the
+   invariant, checked on the committed rows, not on a timing guess.
+2. **Both workers' outcomes are asserted**, by the Slice 2 harness rule: each
+   either returns its value or raises a named domain refusal, and anything else
+   fails the test.
+3. **The final primary matches the lock-acquisition / commit order**, which the
+   deterministic handshake establishes rather than assumes.
+4. **No 500 appears** from either worker.
+5. **No worker is required to lose.** If a real winner/loser outcome is ever
+   wanted here, it needs a **declared version guard**; it will not be inferred
+   from the index, and we will not add one unasked.
 
 ### 3.7 Resolution authority — **resolved (G3-4)**
 
@@ -470,56 +529,66 @@ the four named source values.
 
 §3.7. No contract correction; five conditions, each tested.
 
-### 4.4 G3-6 · `party_property_relations` has no create path — **NEW, BLOCKING**
+### 4.4 G3-6 · party-property relations — **DECIDED: option A, via a Contract Delta**
 
-**Confirmed by inspection, and it blocks the relations deliverable.** We
-checked the whole effective contract:
+The gap is confirmed and was accepted: no operation, path or schema creates
+`party_property_relations`; neither `PropertyCreate` nor `OfferCreate` carries
+`relation_code`; the only contract schema whose text mentions a relation at all
+is `PhoneInput`, which is unrelated.
 
-- No path contains "relation". No operation creates, reads or modifies
-  `party_property_relations`.
-- `PropertyCreate` properties are exactly `property_type`,
-  `canonical_location_id`, `local_location_detail`, `land_area_m2`,
-  `built_area_m2`, `current_availability`, `supply_mode`, `management_mode`,
-  `claim_status` — **no `relation_code`**.
-- `OfferCreate` properties are exactly `party_id`, `transaction_type`,
-  `asking_price_dzd`, `raw_price_text`, `price_negotiable`,
-  `seller_expectation_dzd`, `price_visibility`, `permission_scope` — **no
-  `relation_code`**.
-- The only contract schema whose text mentions a relation at all is
-  `PhoneInput`, which is unrelated.
+**Ratified: option A — explicit operations for managing a party's relation to a
+property.** The reasons given, recorded because they rule out the alternatives
+on principle rather than convenience:
 
-**What we will not do.** We will not infer `OWNER_DECLARED`, `BROKER` or any
-other `relation_code` from the act of creating a property or an offer, and we
-will not write a relation row as an undeclared side effect. `management_mode`
-does not establish ownership, and `offer.party_id` does not establish the
-*kind* of relationship — it names a party, and RFC-001 R4.12 already says that
-alone grants nothing.
+- A field on `PropertyCreate` (option B) **binds two independent concepts** and
+  cannot express a relation added later, nor several relations on one property.
+- Routing it through the truth layer (option C) **conflates the party asserting
+  a fact with the party related to the property**, and reuses provenance
+  machinery as though it were a domain fact. We had leaned toward C for costing
+  no contract change; that was the wrong criterion.
+- Deferral (option D) leaves a Slice 3 deliverable absent and blocks closure.
 
-**Why the overlay cannot fix this.** The correction mechanism may only
-**narrow** the frozen contract. Adding a field to `PropertyCreate`, or adding a
-relations operation, is a **widening**. The overlay is structurally incapable
-of it, so this needs a contract decision, not a local patch.
+**This is a contract ADDITION, not a narrowing correction**, so the overlay
+cannot carry it. Binding constraints:
 
-**Options, kept separate so you can choose one rather than approve a blur:**
+1. `openapi_v0.2.3.yaml` stays **untouched**.
+2. The operation is **not** added through the correction overlay.
+3. A next contract package, or a standalone **Contract Delta**, is submitted and
+   approved **before any code for this path is written**.
+4. **No relation row is written**, and neither `claims` nor `observations` is
+   repurposed to create one implicitly, until that approval.
 
-| Option | Shape | Cost |
-|---|---|---|
-| **A — a relations operation** | a declared `POST /properties/{id}/relations` carrying `party_id` and `relation_code` | a new operation in a future contract version; the cleanest, and it makes the relation an explicit act with its own provenance |
-| **B — a field on `PropertyCreate`** | `relation_code` accompanying the creating party | smaller surface, but it binds the relation to creation only and cannot express a broker added later |
-| **C — through the truth layer** | relation as a `claim` on the property with a controlled `attribute_code`, resolved through `resolved_values` | needs **no contract change at all**, and inherits provenance, verification and history — but `party_property_relations` then stays empty, and the deliverable is met in a different table than the slices document names |
-| **D — defer** | the deliverable is explicitly deferred and recorded as such | honest, and consistent with how DL items are handled |
+The Contract Delta must cover, at minimum: creation, retrieval and **ending the
+validity** of a relation; the permitted roles; `relation_code` and the temporal
+values; that the **default creation level is `DECLARED`** and a customer cannot
+assert a higher verification level without a declared verification mechanism;
+idempotency and audit; the meaning of duplicate or temporally overlapping rows
+if they are to be forbidden; and an **explicit statement that a relation grants
+no access authority**.
 
-**Our reading, offered as such, not as a decision.** Option C is the only one
-requiring no contract change, and the truth layer is built precisely for facts
-with an origin and a verification level — which is what a relation is. But it
-leaves the named table unused, which is a real divergence from the deliverable
-as written, and that is a product call rather than ours.
+It is delivered as `docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md`
+for review before implementation. The rest of Slice 3 proceeds in parallel.
 
-**Until this is decided:** no relation row is written by any path in this
-slice, `party_property_relations` remains read-only and empty, and the
-"party-property relations" deliverable is reported **not delivered** rather
-than partially claimed. Nothing else in the slice depends on it — relations are
-not an authorization source (R4.5, R4.12), so no other path is blocked.
+**Closure condition carried forward:** Slice 3 is not declared closed until
+G3-6 is delivered, or its deferral is approved in an explicit later decision.
+
+**A consequence found while drafting the Delta, and demonstrated on the live
+database.** `enforce_consent_binding` requires an **active party-property
+relation** before a **property-scoped** consent binding may be created
+(`schema_v0.2.3.sql:1092-1099`). With no way to create a relation, that branch
+of `postConsentsBindings` — an operation already implemented in Slice 1 — is
+**unreachable**:
+
+```
+ERROR:  Property consent party has no active property relation
+CONTEXT:  PL/pgSQL function enforce_consent_binding() line 33 at RAISE
+```
+
+The public list is **not** affected: its consent binds to the **offer**, whose
+branch of the trigger checks `property_offers.party_id`. But this means G3-6 is
+a blocking dependency, not only a missing deliverable. The current suite does
+not reveal it because the fixtures insert relation rows directly; that is noted
+in the Delta rather than left for someone to trip over.
 
 ### 4.5 G3-2 · PROPERTY claim eligibility — **open, unchanged**
 
@@ -686,13 +755,25 @@ Two engines, two transactions, interleaving witnessed through
 `pg_stat_activity`, every worker's outcome asserted — the harness Slice 2
 ended with, including the E-02 correction:
 
-- `test_two_concurrent_resolutions_of_one_attribute_yield_one_current_value`
-  — contends on `ux_resolved_current_property`; the loser gets a typed 409 from
-  the named constraint, not a 500.
-- `test_two_concurrent_primary_source_links_leave_exactly_one_primary` (§3.6).
-- `test_generating_the_same_pair_twice_concurrently_yields_one_candidate` (§3.10).
-- `test_two_concurrent_offer_transitions_from_one_state_do_not_both_apply`
-  — the R-S2-02 shape, applied to offers.
+**The principle the second review established, applied to all four.** A lock
+that serialises two paths makes *both* succeed; a winner-and-loser outcome
+needs either no serialising lock or a **declared** compare-and-set. It cannot
+be inferred from a unique index. We checked each test against that rule rather
+than only the one it was raised about:
+
+| test | serialises on | expected outcome |
+|---|---|---|
+| `test_two_concurrent_primary_source_links_leave_exactly_one_primary` | the parent **offer** row | **both succeed**; last committer's source is primary; invariant holds throughout (§3.6) |
+| `test_two_concurrent_resolutions_of_one_attribute_yield_one_current_value` | the **subject** row | **both succeed**; the second closes the first's row and inserts its own; exactly one CURRENT at every committed moment; full history preserved |
+| `test_generating_the_same_pair_twice_concurrently_yields_one_candidate` | **nothing** — generation is a batch over pairs with no single parent row to lock | `ux_identity_pair` is the real guard; the SAVEPOINT maps it to **keeping the existing candidate** (idempotent), **not** to a 409 raised at the caller |
+| `test_two_concurrent_offer_transitions_from_one_state_do_not_both_apply` | the **offer** row, with `AND status = :expected` re-asserted in the `UPDATE` | **a genuine winner and loser** — the predicate *is* a declared compare-and-set, so the second transition matches no row and gets a typed refusal (the R-S2-02 shape) |
+
+The second row corrects revision 2, which claimed a 409 loser there too. Had we
+locked the subject *and* asserted a 409, the only way to make the test pass
+would have been to remove the lock — a test driving the design backwards.
+
+Every one of the four asserts both workers' outcomes, checks the committed rows
+and the trail, and fails if no interleaving was observed.
 
 ### 6.4 What these tests will not claim
 
@@ -724,10 +805,19 @@ ended with, including the E-02 correction:
 6. **Matching not started.** No `match_candidates` row written by any path.
 7. **PROPERTY claim eligibility still undecided**; no path creates a
    property-party authority link as a side effect.
-8. **No `party_property_relations` row written by any path** while G3-6 is
-   open, and the relations deliverable reported *not delivered* rather than
-   partially claimed.
-9. Run provenance recorded at run time, with the committed fingerprint recipe.
+8. **No `party_property_relations` row written by any path**, and no `claim`
+   or `observation` repurposed to create one implicitly, until the G3-6
+   Contract Delta is approved (§4.4). The relations deliverable is reported
+   *not delivered* rather than partially claimed.
+9. **`party_property_relations` is never read as an authorization source**, in
+   any path, whatever the `relation_code` or `verification_level` (R4.5,
+   R4.12).
+10. **Slice 3 is not declared closed** until G3-6 is delivered or its deferral
+    is explicitly approved.
+11. No concurrency test asserts a winner-and-loser outcome that is not backed
+    by a **declared** compare-and-set (§6.3).
+12. Run provenance recorded at run time, with the committed fingerprint
+    recipe, and every delivered document accompanied by its sha256 (§9).
 
 ---
 
@@ -748,9 +838,27 @@ ended with, including the E-02 correction:
 With G3-1, G3-3 and G3-4 ratified, **steps 1 through 8 can all begin on
 approval of this revision**. Only the relations deliverable waits, on G3-6.
 
-**What we are asking for in this second review:** approval to begin steps 1–8;
-a decision on **G3-6** (option A, B, C or D in §4.4); and confirmation that our
-correction in §3.6 is accepted — the primary-source index exists in the frozen
-baseline, so the rule is adopted as a constraint mapping rather than written
-from scratch. **G3-2** and **G3-5** we expect to remain open, and this plan is
-built so that they can.
+All of steps 1–8 are authorised and begin now. The relations deliverable waits
+on the G3-6 Contract Delta, which is submitted separately and before any code
+for that path.
+
+---
+
+## 9. Document identity
+
+A revision of this plan was reported as delivered while the reviewer held the
+previous one, so an approval could have been recorded against a text nobody had
+read. From here on, every delivered document is named with the commit it comes
+from and is accompanied by its `sha256`, and the hashes are recorded in the
+repository at `docs/gate/evidence/DOCUMENT-HASHES.txt` so the claim is
+checkable rather than asserted.
+
+| revision | commit | sha256 of `docs/gate/SLICE_3_PLAN.md` |
+|---|---|---|
+| 1 | `c0e6ed5` | `36f569f72b0769f29d9b5c48b9483db0a0f7690639696ef06bd9187a7fe014e7` |
+| 2 | `3447a7d` | `607bd2050aecbb7e5253ae5a8b8008357be49040d68f2bd839e078bdb30d5a12` |
+| 3 | this commit | recorded in `DOCUMENT-HASHES.txt` |
+
+The reviewer's reported hash matched revision 1 exactly, which confirms the
+diagnosis: revision 2 never reached them, and the fault is ours to prevent, not
+theirs to detect.
