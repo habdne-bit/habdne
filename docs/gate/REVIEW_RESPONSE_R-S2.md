@@ -314,3 +314,111 @@ the correction is actually claimed on — the PATCH returning 200 and storing
 the empty string — is proven on PostgreSQL by
 `tests/test_slice2_http.py::test_an_empty_free_text_field_is_accepted`, not by
 this DB-free probe.
+
+---
+
+# Acceptance review of `73be3a7` — closure, and two corrections to the instruments
+
+Slice 2 is closed within its agreed scope; R-S2-01…R-S2-05 are closed. The
+acceptance review raised **no new blocking defect in the product**. It raised
+two defects **in our instruments**, both confirmed here, plus one attribution
+we were overstating. All three are corrected below.
+
+## E-01 · the attached probe never reached the SAVEPOINT
+
+**Confirmed, and the criticism is exact.** In the version shipped with the
+`73be3a7` bundle, `Result.first()` returned one non-empty row for *every*
+query, including the slot pre-check. The service therefore raised
+`DuplicateCriterionSlot` **before the write**, and the recorded `queries` list
+— the definitions query and the slot check, with no `UPDATE` and no savepoint
+— says so plainly. The note attributing that 409 to an `IntegrityError`
+intercepted inside a savepoint was **wrong for that run**. A recorded query
+list that contradicts the note beside it is the worst kind of evidence,
+because it reads as proof.
+
+We took the second of the two offered remedies: the stub now answers each
+query separately, and the probe reports what it actually did.
+
+`docs/gate/evidence/followup_probes_rerun.py` now runs the same code four
+times, differing only in what the stub answers:
+
+| run | pre-check sees | write trips | reached the write | savepoint | result |
+|---|---|---|---|---|---|
+| a | slot taken | — | **no** | not opened | 409 `DUPLICATE_CRITERION_SLOT` |
+| b | slot free | the slot constraint, on `UPDATE` (CHANGE) | **yes** | opened, rolled back | 409 `DUPLICATE_CRITERION_SLOT` |
+| c | slot free | the slot constraint, on `INSERT` (ADD) | **yes** | opened, rolled back | 409 `DUPLICATE_CRITERION_SLOT` |
+| d | slot free | `request_criteria_request_id_fkey` | **yes** | opened, rolled back | **not** mapped — propagates, 500 |
+
+Run (a) is now labelled as evidence of the pre-check and nothing more. Runs
+(b) and (c) are what the savepoint claim rests on, in both branches. Run (d)
+is the one that matters most for honesty: the mapping is **specific**, not a
+catch-all that would hide unrelated faults.
+
+The limits are stated in the file: the constraint violation is **injected by
+name**. This probe proves the exception-handling path. It does not simulate
+or prove PostgreSQL's isolation behaviour, and it does not prove the unique
+index fires — the two-connection tests do that on a real server.
+
+## E-02 · the injected error was not the injected error
+
+**Confirmed.** `explode()` was declared with no parameter while `_run_ordered`
+calls the holder as `holder(locked)`. The worker therefore died of `TypeError`
+before reaching the `RuntimeError("injected")` the test names. The assertions
+did bite — but on the wrong exception, and the contender was released by the
+`finally` in `run_holder` rather than by the handshake the test claims to
+exercise. A self-check that does not perform the check it describes is worth
+less than no self-check.
+
+Corrected to `def explode(locked): locked(); raise RuntimeError("injected")`,
+and the recorded outcome is now asserted to carry the intended error **before**
+it is asserted to be refused:
+
+```python
+first, second = _run_ordered(explode, fine)
+assert first == ("raised", "RuntimeError: injected"), first
+with pytest.raises(UnexpectedWorkerError):
+    assert_outcome(first, expect="anything", label="injected")
+```
+
+Verified by reverting the signature alone: the test then fails with
+`AssertionError: ('raised', 'TypeError: ... takes 0 positional arguments but 1
+was given') == ('raised', 'RuntimeError: injected')`. It now fails on exactly
+the defect the review named, which is the property it lacked before.
+
+## Attribution: concurrency evidence and idempotency-key evidence are separate
+
+**Accepted.** The two concurrent criteria tests call the **service** directly,
+not `CommandService`, so they cannot say anything about whether an idempotency
+key was consumed. Our prose claimed both guarantees for both test families.
+The test code never claimed it — the word does not appear in
+`tests/test_slice2_concurrency.py` — but the report did, and the report is
+what gets read. The correct division:
+
+| guarantee | proven by | mechanism |
+|---|---|---|
+| two concurrent commands do not both take one slot; a move onto a slot another transaction holds is refused | `tests/test_slice2_concurrency.py` — `test_two_concurrent_adds_of_the_same_slot_yield_one_success_and_one_409`, `test_a_concurrent_move_onto_a_slot_being_taken_is_refused` | two engines, two transactions; interleaving witnessed by `pg_stat_activity` |
+| the row and the provenance trail are unchanged after a refusal | `tests/test_slice2_http.py::test_the_refused_move_records_no_provenance_and_frees_its_key` | full HTTP stack through `CommandService` |
+| a refused command does not consume its idempotency key | `tests/test_slice2_http.py` — `test_a_refused_input_consumes_no_idempotency_key`, `test_the_refused_move_records_no_provenance_and_frees_its_key`, `test_a_confirmation_without_a_timezone_is_refused` | `SELECT count(*) FROM turab.idempotency_records` after the refusal, then a corrected retry on the same key |
+
+The command-transaction rollback that makes the third row true is unchanged by
+this round.
+
+## What closure does and does not mean
+
+**Closed:** R-S2-01…R-S2-05, and Slice 2 within its agreed scope — REQUEST,
+criteria, freshness — at commit `73be3a7` plus the two instrument corrections
+recorded here.
+
+**Not closed, and unchanged in classification:** DL-08a, DL-10, DL-11, account
+provisioning, and D4. They keep the classification they were given; nothing in
+this round revisited them.
+
+**Closure is not operational readiness.** With account provisioning still an
+declared operational gap and D4 open, this slice supports development and
+review, not a live trial.
+
+**Source of the results.** The 485 test cases and the 8/8 gate are **our**
+saved run, recorded in `docs/gate/evidence/RUN-PROVENANCE.txt`. The acceptance
+review states it did not re-run the PostgreSQL suite or the concurrency tests
+on an independent server, and we do not present its acceptance as
+independent confirmation that they ran.

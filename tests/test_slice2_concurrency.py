@@ -330,14 +330,25 @@ def test_an_unexpected_worker_error_fails_the_assertions(engine, ids,
     An injected error in a worker has to fail the test rather than be
     returned as a value nobody inspects — which is exactly the weakness the
     follow-up review identified in the first version of these tests.
+
+    `explode` MUST take the `locked` callback and call it. An earlier version
+    declared it as `explode()`, so `_run_ordered` raised `TypeError` when it
+    passed the callback, and the worker never reached the `RuntimeError` the
+    test names: the assertions still bit, but on the wrong exception, and the
+    contender was released only by the `finally` in `run_holder` rather than
+    by the handshake (acceptance review E-02). The recorded outcome is
+    therefore checked to carry the INTENDED error before it is checked to be
+    refused, so the test cannot silently drift back to measuring itself.
     """
-    def explode():
+    def explode(locked):
+        locked()
         raise RuntimeError("injected")
 
     def fine():
         return "ok"
 
     first, second = _run_ordered(explode, fine)
+    assert first == ("raised", "RuntimeError: injected"), first
     with pytest.raises(UnexpectedWorkerError):
         assert_outcome(first, expect="anything", label="injected")
     assert_outcome(second, expect="ok", label="control")

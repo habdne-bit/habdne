@@ -1,8 +1,21 @@
 # Slice 2 — REQUEST + Criteria + Freshness · progress report
 
-**Status:** **not closed.** The focused closing round of 2026-09-19 has been
-applied; three items remain open and are named in §5.
+**Status:** **CLOSED within its agreed scope**, 2026-09-20, on the acceptance
+review of commit `73be3a7` plus the two instrument corrections E-01 and E-02
+recorded in `REVIEW_RESPONSE_R-S2.md`. R-S2-01…R-S2-05 are closed.
 **Baseline:** Handoff v1.0.3 / pack v0.2.3, frozen.
+
+**What closure does NOT mean.** It is not operational readiness. Account
+provisioning remains a declared operational gap and D4 is open, so this slice
+supports development and review, not a live trial. DL-08a, DL-10, DL-11,
+account provisioning and D4 keep the classification they already had; this
+round revisited none of them. Matching is not started, and PROPERTY claim
+eligibility is not decided — neither may be settled implicitly.
+
+The 485 test cases and the 8/8 gate are the developer's own run, recorded in
+`docs/gate/evidence/RUN-PROVENANCE.txt`. The acceptance review states it did
+not re-run the PostgreSQL suite or the concurrency tests on an independent
+server, and its acceptance is not presented as confirmation that they did.
 
 **Revision 2 (2026-09-19, closing round).** This report previously classified
 the claim eligibility gap as an open Workflow decision. That was wrong — the

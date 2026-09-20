@@ -66,8 +66,8 @@
       "scope": "real model, route and date comparison; DB clock and command plumbing stubbed"
     },
     {
-      "probe": "criterion_update_integrity_error_mapping",
-      "actual": {
+      "probe": "criterion_slot_collision",
+      "a_refused_by_the_pre_check": {
         "status": 409,
         "content_length": 225,
         "body": {
@@ -77,15 +77,93 @@
           "code": "DUPLICATE_CRITERION_SLOT",
           "trace_id": "-",
           "detail": "this request already has 'ROOMS_MIN' at sort_order 100; to change it, send its request_criterion_id"
-        }
+        },
+        "branch": "ADD",
+        "write_reached": false,
+        "savepoint_opened": false,
+        "savepoint_rolled_back": false,
+        "transaction_log": [],
+        "queries": [
+          "SELECT code FROM turab.criterion_definitions WHERE active ORDER BY code",
+          "SELECT 1 FROM turab.request_criteria WHERE request_id = :request_id AND criterion_code = :code AND sort_order = :sort_order AND (CAST(:cid AS uuid) IS NULL OR request_criterion_id <> CAST(:cid AS uuid))"
+        ]
+      },
+      "b_change_branch_constraint_at_the_write": {
+        "status": 409,
+        "content_length": 225,
+        "body": {
+          "type": "about:blank",
+          "title": "Duplicate criterion",
+          "status": 409,
+          "code": "DUPLICATE_CRITERION_SLOT",
+          "trace_id": "-",
+          "detail": "this request already has 'ROOMS_MIN' at sort_order 100; to change it, send its request_criterion_id"
+        },
+        "branch": "CHANGE",
+        "write_reached": true,
+        "savepoint_opened": true,
+        "savepoint_rolled_back": true,
+        "transaction_log": [
+          "SAVEPOINT begin",
+          "WRITE reached",
+          "SAVEPOINT rollback"
+        ],
+        "queries": [
+          "SELECT code FROM turab.criterion_definitions WHERE active ORDER BY code",
+          "SELECT 1 FROM turab.request_criteria WHERE request_id = :request_id AND criterion_code = :code AND sort_order = :sort_order AND (CAST(:cid AS uuid) IS NULL OR request_criterion_id <> CAST(:cid AS uuid))",
+          "SELECT criterion_code, importance::text AS importance, operator::text AS operator, value, unit, blocking_if_unknown, sort_order FROM turab.request_criteria WHERE request_criterion_id = :cid AND request_id = :request_id FOR UPDATE",
+          "UPDATE turab.request_criteria SET criterion_code = :code, importance = CAST(:importance AS turab.criterion_importance), operator = CAST(:operator AS turab.criterion_operator), value = CAST(:value AS jsonb), unit = :unit, blocking_if_unknown = :blocking, sort_order = :sort_order WHERE request_criterion_id = :cid AND request_id = :request_id RETURNING request_criterion_id, criterion_code, importance::text AS importance, operator::text AS operator, value, unit, blocking_if_unknown, sort_order, created_at"
+        ]
+      },
+      "c_add_branch_constraint_at_the_write": {
+        "status": 409,
+        "content_length": 225,
+        "body": {
+          "type": "about:blank",
+          "title": "Duplicate criterion",
+          "status": 409,
+          "code": "DUPLICATE_CRITERION_SLOT",
+          "trace_id": "-",
+          "detail": "this request already has 'ROOMS_MIN' at sort_order 100; to change it, send its request_criterion_id"
+        },
+        "branch": "ADD",
+        "write_reached": true,
+        "savepoint_opened": true,
+        "savepoint_rolled_back": true,
+        "transaction_log": [
+          "SAVEPOINT begin",
+          "WRITE reached",
+          "SAVEPOINT rollback"
+        ],
+        "queries": [
+          "SELECT code FROM turab.criterion_definitions WHERE active ORDER BY code",
+          "SELECT 1 FROM turab.request_criteria WHERE request_id = :request_id AND criterion_code = :code AND sort_order = :sort_order AND (CAST(:cid AS uuid) IS NULL OR request_criterion_id <> CAST(:cid AS uuid))",
+          "INSERT INTO turab.request_criteria (request_id, criterion_code, importance, operator, value, unit, blocking_if_unknown, sort_order) VALUES (:request_id, :code, CAST(:importance AS turab.criterion_importance), CAST(:operator AS turab.criterion_operator), CAST(:value AS jsonb), :unit, :blocking, :sort_order) RETURNING request_criterion_id, criterion_code, importance::text AS importance, operator::text AS operator, value, unit, blocking_if_unknown, sort_order, created_at"
+        ]
+      },
+      "d_a_different_constraint_is_not_mapped": {
+        "status": 500,
+        "content_length": 21,
+        "body_text": "Internal Server Error",
+        "branch": "CHANGE",
+        "write_reached": true,
+        "savepoint_opened": true,
+        "savepoint_rolled_back": true,
+        "transaction_log": [
+          "SAVEPOINT begin",
+          "WRITE reached",
+          "SAVEPOINT rollback"
+        ],
+        "queries": [
+          "SELECT code FROM turab.criterion_definitions WHERE active ORDER BY code",
+          "SELECT 1 FROM turab.request_criteria WHERE request_id = :request_id AND criterion_code = :code AND sort_order = :sort_order AND (CAST(:cid AS uuid) IS NULL OR request_criterion_id <> CAST(:cid AS uuid))",
+          "SELECT criterion_code, importance::text AS importance, operator::text AS operator, value, unit, blocking_if_unknown, sort_order FROM turab.request_criteria WHERE request_criterion_id = :cid AND request_id = :request_id FOR UPDATE",
+          "UPDATE turab.request_criteria SET criterion_code = :code, importance = CAST(:importance AS turab.criterion_importance), operator = CAST(:operator AS turab.criterion_operator), value = CAST(:value AS jsonb), unit = :unit, blocking_if_unknown = :blocking, sort_order = :sort_order WHERE request_criterion_id = :cid AND request_id = :request_id RETURNING request_criterion_id, criterion_code, importance::text AS importance, operator::text AS operator, value, unit, blocking_if_unknown, sort_order, created_at"
+        ]
       },
       "expected_by_reviewer": 500,
-      "note": "the injected IntegrityError is now mapped to a typed 409 via SAVEPOINT; the real collision is covered by the two-connection tests",
-      "queries": [
-        "SELECT code FROM turab.criterion_definitions WHERE active ORDER BY code",
-        "SELECT 1 FROM turab.request_criteria\n                WHERE request_id = :request_id\n                  AND criterion_code = :code\n                  AND sort_order = :sort_order\n                  AND (CAST(:cid AS uuid) IS NULL\n                       OR request_criterion_id <> CAST(:cid AS uuid))"
-      ],
-      "scope": "IntegrityError injected at real UPDATE"
+      "note": "(a) is the pre-check and reaches no write; (b) and (c) reach the write, open a SAVEPOINT, roll it back and return a typed 409 in BOTH branches; (d) trips a different constraint at the same point and is NOT turned into a 409, so the mapping is specific rather than a catch-all. The earlier version of this probe answered every query with one non-empty row, so it was refused at the pre-check and never reached the SAVEPOINT it was recorded as proving (acceptance review E-01).",
+      "scope": "control flow only: the constraint violation is INJECTED by name. This says nothing about PostgreSQL isolation, and does not prove the unique index fires — the two-connection tests in tests/test_slice2_concurrency.py do that on a real server."
     },
     {
       "probe": "stale_reactivation",

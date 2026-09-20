@@ -1,25 +1,26 @@
 TURAB — run provenance, recorded AT RUN TIME
-Follow-up corrections F-1..F-4 on top of 3f84f0e
+Slice 2 closure: instrument corrections E-01 and E-02 on top of 73be3a7
 ============================================
-Recorded    : 2026-09-19 23:27:17 UTC
+Recorded    : 2026-09-20 03:39:24 UTC
 Branch      : claude/postgresql-execution-gate-yqifk7
-Parent      : 3f84f0ec9c145200d262bcd37bfe7c3071987f95
+Parent      : 73be3a7ca349da591744253540ce960677322c0d
 
 Source fingerprint
 ------------------
-  110c8456b734a46f45e8b0ac81a5318f120190b988b7de2072fec57590dd5871
+  6eb2af874e52de6ea93dfb0c1025c59ab1679d1d238ebacd58c930efc88781c7
 
   Produced by, and reproducible with:
       python db/dev/source_fingerprint.py .
   Add --list to print the per-file digests the value is built from.
 
-  NOTE ON THE PREVIOUS VALUE. The earlier record in this file carried
-  a9a670a80f883b0f9be455b3610d74a4d0a0770d35964b456b11bf865d72b052, computed
-  by an ad-hoc shell pipeline that was never committed. A reviewer could not
-  reproduce it, so it is superseded rather than carried forward. The recipe is
-  now a committed script and the value above is that script's output on this
-  tree; the two numbers are not comparable, because the recipe differs and
-  because the script itself is part of the tree it measures.
+  PREVIOUS VALUES, for tracing this branch's rounds:
+    73be3a7  110c8456b734a46f45e8b0ac81a5318f120190b988b7de2072fec57590dd5871
+             (same recipe as above; independently recomputed by the acceptance
+             review over 85 files and confirmed to match)
+    3f84f0e  a9a670a80f883b0f9be455b3610d74a4d0a0770d35964b456b11bf865d72b052
+             SUPERSEDED, not comparable: produced by an ad-hoc shell pipeline
+             that was never committed, so a reviewer could not reproduce it.
+             The recipe is a committed script from 73be3a7 onwards.
 
 Commands
 --------

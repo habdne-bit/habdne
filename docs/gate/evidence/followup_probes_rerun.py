@@ -35,19 +35,79 @@ def outcome(r):
 
 rid=uuid.UUID(int=1); cid=uuid.UUID(int=2)
 results=[]
-class Result:
-    def scalar_one(self): return datetime(2026,9,19,tzinfo=UTC)
+SLOT_CONSTRAINT = 'request_criteria_request_id_criterion_code_sort_order_key'
+
+
+class Rows:
+    """A result that returns exactly the rows it was given, and no more.
+
+    The first version of this stub returned ONE non-empty row for EVERY
+    query, including the slot pre-check. The service therefore raised
+    `DuplicateCriterionSlot` at the pre-check and never reached the write,
+    so the run proved the pre-check and not the SAVEPOINT — while the result
+    was recorded as though it had proved the SAVEPOINT (acceptance review
+    E-01). The stub now answers each query separately, so "the write was
+    reached" is something the probe establishes rather than assumes.
+    """
+
+    def __init__(self, rows): self._rows = list(rows)
+    def scalar_one(self): return self._rows[0] if self._rows else None
     def scalars(self): return self
-    def all(self): return ['ROOMS_MIN']
+    def all(self): return list(self._rows)
     def mappings(self): return self
-    def first(self): return {'criterion_code':'ROOMS_MIN','importance':'REQUIRED','operator':'GTE','value':3,'unit':None,'blocking_if_unknown':False,'sort_order':200}
+    def first(self): return self._rows[0] if self._rows else None
+    def one(self): return self._rows[0]
+
+
+CRITERION_ROW = {'request_criterion_id': cid, 'criterion_code': 'ROOMS_MIN',
+                 'importance': 'REQUIRED', 'operator': 'GTE', 'value': 3,
+                 'unit': None, 'blocking_if_unknown': False, 'sort_order': 200,
+                 'created_at': datetime(2026, 9, 19, tzinfo=UTC)}
+
+
+class Savepoint:
+    """Records that the service really opened a SAVEPOINT, and how it ended."""
+
+    def __init__(self, log): self._log = log; log.append('SAVEPOINT begin')
+    def commit(self): self._log.append('SAVEPOINT commit')
+    def rollback(self): self._log.append('SAVEPOINT rollback')
+
+
 class Session:
-    def __init__(self): self.queries=[]
+    """`slot_taken` decides what the PRE-CHECK sees; `violate` decides which
+    constraint the WRITE trips. The two are independent, which is the whole
+    point: with `slot_taken=False` the pre-check passes and the write is the
+    only thing that can produce a refusal."""
+
+    def __init__(self, *, slot_taken=False, violate=None):
+        self.queries = []
+        self.transaction_log = []
+        self.slot_taken = slot_taken
+        self.violate = violate
+
+    def begin_nested(self):
+        return Savepoint(self.transaction_log)
+
     def execute(self, stmt, params=None):
-        sql=str(stmt);self.queries.append(sql)
-        if 'UPDATE turab.request_criteria' in sql:
-            raise IntegrityError(sql,params,Exception('injected duplicate unique slot'))
-        return Result()
+        sql = ' '.join(str(stmt).split())
+        self.queries.append(sql)
+        if 'FROM turab.criterion_definitions' in sql:
+            return Rows(['ROOMS_MIN'])
+        if 'SELECT 1 FROM turab.request_criteria' in sql:      # the pre-check
+            return Rows([(1,)] if self.slot_taken else [])
+        if 'FOR UPDATE' in sql and 'request_criterion_id = :cid' in sql:
+            return Rows([CRITERION_ROW])                        # the row being changed
+        if ('UPDATE turab.request_criteria' in sql
+                or 'INSERT INTO turab.request_criteria' in sql):
+            self.transaction_log.append('WRITE reached')
+            if self.violate:
+                orig = Exception('injected unique violation')
+                orig.diag = SimpleNamespace(constraint_name=self.violate)
+                raise IntegrityError(sql, params, orig)
+            return Rows([CRITERION_ROW])
+        if 'INSERT INTO turab.observations' in sql or 'INSERT INTO turab.claims' in sql:
+            return Rows([])
+        return Rows([datetime(2026, 9, 19, tzinfo=UTC)])
 class Command:
     subject=SimpleNamespace(account_id=uuid.UUID(int=3))
     is_staff=True
@@ -125,9 +185,62 @@ except Exception as exc:
     body=None; model_accepts=False; model_error=f'{type(exc).__name__}'
 r=client.post('/reconfirm',json={'confirmed_at':'2026-01-01T12:00:00'})
 results.append({'probe':'timezone_missing','model_accepts':model_accepts,'model_error':model_error,'actual':outcome(r),'expected_by_reviewer':500,'note':'the reviewer asserted 500; a 422 field error is the fix','scope':'real model, route and date comparison; DB clock and command plumbing stubbed'})
-with patch.object(service,'_row',return_value={'party_id':uuid.UUID(int=4)}):
-    r=client.post('/criteria',json={'request_criterion_id':str(cid),'criterion_code':'ROOMS_MIN','importance':'REQUIRED','operator':'GTE','value':4,'sort_order':100})
-results.append({'probe':'criterion_update_integrity_error_mapping','actual':outcome(r),'expected_by_reviewer':500,'note':'the injected IntegrityError is now mapped to a typed 409 via SAVEPOINT; the real collision is covered by the two-connection tests','queries':cmd.session.queries,'scope':'IntegrityError injected at real UPDATE'})
+# --- probe 3, re-instrumented (acceptance review E-01) -------------------
+# Four runs over the same code, differing only in what the stub answers:
+#   a. the pre-check SEES the slot taken  -> refused before any write
+#   b. CHANGE branch, pre-check clear, the UPDATE trips the slot constraint
+#   c. ADD branch,    pre-check clear, the INSERT trips the slot constraint
+#   d. the write trips a DIFFERENT constraint -> must NOT become a 409
+# Only (b) and (c) exercise the SAVEPOINT. Each run reports the queries it
+# actually issued and the savepoint transitions it actually made, so the
+# attribution can be checked rather than taken on trust.
+def criterion_run(*, slot_taken, violate, change):
+    probe_cmd = Command()
+    probe_cmd.session = Session(slot_taken=slot_taken, violate=violate)
+    probe_app = FastAPI()
+
+    @probe_app.post('/criteria')
+    def route(request: Request, body: routes.RequestCriterionInput):
+        return routes.add_criterion(request, rid, body, probe_cmd)
+
+    payload = {'criterion_code': 'ROOMS_MIN', 'importance': 'REQUIRED',
+               'operator': 'GTE', 'value': 4, 'sort_order': 100}
+    if change:
+        payload['request_criterion_id'] = str(cid)
+    with patch.object(service, '_row', return_value={'party_id': uuid.UUID(int=4)}):
+        r = TestClient(probe_app, raise_server_exceptions=False).post('/criteria', json=payload)
+    log = probe_cmd.session.transaction_log
+    return {**outcome(r),
+            'branch': 'CHANGE' if change else 'ADD',
+            'write_reached': 'WRITE reached' in log,
+            'savepoint_opened': 'SAVEPOINT begin' in log,
+            'savepoint_rolled_back': 'SAVEPOINT rollback' in log,
+            'transaction_log': log,
+            'queries': probe_cmd.session.queries}
+
+results.append({'probe':'criterion_slot_collision',
+    'a_refused_by_the_pre_check':
+        criterion_run(slot_taken=True, violate=None, change=False),
+    'b_change_branch_constraint_at_the_write':
+        criterion_run(slot_taken=False, violate=SLOT_CONSTRAINT, change=True),
+    'c_add_branch_constraint_at_the_write':
+        criterion_run(slot_taken=False, violate=SLOT_CONSTRAINT, change=False),
+    'd_a_different_constraint_is_not_mapped':
+        criterion_run(slot_taken=False, violate='request_criteria_request_id_fkey',
+                      change=True),
+    'expected_by_reviewer':500,
+    'note':("(a) is the pre-check and reaches no write; (b) and (c) reach the "
+            "write, open a SAVEPOINT, roll it back and return a typed 409 in "
+            "BOTH branches; (d) trips a different constraint at the same point "
+            "and is NOT turned into a 409, so the mapping is specific rather "
+            "than a catch-all. The earlier version of this probe answered every "
+            "query with one non-empty row, so it was refused at the pre-check "
+            "and never reached the SAVEPOINT it was recorded as proving "
+            "(acceptance review E-01)."),
+    'scope':("control flow only: the constraint violation is INJECTED by name. "
+             "This says nothing about PostgreSQL isolation, and does not prove "
+             "the unique index fires — the two-connection tests in "
+             "tests/test_slice2_concurrency.py do that on a real server.")})
 state={'status':'PAUSED','last_confirmed_at':datetime(2020,1,1,tzinfo=UTC)}
 with patch.object(service,'_row',return_value=state),patch.object(service.freshness,'request_threshold_days',return_value=(30,'probe-policy')):
     try: service.transition(Session(),request_id=rid,target_status='ACTIVE')

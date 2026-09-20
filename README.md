@@ -13,7 +13,7 @@
 | Slice −1 — Tooling baseline | Complete |
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
 | Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed**, submitted for closure review — all 11 contract operations wired |
-| Slice 2 — REQUEST / Criteria / Freshness | **Independent review R-S2-01…05 corrected, plus the follow-up on `3f84f0e`; not yet closed** — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
+| Slice 2 — REQUEST / Criteria / Freshness | **CLOSED within its agreed scope** (acceptance review of `73be3a7`) — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
 
 Across both: **485 tests, 128 rules evidenced**, 23 of 64 contract operations wired.
 
