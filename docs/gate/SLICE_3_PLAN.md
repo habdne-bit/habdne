@@ -1,200 +1,244 @@
 # Slice 3 — PROPERTY / OFFER / SOURCE / Truth Layer / Identity Lite
-## Implementation plan, submitted for approval before any code is written
+## Implementation plan — **revision 2**, submitted for a second review
 
 **Status:** proposal. Nothing in this plan has been implemented.
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
-**Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md`
-lines 127–166 (objective, deliverables, mandatory tests, STOP GATE C).
-**Predecessor:** Slice 2, closed within its agreed scope at `73be3a7` + `94639a6`.
+**Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:127–166`.
+**Predecessor:** Slice 2, closed within its agreed scope at `94639a6`.
 
-Two boundaries hold throughout, and are restated in §6 as acceptance conditions:
+### What changed in revision 2
+
+Revision 1 was accepted in outline and returned with ten items. All ten are
+folded in below. Three were decisions we had asked for, one resolved a question,
+and six were corrections to our work — five of which we confirm, and **one of
+which we must correct back**, because the schema does not say what the review
+took it to say (§3.6).
+
+| # | Item | Disposition |
+|---|---|---|
+| 1 | G3-1 offer state machine | **Ratified** — §3.5, §4.1 |
+| 2 | G3-3 availability and freshness | **Ratified** — §3.3, §3.4, §4.2 |
+| 3 | G3-4 resolution authority | **Resolved, no contract correction** — §3.7, §4.3 |
+| 4 | SOURCE is not creatable — add 3 operations | **Confirmed; scope now 22 operations** — §1.5 |
+| 5 | `party_property_relations` has no create path | **Confirmed; recorded as G3-6, blocking** — §4.4 |
+| 6 | The authorization table was too coarse | **Confirmed; rewritten from RFC-001 §4.6** — §5 |
+| 7 | The claim-provenance test was narrower than the contract | **Confirmed; test replaced** — §3.8 |
+| 8 | "the schema allows several `is_primary=true`" | **Corrected back** — the index exists (§3.6) |
+| 9 | Controlled options must be read, not copied | **Confirmed; added** — §3.9 |
+| 10 | Identity: corrective effect, version, reproducibility, race | **Confirmed; added** — §3.10 |
+
+Two boundaries hold throughout, restated as acceptance conditions in §7:
 
 1. **Matching is not entered.** No candidate generation, no hard gate, no
-   ranking, no `match_candidates` rows. Slice 4 owns all of it.
+   ranking, no `match_candidates` row written by any path in this slice. The
+   corrective effect in §3.10 acts on records that already exist; it creates
+   no match.
 2. **PROPERTY claim eligibility is not decided, and not decided implicitly.**
-   `PropertyClaimUndecided` stays exactly as it is. No path added by this slice
-   may create a property-party authority link as a side effect.
-
-Everything below is derived from the frozen schema, the effective contract and
-RFC-001. Where a rule is **not** derivable, it appears in §4 as a decision
-request, not as an assumption.
+   `PropertyClaimUndecided` stays exactly as it is, and no path added here may
+   create a property-party authority link as a side effect.
 
 ---
 
-## 1. Operations in scope
+## 1. Operations in scope — twenty-two
 
-Nineteen operations, all already declared in the effective contract
-(`docs/api/openapi_effective_v0.2.3.yaml`). **No operation is invented, and no
-contract correction is proposed by this plan.**
+All twenty-two are already declared in the effective contract
+(`docs/api/openapi_effective_v0.2.3.yaml`). **No operation is invented, no
+contract correction is proposed, and no migration is proposed.**
 
 ### 1.1 Physical property
 
-| operationId | Method · Path | Roles | Object authorization |
-|---|---|---|---|
-| `postProperties` | POST `/properties` | ADMIN, OPERATOR, CUSTOMER | customer: own/managed party only |
-| `getPropertiesPropertyId` | GET `/properties/{id}` | ADMIN, OPERATOR, REVIEWER | internal view |
-| `getMePropertiesPropertyId` | GET `/me/properties/{id}` | CUSTOMER | must own/manage/claim it |
-| `patchPropertiesPropertyId` | PATCH `/properties/{id}` | ADMIN, OPERATOR, CUSTOMER | customer: own only |
-| `postPropertiesPropertyIdReconfirm` | POST `/properties/{id}/reconfirm` | ADMIN, OPERATOR, CUSTOMER | customer: own only |
-| `getPublicProperties` | GET `/public/properties` | **unauthenticated** | closed list of six — see §3.4 |
-| `getBackofficeQueuesProperties` | GET `/backoffice/queues/properties` | ADMIN, OPERATOR, REVIEWER | internal queue |
+| operationId | Method · Path | Roles |
+|---|---|---|
+| `postProperties` | POST `/properties` | ADMIN, OPERATOR, CUSTOMER |
+| `getPropertiesPropertyId` | GET `/properties/{id}` | ADMIN, OPERATOR, REVIEWER |
+| `getMePropertiesPropertyId` | GET `/me/properties/{id}` | CUSTOMER |
+| `patchPropertiesPropertyId` | PATCH `/properties/{id}` | ADMIN, OPERATOR, CUSTOMER |
+| `postPropertiesPropertyIdReconfirm` | POST `/properties/{id}/reconfirm` | ADMIN, OPERATOR, CUSTOMER |
+| `getPublicProperties` | GET `/public/properties` | **unauthenticated** |
+| `getBackofficeQueuesProperties` | GET `/backoffice/queues/properties` | ADMIN, OPERATOR, REVIEWER |
 
 ### 1.2 Commercial offers
 
-| operationId | Method · Path | Roles | Object authorization |
-|---|---|---|---|
-| `postPropertiesPropertyIdOffers` | POST `/properties/{id}/offers` | ADMIN, OPERATOR, CUSTOMER | customer: own only |
-| `patchOffersOfferId` | PATCH `/offers/{id}` | ADMIN, OPERATOR, CUSTOMER | customer: own offer only |
-| `postOffersOfferIdState` | POST `/offers/{id}/state` | ADMIN, OPERATOR, CUSTOMER | customer: own offer; **state machine required — see G3-1** |
-| `postOffersOfferIdReconfirm` | POST `/offers/{id}/reconfirm` | ADMIN, OPERATOR, CUSTOMER | customer: own offer; commercial freshness |
-| `postOffersOfferIdSources` | POST `/offers/{id}/sources` | ADMIN, OPERATOR | — |
+| operationId | Method · Path | Roles |
+|---|---|---|
+| `postPropertiesPropertyIdOffers` | POST `/properties/{id}/offers` | ADMIN, OPERATOR, CUSTOMER |
+| `patchOffersOfferId` | PATCH `/offers/{id}` | ADMIN, OPERATOR, CUSTOMER |
+| `postOffersOfferIdState` | POST `/offers/{id}/state` | ADMIN, OPERATOR, CUSTOMER |
+| `postOffersOfferIdReconfirm` | POST `/offers/{id}/reconfirm` | ADMIN, OPERATOR, CUSTOMER |
+| `postOffersOfferIdSources` | POST `/offers/{id}/sources` | ADMIN, OPERATOR |
 
 ### 1.3 Truth layer
 
 | operationId | Method · Path | Roles | Note |
 |---|---|---|---|
-| `postObservations` | POST `/observations` | ADMIN, OPERATOR | **separation-sensitive** |
-| `postClaims` | POST `/claims` | ADMIN, OPERATOR | **separation-sensitive** |
-| `postClaimsClaimIdVerificationEvents` | POST `/claims/{id}/verification-events` | ADMIN, OPERATOR, REVIEWER | the only way to raise a level |
-| `postResolutions` | POST `/resolutions` | ADMIN, OPERATOR, REVIEWER | — |
+| `postObservations` | POST `/observations` | ADMIN, OPERATOR | separation-sensitive |
+| `postClaims` | POST `/claims` | ADMIN, OPERATOR | separation-sensitive |
+| `postClaimsClaimIdVerificationEvents` | POST `/claims/{id}/verification-events` | ADMIN, OPERATOR, REVIEWER | the only level-raising path |
+| `postResolutions` | POST `/resolutions` | ADMIN, OPERATOR, REVIEWER | §3.7 |
 
 ### 1.4 Identity Lite
 
 | operationId | Method · Path | Roles | Note |
 |---|---|---|---|
-| `postIdentityCandidatesGenerate` | POST `/identity/candidates/generate` | ADMIN, OPERATOR | deterministic signals only |
+| `postIdentityCandidatesGenerate` | POST `/identity/candidates/generate` | ADMIN, OPERATOR | deterministic signals |
 | `getIdentityCandidates` | GET `/identity/candidates` | ADMIN, OPERATOR, REVIEWER | — |
-| `postIdentityCandidatesCandidateIdReview` | POST `/identity/candidates/{id}/review` | ADMIN, **REVIEWER** | **separation-sensitive**; OPERATOR is *not* a role here |
+| `postIdentityCandidatesCandidateIdReview` | POST `/identity/candidates/{id}/review` | ADMIN, **REVIEWER** | separation-sensitive; **OPERATOR excluded** |
 
-**On the maker-checker split.** `postObservations`, `postClaims` and
-`postIdentityCandidatesCandidateIdReview` are already in
-`SEPARATION_SENSITIVE_OPERATIONS` (`src/turab/auth/roles.py:35`), so an account
-carrying an OPERATOR+REVIEWER anomaly fails closed on all three under INV-2.
-That machinery exists and is tested; this slice inherits it and adds no
-exception. Note the asymmetry the contract already draws and which we will
-**not** smooth over: an OPERATOR may *generate* identity candidates but may not
-*review* them.
+### 1.5 SOURCE — the three operations added in revision 2
+
+**The review is right, and the gap was real.** `postOffersOfferIdSources`
+takes `{source_id, is_primary}` and links a source that must already exist. We
+checked every path and schema in the effective contract: **no operation creates
+a `sources` row except through `ExternalLeadCreate`**, whose `source` object
+(`kind` required, plus `external_url`, `external_ref`, `title`, `raw_text`,
+`captured_at`, `metadata`) is the only declared shape for one.
+
+So revision 1 planned a "sources and offer-source links" deliverable with no
+way to create a source. Adding these is not a new feature; it is the contractual
+path that makes the deliverable reachable:
+
+| operationId | Method · Path | Roles | Why it is required |
+|---|---|---|---|
+| `postExternalLeads` | POST `/external-leads` | ADMIN, OPERATOR | the only declared SOURCE creation path |
+| `postExternalLeadsLeadIdConvert` | POST `/external-leads/{lead_id}/convert` | ADMIN, OPERATOR | body requires **`party_id` and `consent_id`** — the conversion is where provenance and consent are captured |
+| `getBackofficeQueuesExternalLeads` | GET `/backoffice/queues/external-leads` | ADMIN, OPERATOR, REVIEWER | the queue that makes an unconverted lead visible rather than lost |
+
+Note what the convert body's two required fields mean: a lead cannot become a
+PROPERTY or REQUEST without naming both the party and the consent that permits
+it. That is ADR-04 (resource-bound consent) enforced at the contract boundary,
+and it is the reason this operation belongs with the other two rather than
+being deferred.
 
 ---
 
 ## 2. Deliverables mapped to the frozen schema
 
-Every table below exists in `schema_v0.2.3.sql`. **This slice proposes no new
-table, no new column and no new migration.** If implementation shows one is
-needed, that is a finding to bring back, not a thing to add.
+Every table exists in `schema_v0.2.3.sql`. **No new table, column or migration
+is proposed.** If implementation shows one is needed, that is a finding to
+bring back, not a thing to add quietly — and specifically, **no `OFFER_STATE`
+reason-code category will be created**.
 
-| Deliverable (slices doc) | Tables | Lines |
+| Deliverable | Tables |
+|---|---|
+| physical PROPERTY record | `properties`, `property_attributes` |
+| PUBLIC / PRIVATE / POTENTIAL supply modes | `supply_mode` on `properties` |
+| several offers for one physical property | `property_offers` |
+| terms, visibility, negotiability, seller expectation, commercial freshness | `property_offers` columns |
+| sources and offer-source links | `sources`, `property_offer_sources`, `external_leads` |
+| party-property relations | `party_property_relations` — **but see G3-6, §4.4** |
+| observation → claim → verification → resolution | `observations`, `claims`, `verification_events`, `resolved_values` |
+| controlled right/document options | `attribute_definitions`, `attribute_options` |
+| identity candidate generation | `property_identity_candidates` |
+| human review, non-destructive alias→canonical | `property_identity_aliases` |
+
+### 2.1 What the database already enforces
+
+Revision 1's first draft assumed the service owned rules the schema enforces
+itself. Reading the trigger and index definitions corrected that, and the
+correction changes the design rather than decorating it:
+
+| Guarantee | Mechanism | Line |
 |---|---|---|
-| physical PROPERTY record | `properties`, `property_attributes` | 415, 437 |
-| PUBLIC / PRIVATE / POTENTIAL supply modes | `supply_mode` enum on `properties` | — |
-| multiple offers for one physical property | `property_offers` (FK `property_id`, no uniqueness on the pair) | 447 |
-| offer terms, visibility, negotiability, seller expectation, separate commercial freshness | `property_offers.asking_price_dzd`, `price_visibility`, `price_negotiable`, `seller_expectation_dzd`, `last_confirmed_at`, `commercial_terms_last_confirmed_at` | 447 |
-| sources and offer-source links | `sources`, `property_offer_sources` | — |
-| party-property relations | `party_property_relations` | — |
-| observation → claim → verification → resolution | `observations`, `claims`, `verification_events`, `resolved_values` | 498–571 |
-| controlled right/document options | `attribute_definitions`, `attribute_options` | — |
-| identity candidate generation | `property_identity_candidates` | 603 |
-| human review, non-destructive alias→canonical | `property_identity_aliases` | 623 |
+| a claim's level rises only via a `CONFIRMED` event, and never falls | `trg_apply_verification_event`, using `GREATEST(...)` | 1149 |
+| a resolution cannot cite a claim about another subject or attribute | `trg_resolution_lineage` | 1134 |
+| one current resolved value per subject+attribute | `ux_resolved_current_*` (4 partial unique indexes) | — |
+| `CONFIRMED_SAME` requires the alias row **already present** | `trg_identity_same_requires_alias` | 1262 |
+| alias/canonical must be the candidate's own pair; no alias chains | `trg_identity_alias` | 1249 |
+| **at most one primary source per offer** | `ux_offer_primary_source` — partial unique index | **1352** |
+| one identity candidate per unordered pair | `ux_identity_pair` | 618 |
+| core records cannot be deleted | `prevent_delete_*` | 1302–1307 |
 
-Four schema facts shape the design and are worth stating, because each one
-removes a decision rather than creating one:
+The schema also states the §3.8 rule in its own words:
 
-- `property_offers` has **no** unique constraint over `(property_id,
-  transaction_type, party_id)`. Owner sale + broker sale + rent on one property
-  is therefore permitted *by the schema*, not by a service rule we would add.
-- `claims` has `CHECK (num_nonnulls(party_id, request_id, property_id,
-  offer_id) = 1)` — exactly one subject. `ClaimInput.subject` carries
-  `{type, id}`, so the mapping is total and unambiguous.
-- `resolved_values` has four partial unique indexes on `(subject,
-  attribute_code) WHERE valid_to IS NULL AND resolution_status = 'CURRENT'`.
-  "One current value per attribute" is a database guarantee. Resolution must
-  therefore close the previous row and insert the new one **in one
-  transaction**, and the collision must be mapped the way the criteria slot
-  collision now is — a typed 409 from a named constraint inside a SAVEPOINT,
-  not a 500. This is the direct reuse of the R-S2-03 work.
-- `property_identity_aliases.source_identity_candidate_id` is `NOT NULL
-  UNIQUE`. An alias without a reviewed candidate is impossible, and one
-  candidate cannot produce two aliases. Triggers add the rest (§3.5).
+> `COMMENT ON COLUMN claims.effective_verification_level IS 'Derived
+> operational verification level. API clients MUST NOT set this above DECLARED
+> directly.'`
 
-**A correction to an earlier draft of this plan.** We first wrote that the
-lineage and identity-pair rules were the service's to enforce and that "the
-schema cannot check it". Reading the trigger definitions showed the opposite:
-`trg_resolution_lineage`, `trg_identity_alias` and
-`trg_identity_same_requires_alias` already enforce them. The plan below is
-built on what the schema does, not on what we assumed it left to us — the
-difference changes the write ORDER in §3.5 and reclassifies two tests in §5.
+**Two error paths, deliberately distinct.** The triggers use `RAISE EXCEPTION`
+(SQLSTATE **P0001**), so `exc.orig.diag.constraint_name` is **empty** and the
+constraint-name mapping we built for `DUPLICATE_CRITERION_SLOT` **cannot** be
+reused for them:
+
+| violation | mechanism | how it becomes a typed 4xx |
+|---|---|---|
+| duplicate current value; two primary sources; duplicate candidate pair | **named unique index** | SAVEPOINT + `constraint_name`, exactly as in R-S2-03 |
+| lineage, identity pair, `CONFIRMED_SAME` without alias | **trigger → P0001** | **pre-check under a row lock**, inside the write transaction; the trigger stays as the backstop |
+
+We will not match on an exception's message text to identify a P0001 — a
+message is not an interface. The pre-check is the mapping; the trigger is what
+makes a missed pre-check safe rather than silent.
 
 ---
 
-## 3. Rules derived from the frozen sources
+## 3. Rules, as ratified and as derived
 
-### 3.1 A claim may not be born verified — and the database, not the service, raises the level
+### 3.1 A claim may not be born verified; the database raises the level
 
-`ClaimInput` (effective contract) has properties `subject`, `attribute_code`,
-`claimed_value`, `asserted_by_party_id`, `source_id`, `observation_id`,
-`extracted_by`, `extraction_model_version`, `extraction_confidence`,
-`observed_at`, `valid_from`, `valid_to` — with `additionalProperties: false`.
-There is **no** verification-level field. `claims.effective_verification_level`
-defaults to `DECLARED`.
+`ClaimInput` has `additionalProperties: false` and **no** verification-level
+field; `claims.effective_verification_level` defaults to `DECLARED`. The rule
+is enforced at the **contract boundary**, and the mandatory test for it is a
+boundary test — we will label it as one rather than add a service check and
+take credit for a guarantee the contract already gives.
 
-So "a claim cannot be created as `DOCUMENT_SEEN` directly" is enforced at the
-**contract boundary**. The mandatory test for it is a boundary test, not a
-service rule, and we will say so rather than add a service check and take
-credit for a guarantee the contract already gives.
+The upgrade is the database's: `trg_apply_verification_event` fires
+`AFTER INSERT ON verification_events` and, on `CONFIRMED`, sets
+`GREATEST(effective_verification_level, NEW.level)`; on `CONFLICT_FOUND` it
+sets `status = 'CONFLICTING'`. Consequences: the service **must not also write
+the level** (a second write racing the trigger); `NOT_CONFIRMED` and
+`INCONCLUSIVE` are handled by the trigger doing nothing; and a later lower-level
+`CONFIRMED` cannot lower the claim, in a single statement, without any lock.
 
-The upgrade is likewise **not ours**. `trg_apply_verification_event`
-(`schema_v0.2.3.sql:1149`) fires `AFTER INSERT ON verification_events` and does
-the whole job in the database:
+### 3.2 A resolution cannot point outside its own subject
 
-```sql
-IF NEW.outcome = 'CONFIRMED' THEN
-  UPDATE claims SET effective_verification_level =
-      GREATEST(effective_verification_level, NEW.level) WHERE claim_id = NEW.claim_id;
-ELSIF NEW.outcome = 'CONFLICT_FOUND' THEN
-  UPDATE claims SET status = 'CONFLICTING' WHERE claim_id = NEW.claim_id;
-END IF;
-```
+Enforced by `trg_resolution_lineage`. The service pre-checks under a row lock
+on the claim so the refusal is a typed 4xx rather than a 500 (§2.1).
 
-Three consequences, each of which removes work rather than adding it:
+### 3.3 Property availability is a fact, not a workflow — **ratified (G3-3)**
 
-- **The service must not also update the claim.** Writing the level in Python
-  as well would be a second, redundant write racing the trigger. The endpoint
-  inserts the event and reads the claim back.
-- `GREATEST` means a later `CONFIRMED` event at a *lower* level cannot lower an
-  already-raised claim. This is a single-statement guarantee, so it needs no
-  lock — and the concurrency test we first sketched for it would have proved
-  nothing about our code (§5.2).
-- `NOT_CONFIRMED` and `INCONCLUSIVE` are handled by the trigger doing nothing,
-  which is the required behaviour.
+`availability_status` is an operational fact that changes, not a state machine
+with edges. The contract already draws the line, and we verified it:
 
-### 3.2 A resolution may not point outside its own subject — also enforced in the database
+- `PropertyPatch` has `additionalProperties: false` and its properties are
+  exactly `property_type`, `canonical_location_id`, `local_location_detail`,
+  `land_area_m2`, `built_area_m2`. **Availability is not among them** — so
+  PATCH cannot change it, by the contract, not by our choice.
+- `POST /properties/{id}/reconfirm` **requires** `availability` (enum of all
+  seven values) and accepts `confirmed_at`. This is the change path.
+- `PropertyCreate` does carry `current_availability`, so the initial value is
+  set at creation and every later change goes through reconfirm.
 
-`trg_resolution_lineage` (`schema_v0.2.3.sql:1134`) fires `BEFORE INSERT OR
-UPDATE ON resolved_values` and refuses a `source_claim_id` whose
-`attribute_code` differs, or whose subject columns differ, from the row being
-written.
+Ratified rules:
 
-An earlier draft of this plan claimed this check was ours to write. **That was
-wrong**, and the correction matters for how we implement the endpoint: the
-service's job is not to *enforce* the rule but to **surface it as a typed 4xx**
-instead of letting a raw database error become a 500 — the R-S2-03 lesson,
-applied to a different mechanism.
+1. Reconfirmation may move between **any** two availability values. It records
+   a new fact; it does not traverse an edge. No transition table exists and
+   none will be invented.
+2. The sender states the confirmed value **explicitly**. Reconfirmation never
+   restores an implicitly remembered previous state.
+3. Every reconfirmation stamps the confirmation time, its actor and its channel,
+   and writes the provenance trail — the Slice 2 machinery, unchanged.
+4. **The staleness pass converts to `NEEDS_CONFIRMATION` only** properties whose
+   current value is one of:
+   `AVAILABLE`, `POTENTIALLY_AVAILABLE`, `UNDER_DISCUSSION`,
+   `TEMPORARILY_UNAVAILABLE`.
+   It **never touches** `UNKNOWN`, `NEEDS_CONFIRMATION` or `UNAVAILABLE`.
 
-And the mechanism *is* different, which is the trap here. These triggers use
-`RAISE EXCEPTION`, i.e. SQLSTATE **P0001**, so `exc.orig.diag.constraint_name`
-is **empty**. The constraint-name mapping we built for the criteria slot
-**cannot** be reused for them. Two distinct error paths, deliberately:
+The four-value set is a predicate in the `UPDATE`'s `WHERE` clause and is
+re-asserted inside the statement, the way the request sweep now is. A test will
+assert each of the three excluded values is left alone, individually — a single
+"the others are untouched" assertion would pass on a predicate that excluded
+only one of them.
 
-| violation | mechanism | mapping |
-|---|---|---|
-| two current values for one attribute | `ux_resolved_current_*` (a named unique index) | SAVEPOINT + `constraint_name`, exactly as `DUPLICATE_CRITERION_SLOT` |
-| resolution cites a foreign claim | `trg_resolution_lineage` → P0001 | **pre-check under a row lock on the claim**, inside the write transaction; the trigger remains as the backstop |
+### 3.4 Offer freshness — one policy, two columns — **ratified**
 
-We will not match on the exception's *message text* to identify a P0001 — a
-message is not an interface. The pre-check is the mapping, and the trigger is
-what makes a missed pre-check safe rather than silent.
+Correcting revision 1, which implied three independent freshness policies:
 
-### 3.3 Freshness: three independent clocks
+- The **policy** for an offer is `offer_terms` (seeded at 14 days), and it is
+  evaluated on **`commercial_terms_last_confirmed_at`**. That column, not
+  `last_confirmed_at`, is the one the policy reads.
+- `postOffersOfferIdReconfirm` updates **both** `last_confirmed_at` and
+  `commercial_terms_last_confirmed_at` **together** in v0.1.
+- The two are therefore **not** presented as two independent freshness
+  policies. One declared policy governs commercial terms.
 
 The seeded active policy already carries all three thresholds
 (`seed_master_data_v0.2.3.sql:178`):
@@ -203,261 +247,510 @@ The seeded active policy already carries all three thresholds
 "freshness_threshold_days": {"request": 30, "property": 30, "offer_terms": 14}
 ```
 
-So property and offer freshness need **no new policy decision** — only two
-accessors beside the existing `request_threshold_days`, refusing in the same
-way when the policy carries no usable value rather than assuming a default.
-The three clocks stay separate: `properties.availability_last_confirmed_at`,
-`property_offers.last_confirmed_at`, and
-`property_offers.commercial_terms_last_confirmed_at`.
+so no new policy decision is needed — only two accessors beside the existing
+`request_threshold_days`, refusing the same way when the policy carries no
+usable value rather than assuming a default.
 
-### 3.4 The public list is the tightest surface in the system
+Note that `/offers/{id}/reconfirm` takes `StateReconfirm` — the same body as
+the request reconfirm — so the naive-datetime refusal corrected in R-S2-05b
+applies to it for free, and will be tested on this endpoint too rather than
+assumed to carry over.
 
-`getPublicProperties` is unauthenticated — one of the closed list of six
-(RFC-001 R10.4). The contract's own description is the specification:
+### 3.5 The offer state machine — **ratified (G3-1)**
 
-> Returns only PUBLIC properties with at least one active public commercial
-> context backed by currently valid `PUBLIC_LISTING_ALLOWED` consent.
-> Private/Potential records and internal fields are never projected here.
-> Price fields obey `price_visibility`.
+Adopted exactly as given.
 
-Three independent conditions, all required, plus a projection rule. We will
-implement it as an explicit conjunction and test each condition's removal
-separately, because a single over-broad predicate here leaks private supply to
-anonymous callers. `seller_expectation_dzd` is already in the forbidden-field
-lists at `src/turab/dto/boundaries.py:27`, `src/turab/auth/audit.py:37` and
-`src/turab/observability.py:24`; this slice adds the offer DTOs to that
-existing machinery rather than writing a parallel one.
+| from | allowed to |
+|---|---|
+| `DRAFT` | `PENDING_INFO`, `ACTIVE`, `WITHDRAWN`, `CLOSED` |
+| `PENDING_INFO` | `ACTIVE`, `WITHDRAWN`, `CLOSED` |
+| `ACTIVE` | `PENDING_INFO`, `PAUSED`, `WITHDRAWN`, `CLOSED` |
+| `PAUSED` | `PENDING_INFO`, `ACTIVE`, `WITHDRAWN`, `CLOSED` |
+| `WITHDRAWN` | terminal |
+| `CLOSED` | terminal |
 
-### 3.5 Identity resolution is non-destructive — and the database already says so
+**CUSTOMER is narrower**, and the narrowing is a second gate applied after the
+edge check, not a separate table:
 
-Three triggers, not one service rule (`schema_v0.2.3.sql:1230–1263`):
+| from | CUSTOMER may reach |
+|---|---|
+| `DRAFT` | `ACTIVE`, `WITHDRAWN` |
+| `PENDING_INFO` | `ACTIVE`, `WITHDRAWN` |
+| `ACTIVE` | `PAUSED`, `WITHDRAWN` |
+| `PAUSED` | `ACTIVE`, `WITHDRAWN` |
 
-- `trg_identity_alias` refuses an alias whose `(alias, canonical)` pair is not
-  the candidate's own pair; refuses a canonical that is itself an alias; and
-  refuses turning a property that is already canonical into an alias
-  ("consolidate explicitly").
-- `trg_identity_same_requires_alias` refuses setting a candidate to
-  `CONFIRMED_SAME` **unless the alias row already exists** for that candidate.
-- `property_identity_aliases.source_identity_candidate_id` is `NOT NULL
-  UNIQUE`, so one candidate yields at most one alias.
+A CUSTOMER may **never** set `PENDING_INFO` or `CLOSED`; both are staff-only.
+The distinction is recorded in the code, not only here: `CLOSED` is an
+**operational closure**, `WITHDRAWN` is **the offer holder withdrawing**. A
+customer refused `CLOSED` gets a message that says so, rather than a bare 403.
 
-The second trigger dictates the **write order** inside the transaction, and
-this is the single most important implementation detail in this section:
+Also ratified, and each one removes a check we might otherwise have added:
+
+- **No non-null price is required to activate.** The contract permits an
+  unknown price, `ON_REQUEST` and `PRIVATE`; requiring one would narrow the
+  contract without a correction.
+- **No SOURCE is required to activate a self-entered offer.**
+- **`reason_code` stays optional** in this slice. If supplied it must be
+  **validated against `reason_codes` and persisted in a durable trail** — never
+  accepted and dropped. Since `property_offers` has no reason column and no
+  migration is permitted, it is persisted through the provenance trail
+  (`observations` + `claims`) and the audit row, which are durable and
+  reviewable. A supplied code that does not exist is a typed 422.
+
+A test asserts a supplied `reason_code` is **readable back** after the
+transition. "Persisted" must mean retrievable, not merely written somewhere.
+
+### 3.6 Offer sources — a correction back to the review
+
+The review states the schema permits more than one `is_primary = true` per
+offer and asks us to implement the rule in the service. **The schema already
+enforces it**, at `schema_v0.2.3.sql:1352`:
+
+```sql
+CREATE UNIQUE INDEX ux_offer_primary_source ON property_offer_sources(offer_id) WHERE is_primary;
+```
+
+This is a partial unique index in the frozen baseline. A second primary link
+raises a unique violation, not a silent duplicate.
+
+The requirement is adopted in full regardless, and the mechanism makes it
+cleaner rather than redundant:
+
+1. Linking a new source as primary **transfers** the flag: inside one
+   transaction, under a lock on the **parent offer**, the existing primary is
+   cleared and the new link is set primary. **No other link is deleted.**
+2. Ordering matters — clear first, then set — because the index would otherwise
+   reject the intermediate state.
+3. Because this is a **named** index, the collision maps by `constraint_name`
+   inside a SAVEPOINT, exactly as `DUPLICATE_CRITERION_SLOT` does. It is in the
+   first row of §2.1's table, not the second.
+4. The contention test the review asks for is added
+   (`test_two_concurrent_primary_source_links_leave_exactly_one_primary`), and
+   it is the *right* test: the parent-offer lock is what makes it deterministic,
+   and the index is what makes a missed lock safe.
+
+### 3.7 Resolution authority — **resolved (G3-4)**
+
+No contract correction. `postResolutions` stays open to ADMIN, OPERATOR and
+REVIEWER.
+
+We accept the reasoning and record it, because it corrects a
+misunderstanding on our side worth writing down:
+`SEPARATION_SENSITIVE_OPERATIONS` prevents **one account from holding both
+OPERATOR and REVIEWER**. It is not a row-level maker/checker check, and adding
+`postResolutions` to it would not have stopped one OPERATOR from writing a
+claim and then resolving it. We had raised the question as though it would.
+
+In v0.1 an OPERATOR may record the current operational value, on five
+conditions, each of which is a test:
+
+1. `resolved_by_account_id` is recorded on every resolution.
+2. History is **preserved, never overwritten**: the previous row is closed
+   (`valid_to`, `resolution_status`), and `prevent_delete_resolutions` makes
+   deletion impossible anyway.
+3. `source_claim_id` is stored whenever one was used.
+4. **AI and background jobs may not issue a resolution on their own.** The
+   command requires an acting human account; a machine channel is refused.
+5. The whole operation stays audited and reviewable —
+   `audit_resolved_values` fires on every insert and update.
+
+### 3.8 Claim provenance — the test we had was too narrow
+
+Confirmed, and our proposed test was wrong. "Every claim carries a source or an
+observation" would refuse a **direct assertion by a party**, which the contract
+permits: `ClaimInput` offers `asserted_by_party_id`, `source_id` and
+`observation_id`, and requires none of them.
+
+Adopted rule:
+
+> Every claim must carry **at least one** origin among
+> `asserted_by_party_id`, `source_id`, `observation_id`.
+
+And the distinction that makes it meaningful: `recorded_by_account_id`
+identifies **who entered** the information; it does not establish **where it
+came from**, and it does not satisfy the rule. A claim recorded by an operator
+with none of the three origins is refused.
+
+Consistency rule: if a claim carries **both** `source_id` and `observation_id`,
+and that observation itself has a `source_id`, the two must agree. A claim that
+names one source while citing an observation from another is refused rather
+than silently keeping both.
+
+### 3.9 Controlled options are read, never copied
+
+Confirmed and adopted. The service reads `attribute_definitions` and
+`attribute_options`; no list is duplicated in Python, for the same reason the
+criterion registry is not:
+
+- `attribute_code` must exist and be `active`.
+- If `value_type = 'ENUM'`, the value must be a **registered, active**
+  `option_code` for that definition.
+- `applies_to` (a `property_type[]`) is honoured: a definition that does not
+  apply to the property's type is refused for that property.
+- The rule applies to **`claims`, `resolutions` and `property_attributes`
+  updates alike** — one validator, three call sites, so the three cannot drift.
+
+`attribute_definitions` carries `value_type IN ('TEXT','NUMBER','BOOLEAN',
+'ENUM','DATE','JSON')`, and `trg_property_attribute_claim` already enforces
+that `property_attributes.resolved_claim_id` refers to the same property and
+attribute — another P0001 to pre-check (§2.1).
+
+### 3.10 Identity Lite — **corrective effect, version, reproducibility, race**
+
+**The corrective effect is required, and ADR-03 says so in its own words**
+(`ARCHITECTURE_DECISIONS_v0.2.md:42`):
+
+> An identity-resolution command is transactional: create alias mapping, mark
+> the candidate `CONFIRMED_SAME`, **then detect any affected open
+> matches/opportunities and create review work where necessary.**
+
+So `CONFIRMED_SAME` is three steps, not two. The third acts on **records that
+already exist** — it starts no matching, generates no candidate, and writes no
+`match_candidates` row. It finds open matches and opportunities pointing at the
+property that has just become an alias, and raises review work for them.
+
+The write order is dictated by the schema, and it is the opposite of the
+intuitive one:
 
 ```
 BEGIN
-  INSERT INTO property_identity_aliases (...)          -- alias FIRST
+  INSERT INTO property_identity_aliases (...)        -- alias FIRST
   UPDATE property_identity_candidates SET review_status = 'CONFIRMED_SAME'
+  -- then: detect affected open matches/opportunities, raise review work
 COMMIT
 ```
 
-The intuitive order — decide, then record the consequence — **fails**, because
-the trigger on the candidate update looks for an alias that does not yet exist.
-We would have discovered this by running into it; better to have read it first.
+`trg_identity_same_requires_alias` rejects the candidate update unless the
+alias already exists, so "decide, then record the consequence" fails.
 
-`CONFIRMED_DISTINCT` and `UNSURE` write no alias. **No property row is ever
-deleted or merged** (`prevent_delete_properties`), and no `property_id` is
-rewritten anywhere.
+**Version.** The contract defaults `algorithm_version` to `rules-0.1.0`; the
+column defaults to `rules-0.2.0`. The stored value would otherwise depend on
+which default applied — a silent dependency on where the field was omitted. The
+service therefore **writes the value explicitly, always**: the contractual
+`rules-0.1.0` when the caller omits it, the caller's value when given. The
+column default is never allowed to decide. A test asserts an omitted version is
+stored as `rules-0.1.0`, which fails if the service ever lets the column
+default through.
 
-As in §3.2, these are P0001 exceptions with no constraint name, so the service
-pre-checks — candidate exists, is `PENDING_REVIEW`, `canonical_property_id` is
-one of its pair — under a lock on the candidate row, and the triggers are the
-backstop.
+**Reproducibility.** The signals and their algorithm are documented, versioned
+and deterministic: same inputs, same version ⇒ same candidate set, same
+`signals` and `explanation` payloads. A test generates twice and compares.
 
-Because Slice 4 is out of scope, the canonical-resolution helper
-(`alias → canonical`) will be written and tested **as a query**, with the
-consumer left unbuilt. This is the honest reading of the mandatory test "new
-matching inputs must use canonical property, not alias": we can prove the
-resolver; we cannot prove a matching input that does not exist. That limit
-goes in the test docstring rather than being left implied.
+**No automatic merge.** Signals propose; a human decides. Generation only ever
+writes `PENDING_REVIEW` rows, and no code path sets `CONFIRMED_SAME` without a
+reviewer account.
 
----
+**The pair race.** `ux_identity_pair` is unique on
+`(LEAST(a,b), GREATEST(a,b))`, so generating the same pair twice — sequentially
+or concurrently — must be handled, not crash. Re-generation is idempotent for a
+pending pair, and the concurrent case maps the named index inside a SAVEPOINT
+(§2.1, first row). Test:
+`test_generating_the_same_pair_twice_concurrently_yields_one_candidate`.
 
-## 4. Gaps: decisions required before implementation
-
-### G3-1 · The offer state machine has no declared edges — **Workflow decision**
-
-`OfferStateCommand` accepts any of `DRAFT, PENDING_INFO, ACTIVE, PAUSED,
-WITHDRAWN, CLOSED`. The contract says "State machine validation required" and
-declares **no edges anywhere** — not in the OpenAPI document, not in the
-schema, not in the developer spec. This is the same shape as Slice 2's G-3,
-which required your approval for `ACTIVE→PAUSED/CLOSED`.
-
-We will not invent the graph. Proposed for ratification, by analogy with the
-approved REQUEST table and no further:
-
-| from | to |
-|---|---|
-| `DRAFT` | `PENDING_INFO`, `ACTIVE`, `WITHDRAWN` |
-| `PENDING_INFO` | `ACTIVE`, `WITHDRAWN` |
-| `ACTIVE` | `PAUSED`, `CLOSED`, `WITHDRAWN` |
-| `PAUSED` | `ACTIVE`, `CLOSED`, `WITHDRAWN` |
-| `WITHDRAWN` | *(terminal)* |
-| `CLOSED` | *(terminal)* |
-
-Open sub-questions we are **not** answering ourselves:
-(a) may a CUSTOMER reach `CLOSED`, or only staff?
-(b) does `ACTIVE` require a non-null price or a source link?
-(c) is a reason code mandatory for `WITHDRAWN`/`CLOSED`, as
-`REQUEST_CLOSURE` codes are for requests?
-
-**Until this is ratified, `postOffersOfferIdState` will refuse every transition
-with a typed 4xx naming the undecided rule** — the standing instruction that an
-affected path rejects what it cannot prove. It will not be silently permissive.
-
-### G3-2 · PROPERTY claim eligibility — **unchanged, still open (DL-08a)**
-
-`PropertyClaimUndecided` (`src/turab/services/claims.py:108`) stays. This plan
-neither resolves it nor routes around it. Two consequences we accept rather
-than paper over:
-
-- A customer gets authority over a property **only** as its creator account
-  (RFC-001 R4.1). `party_property_relations` is not an authorization source
-  (R4.5), and nothing in this slice will make it one.
-- An `ASSISTED`/`UNCLAIMED` property created by staff therefore cannot be
-  taken over by its real owner in this version. That is a product limitation,
-  stated plainly, not a defect to be quietly fixed inside Slice 3.
-
-### G3-3 · Availability transitions — **Workflow decision, smaller**
-
-`availability_status` has seven values. Who may move a property to
-`UNAVAILABLE` versus `NEEDS_CONFIRMATION`, and whether the staleness sweep may
-set `NEEDS_CONFIRMATION` on properties the way it does on requests, is not
-declared. Proposed: mirror the request rule exactly — the sweep sets
-`NEEDS_CONFIRMATION` on a stale property, and reconfirmation clears it.
-Everything else is a `PATCH` under the normal object-authority rules. **Awaiting
-your ratification**; until then the sweep will not run against properties.
-
-### G3-4 · Resolution authority and the maker-checker split — **Permissions question**
-
-`postResolutions` allows ADMIN, OPERATOR and REVIEWER, and is **not** in
-`SEPARATION_SENSITIVE_OPERATIONS`, while `postClaims` is. So as declared, one
-OPERATOR may record a claim and then resolve it as the current value. We are
-**not** treating that as a defect to fix, because the contract is the authority
-and a correction may only narrow. We raise it as a question: is that intended,
-or should resolution be separation-sensitive too? A narrowing correction is
-available if you want it; we will not apply one unasked.
-
-### G3-5 · Account provisioning — **unchanged operational gap**
-
-Still open, still classified as before. It bounds what an end-to-end customer
-trial can demonstrate in this slice exactly as it did in Slice 2.
+**Authority follows the alias (R4.9).** A customer authorized on an alias
+property is authorized on the canonical record — identity resolution must not
+strip a real owner of access. This is an authorization consequence of this
+slice and is tested as S13 in §5.
 
 ---
 
-## 5. STOP GATE C — the tests
+## 4. Gaps and decisions
 
-STOP GATE C asks six questions. Each is answered by named tests, on real
-PostgreSQL, and each test must fail against the defect it names.
+### 4.1 G3-1 · offer state machine — **RATIFIED**, closed
+
+§3.5. `postOffersOfferIdState` implements the edge table and the CUSTOMER
+narrowing. It no longer refuses every transition.
+
+### 4.2 G3-3 · availability and freshness — **RATIFIED**, closed
+
+§3.3 and §3.4. The staleness pass may run against properties, restricted to
+the four named source values.
+
+### 4.3 G3-4 · resolution authority — **RESOLVED**, closed
+
+§3.7. No contract correction; five conditions, each tested.
+
+### 4.4 G3-6 · `party_property_relations` has no create path — **NEW, BLOCKING**
+
+**Confirmed by inspection, and it blocks the relations deliverable.** We
+checked the whole effective contract:
+
+- No path contains "relation". No operation creates, reads or modifies
+  `party_property_relations`.
+- `PropertyCreate` properties are exactly `property_type`,
+  `canonical_location_id`, `local_location_detail`, `land_area_m2`,
+  `built_area_m2`, `current_availability`, `supply_mode`, `management_mode`,
+  `claim_status` — **no `relation_code`**.
+- `OfferCreate` properties are exactly `party_id`, `transaction_type`,
+  `asking_price_dzd`, `raw_price_text`, `price_negotiable`,
+  `seller_expectation_dzd`, `price_visibility`, `permission_scope` — **no
+  `relation_code`**.
+- The only contract schema whose text mentions a relation at all is
+  `PhoneInput`, which is unrelated.
+
+**What we will not do.** We will not infer `OWNER_DECLARED`, `BROKER` or any
+other `relation_code` from the act of creating a property or an offer, and we
+will not write a relation row as an undeclared side effect. `management_mode`
+does not establish ownership, and `offer.party_id` does not establish the
+*kind* of relationship — it names a party, and RFC-001 R4.12 already says that
+alone grants nothing.
+
+**Why the overlay cannot fix this.** The correction mechanism may only
+**narrow** the frozen contract. Adding a field to `PropertyCreate`, or adding a
+relations operation, is a **widening**. The overlay is structurally incapable
+of it, so this needs a contract decision, not a local patch.
+
+**Options, kept separate so you can choose one rather than approve a blur:**
+
+| Option | Shape | Cost |
+|---|---|---|
+| **A — a relations operation** | a declared `POST /properties/{id}/relations` carrying `party_id` and `relation_code` | a new operation in a future contract version; the cleanest, and it makes the relation an explicit act with its own provenance |
+| **B — a field on `PropertyCreate`** | `relation_code` accompanying the creating party | smaller surface, but it binds the relation to creation only and cannot express a broker added later |
+| **C — through the truth layer** | relation as a `claim` on the property with a controlled `attribute_code`, resolved through `resolved_values` | needs **no contract change at all**, and inherits provenance, verification and history — but `party_property_relations` then stays empty, and the deliverable is met in a different table than the slices document names |
+| **D — defer** | the deliverable is explicitly deferred and recorded as such | honest, and consistent with how DL items are handled |
+
+**Our reading, offered as such, not as a decision.** Option C is the only one
+requiring no contract change, and the truth layer is built precisely for facts
+with an origin and a verification level — which is what a relation is. But it
+leaves the named table unused, which is a real divergence from the deliverable
+as written, and that is a product call rather than ours.
+
+**Until this is decided:** no relation row is written by any path in this
+slice, `party_property_relations` remains read-only and empty, and the
+"party-property relations" deliverable is reported **not delivered** rather
+than partially claimed. Nothing else in the slice depends on it — relations are
+not an authorization source (R4.5, R4.12), so no other path is blocked.
+
+### 4.5 G3-2 · PROPERTY claim eligibility — **open, unchanged**
+
+`PropertyClaimUndecided` stays. A customer obtains authority over a property
+only as its creator account (R4.1); an `ASSISTED`/`UNCLAIMED` property cannot
+be taken over by its real owner in this version. Stated as a product
+limitation, not quietly fixed inside this slice.
+
+### 4.6 G3-5 · account provisioning — **open, unchanged**
+
+Bounds what an end-to-end customer trial can demonstrate, exactly as in
+Slice 2.
+
+---
+
+## 5. Object authorization, rewritten from RFC-001 §4.6
+
+Revision 1 wrote "customer: own only" in a table column. That is too coarse to
+implement from and too coarse to review, and the review is right to reject it.
+The actual rules, quoted from their source:
+
+**PROPERTY** (RFC-001 R4.1; §4.4 resource table, line 181):
+
+> creator account **or** a valid `record_claim_event` for that account — the
+> disjunction of those two facts **and nothing else**.
+
+**PROPERTY_OFFER** (RFC-001 §4.6; Q9 at line 34; §4.4 resource table, line 182) — a disjunction of two
+conditions, the second of which is itself a **conjunction of three**:
+
+> 1. the offer's **creator account**; **or**
+> 2. a valid **claim on the parent property** **and** `offer.party_id` matching
+>    the account's party **and** the parent property being **`CLAIMED`**.
+
+And the two negatives, which are where the bugs would be:
+
+- **Party match alone never grants** (R4.12). `offer.party_id` equal to the
+  account's party is one of three conjuncts, never sufficient by itself.
+- **`party_property_relations` alone never grants** (R4.5, R4.12), whatever the
+  `relation_code`, and whatever its `verification_level`.
+- **Claiming a property does not open other parties' offers on it** (R4.13).
+
+**Alias resolution (R4.9):** authority resolves through
+`property_identity_aliases` to the canonical property first. A customer
+authorized on an alias is authorized on the canonical record.
+
+### 5.1 The RFC-001 scenarios this slice must prove
+
+Taken from the RFC's own matrix (lines 590–606), restricted to the resources
+this slice introduces. Each is a test, named for its scenario.
+
+| # | Scenario | Expected |
+|---|---|---|
+| S10 | customer reads a property they created | **allow** 200 (R4.1) |
+| S11 | property whose `created_by_account_id` is `NULL` | **deny** 404 (R4.3) |
+| S12 | customer with any `relation_code`, incl. `OWNER_DECLARED`, no claim, not creator | **deny** 404 (R4.5) |
+| S13 | customer authorized on an **alias** reads the **canonical** | **allow** 200 (R4.9) |
+| S14 | any customer reads an `ASSISTED + UNCLAIMED` property | **deny** 404 (R4.10) |
+| S15 | the same record after a successful claim | **allow** 200 (R4.1) |
+| S16 | relation is `DECLARED` not verified, but a claim exists | **allow** 200 (R4.7) |
+| S16a | claimed owner whose relation row has **expired** | **allow** 200 (R4.6) |
+| S16b | second account of the **same party** reads a property claimed by the first | **deny** 404 (R4.2) |
+| S16d | owner who claimed a property reads **their own** offer on it | **allow** 200 (§4.6 cond. 2) |
+| S16e | the same owner reads the **broker's** offer on that property | **deny** 404 (R4.13) |
+| S16f | broker reads the offer **they created**, no claim on the parent | **allow** 200 (§4.6 cond. 1) |
+| S16g | party match on the offer, no parent claim, not creator | **deny** 404 (R4.12) |
+| S16h | customer holding only a relations row reads an offer | **deny** 404 (R4.12) |
+| S16i | authorized owner whose account is later `DISABLED` | **deny** 404 (R4.11a) |
+| S16j | account in `INVITED` or `SUSPENDED` | **deny** 404 (R4.11a) |
+
+S12, S16g and S16h are the three that a plausible-looking implementation would
+get wrong, and S16e is the one a "the owner owns the property, so they own its
+offers" shortcut would break. They are listed individually so none can be
+satisfied by a single over-broad rule.
+
+**A note on S12 and S16h under G3-6.** With no path creating relation rows
+(§4.4), these two tests must insert the relation directly in their fixture to
+set up the case. That is legitimate — they prove a relation row grants nothing
+— but it will be stated in the docstring, so nobody later reads them as
+evidence that a relations *flow* exists.
+
+---
+
+## 6. STOP GATE C — the tests
+
+Each test is on real PostgreSQL and must be demonstrated to fail against the
+defect it names.
 
 | STOP GATE C question | Proving tests |
 |---|---|
 | what is the physical property? | `test_a_property_is_created_with_its_type_location_and_supply_mode`, `test_property_attributes_are_unique_per_definition` |
 | what offers exist for it? | `test_owner_sale_broker_sale_and_rent_coexist_on_one_property`, `test_listing_a_property_returns_all_of_its_offers` |
-| who supplied each fact? | `test_every_claim_names_its_source_or_observation`, `test_an_offer_links_to_its_sources_with_one_primary` |
-| what is current vs historical? | `test_only_one_resolved_value_is_current_per_attribute`, `test_superseding_a_value_closes_the_previous_row_in_the_same_transaction`, `test_a_stale_offer_is_reported_stale_on_its_own_clock` |
+| who supplied each fact? | `test_a_claim_must_carry_at_least_one_origin`, `test_a_source_is_created_only_through_an_external_lead`, `test_converting_a_lead_records_its_party_and_consent` |
+| what is current vs historical? | `test_only_one_resolved_value_is_current_per_attribute`, `test_superseding_closes_the_previous_row_in_the_same_transaction`, `test_a_stale_offer_is_reported_stale_on_its_commercial_terms_clock` |
 | declared vs checked? | `test_a_claim_is_born_declared`, `test_only_a_confirmed_verification_event_raises_the_level`, `test_a_non_confirmed_outcome_records_the_event_and_changes_nothing` |
-| canonical or alias? | `test_confirmed_same_writes_the_alias_and_the_review_together`, `test_the_canonical_resolver_returns_the_canonical_for_an_alias` |
+| canonical or alias? | `test_confirmed_same_writes_the_alias_before_the_status`, `test_the_canonical_resolver_returns_the_canonical_for_an_alias`, `test_confirming_same_raises_review_work_for_affected_open_records` |
 
-### 5.1 The seven mandatory tests from the slices document
+### 6.1 The seven mandatory tests
 
-| Mandatory test | Planned test | Kind |
+| Mandatory test | Planned test | Proves |
 |---|---|---|
-| same property may have owner sale + broker sale + rent simultaneously | `test_owner_sale_broker_sale_and_rent_coexist_on_one_property` | DB |
-| seller expectation is not in public/customer DTOs | `test_seller_expectation_never_appears_in_a_public_or_customer_payload` | DTO boundary |
-| claim cannot be created as `DOCUMENT_SEEN` directly | `test_a_claim_cannot_be_created_already_verified` | **contract boundary** (§3.1) |
-| verification event required to upgrade | `test_only_a_confirmed_verification_event_raises_the_level` | **schema trigger** (§3.1) |
-| resolution cannot point to a claim from another property or attribute | `test_a_resolution_cannot_cite_a_claim_about_another_subject`, `test_a_resolution_cannot_cite_a_claim_about_another_attribute` | **schema trigger** + service pre-check for the typed 4xx (§3.2) |
-| `CONFIRMED_SAME` without canonical alias mapping fails | `test_confirmed_same_without_a_canonical_id_is_refused`, `test_the_canonical_must_be_one_of_the_candidate_pair` | **schema trigger** + service pre-check (§3.5) |
-| new matching inputs must use canonical, not alias | `test_the_canonical_resolver_returns_the_canonical_for_an_alias` | **narrowed — see §3.5** |
+| owner sale + broker sale + rent coexist | `test_owner_sale_broker_sale_and_rent_coexist_on_one_property` | schema (no uniqueness on the triple) |
+| seller expectation absent from public/customer DTOs | `test_seller_expectation_never_appears_in_a_public_or_customer_payload` | **service** — DTO boundary |
+| a claim cannot be created `DOCUMENT_SEEN` | `test_a_claim_cannot_be_created_already_verified` | **contract boundary** (§3.1) |
+| a verification event is required to upgrade | `test_only_a_confirmed_verification_event_raises_the_level` | schema trigger (§3.1) |
+| a resolution cannot cite a foreign claim | `test_a_resolution_cannot_cite_a_claim_about_another_subject`, `..._another_attribute` | schema trigger + **service** pre-check (§3.2) |
+| `CONFIRMED_SAME` without alias fails | `test_confirmed_same_without_a_canonical_id_is_refused`, `test_the_canonical_must_be_one_of_the_candidate_pair` | schema trigger + **service** pre-check (§3.10) |
+| matching inputs use canonical, not alias | `test_the_canonical_resolver_returns_the_canonical_for_an_alias` | **narrowed** — §6.4 |
 
-### 5.2 Concurrency tests, on the method Slice 2 ended with
+### 6.2 Tests added by revision 2
+
+**Offer state (§3.5)** — every allowed edge; every refused edge; the four
+CUSTOMER-allowed transitions; `test_a_customer_cannot_set_pending_info`;
+`test_a_customer_cannot_close_an_offer`;
+`test_an_unknown_reason_code_is_refused`;
+`test_a_supplied_reason_code_is_readable_back_from_the_trail`;
+`test_an_offer_activates_without_a_price`;
+`test_a_self_entered_offer_activates_without_a_source`.
+
+**Availability (§3.3)** — `test_patch_cannot_change_availability`;
+`test_reconfirm_moves_between_any_two_availability_values`;
+`test_reconfirm_requires_an_explicit_availability`;
+three separate tests that the sweep leaves `UNKNOWN`,
+`NEEDS_CONFIRMATION` and `UNAVAILABLE` untouched, one value each;
+`test_the_sweep_converts_each_of_the_four_named_values`.
+
+**Offer freshness (§3.4)** —
+`test_offer_staleness_is_measured_on_commercial_terms_last_confirmed_at`;
+`test_reconfirming_an_offer_updates_both_confirmation_columns`;
+`test_a_confirmation_without_a_timezone_is_refused_on_the_offer_endpoint`.
+
+**SOURCE (§1.5)** — `test_a_source_is_created_only_through_an_external_lead`;
+`test_converting_a_lead_requires_a_party_and_a_consent`;
+`test_an_unconverted_lead_appears_in_the_backoffice_queue`;
+`test_converting_a_lead_twice_is_refused`.
+
+**Offer sources (§3.6)** —
+`test_linking_a_new_primary_transfers_the_flag_without_deleting_links`;
+`test_two_concurrent_primary_source_links_leave_exactly_one_primary`.
+
+**Resolution authority (§3.7)** — one test per condition, five in all,
+including `test_a_background_job_cannot_issue_a_resolution`.
+
+**Claim provenance (§3.8)** — `test_a_claim_must_carry_at_least_one_origin`;
+`test_a_party_assertion_alone_is_a_valid_origin`;
+`test_recorded_by_account_is_not_an_origin`;
+`test_a_source_inconsistent_with_its_observation_is_refused`.
+
+**Controlled options (§3.9)** — `test_an_inactive_attribute_code_is_refused`;
+`test_an_unregistered_enum_option_is_refused`;
+`test_an_attribute_not_applicable_to_this_property_type_is_refused`;
+and the same three asserted at **all three** call sites.
+
+**Identity (§3.10)** — `test_an_omitted_algorithm_version_is_stored_as_the_contract_default`;
+`test_generating_twice_produces_identical_signals`;
+`test_generation_only_ever_writes_pending_review`;
+`test_confirming_same_raises_review_work_for_affected_open_records`;
+`test_generating_the_same_pair_twice_concurrently_yields_one_candidate`.
+
+**Authorization (§5.1)** — the sixteen RFC-001 scenarios, named individually.
+
+### 6.3 Concurrency tests
 
 Two engines, two transactions, interleaving witnessed through
-`pg_stat_activity`, every worker's outcome asserted:
+`pg_stat_activity`, every worker's outcome asserted — the harness Slice 2
+ended with, including the E-02 correction:
 
 - `test_two_concurrent_resolutions_of_one_attribute_yield_one_current_value`
-  — the partial unique index is the contended resource; the loser must get a
-  typed 409 from the named constraint, not a 500.
-- `test_two_concurrent_reviews_of_one_candidate_produce_one_alias`
-  — `source_identity_candidate_id` is UNIQUE; same shape.
-- `test_a_concurrent_verification_event_does_not_lower_a_raised_level`
-  — **reclassified.** `GREATEST(...)` inside the trigger's single `UPDATE`
-  makes this a database guarantee, not a locking problem, so this test proves
-  the schema and not our code. It is kept for the STOP GATE C answer and
-  labelled as a schema test. Sketching it as a locking test would have been
-  the same error the acceptance review caught in E-01: a true result filed
-  under a false cause.
+  — contends on `ux_resolved_current_property`; the loser gets a typed 409 from
+  the named constraint, not a 500.
+- `test_two_concurrent_primary_source_links_leave_exactly_one_primary` (§3.6).
+- `test_generating_the_same_pair_twice_concurrently_yields_one_candidate` (§3.10).
+- `test_two_concurrent_offer_transitions_from_one_state_do_not_both_apply`
+  — the R-S2-02 shape, applied to offers.
 
-### 5.3 What these tests will not claim
-
-Stated now, so it is not discovered later:
+### 6.4 What these tests will not claim
 
 - The canonical resolver is proven **as a query**. No matching input exists to
-  consume it (§3.5).
-- Consent-backed public listing is proven against seeded consent rows. It does
-  not prove any consent *capture* flow, which is not in this slice.
-- With G3-1 unratified, the offer state tests prove only the **refusal**. The
-  edge table is untested until it is approved.
-- Several guarantees in §5.1 are the **schema's**, not ours (§3.1, §3.2, §3.5).
-  We will label each test with what it proves, and we will not present a
-  passing schema test as evidence that our service does something.
-
-### 5.4 So what IS the service's work?
-
-Worth stating explicitly, since §3 moved so much of it into the database. What
-remains on our side is real, and it is where the defects will be:
-
-1. **Authorization and object scope** on all nineteen operations — the whole of
-   §1, none of which the schema knows about.
-2. **Turning database refusals into typed HTTP errors**, by pre-check under the
-   right lock, since P0001 carries no constraint name (§3.2).
-3. **Transaction composition** — the alias-before-status order (§3.5); closing
-   the previous resolved value and inserting the new one atomically.
-4. **Projection and DTO boundaries**, above all the unauthenticated public list
-   (§3.4). The schema will not stop us leaking `seller_expectation_dzd`.
-5. **Freshness evaluation** on two new clocks (§3.3).
-6. **Deterministic candidate generation** — `postIdentityCandidatesGenerate` is
-   entirely ours; the schema stores its output and reviews, not its signals.
-7. **Idempotency, provenance and audit plumbing** for every new command, on the
-   Slice 1/2 machinery.
+  consume it, so the mandatory test "matching inputs use canonical" is proven
+  to the edge of this slice and no further. Stated in the docstring.
+- The corrective effect (§3.10) is tested against **seeded** open matches and
+  opportunities, since this slice creates none.
+- Consent-backed public listing is tested against seeded consent rows; no
+  consent *capture* flow is in this slice.
+- **Several guarantees are the schema's, not ours** (§2.1). Each test is
+  labelled with what it proves, and a passing schema test is never presented as
+  evidence that our service does something. This is the E-01 lesson: a true
+  result filed under a false cause is worse than no result.
+- With G3-6 open, **no test claims a relations flow exists** (§5.1 note).
 
 ---
 
-## 6. Acceptance conditions for this slice
+## 7. Acceptance conditions
 
-1. Every operation in §1 implemented, or explicitly refusing with a typed
-   error that names an undecided rule (§4). No operation silently permissive.
-2. Every mandatory test in §5.1 passing on real PostgreSQL, each demonstrated
+1. Every operation in §1 implemented, or explicitly refusing with a typed error
+   naming an undecided rule. None silently permissive.
+2. Every mandatory test in §6.1 passing on real PostgreSQL, each demonstrated
    to fail against the defect it names.
 3. STOP GATE C answerable on all six questions, with the named evidence.
-4. No new table, column or migration (§2) — or an explicit finding if one
-   proves necessary.
-5. The evidence matrix regenerated with 0 UNPROVEN, and the gate still 8/8.
-6. **Matching not started.** No `match_candidates` row is written by any code
-   path in this slice.
-7. **PROPERTY claim eligibility still undecided**, and no path creates a
+4. **No new table, column or migration**, and **no new reason-code category**
+   — or an explicit finding if one proves necessary.
+5. Evidence matrix regenerated with 0 UNPROVEN; gate still 8/8.
+6. **Matching not started.** No `match_candidates` row written by any path.
+7. **PROPERTY claim eligibility still undecided**; no path creates a
    property-party authority link as a side effect.
-8. Run provenance recorded at run time, with the committed fingerprint recipe.
+8. **No `party_property_relations` row written by any path** while G3-6 is
+   open, and the relations deliverable reported *not delivered* rather than
+   partially claimed.
+9. Run provenance recorded at run time, with the committed fingerprint recipe.
 
 ---
 
-## 7. Sequence, and where we would stop
+## 8. Sequence, and where we stop
 
-| Step | Content | Stops at |
+| Step | Content | Blocked by |
 |---|---|---|
-| 1 | PROPERTY: create, read, patch, `/me` view, internal view | needs nothing from §4 |
-| 2 | OFFER: create, patch, sources; **state refuses** | **G3-1** |
-| 3 | Freshness for property and offer; reconfirm on both | **G3-3** for the sweep only |
-| 4 | Truth layer: observation → claim → verification → resolution | needs nothing; **G3-4** is a question, not a blocker |
-| 5 | Public list, with its three conditions and projection | needs nothing |
-| 6 | Identity Lite: generate, list, review, alias, resolver | needs nothing |
-| 7 | STOP GATE C evidence and the concurrency tests | — |
+| 1 | PROPERTY: create, read, patch, `/me`, internal, backoffice queue | — |
+| 2 | OFFER: create, patch, **state machine (§3.5)**, sources with primary transfer | — |
+| 3 | SOURCE: external leads, convert, queue (§1.5) | — |
+| 4 | Availability reconfirm + the restricted staleness pass (§3.3); offer reconfirm and `offer_terms` freshness (§3.4) | — |
+| 5 | Truth layer: observation → claim → verification → resolution, with controlled options (§3.9) | — |
+| 6 | Public list, its three conditions and its projection | — |
+| 7 | Identity Lite: generate, list, review, alias, corrective effect, resolver (§3.10) | — |
+| 8 | Authorization matrix (§5.1), STOP GATE C evidence, concurrency tests (§6.3) | — |
+| — | party-property relations | **G3-6** — not attempted |
 
-Steps 1, 4, 5 and 6 can begin on approval of this plan alone. Step 2 delivers a
-refusing endpoint until **G3-1** is ratified. Step 3's sweep waits on **G3-3**.
+With G3-1, G3-3 and G3-4 ratified, **steps 1 through 8 can all begin on
+approval of this revision**. Only the relations deliverable waits, on G3-6.
 
-**We are asking for:** approval of this scope and sequence; a decision on
-**G3-1** (the edge table and its three sub-questions); a decision on **G3-3**;
-and an answer on **G3-4**. **G3-2** and **G3-5** we expect to remain open, and
-this plan is built so that they can.
+**What we are asking for in this second review:** approval to begin steps 1–8;
+a decision on **G3-6** (option A, B, C or D in §4.4); and confirmation that our
+correction in §3.6 is accepted — the primary-source index exists in the frozen
+baseline, so the rule is adopted as a constraint mapping rather than written
+from scratch. **G3-2** and **G3-5** we expect to remain open, and this plan is
+built so that they can.
