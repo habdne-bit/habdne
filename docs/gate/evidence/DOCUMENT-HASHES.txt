@@ -15,8 +15,8 @@ docs/gate/SLICE_3_PLAN.md
   rev 2  3447a7d  607bd2050aecbb7e5253ae5a8b8008357be49040d68f2bd839e078bdb30d5a12
                   (this revision never reached the reviewer; the hash they
                    reported was rev 1's, which is how the fault was caught)
-  rev 3  THIS     d96a276b7e533e1f392ed7972c15c585d9498356275e6e46ae6d60c6a34488c8
+  rev 3  37b7eb6  d96a276b7e533e1f392ed7972c15c585d9498356275e6e46ae6d60c6a34488c8
 
 docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
 ---------------------------------------------------------
-  rev 1  THIS     be52322fda7e3ce9f210c091a00212401c25e2b5e420f69ca47c8a72e18a321d
+  rev 1  37b7eb6  be52322fda7e3ce9f210c091a00212401c25e2b5e420f69ca47c8a72e18a321d
