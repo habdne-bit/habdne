@@ -235,6 +235,17 @@ class AccessService:
         """
         return request_service.criteria_for(self._session, request_id)
 
+    def property_provenance(self, property_id: uuid.UUID):
+        """The recorded provenance of a property already cleared by its gate.
+
+        Same contract as `request_criteria`: no gate of its own, because it is
+        called only after `read_staff_resource` authorized the property, and it
+        takes the id it was given rather than re-deriving one.
+        """
+        from . import properties as property_service
+
+        return property_service.provenance_for(self._session, property_id)
+
     def record_list_access(
         self, *, operation_id: str, resource_kind: str, result_count: int,
         query_shape: dict | None = None,

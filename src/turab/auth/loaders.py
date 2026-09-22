@@ -410,9 +410,50 @@ def load_request_for_staff(
     )
 
 
+def load_property_for_staff(
+    session: Session, subject: Subject, property_id: uuid.UUID
+) -> LoadResult:
+    """A staff read of any PROPERTY, by role and recorded — Slice 3.
+
+    Separate from `load_property`, which is the CUSTOMER loader and requires
+    the creator account or a recorded claim (R4.1). Staff need neither, and
+    merging the two would be one `if` away from handing a customer the staff
+    query.
+
+    It resolves through `property_identity_aliases` for the same reason the
+    customer loader does (R4.9): an alias and its canonical are one physical
+    property, so a staff read of either must reach the same record rather than
+    two half-populated views of one thing.
+    """
+    canonical_id = resolve_canonical_property(session, property_id)
+    row = session.execute(
+        text(
+            """
+            SELECT property_id, property_type::text AS property_type,
+                   canonical_location_id, local_location_detail,
+                   land_area_m2, built_area_m2,
+                   current_availability::text AS current_availability,
+                   availability_last_confirmed_at,
+                   supply_mode::text AS supply_mode,
+                   management_mode::text AS management_mode,
+                   claim_status::text AS claim_status,
+                   version, created_by_account_id, created_at, updated_at
+              FROM turab.properties WHERE property_id = :property_id
+            """
+        ),
+        {"property_id": canonical_id},
+    ).mappings().first()
+    return (
+        LoadResult(ResourceKind.PROPERTY, canonical_id, row)
+        if row
+        else _denied(ResourceKind.PROPERTY, canonical_id)
+    )
+
+
 STAFF_LOADERS = {
     ResourceKind.PARTY: load_party_for_staff,
     ResourceKind.REQUEST: load_request_for_staff,
+    ResourceKind.PROPERTY: load_property_for_staff,
 }
 
 

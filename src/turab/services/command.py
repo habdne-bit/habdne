@@ -182,6 +182,40 @@ class CommandService:
             return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not your request")
         return ALLOW_DECISION
 
+    def authorize_property_scope(self, property_id: uuid.UUID) -> Decision:
+        """A CUSTOMER may command only a PROPERTY they have authority over.
+
+        The rule is R4.1 exactly — the creator account, or a recorded claim
+        event for that account — and it is evaluated by reusing
+        `load_property`, the same loader the READ path uses, rather than by a
+        second query written to the same rule. Two implementations of one
+        authority rule is how they come to disagree, and the one that drifts
+        is always the one nobody reads.
+
+        Three things follow from using the loader, all of them wanted:
+        `party_property_relations` is never consulted (R4.5); an alias
+        resolves to its canonical property first (R4.9); and an ambiguous
+        claim raises `ClaimAuthorityConflict` so authority goes to nobody
+        (INV-1) instead of to whichever account claimed first.
+
+        Staff are authorized by role and recorded, as everywhere else.
+        """
+        if self.is_staff:
+            return ALLOW_DECISION
+        from ..auth.loaders import ResourceKind, load_property
+
+        result = load_property(self._read_session, self._subject, property_id)
+        if not result.authorized:
+            self._auditor.denied(
+                subject=self._subject, operation_id="property-scope",
+                trace_id=self._trace_id,
+                reason_code=(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED).value,
+                resource_kind=ResourceKind.PROPERTY.value, resource_id=property_id,
+            )
+            return deny(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED,
+                        "not your property")
+        return ALLOW_DECISION
+
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:
         """For commands whose object does not exist yet.
 

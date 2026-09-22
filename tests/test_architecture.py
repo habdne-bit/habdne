@@ -174,6 +174,9 @@ def test_nothing_writes_to_the_frozen_contract():
 _SCOPE_GUARDS = (
     "authorize_party_scope",
     "authorize_request_scope",
+    # Slice 3. R4.1 evaluated by REUSING `load_property`, the loader the read
+    # path uses, so one authority rule has one implementation.
+    "authorize_property_scope",
     "authorize_staff_only",
 )
 
@@ -185,6 +188,23 @@ _GUARD_EXEMPT = {
     "claim_record",
     # Revocation checks ownership through the scoped CONSENT_GRANT loader.
     "revoke_consent",
+    # Slice 3. Creating a PROPERTY has no object to own and no party to scope
+    # to: `properties` has no `party_id` column and `PropertyCreate` carries no
+    # party field, so authority over the new record comes from
+    # `created_by_account_id` alone (R4.1) — it is CREATED by this call, not
+    # checked by it.
+    #
+    # Note what is deliberately NOT done here instead. Scoping it to
+    # `party_property_relations` would make a relation an authorization input
+    # (forbidden, R4.5) and would require inferring a relation from an act of
+    # creation (forbidden until the relations contract exists, G3-6). Refusing
+    # a customer whose account has no party would be inventing a rule: property
+    # authority is account-scoped (R4.2), so a party-less account creating and
+    # owning a property is coherent.
+    #
+    # The route still carries the role gate, and `postProperties` is exercised
+    # against the RFC-001 scenarios in the Slice 3 authorization tests.
+    "create_property",
 }
 
 

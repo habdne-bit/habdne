@@ -28,7 +28,7 @@ from typing import Any, Mapping
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from . import freshness
+from . import freshness, provenance
 
 # --- the documented state machine -----------------------------------------
 #
@@ -372,13 +372,9 @@ def read_request(session: Session, request_id: uuid.UUID) -> Mapping[str, Any]:
 
 # --- provenance ------------------------------------------------------------
 
-#: How a recorded change reached TURAB. Distinct from WHO recorded it.
-class UpdateChannel(StrEnum):
-    #: The party's own account submitted it.
-    SELF_SERVICE = "SELF_SERVICE"
-    #: A member of staff typed it in. This says who typed it — NOT that the
-    #: party said it. See `source_reference`.
-    STAFF_RECORDED = "STAFF_RECORDED"
+#: Re-exported, not redefined: `provenance` owns it, so a channel added there
+#: cannot be missing here. Importers of `requests.UpdateChannel` are unaffected.
+UpdateChannel = provenance.UpdateChannel
 
 
 def record_provenance(
@@ -427,82 +423,25 @@ def record_provenance(
     surfaces as `source_recorded: false` rather than hiding. Accepting one
     needs a contract change.
     """
-    channel = UpdateChannel(channel)
-    payload = {
-        "channel": channel.value,
-        "source_recorded": source_reference is not None,
-        "after": changes,
-    }
-    if previous is not None:
-        payload["before"] = {k: previous.get(k) for k in changes}
-
-    observation_id = session.execute(
-        text(
-            """INSERT INTO turab.observations
-                      (kind, party_id, observed_at, raw_text, payload,
-                       recorded_by_account_id, source_id)
-               VALUES (CAST(:kind AS turab.observation_kind), :party_id,
-                       clock_timestamp(), :note, CAST(:payload AS jsonb),
-                       :account, :source)
-            RETURNING observation_id"""
-        ),
-        {
-            "kind": observation_kind,
-            "party_id": party_id,
-            "note": note,
-            "payload": json.dumps(payload, default=str),
-            "account": recorded_by_account_id,
-            "source": source_reference,
-        },
-    ).scalar_one()
-
-    for attribute_code, value in changes.items():
-        session.execute(
-            text(
-                """INSERT INTO turab.claims
-                          (request_id, attribute_code, claimed_value,
-                           asserted_by_party_id, observation_id, source_id,
-                           extracted_by, observed_at, recorded_by_account_id)
-                   VALUES (:request_id, :code, CAST(:value AS jsonb),
-                           :asserted_by, :observation_id, :source,
-                           :extracted_by, clock_timestamp(), :account)"""
-            ),
-            {
-                "request_id": request_id,
-                "code": attribute_code,
-                "value": json.dumps(value, default=str),
-                # Attributed to the party ONLY when the party's own account
-                # submitted it. A staff-recorded change asserts nothing about
-                # what the party said, so it names no asserting party.
-                "asserted_by": party_id if channel is UpdateChannel.SELF_SERVICE else None,
-                "observation_id": observation_id,
-                "source": source_reference,
-                "extracted_by": channel.value,
-                "account": recorded_by_account_id,
-            },
-        )
-    return observation_id
+    return provenance.record(
+        session,
+        subject=provenance.Subject.REQUEST,
+        subject_id=request_id,
+        party_id=party_id,
+        changes=changes,
+        previous=previous,
+        recorded_by_account_id=recorded_by_account_id,
+        channel=channel,
+        source_reference=source_reference,
+        note=note,
+        observation_kind=observation_kind,
+    )
 
 
 def provenance_for(session: Session, request_id: uuid.UUID) -> list[Mapping[str, Any]]:
-    return session.execute(
-        text(
-            """SELECT c.attribute_code, c.claimed_value, c.observation_id,
-                      c.extracted_by AS channel, c.recorded_at,
-                      c.recorded_by_account_id, c.asserted_by_party_id,
-                      c.source_id,
-                      (c.source_id IS NOT NULL) AS source_recorded,
-                      c.effective_verification_level::text AS verification_level,
-                      c.status::text AS status,
-                      o.payload AS observation_payload
-                 FROM turab.claims c
-                 LEFT JOIN turab.observations o
-                        ON o.observation_id = c.observation_id
-                WHERE c.request_id = :r
-                ORDER BY c.recorded_at, c.attribute_code"""
-        ),
-        {"r": request_id},
-    ).mappings().all()
+    return provenance.read(
+        session, subject=provenance.Subject.REQUEST, subject_id=request_id
+    )
 
 
 # --- typed update ----------------------------------------------------------

@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **128**
-- Distinct tests cited: **350**
-- Suite total: **485/485** test cases passing (399 distinct test functions)
+- Rules and invariants covered: **133**
+- Distinct tests cited: **367**
+- Suite total: **512/512** test cases passing (421 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -136,6 +136,11 @@ matrix, because it reads as assurance.
 | `R-S2-02` | State and staleness decisions hold their conditions at write time, under two connections | `test_reconfirm_racing_a_close_does_not_reopen_the_closed_request`<br>`test_two_transitions_from_the_same_state_do_not_both_apply`<br>`test_the_staleness_pass_does_not_mark_a_concurrently_reconfirmed_request`<br>`test_the_staleness_pass_does_not_reopen_a_concurrently_closed_request` | PASS |
 | `R-S2-03 follow-up` | The slot collision is a typed 409 in BOTH branches, under a parent lock, with no partial change and no key consumed | `test_moving_a_criterion_onto_an_occupied_slot_is_409`<br>`test_the_refused_move_records_no_provenance_and_frees_its_key`<br>`test_a_move_to_a_free_slot_still_succeeds`<br>`test_two_concurrent_adds_of_the_same_slot_yield_one_success_and_one_409`<br>`test_a_concurrent_move_onto_a_slot_being_taken_is_refused` | PASS |
 | `R-S2-05 follow-up` | An empty string is not a null, and a datetime without an offset is a 4xx rather than a 500 | `test_an_empty_free_text_field_is_accepted`<br>`test_null_clears_a_nullable_field`<br>`test_omitting_a_field_leaves_it_unchanged`<br>`test_null_is_still_refused_for_a_non_nullable_field`<br>`test_a_confirmation_without_a_timezone_is_refused`<br>`test_a_historical_confirmation_with_an_offset_is_accepted`<br>`test_a_future_confirmation_with_an_offset_is_still_refused` | PASS |
+| `S3-1 PROPERTY create` | A customer creates a SELF_MANAGED property; assisted records are staff-created and UNCLAIMED; an incoherent management pair is refused | `test_a_customer_creates_a_self_managed_property`<br>`test_a_customer_cannot_create_an_assisted_property`<br>`test_staff_create_an_assisted_unclaimed_property`<br>`test_an_incoherent_management_pair_is_refused` | PASS |
+| `S3-1 / G3-6` | No party-property relation is inferred from creating a property, and a property observation names no party | `test_creation_writes_no_party_property_relation`<br>`test_a_property_claim_is_attributed_to_no_party` | PASS |
+| `S3-1 / G3-3` | Availability is not reachable through PATCH — refused by the contract model AND by the service, which names where it IS changed | `test_patch_cannot_change_availability`<br>`test_patch_cannot_change_a_create_only_field`<br>`test_the_service_refuses_availability_even_without_the_model` | PASS |
+| `S3-1 R4.1/R4.2/R4.9/R4.10` | PROPERTY authority is the creator account or a recorded claim, account-scoped, resolved through an alias; a relation grants nothing | `test_s10_a_customer_reads_a_property_they_created`<br>`test_s12_a_relation_alone_grants_nothing`<br>`test_s13_authority_resolves_through_an_alias_to_the_canonical`<br>`test_s14_a_customer_cannot_read_an_assisted_unclaimed_property`<br>`test_a_customer_cannot_patch_another_accounts_property` | PASS |
+| `S3-1 R6.2/R6.3` | The internal property read is staff-only, audited, and does not distinguish a missing property from an unauthorized one | `test_a_customer_cannot_use_the_internal_property_read`<br>`test_the_internal_read_is_audited`<br>`test_an_unknown_property_is_indistinguishable_from_an_unauthorized_one` | PASS |
 | `Concurrency evidence` | Interleaving is observed in pg_stat_activity or by ordering, and an unexpected worker error fails the assertions | `test_an_unexpected_worker_error_fails_the_assertions` | PASS |
 | `R-S2-03` | The criteria endpoint adds AND changes, by the contract's declared id | `test_the_contracts_criterion_id_is_accepted`<br>`test_changing_a_criterion_does_not_duplicate_it`<br>`test_changing_a_criterion_bumps_the_request_version`<br>`test_a_criterion_id_from_another_request_is_refused`<br>`test_an_unknown_criterion_id_is_refused`<br>`test_re_adding_the_same_slot_points_at_the_change_path`<br>`test_the_change_is_recorded_with_its_previous_value` | PASS |
 | `R-S2-04` | Reactivation applies the active freshness policy; a future confirmation is refused and a historical one accepted | `test_a_stale_paused_request_cannot_be_reactivated`<br>`test_a_never_confirmed_paused_request_cannot_be_reactivated`<br>`test_reconfirm_then_reactivate_is_the_two_step_path`<br>`test_the_freshness_check_on_reactivation_reads_the_active_policy`<br>`test_a_future_confirmation_is_refused`<br>`test_a_historical_confirmation_is_still_accepted` | PASS |

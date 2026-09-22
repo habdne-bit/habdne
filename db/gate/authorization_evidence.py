@@ -563,6 +563,39 @@ RULES: tuple[Rule, ...] = (
           "test_a_confirmation_without_a_timezone_is_refused",
           "test_a_historical_confirmation_with_an_offset_is_accepted",
           "test_a_future_confirmation_with_an_offset_is_still_refused")),
+    # --- Slice 3, step 1: the physical PROPERTY ---------------------------
+    Rule("S3-1 PROPERTY create",
+         "A customer creates a SELF_MANAGED property; assisted records are "
+         "staff-created and UNCLAIMED; an incoherent management pair is refused",
+         ("test_a_customer_creates_a_self_managed_property",
+          "test_a_customer_cannot_create_an_assisted_property",
+          "test_staff_create_an_assisted_unclaimed_property",
+          "test_an_incoherent_management_pair_is_refused")),
+    Rule("S3-1 / G3-6",
+         "No party-property relation is inferred from creating a property, and "
+         "a property observation names no party",
+         ("test_creation_writes_no_party_property_relation",
+          "test_a_property_claim_is_attributed_to_no_party")),
+    Rule("S3-1 / G3-3",
+         "Availability is not reachable through PATCH — refused by the contract "
+         "model AND by the service, which names where it IS changed",
+         ("test_patch_cannot_change_availability",
+          "test_patch_cannot_change_a_create_only_field",
+          "test_the_service_refuses_availability_even_without_the_model")),
+    Rule("S3-1 R4.1/R4.2/R4.9/R4.10",
+         "PROPERTY authority is the creator account or a recorded claim, "
+         "account-scoped, resolved through an alias; a relation grants nothing",
+         ("test_s10_a_customer_reads_a_property_they_created",
+          "test_s12_a_relation_alone_grants_nothing",
+          "test_s13_authority_resolves_through_an_alias_to_the_canonical",
+          "test_s14_a_customer_cannot_read_an_assisted_unclaimed_property",
+          "test_a_customer_cannot_patch_another_accounts_property")),
+    Rule("S3-1 R6.2/R6.3",
+         "The internal property read is staff-only, audited, and does not "
+         "distinguish a missing property from an unauthorized one",
+         ("test_a_customer_cannot_use_the_internal_property_read",
+          "test_the_internal_read_is_audited",
+          "test_an_unknown_property_is_indistinguishable_from_an_unauthorized_one")),
     Rule("Concurrency evidence",
          "Interleaving is observed in pg_stat_activity or by ordering, and an "
          "unexpected worker error fails the assertions",
