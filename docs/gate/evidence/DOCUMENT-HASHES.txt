@@ -24,13 +24,13 @@ docs/gate/SLICE_3_PLAN.md
                    "revision 3" inside and described 0003 as not started.
                    Reported in review. The label and the content must agree,
                    so a revision history now lives in the plan itself.)
-  rev 5  PENDING  8ae61fe538b585cdef2c8f84c42ac857e8aeacd115e4bdeb5144a58faf1175a9
+  rev 5  c81043a  8ae61fe538b585cdef2c8f84c42ac857e8aeacd115e4bdeb5144a58faf1175a9
 
 docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
 ---------------------------------------------------------
   rev 1  37b7eb6  be52322fda7e3ce9f210c091a00212401c25e2b5e420f69ca47c8a72e18a321d
   rev 2  0ea6999  4ca90800ceb916c68884a7dd98a61457517e987f2badb10653de13e938991ee4
-  rev 3  PENDING  17b4935ab15fbe6790b69a53167ed5b3a763c9aa39e8d534be314eadbc91e496
+  rev 3  c81043a  17b4935ab15fbe6790b69a53167ed5b3a763c9aa39e8d534be314eadbc91e496
                   (implementation basis: 6a adopted and backstopped by 0004,
                    include_ended corrected, valid_from semantics settled)
 
@@ -46,4 +46,4 @@ docs/gate/G3-7_consent_binding_relation_currency.md
 
 docs/gate/MIGRATION_POLICY.md
 -----------------------------
-  rev 2  PENDING  176839555f03aa2b958fba17d588af2f9d2022ec247e2991d58e5ab190b087b6
+  rev 2  c81043a  176839555f03aa2b958fba17d588af2f9d2022ec247e2991d58e5ab190b087b6
