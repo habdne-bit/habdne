@@ -15,9 +15,19 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
 NOW = datetime.now(UTC)
+
+
+@pytest.fixture
+def two_engines(database_url):
+    """Two independent engines — two real backend connections."""
+    a = create_engine(database_url, future=True, poolclass=None)
+    b = create_engine(database_url, future=True, poolclass=None)
+    yield a, b
+    a.dispose()
+    b.dispose()
 
 
 def _property(session, ids):
@@ -115,3 +125,112 @@ def test_the_guard_is_a_database_constraint_not_a_service_check(session):
                  WHERE conname = 'party_property_relations_no_overlap'""")
     ).scalar_one_or_none()
     assert kind == "x", f"expected an EXCLUDE constraint, got {kind!r}"
+
+
+# --- the constraint under real contention ----------------------------------
+#
+# Every test above is sequential in ONE session, which shows what the
+# constraint does when nothing is racing it. That is not the case it exists
+# for. `EXCLUDE` is enforced by an index that makes the second inserter WAIT
+# on the first, and the outcome depends on what the first transaction does —
+# which a single session cannot exhibit at all.
+
+def test_two_concurrent_overlapping_inserts_leave_exactly_one_row(
+    two_engines, engine, ids
+):
+    """Two connections, two transactions, a deterministic handshake.
+
+    Unlike the primary-source case, this DOES have a winner and a loser, and
+    the reason is the difference the last review drew: there is no lock here
+    that serialises two paths into both succeeding. The exclusion index makes
+    the contender WAIT, and when the holder COMMITS the contender's row is
+    then genuinely excluded — so it fails, with SQLSTATE `23P01`
+    (`exclusion_violation`). The refusal is the constraint's, not a version
+    guard's, which is why it is legitimate to expect one here.
+
+    Both workers' outcomes are asserted, not just the surviving row: a test
+    that checked only the row count would pass if BOTH had failed.
+    """
+    import threading
+
+    from sqlalchemy.orm import Session as _Session
+
+    engine_a, engine_b = two_engines
+    with _Session(bind=engine, future=True) as s:
+        prop = _property(s, ids)
+        s.commit()
+
+    out: dict[str, tuple[str, object]] = {}
+    holds = threading.Event()
+    contender_blocked = threading.Event()
+
+    def holder():
+        try:
+            with _Session(bind=engine_a, future=True) as s:
+                _relate(s, party=ids.AMINA, prop=prop,
+                        valid_from=NOW - timedelta(days=5))
+                holds.set()
+                # Wait until the database itself reports the contender waiting
+                # on a lock. Ordering by sleep would prove only that time
+                # passed, not that the second transaction ever reached the
+                # contended point.
+                assert contender_blocked.wait(timeout=20), (
+                    "the contender never reached the exclusion index"
+                )
+                s.commit()
+            out["holder"] = ("ok", None)
+        except Exception as exc:                       # pragma: no cover
+            out["holder"] = ("raised", f"{type(exc).__name__}: {exc}")
+
+    def contender():
+        assert holds.wait(timeout=20), "the holder never inserted"
+        try:
+            with _Session(bind=engine_b, future=True) as s:
+                _relate(s, party=ids.AMINA, prop=prop,
+                        valid_from=NOW - timedelta(days=1))
+                s.commit()
+            out["contender"] = ("ok", None)
+        except Exception as exc:
+            out["contender"] = ("raised", getattr(
+                getattr(exc, "orig", None), "sqlstate", None) or f"{type(exc).__name__}")
+
+    def watch():
+        """Witness the contention, then release the holder."""
+        import time
+
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            with _Session(bind=engine, future=True) as s:
+                blocked = s.execute(
+                    text("""SELECT count(*) FROM pg_stat_activity
+                             WHERE datname = current_database()
+                               AND pid <> pg_backend_pid()
+                               AND wait_event_type = 'Lock'""")
+                ).scalar_one()
+            if blocked:
+                contender_blocked.set()
+                return
+            time.sleep(0.02)
+        contender_blocked.set()   # release the holder so the test fails cleanly
+
+    threads = [threading.Thread(target=holder), threading.Thread(target=contender),
+               threading.Thread(target=watch)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=40)
+
+    assert out.get("holder") == ("ok", None), out
+    kind, payload = out.get("contender", (None, None))
+    assert kind == "raised", f"both inserts succeeded: {out}"
+    assert payload == "23P01", (
+        f"expected SQLSTATE 23P01 (exclusion_violation), got {payload!r}"
+    )
+
+    with _Session(bind=engine, future=True) as s:
+        rows = s.execute(
+            text("""SELECT count(*) FROM turab.party_property_relations
+                     WHERE property_id = :p AND party_id = :a"""),
+            {"p": prop, "a": ids.AMINA},
+        ).scalar_one()
+    assert rows == 1, f"exactly one row must survive, found {rows}"

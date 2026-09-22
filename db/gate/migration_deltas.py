@@ -90,6 +90,7 @@ _IDENTITY_COLUMNS = {
     "triggers": 2,     # (table, name)   + pg_get_triggerdef
     "functions": 1,    # (name,)         + pg_get_functiondef
     "enums": 2,        # (type, label)   + sort order
+    "extensions": 1,   # (name,)         + schema, version
 }
 
 
@@ -117,7 +118,7 @@ DELTAS: tuple[Delta, ...] = (
     Delta(
         revision="0003_consent_relation_currency",
         section="functions",
-        object_name="enforce_consent_binding",
+        object_name="enforce_consent_binding()",
         kind="trigger function body",
         # Filled from the live catalog by `record_digests()` and pinned below.
         digest_before="c1c1a38278e644e59c32a3bd862a7f46ee500f9694ca70ca94c19088d1c8a614",
@@ -185,6 +186,34 @@ DELTAS: tuple[Delta, ...] = (
         ),
         proven_by=(
             "test_two_overlapping_relations_for_one_triple_are_refused",
+        ),
+    ),
+    Delta(
+        revision="0004_relation_overlap_guard",
+        section="extensions",
+        object_name="btree_gist",
+        kind="PostgreSQL extension, installed in `public`",
+        digest_before=None,          # not installed in the baseline
+        digest_after="f992ad1dfc4bc45e858b9bab5b868074265dc443f6fe4a9866b0b83c40f2695e",
+        reason=(
+            "An EXCLUDE constraint mixing equality on uuid/text with `&&` on a "
+            "range requires `btree_gist`. It is declared here because the "
+            "fingerprint now covers extensions: it previously saw only the "
+            "`turab` schema, so an extension installed by a migration was "
+            "outside the machine that the phrase 'no undeclared difference' "
+            "rested on. Its schema is part of the digest, so moving it would "
+            "be a change this check reports rather than tolerates."
+        ),
+        proven_by=(
+            "test_btree_gist_is_installed_in_public",
+            # NOTE: the digest covers name, schema AND version, as required.
+            # That makes it server-dependent: a PostgreSQL shipping
+            # btree_gist 1.8 would report a different digest and fail this
+            # check until the delta is updated. That is the intended
+            # behaviour — an extension version IS part of what the database
+            # is — but it is stated here rather than discovered on an
+            # upgrade.
+            "test_0004_refuses_a_btree_gist_installed_outside_public",
         ),
     ),
 )

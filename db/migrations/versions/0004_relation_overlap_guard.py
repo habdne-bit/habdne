@@ -85,8 +85,26 @@ RANGE = (
 
 
 def upgrade() -> None:
-    # Pinned to `public`: without SCHEMA the extension follows search_path and
-    # installs its support functions into `turab` (see the docstring).
+    # `IF NOT EXISTS ... SCHEMA public` does NOT relocate an extension that
+    # already exists somewhere else — it leaves it where it is and succeeds.
+    # So a database that already carries btree_gist in another schema would
+    # pass this line and then add a constraint whose support functions live
+    # somewhere nobody declared. Checked FIRST, and refused, because a
+    # migration that half-applies is worse than one that stops.
+    existing = op.get_bind().execute(
+        sa.text("""SELECT n.nspname FROM pg_extension e
+                     JOIN pg_namespace n ON n.oid = e.extnamespace
+                    WHERE e.extname = 'btree_gist'""")
+    ).scalar_one_or_none()
+    if existing is not None and existing != "public":
+        raise RuntimeError(
+            f"btree_gist is installed in schema {existing!r}, not 'public'. "
+            "CREATE EXTENSION IF NOT EXISTS will not move it, and this "
+            "migration will not relocate an extension on its own: an "
+            "extension's schema is part of what other objects depend on. "
+            "Move it deliberately (ALTER EXTENSION btree_gist SET SCHEMA "
+            "public) and re-run. No constraint has been added."
+        )
     op.execute("CREATE EXTENSION IF NOT EXISTS btree_gist SCHEMA public")
     op.execute("SET LOCAL search_path TO turab, public")
 

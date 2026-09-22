@@ -41,6 +41,14 @@ back door, and a test refuses it.
     upgrade head  ⇒  the frozen baseline + the deltas declared in
                      db/gate/migration_deltas.py, with no undeclared difference
 
+**What "no undeclared difference" covers, stated to match the machine.** The
+structural description is `turab`'s objects **plus installed extensions**
+(name, schema and version). Extensions were added to it when `0004` needed
+`btree_gist`: a `turab`-only view could not see an extension at all, which made
+the sentence wider than the check behind it. Anything else outside `turab` —
+privileges, ownership, other schemas, row data — is still **not** covered, and
+is named here rather than implied.
+
 There is deliberately **no general "ignore these objects" list**. Each delta
 names one object and records six things:
 
@@ -68,11 +76,43 @@ baseline" needed no list to read. Now a reviewer must also read the ledger and
 judge each entry. That is the real price of correcting a frozen baseline at
 all, and it is paid deliberately rather than by loosening a check.
 
-**It found a defect on its first real use.** `0004` ran
-`CREATE EXTENSION btree_gist` under `search_path = turab, public`, which
-installed about sixty support functions into `turab`. The head check reported
-every one as undeclared. The extension is now pinned with `SCHEMA public`, and
-the episode is recorded in that revision's docstring rather than tidied away.
+**It found three defects on its first real uses**, each recorded rather than
+tidied away:
+
+1. `0004` ran `CREATE EXTENSION btree_gist` under
+   `search_path = turab, public`, installing about sixty support functions into
+   `turab`. The head check reported every one. Pinned with `SCHEMA public` —
+   and, because `IF NOT EXISTS` does **not** relocate an extension that already
+   exists elsewhere, `0004` now refuses outright when it finds `btree_gist` in
+   another schema, before adding the constraint.
+2. The head check itself compared every section as `(name, definition)`. For
+   constraints that keyed by TABLE and hashed the constraint NAME, so several
+   constraints on one table collapsed into one entry and an added constraint
+   was invisible. Fixed with a per-section identity split that raises on an
+   unclassified section rather than comparing it blindly.
+3. The fingerprint had two blind spots of its own: columns were described by
+   `information_schema.data_type`, so `numeric(14,2)` and `numeric(20,3)` were
+   both "numeric"; and functions were identified by bare name, so an added
+   OVERLOAD hid behind the original. Now `format_type(atttypid, atttypmod)`
+   and `name(identity arguments)`, each with a mutation test that makes the
+   change and asserts it is reported.
+
+### 1b. A claim this policy used to make, corrected
+
+This table previously said that after stamping, `upgrade head` "is a no-op".
+That was true only while every revision after the baseline added DATA. Stamping
+marks `0001`, so the **first** upgrade necessarily applies `0002`, `0003` and
+`0004`. The test behind the claim compared table counts, which none of those
+three changes — so it passed while describing the opposite of what happened.
+
+The accurate statement, and what is now asserted in three steps:
+
+1. after stamping, the version is `0001` and the database carries the **frozen**
+   `enforce_consent_binding` (no `valid_from`);
+2. the first `upgrade head` reaches head and the deltas are visibly applied —
+   the corrected gate, the overlap constraint, and the `REQUEST_CLOSURE` codes;
+3. the **second** upgrade is the real no-op, asserted by an unchanged
+   structural fingerprint rather than by a count.
 
 ## 2. What is mechanically prevented
 
@@ -82,7 +122,7 @@ the episode is recorded in that revision's docstring rather than tidied away.
 | The digest guard being compared against a stale constant | The declared digest is asserted equal to the file's | `test_the_declared_digest_is_the_frozen_one` |
 | Autogenerate proposing a migration that drops the baseline | `env.py` sets `target_metadata = None`, so Alembic refuses `--autogenerate` before writing any revision file | `test_autogenerate_is_refused`, `test_env_declares_no_metadata_to_diff_against` |
 | A second root revision nobody noticed | One head asserted | `test_there_is_exactly_one_head` |
-| A development database invisible to Alembic | `reset_db.sh` stamps the initial revision, so `upgrade head` is a no-op instead of re-applying the baseline onto itself | `test_a_stamped_database_is_already_at_head`, `test_upgrading_a_stamped_database_is_a_no_op`, `test_the_dev_reset_script_stamps` |
+| A development database invisible to Alembic | `reset_db.sh` stamps the **initial** revision, so the baseline is not re-applied onto itself. The first `upgrade head` then applies `0002`–`0004`; the SECOND is the no-op — see the correction below | `test_a_stamped_database_is_already_at_head`, `test_the_first_upgrade_after_stamping_applies_the_later_revisions`, `test_the_dev_reset_script_stamps` |
 | A migration that "runs" but builds a partial schema | The migrated catalog is compared to the static audit's **independent parse** of the same file | `test_the_migrated_catalog_matches_the_static_audit` |
 
 The last row is the one that carries weight. The other checks ask whether the

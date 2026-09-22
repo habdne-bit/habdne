@@ -1,7 +1,12 @@
 # Contract Delta · G3-6 — party–property relations
 
-**Status:** submitted for approval. **No code exists for this path**, and none
-will be written before this Delta is approved.
+**Status:** **revision 2 — the implementation basis**, incorporating the
+decisions taken since revision 1. **No code exists for this path**, and none
+will be written until this revision is re-confirmed. What changed:
+option A ratified (§1); rule **6a adopted**, no longer "proposed" (§6); the
+database backstop now EXISTS as revision `0004`, so §6's declared weakness is
+gone; `include_ended` corrected to the ratified currency predicate (§3.2); and
+the meaning of an omitted or null `valid_from` settled (§5.1).
 **Kind:** a contract **ADDITION**, not a narrowing correction.
 **Baseline:** Handoff v1.0.3 / pack v0.2.3, frozen. `openapi_v0.2.3.yaml` is
 **not modified**, and this is **not** applied through the correction overlay.
@@ -160,7 +165,7 @@ PartyPropertyRelationInput:
       type: string
       enum: [OWNER_DECLARED, BROKER, AGENCY, DEVELOPER, OCCUPANT,
              CONTACT_PERSON, OTHER]
-    valid_from:    { type: [string, "null"], format: date-time }
+    valid_from:    { type: string, format: date-time }   # omissible, never null (§5.1)
     note:          { type: [string, "null"] }
 ```
 
@@ -191,9 +196,23 @@ GET /properties/{property_id}/relations
 | parameters | `property_id`; `include_ended` (query, boolean, default `false`); `Page`, `PageSize` |
 | responses | `200` — `{ items: [PartyPropertyRelation], page, page_size, total }`; `401`, `403`, `404` |
 
-`include_ended=false` returns only relations current at the time of the call
-(`valid_to IS NULL OR valid_to > now()`). Historical rows are never removed, so
-`include_ended=true` returns the full history.
+`include_ended=false` returns only relations **current** at the time of the
+call, using the **ratified currency predicate and no other** — the same one
+`0003` put into `enforce_consent_binding()`:
+
+```sql
+valid_from IS NOT NULL
+AND valid_from <= now()
+AND (valid_to IS NULL OR now() < valid_to)
+```
+
+Revision 1 defined "current" by `valid_to` alone. That was the **same defect as
+G3-7**, written into a second place: a future or unstarted relation would have
+been listed as current while the consent gate refused it, so the list and the
+gate would have disagreed about the same row. One predicate, stated once.
+
+Historical rows are never removed, so `include_ended=true` returns the full
+history.
 
 ### 3.3 `postPropertyRelationEnd` — end validity
 
@@ -300,33 +319,82 @@ Two consequences, stated so neither is discovered later:
 
 ---
 
-## 6. Duplicates and temporal overlap — **a decision required**
+### 5.1 What an omitted or null `valid_from` means — settled
 
-The schema constrains neither. This Delta must settle it rather than leave the
-service to invent a rule, and we put the choice rather than assume it.
+The question the review raised: does omitting `valid_from`, or sending it as
+`null`, deliberately create a relation that is **not current**, or is it set to
+the server's clock?
 
-The question: may the same `(party_id, property_id, relation_code)` have two
-rows whose validity periods overlap?
+**Decision: it is set to the server's clock, and `null` is refused.**
+`PartyPropertyRelationInput` therefore declares
 
-| Option | Rule | Consequence |
-|---|---|---|
-| **6a — forbid overlap** *(proposed)* | at most one **current** row per `(party_id, property_id, relation_code)`; creating a second while one is current is a typed **409** naming the existing relation | "is this party the declared owner right now?" has one answer; re-creating after ending is allowed, so the history of successive periods is expressible |
-| **6b — allow freely** | any number of rows, overlapping or not | never refuses, but "who is the broker now?" can return several rows with no way to choose, and nothing distinguishes a correction from a second genuine relation |
+```yaml
+    valid_from: { type: string, format: date-time }     # omissible, never null
+```
 
-**We propose 6a**, and flag the implementation consequence honestly: the frozen
-schema has **no** unique index or exclusion constraint to enforce it, so unlike
-every other uniqueness rule in this slice, 6a would be enforced **only by the
-service**, under a lock on the parent property row. It is a pre-check with no
-database backstop. That is a genuine weakness of enforcing it at this layer,
-and it is the reason we are stating it rather than burying it: if you prefer
-the rule to have a database guarantee, it needs an index, which is a **schema**
-change and therefore a different and larger decision than this Delta.
+— a plain typed property, not `anyOf [date-time, null]`, so an explicit `null`
+is a field error. When the field is **omitted**, the server writes
+`now()`.
 
-Different `relation_code` values never conflict: a party may be both
-`OWNER_DECLARED` and `CONTACT_PERSON`, and two different parties may hold the
-same `relation_code` on one property (two brokers).
+The reasoning, because either answer is defensible and the wrong one is a trap:
 
----
+- A relation created through an explicit staff command, with no start stated,
+  is being recorded because it is believed to hold **now**. Writing a row that
+  silently fails the currency predicate would create a relation that exists,
+  reads as real in the list, and backs nothing — the most confusing possible
+  outcome.
+- A relation that genuinely starts later is a real case, and it stays
+  expressible: send `valid_from` explicitly with a future date. It is then
+  correctly **not** current until that date, in the list (§3.2) and at the
+  consent gate alike.
+- `NULL` remains possible in the SCHEMA, because the frozen column is nullable
+  and rows may exist from before this operation. Both `0003` and `0004` define
+  what such a row means (refused as not-current; included as `-infinity` in the
+  overlap guard). What this Delta settles is that **this API will never create
+  one**.
+
+A test asserts each half: an omitted `valid_from` yields a row that is current
+immediately, and an explicit future `valid_from` yields one that is not.
+
+## 6. Duplicates and temporal overlap — **DECIDED: 6a, and enforced**
+
+**Rule 6a is adopted**, not proposed: at most one relation may be **current**
+at a time for the same `(party_id, property_id, relation_code)`. Creating a
+second while one is current is a typed **409** naming the existing relation.
+
+Different `relation_code` values never conflict — a party may be both
+`OWNER_DECLARED` and `CONTACT_PERSON` — and two different parties may hold the
+same code on one property, which is how two brokers are represented.
+
+**It has a database backstop.** Revision `0004_relation_overlap_guard`:
+
+```sql
+ALTER TABLE turab.party_property_relations
+  ADD CONSTRAINT party_property_relations_no_overlap EXCLUDE USING gist (
+      party_id WITH =, property_id WITH =, relation_code WITH =,
+      tstzrange(coalesce(valid_from, '-infinity'::timestamptz), valid_to, '[)') WITH &&
+  );
+```
+
+Three things follow, and they replace what revision 1 had to concede:
+
+- The rule holds for **every writer**, not only for callers who go through the
+  command path. Revision 1 had to declare that 6a would be "the one uniqueness
+  rule in the slice with no database backstop"; that sentence is withdrawn.
+- A partial unique index on `WHERE valid_to IS NULL` was rejected: it would
+  stop two open-ended rows but allow an open-ended one to overlap a closed one
+  that has not ended yet — the rule failing on the case it exists for.
+  "Current" is an interval, so the constraint is over intervals.
+- `valid_from IS NULL` is treated as `-infinity` **here**, while the `0003`
+  consent gate **refuses** it. Not a contradiction, and worth stating because
+  it reads like one: `0003` asks "can this relation be shown to be in force?",
+  where an unrecorded start means no; the constraint asks "could these two rows
+  describe the same period?", where a row with no start must be INCLUDED, or a
+  row that cannot back a consent could still sit invisibly under the guard and
+  hide a genuine conflict.
+
+Proven by `tests/test_migration_0004_relation_overlap.py`, including a
+two-connection contention test in which the loser fails with SQLSTATE `23P01`.
 
 ## 7. Idempotency and audit
 
@@ -383,11 +451,15 @@ the authorization tests.
 
 ## 10. What is asked
 
-1. Approval of the three operations as specified, for the next contract
-   package.
-2. A decision on **§6** — 6a as proposed, or 6b.
+1. Re-confirmation of the three operations as specified in this revision, for
+   the next contract package.
+2. Confirmation of **§5.1** — an omitted `valid_from` is set to the server
+   clock and `null` is refused, so this API never creates a relation that is
+   not current.
 3. Confirmation of **§5**: relations remain `DECLARED`, and a verification
    mechanism for them is a separate, later decision.
+
+§6 is no longer a question: 6a is adopted and enforced by `0004`.
 
 Until all three are answered, no code is written for this path, no relation row
 is created, and neither `claims` nor `observations` is repurposed to create one

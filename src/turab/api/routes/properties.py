@@ -53,6 +53,14 @@ class _Body(BaseModel):
 class PropertyCreate(_Body):
     """`PropertyCreate`, field for field.
 
+    **Absent is not the same as `null`.** In the contract only
+    `canonical_location_id` is `anyOf [uuid, null]`; `local_location_detail`,
+    `land_area_m2`, `built_area_m2` and `current_availability` are plain typed
+    properties that may be OMITTED but never sent as `null`. An earlier version
+    typed all five as `| None`, which accepted `{"land_area_m2": null}` — a
+    body the contract does not permit. They use the sentinel shape instead, so
+    an explicit `null` is a field error before anything else runs.
+
     `current_availability` IS accepted here and refused by `PropertyPatch`,
     which is not an inconsistency: the contract declares it on the create body
     and omits it from the patch body. The initial value is stated once, and
@@ -63,12 +71,13 @@ class PropertyCreate(_Body):
     supply_mode: str = Field(pattern=SUPPLY_MODE_PATTERN)
     management_mode: str = Field(pattern=MANAGEMENT_MODE_PATTERN)
     claim_status: str = Field(pattern=CLAIM_STATUS_PATTERN)
+    #: The one field the contract really does allow to be null.
     canonical_location_id: uuid.UUID | None = None
-    local_location_detail: str | None = None
-    land_area_m2: float | None = Field(default=None, gt=0)
-    built_area_m2: float | None = Field(default=None, gt=0)
-    current_availability: str | None = Field(default=None,
-                                             pattern=AVAILABILITY_PATTERN)
+    #: Omissible, never null — hence the sentinel defaults.
+    local_location_detail: str = ""
+    land_area_m2: float = Field(default=0.0, gt=0)
+    built_area_m2: float = Field(default=0.0, gt=0)
+    current_availability: str = Field(default="", pattern=AVAILABILITY_PATTERN)
 
 
 class PropertyPatch(_Body):
@@ -92,26 +101,49 @@ def _channel(command) -> UpdateChannel:
             else UpdateChannel.SELF_SERVICE)
 
 
+#: Declared by the contract as nullable, so `null` is a legitimate value to
+#: send back. Everything else optional is OMITTED when it has no value.
+_NULLABLE_IN_RESPONSE = ("canonical_location_id", "availability_last_confirmed_at")
+
+
 def _view(row) -> dict:
-    return {
+    """`Property` / `OperatorPropertyView`, and nothing beyond them.
+
+    Both are `allOf [PropertyCreate, {...}]`, and `PropertyCreate` is closed
+    (`additionalProperties: false`). Two consequences an earlier version got
+    wrong:
+
+      * an optional NON-nullable field must be **omitted** when it has no
+        value, not emitted as `null` — `null` is not in its declared type;
+      * no key may be added that the schema does not declare. `provenance` was
+        added here and called "additive". A closed schema has no additive
+        space: showing provenance through the API needs a contract addition,
+        which is a decision, not an implementation choice. The rows are still
+        written and still readable in the database.
+    """
+    view: dict = {
         "property_id": str(row["property_id"]),
         "property_type": row["property_type"],
-        "canonical_location_id": (str(row["canonical_location_id"])
-                                  if row["canonical_location_id"] else None),
-        "local_location_detail": row["local_location_detail"],
-        "land_area_m2": float(row["land_area_m2"]) if row["land_area_m2"] is not None else None,
-        "built_area_m2": float(row["built_area_m2"]) if row["built_area_m2"] is not None else None,
-        "current_availability": row["current_availability"],
-        "availability_last_confirmed_at": (
-            row["availability_last_confirmed_at"].isoformat()
-            if row["availability_last_confirmed_at"] else None),
         "supply_mode": row["supply_mode"],
         "management_mode": row["management_mode"],
         "claim_status": row["claim_status"],
         "version": row["version"],
         "created_at": row["created_at"].isoformat(),
         "updated_at": row["updated_at"].isoformat(),
+        "canonical_location_id": (str(row["canonical_location_id"])
+                                  if row["canonical_location_id"] else None),
+        "availability_last_confirmed_at": (
+            row["availability_last_confirmed_at"].isoformat()
+            if row["availability_last_confirmed_at"] else None),
     }
+    if row["local_location_detail"] is not None:
+        view["local_location_detail"] = row["local_location_detail"]
+    for area in ("land_area_m2", "built_area_m2"):
+        if row[area] is not None:
+            view[area] = float(row[area])
+    if row["current_availability"] is not None:
+        view["current_availability"] = row["current_availability"]
+    return view
 
 
 @router.post("/properties", operation_id="postProperties", status_code=201)
@@ -152,10 +184,14 @@ def create_property(request: Request, body: PropertyCreate, command: Command):
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
             canonical_location_id=body.canonical_location_id,
-            local_location_detail=body.local_location_detail,
-            land_area_m2=body.land_area_m2,
-            built_area_m2=body.built_area_m2,
-            current_availability=body.current_availability,
+            # The sentinels mean "not supplied"; the service takes None for
+            # that, and the column default decides. `exclude_unset` cannot be
+            # used here because the sentinel defaults are what the omission
+            # looks like after validation.
+            local_location_detail=body.local_location_detail or None,
+            land_area_m2=body.land_area_m2 or None,
+            built_area_m2=body.built_area_m2 or None,
+            current_availability=body.current_availability or None,
         )
         return 201, _view(row)
 
@@ -234,21 +270,10 @@ def read_property(request: Request, property_id: uuid.UUID, access: Access):
     )
     if not result.authorized:
         return for_denial(result.reason, trace_id_of(request), customer_scoped=False)
-    body = _view(result.row)
-    # Additive, and the point of it: a reader must be able to tell a change the
-    # party made themselves from one a staff member typed, and whether any call
-    # or message was recorded behind it.
-    body["provenance"] = [
-        {
-            "attribute_code": c["attribute_code"],
-            "value": c["claimed_value"],
-            "channel": c["channel"],
-            "recorded_at": c["recorded_at"].isoformat(),
-            "recorded_by_account_id": (str(c["recorded_by_account_id"])
-                                       if c["recorded_by_account_id"] else None),
-            "source_recorded": c["source_recorded"],
-            "verification_level": c["verification_level"],
-        }
-        for c in access.property_provenance(property_id)
-    ]
-    return body
+    # The contracted representation and nothing else: `Property` and
+    # `OperatorPropertyView` are both `allOf [PropertyCreate, ...]` and
+    # `PropertyCreate` is closed, so there is no additive space for a
+    # `provenance` key. The provenance rows are written and remain readable in
+    # the database; exposing them through this operation is a contract
+    # addition that has not been made.
+    return _view(result.row)

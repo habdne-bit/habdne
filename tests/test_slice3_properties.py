@@ -130,13 +130,79 @@ def test_creation_writes_no_party_property_relation(client, ids, engine):
 
 
 def test_creation_records_its_provenance(client, ids, engine):
+    """Read from the DATABASE, not from the response.
+
+    The contracted representations are closed schemas, so provenance is not in
+    them — exposing it needs a contract addition. What must still be true is
+    that the rows are WRITTEN, and that is what this asserts.
+    """
     pid = _new_property(client, ids, "prov")
-    r = client.get(f"/properties/{pid}", headers=staff(ids))
-    assert r.status_code == 200, r.text
-    codes = {p["attribute_code"] for p in r.json()["provenance"]}
+    with Session(bind=engine, future=True) as s:
+        rows = s.execute(
+            text("""SELECT c.attribute_code, c.extracted_by AS channel
+                      FROM turab.claims c WHERE c.property_id = :p"""),
+            {"p": uuid.UUID(pid)},
+        ).mappings().all()
+    codes = {r["attribute_code"] for r in rows}
     assert "property_type" in codes and "supply_mode" in codes
-    channels = {p["channel"] for p in r.json()["provenance"]}
-    assert channels == {"SELF_SERVICE"}, "the customer's own submission"
+    assert {r["channel"] for r in rows} == {"SELF_SERVICE"}
+
+
+def test_the_response_carries_no_undeclared_key(client, ids):
+    """`Property` and `OperatorPropertyView` are `allOf [PropertyCreate, ...]`
+    and `PropertyCreate` is closed, so there is no additive space.
+
+    An earlier version added `provenance` to the staff read and described it as
+    additive. This test is what stops that returning.
+    """
+    allowed = {
+        "property_id", "property_type", "canonical_location_id",
+        "local_location_detail", "land_area_m2", "built_area_m2",
+        "current_availability", "supply_mode", "management_mode",
+        "claim_status", "availability_last_confirmed_at", "version",
+        "created_at", "updated_at",
+    }
+    pid = _new_property(client, ids, "closed")
+    for r in (client.get(f"/properties/{pid}", headers=staff(ids)),
+              client.get(f"/me/properties/{pid}", headers=cust(ids))):
+        assert r.status_code == 200, r.text
+        extra = set(r.json()) - allowed
+        assert not extra, f"undeclared keys in the response: {sorted(extra)}"
+
+
+@pytest.mark.parametrize("field", ["local_location_detail", "land_area_m2",
+                                   "built_area_m2", "current_availability"])
+def test_create_refuses_an_explicit_null_for_an_omissible_field(client, ids, field):
+    """Absent is not `null`. Only `canonical_location_id` is declared
+    `anyOf [uuid, null]`; these four are plain typed properties that may be
+    omitted and never sent as null."""
+    r = client.post("/properties", json=body(**{field: None}),
+                    headers={**cust(ids), "Idempotency-Key": f"s3-null-{field}"})
+    assert r.status_code == 422, r.text
+
+
+def test_create_accepts_a_null_canonical_location(client, ids):
+    """The one field where null IS declared, so the refusal above is scoped
+    rather than a blanket rejection of null."""
+    r = client.post("/properties", json=body(canonical_location_id=None),
+                    headers={**cust(ids), "Idempotency-Key": "s3-null-loc"})
+    assert r.status_code == 201, r.text
+
+
+def test_an_omitted_optional_field_is_absent_from_the_response(client, ids):
+    """Not `null` — absent. `null` is not in the declared type of these
+    fields, so emitting it would be as wrong as accepting it."""
+    r = client.post("/properties",
+                    json={"property_type": "LAND", "supply_mode": "PUBLIC",
+                          "management_mode": "SELF_MANAGED", "claim_status": "CLAIMED"},
+                    headers={**cust(ids), "Idempotency-Key": "s3-omitted"})
+    assert r.status_code == 201, r.text
+    got = r.json()
+    assert "land_area_m2" not in got and "built_area_m2" not in got
+    assert "local_location_detail" not in got
+    # declared nullable, so these two ARE present and may be null
+    assert "canonical_location_id" in got
+    assert "availability_last_confirmed_at" in got
 
 
 def test_a_property_claim_is_attributed_to_no_party(client, ids, engine):
@@ -405,3 +471,101 @@ def test_on_the_staff_path_an_unknown_property_is_403(client, ids):
     r = client.get(f"/properties/{uuid.uuid4()}", headers=staff(ids))
     assert r.status_code == 403, r.text
     assert r.json()["code"] == "OBJECT_NOT_AUTHORIZED"
+
+
+# --- R-S3-P02: an unknown location is an input error, not a 500 ------------
+
+def test_creating_with_an_unknown_location_is_a_typed_4xx(client, ids):
+    """A well-formed UUID matching no location reached
+    `properties_canonical_location_id_fkey` and surfaced as 500."""
+    r = client.post("/properties", json=body(canonical_location_id=str(uuid.uuid4())),
+                    headers={**cust(ids), "Idempotency-Key": "s3-fk-create"})
+    assert r.status_code == 422, r.text
+    assert r.json()["code"] == "VALIDATION_FAILED"
+    assert "INTERNAL_ERROR" not in r.text
+    # and no raw database text leaks out
+    for leak in ("fkey", "psycopg", "IntegrityError", "DETAIL:", "turab.properties"):
+        assert leak not in r.text, f"database internals leaked: {leak}"
+
+
+def test_the_refused_creation_consumes_no_idempotency_key(client, ids, engine):
+    k = "s3-fk-retry"
+    bad = client.post("/properties", json=body(canonical_location_id=str(uuid.uuid4())),
+                      headers={**cust(ids), "Idempotency-Key": k})
+    assert bad.status_code == 422, bad.text
+    with Session(bind=engine, future=True) as s:
+        used = s.execute(
+            text("SELECT count(*) FROM turab.idempotency_records "
+                 "WHERE idempotency_key = :k"), {"k": k},
+        ).scalar_one()
+    assert used == 0, "a refused command must leave its key free"
+    good = client.post("/properties", json=body(),
+                       headers={**cust(ids), "Idempotency-Key": k})
+    assert good.status_code == 201, good.text
+
+
+def test_patching_to_an_unknown_location_changes_nothing(client, ids, engine):
+    """The refusal must leave the row, the version AND the trail untouched.
+
+    **On idempotency keys here.** The review asked for "the refused PATCH
+    consumes no key". `patchPropertiesPropertyId` has
+    `requires_idempotency = False` — the contract declares `If-Match-Version`
+    for the four PATCH operations instead, because a version-checked update is
+    already idempotent: a replay carries a version that is no longer current.
+    So this command records no key at all, and asserting one is not consumed
+    would be asserting nothing. The key guarantee is proven where it applies,
+    on POST, by the test above.
+
+    (A first version of this test did assert it — and passed a key that
+    `_new_property` had already used for the creation, so it was measuring its
+    own helper. The same trap as `s2-tz-naive` in Slice 2; caught the same way,
+    by the assertion failing for the wrong reason.)
+    """
+    pid = _new_property(client, ids, "fk-patch")
+    before = client.get(f"/properties/{pid}", headers=staff(ids)).json()
+    with Session(bind=engine, future=True) as s:
+        claims_before = s.execute(
+            text("SELECT count(*) FROM turab.claims WHERE property_id = :p"),
+            {"p": uuid.UUID(pid)},
+        ).scalar_one()
+
+    r = client.patch(f"/properties/{pid}",
+                     json={"canonical_location_id": str(uuid.uuid4())},
+                     headers={**cust(ids), "If-Match-Version": str(before["version"])})
+    assert r.status_code == 422, r.text
+    assert "INTERNAL_ERROR" not in r.text
+    for leak in ("fkey", "psycopg", "IntegrityError", "DETAIL:"):
+        assert leak not in r.text, f"database internals leaked: {leak}"
+
+    after = client.get(f"/properties/{pid}", headers=staff(ids)).json()
+    assert after == before, "a refused patch must change nothing, version included"
+    with Session(bind=engine, future=True) as s:
+        claims_after = s.execute(
+            text("SELECT count(*) FROM turab.claims WHERE property_id = :p"),
+            {"p": uuid.UUID(pid)},
+        ).scalar_one()
+    assert claims_after == claims_before, "a refused patch must record no provenance"
+
+
+def test_the_patch_command_declares_no_idempotency_key(client, ids):
+    """Pins the fact the test above relies on, so it cannot drift silently.
+
+    If `patchPropertiesPropertyId` ever starts requiring a key, this fails and
+    the docstring above stops being true at the same moment.
+    """
+    from turab.auth.contract import build_policy_table
+
+    policies = build_policy_table()
+    assert policies.get("patchPropertiesPropertyId").requires_idempotency is False
+    assert policies.get("postProperties").requires_idempotency is True
+
+
+def test_a_known_location_still_works(client, ids, engine):
+    """The scoping test: the refusal must be about the missing row, not about
+    the field being present at all."""
+    with Session(bind=engine, future=True) as s:
+        loc = s.execute(text("SELECT location_id FROM turab.locations LIMIT 1")).scalar_one()
+    r = client.post("/properties", json=body(canonical_location_id=str(loc)),
+                    headers={**cust(ids), "Idempotency-Key": "s3-fk-ok"})
+    assert r.status_code == 201, r.text
+    assert r.json()["canonical_location_id"] == str(loc)

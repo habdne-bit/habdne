@@ -356,7 +356,7 @@ RULES: tuple[Rule, ...] = (
     Rule("R14.4 stamp",
          "A database built from the frozen SQL is stamped, so upgrade is a no-op",
          ("test_a_stamped_database_is_already_at_head",
-          "test_upgrading_a_stamped_database_is_a_no_op",
+          "test_the_first_upgrade_after_stamping_applies_the_later_revisions",
           "test_the_dev_reset_script_stamps_through_the_guard")),
     # --- CORRECTION-001 / decision D7 ---------------------------------------
     Rule("D7 / CORRECTION-001",
@@ -593,6 +593,35 @@ RULES: tuple[Rule, ...] = (
          ("test_0003_is_re_runnable",
           "test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade",
           "test_0003_refuses_to_downgrade")),
+    Rule("0004 under contention",
+         "Two concurrent overlapping inserts leave exactly one row; the loser "
+         "fails with SQLSTATE 23P01, on two connections with the wait witnessed",
+         ("test_two_concurrent_overlapping_inserts_leave_exactly_one_row",)),
+    Rule("0004 / btree_gist placement",
+         "The extension is in public, and a pre-existing one elsewhere is "
+         "refused before the constraint is added",
+         ("test_btree_gist_is_installed_in_public",
+          "test_0004_refuses_a_btree_gist_installed_outside_public")),
+    Rule("R14.7 / fingerprint coverage",
+         "The structural check sees a column precision change and an added "
+         "function overload, which a type-name or bare-name view would miss",
+         ("test_the_detector_catches_a_column_precision_change",
+          "test_the_detector_catches_an_added_function_overload")),
+    Rule("R-S3-P01 contract fidelity",
+         "PropertyCreate refuses null for its omissible fields, the response "
+         "omits them when absent, and carries no undeclared key",
+         ("test_create_refuses_an_explicit_null_for_an_omissible_field",
+          "test_create_accepts_a_null_canonical_location",
+          "test_an_omitted_optional_field_is_absent_from_the_response",
+          "test_the_response_carries_no_undeclared_key")),
+    Rule("R-S3-P02 unknown location",
+         "An unknown canonical_location_id is a typed 4xx, not a 500, and the "
+         "refusal consumes no key and changes no row, version or trail",
+         ("test_creating_with_an_unknown_location_is_a_typed_4xx",
+          "test_the_refused_creation_consumes_no_idempotency_key",
+          "test_patching_to_an_unknown_location_changes_nothing",
+          "test_the_patch_command_declares_no_idempotency_key",
+          "test_a_known_location_still_works")),
     Rule("G3-6 §6 / 0004",
          "At most one current relation per (party, property, relation_code), "
          "enforced in the database rather than only in the service",

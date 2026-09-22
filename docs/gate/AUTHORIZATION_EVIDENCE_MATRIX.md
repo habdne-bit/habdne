@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **138**
-- Distinct tests cited: **391**
-- Suite total: **536/536** test cases passing (445 distinct test functions)
+- Rules and invariants covered: **143**
+- Distinct tests cited: **405**
+- Suite total: **553/553** test cases passing (459 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -101,7 +101,7 @@ matrix, because it reads as assurance.
 | `R14.4 / R14.7` | The migrated catalog agrees with the static audit's own parse | `test_the_migrated_catalog_matches_the_static_audit` | PASS |
 | `R14.6` | A baseline that is not the frozen one refuses to migrate | `test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one`<br>`test_the_declared_digest_is_the_frozen_one` | PASS |
 | `R14.4 / R14.5` | Autogenerate is refused; there is no metadata to diff the baseline against | `test_autogenerate_is_refused`<br>`test_env_declares_no_metadata_to_diff_against`<br>`test_there_is_no_downgrade_from_the_baseline` | PASS |
-| `R14.4 stamp` | A database built from the frozen SQL is stamped, so upgrade is a no-op | `test_a_stamped_database_is_already_at_head`<br>`test_upgrading_a_stamped_database_is_a_no_op`<br>`test_the_dev_reset_script_stamps_through_the_guard` | PASS |
+| `R14.4 stamp` | A database built from the frozen SQL is stamped, so upgrade is a no-op | `test_a_stamped_database_is_already_at_head`<br>`test_the_first_upgrade_after_stamping_applies_the_later_revisions`<br>`test_the_dev_reset_script_stamps_through_the_guard` | PASS |
 | `D7 / CORRECTION-001` | POST /parties succeeds for ADMIN and OPERATOR only | `test_an_authorized_staff_role_creates_a_party`<br>`test_a_customer_is_refused_403`<br>`test_an_unauthenticated_caller_is_refused_401`<br>`test_a_reviewer_is_also_refused` | PASS |
 | `D7 acceptance` | A refusal creates no party, no account and no role, and frees its key | `test_a_refusal_creates_no_party_no_account_and_no_role`<br>`test_a_refusal_claims_no_idempotency_record_in_its_own_scope`<br>`test_the_refusal_is_audited` | PASS |
 | `D7 acceptance` | Idempotency and the customer's own REQUEST path are unaffected | `test_idempotency_is_unchanged_for_an_authorized_caller`<br>`test_the_key_is_still_required`<br>`test_the_customer_may_still_create_their_own_request`<br>`test_no_other_operation_lost_a_role` | PASS |
@@ -140,6 +140,11 @@ matrix, because it reads as assurance.
 | `R14.4-R14.7 / baseline guarantee` | Revision 0001 is structurally identical to the frozen schema, with no delta permitted against it | `test_revision_0001_is_structurally_identical_to_the_frozen_schema`<br>`test_no_delta_is_ever_declared_against_the_baseline_revision` | PASS |
 | `R14.4-R14.7 / head guarantee` | head is the frozen baseline plus named, digested, approved deltas and no undeclared difference | `test_head_is_the_baseline_plus_exactly_the_declared_deltas`<br>`test_the_delta_check_catches_an_undeclared_structural_change`<br>`test_every_delta_names_a_revision_object_reason_and_proving_test`<br>`test_the_only_declared_delta_for_0003_is_the_consent_binding_function` | PASS |
 | `0003 migration safety` | Re-running is safe, stepwise equals direct, and downgrade is refused because reverting restores the weaker gate | `test_0003_is_re_runnable`<br>`test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade`<br>`test_0003_refuses_to_downgrade` | PASS |
+| `0004 under contention` | Two concurrent overlapping inserts leave exactly one row; the loser fails with SQLSTATE 23P01, on two connections with the wait witnessed | `test_two_concurrent_overlapping_inserts_leave_exactly_one_row` | PASS |
+| `0004 / btree_gist placement` | The extension is in public, and a pre-existing one elsewhere is refused before the constraint is added | `test_btree_gist_is_installed_in_public`<br>`test_0004_refuses_a_btree_gist_installed_outside_public` | PASS |
+| `R14.7 / fingerprint coverage` | The structural check sees a column precision change and an added function overload, which a type-name or bare-name view would miss | `test_the_detector_catches_a_column_precision_change`<br>`test_the_detector_catches_an_added_function_overload` | PASS |
+| `R-S3-P01 contract fidelity` | PropertyCreate refuses null for its omissible fields, the response omits them when absent, and carries no undeclared key | `test_create_refuses_an_explicit_null_for_an_omissible_field`<br>`test_create_accepts_a_null_canonical_location`<br>`test_an_omitted_optional_field_is_absent_from_the_response`<br>`test_the_response_carries_no_undeclared_key` | PASS |
+| `R-S3-P02 unknown location` | An unknown canonical_location_id is a typed 4xx, not a 500, and the refusal consumes no key and changes no row, version or trail | `test_creating_with_an_unknown_location_is_a_typed_4xx`<br>`test_the_refused_creation_consumes_no_idempotency_key`<br>`test_patching_to_an_unknown_location_changes_nothing`<br>`test_the_patch_command_declares_no_idempotency_key`<br>`test_a_known_location_still_works` | PASS |
 | `G3-6 §6 / 0004` | At most one current relation per (party, property, relation_code), enforced in the database rather than only in the service | `test_two_overlapping_relations_for_one_triple_are_refused`<br>`test_a_relation_resumed_after_the_previous_one_ended_is_allowed`<br>`test_a_different_relation_code_never_conflicts`<br>`test_a_different_party_never_conflicts`<br>`test_a_relation_with_no_start_still_participates_in_the_guard`<br>`test_the_guard_is_a_database_constraint_not_a_service_check` | PASS |
 | `S3-1 PROPERTY create` | A customer creates a SELF_MANAGED property; assisted records are staff-created and UNCLAIMED; an incoherent management pair is refused | `test_a_customer_creates_a_self_managed_property`<br>`test_a_customer_cannot_create_an_assisted_property`<br>`test_staff_create_an_assisted_unclaimed_property`<br>`test_an_incoherent_management_pair_is_refused` | PASS |
 | `S3-1 / G3-6` | No party-property relation is inferred from creating a property, and a property observation names no party | `test_creation_writes_no_party_property_relation`<br>`test_a_property_claim_is_attributed_to_no_party` | PASS |

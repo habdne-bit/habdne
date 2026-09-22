@@ -1,7 +1,21 @@
 # Slice 3 — PROPERTY / OFFER / SOURCE / Truth Layer / Identity Lite
-## Implementation plan — **revision 3**
+## Implementation plan — **revision 5**
 
-**Status:** **steps 1–8 authorised**; G3-6 awaits its Contract Delta.
+**Status:** steps 1–8 authorised. Step 1 (PROPERTY) implemented and under
+review. Migrations `0003` (G3-7) and `0004` (relation overlap) implemented.
+G3-6 awaits re-confirmation of its Contract Delta revision 2.
+
+**Revision history**, because a file labelled `rev4` that still said
+"revision 3" inside was reported in review — the label and the content must
+agree, and the way to keep them agreeing is to keep the history here:
+
+| rev | commit | what changed |
+|---|---|---|
+| 1 | `c0e6ed5` | first plan, 19 operations |
+| 2 | `3447a7d` | 22 operations; G3-6 raised; contention claim first stated |
+| 3 | `37b7eb6` | steps 1–8 authorised; G3-6 decided (option A); contention claim corrected in four places |
+| 4 | `0ea6999` | G3-7 recorded; G3-6 reachability wording made precise |
+| 5 | this commit | `0003` and `0004` implemented, so G3-7 is RESOLVED and G3-6 §6 has its database backstop; step 1 findings R-S3-P01/P02 corrected |
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:127–166`.
 **Predecessor:** Slice 2, closed within its agreed scope at `94639a6`.
@@ -593,7 +607,14 @@ The public list is **not** affected: its consent binds to the **offer**, whose
 branch of the trigger checks `property_offers.party_id`. But this makes G3-6 a
 blocking dependency, not only a missing deliverable.
 
-### 4.4a G3-7 · the same gate ignores `valid_from` — **NEW, BLOCKING**
+### 4.4a G3-7 · the same gate ignored `valid_from` — **RESOLVED in `0003`**
+
+Implemented as `0003_consent_relation_currency` with the ratified predicate.
+See `docs/gate/G3-7_consent_binding_relation_currency.md` §11 for what was
+decided and the ten proofs. The analysis that follows is kept as it was
+submitted, because the reasoning is what justified the migration.
+
+
 
 RFC-001 R4.6 defines relation currency as `valid_from <= now() < valid_to` and
 says it governs **use 2, which is `enforce_consent_binding()` by name**. The

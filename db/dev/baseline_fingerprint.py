@@ -16,14 +16,17 @@ built.
 
 Covered, as normalised text straight from the catalog:
 
-  * every column: table, name, ordinal, type, nullability, default;
+  * every column: table, name, ordinal, FULL type including its modifier
+    (`numeric(14,2)`, not just `numeric`), nullability, default;
   * every constraint: `pg_get_constraintdef`, so check expressions, foreign
     key targets and delete rules are all inside the hash;
   * every index: `pg_get_indexdef`;
   * every trigger: `pg_get_triggerdef`, which carries timing, events and the
     function it calls;
   * every function: `pg_get_functiondef`, which carries the BODY — so a
-    changed trigger implementation changes the fingerprint;
+    changed trigger implementation changes the fingerprint. Identity is
+    `name(identity arguments)`, so an added OVERLOAD is a new object rather
+    than one that hides behind the original;
   * every enum type: its labels, in order.
 
 NOT covered, and deliberately named rather than implied:
@@ -31,7 +34,10 @@ NOT covered, and deliberately named rather than implied:
   * row data of any kind, including the master seed and `schema_metadata`;
   * privileges, ownership, row-level security and tablespaces;
   * comments, and the physical ordering of anything;
-  * anything outside the `turab` schema, and `alembic_version` wherever it
+  * anything outside the `turab` schema EXCEPT installed extensions, which
+    are listed by name, schema and version because a migration can install one
+    and a `turab`-only view would not see it;
+  * `alembic_version` wherever it
     lives. It exists in a migrated or stamped database and not in a freshly
     loaded one, so including it would make every comparison fail for the one
     reason that carries no information. `env.py` pins it to `public`; the
@@ -55,13 +61,24 @@ SCHEMA = "turab"
 EXCLUDED_TABLES = ("alembic_version",)
 
 _QUERIES: dict[str, str] = {
+    # `information_schema.data_type` reports the base type only, so
+    # numeric(14,2) and numeric(20,3) are both "numeric" and a precision change
+    # was invisible. `format_type(atttypid, atttypmod)` carries the modifier,
+    # which is the whole point of hashing the definition rather than the name.
     "columns": """
-        SELECT table_name, column_name, ordinal_position, data_type,
-               is_nullable, coalesce(column_default, '')
-          FROM information_schema.columns
-         WHERE table_schema = :schema
-           AND table_name <> ALL(:excluded)
-         ORDER BY table_name, ordinal_position
+        SELECT c.relname, a.attname, a.attnum::text,
+               format_type(a.atttypid, a.atttypmod),
+               CASE WHEN a.attnotnull THEN 'NO' ELSE 'YES' END,
+               coalesce(pg_get_expr(d.adbin, d.adrelid), '')
+          FROM pg_attribute a
+          JOIN pg_class c ON c.oid = a.attrelid
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+         WHERE n.nspname = :schema
+           AND c.relkind IN ('r', 'p', 'v', 'm')
+           AND a.attnum > 0 AND NOT a.attisdropped
+           AND c.relname <> ALL(:excluded)
+         ORDER BY c.relname, a.attnum
     """,
     "constraints": """
         SELECT c.conrelid::regclass::text, c.conname,
@@ -86,12 +103,28 @@ _QUERIES: dict[str, str] = {
          WHERE n.nspname = :schema AND NOT t.tgisinternal
          ORDER BY 1, 2
     """,
+    # Identity is name + ARGUMENTS, not name alone. PostgreSQL allows
+    # overloads, and a check keyed by bare name collapses them: a new overload
+    # would sit on top of the original in a dict and neither would be
+    # reported. `pg_get_function_identity_arguments` is what distinguishes
+    # them, and it is part of the object's identity rather than its body.
     "functions": """
-        SELECT p.proname, pg_get_functiondef(p.oid)
+        SELECT p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
+               pg_get_functiondef(p.oid)
           FROM pg_proc p
           JOIN pg_namespace n ON n.oid = p.pronamespace
          WHERE n.nspname = :schema
          ORDER BY 1, 2
+    """,
+    # Extensions live outside `turab`, so nothing below the `turab` filter can
+    # see them — which made "no undeclared difference" a wider claim than the
+    # machine behind it. `btree_gist` (revision 0004) is exactly such a case.
+    "extensions": """
+        SELECT e.extname, n.nspname, e.extversion
+          FROM pg_extension e
+          JOIN pg_namespace n ON n.oid = e.extnamespace
+         WHERE e.extname <> 'plpgsql'
+         ORDER BY 1
     """,
     "enums": """
         SELECT t.typname, e.enumlabel, e.enumsortorder

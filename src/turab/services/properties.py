@@ -54,6 +54,12 @@ PATCHABLE = frozenset({
 CREATE_ONLY = frozenset({"current_availability", "supply_mode",
                          "management_mode", "claim_status"})
 
+#: The one foreign key an API caller can violate with a well-formed body.
+#: `created_by_account_id` is not in this map: it comes from the authenticated
+#: subject, never from the request, so a violation there would be a real fault
+#: and must keep surfacing as one rather than being reported as bad input.
+LOCATION_FK = "properties_canonical_location_id_fkey"
+
 _CASTS = {
     "property_type": "turab.property_type",
     "current_availability": "turab.availability_status",
@@ -93,6 +99,22 @@ class InvalidManagementCombination(PropertyError):
         )
 
 
+class UnknownLocation(PropertyError):
+    """`canonical_location_id` names a location that does not exist.
+
+    A well-formed UUID that matches no row reached
+    `properties_canonical_location_id_fkey` and surfaced as a 500. It is an
+    input error and is reported as one — the same lesson as R-S2-03, applied
+    to a foreign key rather than a unique index.
+    """
+
+    def __init__(self, location_id) -> None:
+        super().__init__(
+            "VALIDATION_FAILED",
+            f"canonical_location_id {location_id} is not a known location",
+        )
+
+
 class NotPatchable(PropertyError):
     """Names the field AND why, because 'unknown field' would be misleading
     for `current_availability`, which is a real column reached another way."""
@@ -106,6 +128,30 @@ class NotPatchable(PropertyError):
                        "the confirmed value explicitly and stamps when it was "
                        "confirmed")
         super().__init__("VALIDATION_FAILED", detail)
+
+
+def _guarded(session: Session, run, *, location_id):
+    """Run a write inside a SAVEPOINT and map exactly one named constraint.
+
+    A SAVEPOINT is what makes catching it safe: without one the failed
+    statement poisons the whole transaction, so the caller could not continue
+    to a clean rollback of just this work. ONLY the location foreign key is
+    mapped; every other database error propagates unchanged, because turning
+    all of them into 4xx would hide real faults.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    savepoint = session.begin_nested()
+    try:
+        result = run()
+        savepoint.commit()
+        return result
+    except IntegrityError as exc:
+        savepoint.rollback()
+        constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", "")
+        if constraint == LOCATION_FK:
+            raise UnknownLocation(location_id) from exc
+        raise
 
 
 def _row(
@@ -180,11 +226,15 @@ def create_property(
     values = ", ".join(
         f"CAST(:{c} AS {_CASTS[c]})" if c in _CASTS else f":{c}" for c in columns
     )
-    property_id = session.execute(
-        text(f"INSERT INTO turab.properties ({names}) VALUES ({values}) "
-             "RETURNING property_id"),
-        columns,
-    ).scalar_one()
+    property_id = _guarded(
+        session,
+        lambda: session.execute(
+            text(f"INSERT INTO turab.properties ({names}) VALUES ({values}) "
+                 "RETURNING property_id"),
+            columns,
+        ).scalar_one(),
+        location_id=columns.get("canonical_location_id"),
+    )
 
     # The creation itself is provenance: it records what was asserted about a
     # physical thing, by whom, and through which channel. `party_id` is NULL
@@ -236,10 +286,14 @@ def patch_property(
         f"{c} = CAST(:{c} AS {_CASTS[c]})" if c in _CASTS else f"{c} = :{c}"
         for c in changes
     )
-    session.execute(
-        text(f"UPDATE turab.properties SET {assignments} "
-             "WHERE property_id = :property_id"),
-        {**changes, "property_id": property_id},
+    _guarded(
+        session,
+        lambda: session.execute(
+            text(f"UPDATE turab.properties SET {assignments} "
+                 "WHERE property_id = :property_id"),
+            {**changes, "property_id": property_id},
+        ),
+        location_id=changes.get("canonical_location_id"),
     )
     provenance.record(
         session,

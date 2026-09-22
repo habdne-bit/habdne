@@ -19,12 +19,31 @@ docs/gate/SLICE_3_PLAN.md
   rev 4  0ea6999  1d25a53c7660f27fda26a6b82cea5385723b2fe3335c9e29e32d928408d77cef
                   (adds G3-7 at 4.4a; adopts the reviewer's precise
                    wording of the G3-6 reachability claim)
+  rev 4  2e3d704  6ae17d0384e8fa6496060c4a0aed4be4622fe8a87ab47c4c36ed00adb4a72fa5
+                  (SAME rev label, DIFFERENT content: it still said
+                   "revision 3" inside and described 0003 as not started.
+                   Reported in review. The label and the content must agree,
+                   so a revision history now lives in the plan itself.)
+  rev 5  PENDING  8ae61fe538b585cdef2c8f84c42ac857e8aeacd115e4bdeb5144a58faf1175a9
 
 docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
 ---------------------------------------------------------
   rev 1  37b7eb6  be52322fda7e3ce9f210c091a00212401c25e2b5e420f69ca47c8a72e18a321d
   rev 2  0ea6999  4ca90800ceb916c68884a7dd98a61457517e987f2badb10653de13e938991ee4
+  rev 3  PENDING  17b4935ab15fbe6790b69a53167ed5b3a763c9aa39e8d534be314eadbc91e496
+                  (implementation basis: 6a adopted and backstopped by 0004,
+                   include_ended corrected, valid_from semantics settled)
 
 docs/gate/G3-7_consent_binding_relation_currency.md
 ---------------------------------------------------
   rev 1  0ea6999  f90af80a4f5c7e3b33aff6e52e4568f72838fe2d1e8bc24f76521b2dd445f571
+  rev 2  2e3d704  e5a774b4f0c4fa2d78ec45f82cc35a21dc0f9fab27cd608a6e56284ece33b035
+                  (RESOLVED; not recorded here at the time — a gap the review
+                   caught, and the reason every delivered revision is listed)
+                  UNCHANGED this round — no rev 3. Listing one would have
+                  claimed a revision that does not exist; the digests are
+                  identical, which is how it was caught.
+
+docs/gate/MIGRATION_POLICY.md
+-----------------------------
+  rev 2  PENDING  176839555f03aa2b958fba17d588af2f9d2022ec247e2991d58e5ab190b087b6

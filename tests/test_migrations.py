@@ -279,24 +279,60 @@ def test_a_stamped_database_is_already_at_head(stamped):
             == BASELINE, "stamping marks the BASELINE, not the head"
 
 
-def test_upgrading_a_stamped_database_is_a_no_op(stamped):
-    """The whole point of stamping: the baseline is not applied twice."""
-    engine, url = stamped
-    with engine.connect() as c:
-        before = c.execute(
-            text("SELECT count(*) FROM information_schema.tables "
-                 "WHERE table_schema='turab'")
-        ).scalar_one()
+def test_the_first_upgrade_after_stamping_applies_the_later_revisions(stamped):
+    """**Corrects a claim this file used to make.**
 
+    The old test compared TABLE COUNTS before and after the first
+    `upgrade head` on a stamped database and called the result a no-op. That
+    was true only while every revision after the baseline added DATA. Stamping
+    marks `0001`, so the first upgrade necessarily applies `0002`, `0003` and
+    `0004` — and a table count cannot see any of them, so the test passed
+    while describing the opposite of what happened.
+
+    Three assertions now, in the order they actually occur.
+    """
+    engine, url = stamped
+
+    # 1. after stamping the database is at the BASELINE, not at head
+    with engine.connect() as c:
+        assert c.execute(
+            text("SELECT version_num FROM alembic_version")).scalar_one() == BASELINE
+        gate_before = c.execute(
+            text("""SELECT pg_get_functiondef(p.oid)
+                      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                     WHERE n.nspname='turab' AND p.proname='enforce_consent_binding'""")
+        ).scalar_one()
+    assert "valid_from" not in gate_before, (
+        "a stamped database carries the FROZEN function, before 0003")
+
+    # 2. the first upgrade reaches head and the deltas are visibly applied
     result = _alembic("upgrade", "head", env_extra={"TURAB_DATABASE_URL": url})
     assert result.returncode == 0, result.stderr
-
     with engine.connect() as c:
-        after = c.execute(
-            text("SELECT count(*) FROM information_schema.tables "
-                 "WHERE table_schema='turab'")
+        assert c.execute(
+            text("SELECT version_num FROM alembic_version")).scalar_one() == HEAD
+        gate_after = c.execute(
+            text("""SELECT pg_get_functiondef(p.oid)
+                      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                     WHERE n.nspname='turab' AND p.proname='enforce_consent_binding'""")
         ).scalar_one()
-    assert after == before > 0
+        overlap = c.execute(text(
+            "SELECT count(*) FROM pg_constraint "
+            "WHERE conname='party_property_relations_no_overlap'")).scalar_one()
+        reasons = c.execute(text(
+            "SELECT count(*) FROM turab.reason_codes "
+            "WHERE category='REQUEST_CLOSURE'")).scalar_one()
+        after_first = fingerprint(c)
+    assert "valid_from IS NOT NULL" in gate_after, "0003 was not applied"
+    assert overlap == 1, "0004 was not applied"
+    assert reasons == 3, "0002 was not applied"
+
+    # 3. the SECOND upgrade is the real no-op — same fingerprint, byte for byte
+    again = _alembic("upgrade", "head", env_extra={"TURAB_DATABASE_URL": url})
+    assert again.returncode == 0, again.stderr
+    with engine.connect() as c:
+        assert fingerprint(c) == after_first, (
+            "a second upgrade changed the catalog; it must be a no-op")
 
 
 def test_the_dev_reset_script_stamps_through_the_guard(stamped):
@@ -474,7 +510,7 @@ def test_the_only_declared_delta_for_0003_is_the_consent_binding_function():
     deltas = for_revision("0003_consent_relation_currency")
     assert len(deltas) == 1, deltas
     assert deltas[0].section == "functions"
-    assert deltas[0].object_name == "enforce_consent_binding"
+    assert deltas[0].object_name == "enforce_consent_binding()"
 
 
 def test_the_fingerprint_notices_a_changed_function_body(reference):
@@ -714,7 +750,125 @@ def test_the_delta_check_catches_an_undeclared_structural_change(migrated, refer
             for name in set(a) | set(b):
                 if a.get(name) != b.get(name) and (section, name) not in declared:
                     undeclared.append((section, name))
-        assert ("functions", "turab_undeclared_probe") in undeclared, undeclared
+        assert ("functions", "turab_undeclared_probe()") in undeclared, undeclared
     finally:
         with migrated.begin() as w:
             w.execute(text("DROP FUNCTION IF EXISTS turab.turab_undeclared_probe()"))
+
+
+# --- the detector's own blind spots, closed and proven ---------------------
+
+def _undeclared(migrated, reference):
+    """Every structural difference not covered by a declared delta."""
+    with migrated.connect() as m, reference.connect() as r:
+        got, want = describe(m), describe(r)
+    declared = {(d.section, d.object_name) for d in DELTAS}
+    out = []
+    for section in set(got) | set(want):
+        a = dict(split_row(section, row) for row in want.get(section, []))
+        b = dict(split_row(section, row) for row in got.get(section, []))
+        for name in set(a) | set(b):
+            if a.get(name) != b.get(name) and (section, name) not in declared:
+                out.append((section, name))
+    return out
+
+
+def test_the_detector_catches_a_column_precision_change(migrated, reference):
+    """`information_schema.data_type` reports "numeric" for both
+    `numeric(14,2)` and `numeric(20,3)`, so a precision change was invisible.
+
+    `format_type(atttypid, atttypmod)` carries the modifier. Asserted by
+    actually making the change, because the previous version of this check
+    would have passed this test while missing the change.
+    """
+    with migrated.begin() as w:
+        w.execute(text("ALTER TABLE turab.properties "
+                       "ALTER COLUMN land_area_m2 TYPE numeric(20,3)"))
+    try:
+        found = _undeclared(migrated, reference)
+        assert ("columns", "properties.land_area_m2") in found, found
+    finally:
+        with migrated.begin() as w:
+            w.execute(text("ALTER TABLE turab.properties "
+                           "ALTER COLUMN land_area_m2 TYPE numeric(12,2)"))
+    assert ("columns", "properties.land_area_m2") not in _undeclared(migrated, reference)
+
+
+def test_the_detector_catches_an_added_function_overload(migrated, reference):
+    """A function keyed by bare NAME collapses overloads: a new one sits on top
+    of the original in a dict and neither is reported.
+
+    Identity is now `name(identity arguments)`. The overload added here shares
+    its name with a real baseline function, which is the case that used to
+    hide.
+    """
+    with migrated.begin() as w:
+        w.execute(text("""
+            CREATE OR REPLACE FUNCTION turab.enforce_consent_binding(probe integer)
+            RETURNS integer LANGUAGE sql AS $$ SELECT probe $$
+        """))
+    try:
+        found = _undeclared(migrated, reference)
+        assert ("functions", "enforce_consent_binding(probe integer)") in found, found
+        # and the real one is still matched by its own declared delta
+        assert ("functions", "enforce_consent_binding()") not in found, found
+    finally:
+        with migrated.begin() as w:
+            w.execute(text(
+                "DROP FUNCTION IF EXISTS turab.enforce_consent_binding(integer)"))
+
+
+def test_btree_gist_is_installed_in_public(migrated):
+    """The extension invariant. `0004` needs `btree_gist`, and WHERE it lives
+    matters: installed into `turab` it pollutes the schema, which is how the
+    first version of that migration was caught."""
+    with migrated.connect() as c:
+        row = c.execute(
+            text("""SELECT n.nspname FROM pg_extension e
+                      JOIN pg_namespace n ON n.oid = e.extnamespace
+                     WHERE e.extname = 'btree_gist'""")
+        ).scalar_one_or_none()
+    assert row == "public", f"btree_gist is in {row!r}, not public"
+
+
+def test_0004_refuses_a_btree_gist_installed_outside_public():
+    """`CREATE EXTENSION IF NOT EXISTS ... SCHEMA public` does NOT move an
+    extension that already exists elsewhere — `IF NOT EXISTS` leaves it where
+    it is. A clean environment therefore proves nothing about this case, so it
+    is built deliberately: the extension is installed into another schema
+    FIRST, and the migration must refuse rather than silently proceed with the
+    constraint while the extension sits somewhere unexpected.
+    """
+    db = f"{MIGRATION_DB}_extsplace"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, **PG_ENV}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    try:
+        pre = create_engine(url, future=True)
+        with pre.begin() as w:
+            w.execute(text("CREATE SCHEMA elsewhere"))
+            w.execute(text("CREATE EXTENSION btree_gist SCHEMA elsewhere"))
+        pre.dispose()
+
+        result = _alembic("upgrade", "head", env_extra={"TURAB_DATABASE_URL": url})
+        output = result.stderr + result.stdout
+        assert result.returncode != 0, f"0004 accepted a misplaced extension:\n{output}"
+        assert "btree_gist" in output and "elsewhere" in output, output
+
+        # and it refused BEFORE adding the constraint
+        after = create_engine(url, future=True)
+        try:
+            with after.connect() as c:
+                exists = c.execute(text(
+                    "SELECT count(*) FROM pg_constraint "
+                    "WHERE conname = 'party_property_relations_no_overlap'"
+                )).scalar_one()
+            assert exists == 0, "the constraint was added despite the refusal"
+        finally:
+            after.dispose()
+    finally:
+        subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                       capture_output=True)
