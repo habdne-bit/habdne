@@ -584,11 +584,39 @@ ERROR:  Property consent party has no active property relation
 CONTEXT:  PL/pgSQL function enforce_consent_binding() line 33 at RAISE
 ```
 
+Stated precisely: the PROPERTY consent branch is **unreachable through the
+operational surface starting from an empty database**, and **technically
+reachable** if a relation is inserted directly — which is what the fixtures do.
+Not "impossible", which the fixtures would disprove.
+
 The public list is **not** affected: its consent binds to the **offer**, whose
-branch of the trigger checks `property_offers.party_id`. But this means G3-6 is
-a blocking dependency, not only a missing deliverable. The current suite does
-not reveal it because the fixtures insert relation rows directly; that is noted
-in the Delta rather than left for someone to trip over.
+branch of the trigger checks `property_offers.party_id`. But this makes G3-6 a
+blocking dependency, not only a missing deliverable.
+
+### 4.4a G3-7 · the same gate ignores `valid_from` — **NEW, BLOCKING**
+
+RFC-001 R4.6 defines relation currency as `valid_from <= now() < valid_to` and
+says it governs **use 2, which is `enforce_consent_binding()` by name**. The
+frozen function reads only `valid_to`. Demonstrated on PostgreSQL: a relation
+starting in **2099**, and a relation with **`valid_from = NULL`**, both pass the
+property-consent gate.
+
+This is a defect **in the frozen baseline**, not in our code — no TURAB module
+reads the table at all (R4.5) — and it cannot be fixed in the service layer,
+because the trigger runs on every write including ones our code does not make.
+
+It is recorded in full, with the proof, the proposed migration
+`0003_consent_binding_relation_currency`, and the three decisions it needs, at
+`docs/gate/G3-7_consent_binding_relation_currency.md`. One of those decisions
+matters beyond this fix: **`0003` would be the first migration to change the
+baseline's structure**, so it will make
+`test_the_migrated_database_is_structurally_identical_to_the_frozen_schema`
+fail by design, and the gate's strongest invariant has to become "identical
+except for an approved, named delta list". We will not write the migration
+until that is decided.
+
+**G3-7 must be fixed before or with G3-6**, so relations never become
+creatable through the API while the gate checks the weaker predicate.
 
 ### 4.5 G3-2 · PROPERTY claim eligibility — **open, unchanged**
 

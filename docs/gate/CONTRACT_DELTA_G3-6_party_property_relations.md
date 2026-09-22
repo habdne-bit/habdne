@@ -61,10 +61,17 @@ ERROR:  Property consent party has no active property relation
 CONTEXT:  PL/pgSQL function enforce_consent_binding() line 33 at RAISE
 ```
 
-So with no way to create a relation, **no property-scoped consent binding can
-be created through the API at all**. `postConsentsBindings` exists and works,
-but its property branch is unreachable. The relation is not decorative: it is a
-precondition the database enforces for ADR-04's resource-bound consent.
+**The precise statement of the gap**, adopting the reviewer's wording because
+our first phrasing was looser than the facts:
+
+> The PROPERTY consent branch is **unreachable through the operational surface
+> starting from an empty database**. It remains **technically reachable** if a
+> relation row is inserted directly — which is exactly what the fixtures do.
+
+Not "impossible": impossible would be false, and the fixtures would disprove
+it. The relation is not decorative — it is a precondition the database enforces
+for ADR-04's resource-bound consent — and there is no operational way to
+satisfy it.
 
 Two clarifications, so this is neither overstated nor understated:
 
@@ -73,10 +80,15 @@ Two clarifications, so this is neither overstated nor understated:
   checks `property_offers.party_id` instead — no relation required.
   `getPublicProperties` proceeds as planned.
 - **Today's tests pass because the fixtures insert relation rows directly**
-  (five of them). That is legitimate for a fixture, but it means the suite has
-  never exercised the property-binding path through an API able to create its
-  precondition, and it is why this went unnoticed. We record it rather than let
-  a green suite imply the path is reachable.
+  (five of them). That is legitimate for a fixture, and it is also why the gap
+  went unnoticed: the suite has never exercised the property-binding path
+  through an operational surface able to create its precondition. We record it
+  rather than let a green suite imply the path is reachable.
+
+**See also G3-7** (`docs/gate/G3-7_consent_binding_relation_currency.md`): the
+same gate checks a weaker predicate than RFC-001 R4.6 declares, ignoring
+`valid_from`. G3-7 must be fixed **before or with** this Delta, so that
+relations do not become creatable through the API while the gate is weak.
 
 This raises the Delta from "a deliverable is missing" to "a declared,
 implemented operation has an unreachable branch".
