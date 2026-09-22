@@ -1,13 +1,13 @@
 TURAB — run provenance, recorded AT RUN TIME
-Slice 2 closure: instrument corrections E-01 and E-02 on top of 73be3a7
+Slice 3 step 1 + migrations 0003 (G3-7) and 0004 (relation overlap)
 ============================================
-Recorded    : 2026-09-20 03:39:24 UTC
+Recorded    : 2026-09-22 19:27:18 UTC
 Branch      : claude/postgresql-execution-gate-yqifk7
-Parent      : 73be3a7ca349da591744253540ce960677322c0d
+Parent      : d8d7761
 
 Source fingerprint
 ------------------
-  6eb2af874e52de6ea93dfb0c1025c59ab1679d1d238ebacd58c930efc88781c7
+  4538ec658a88ab64607f57713085f1ebed4515da1353a2009bbd171ec4bbab5e
 
   Produced by, and reproducible with:
       python db/dev/source_fingerprint.py .
@@ -24,10 +24,10 @@ Source fingerprint
 
 Commands
 --------
-  pytest -q --junitxml=reports/junit.xml          -> 485 passed
+  pytest -q --junitxml=reports/junit.xml          -> 536 passed
   PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab \
       db/gate/run_gate.sh                         -> 8/8 PASS
-  python db/gate/authorization_evidence.py --check -> matrix current, 128 rules
+  python db/gate/authorization_evidence.py --check -> matrix current, 138 rules
   python docs/gate/evidence/followup_probes_rerun.py .
                                                   -> followup-probes-after.json
 

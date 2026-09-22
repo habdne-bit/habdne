@@ -17,6 +17,63 @@ there is no second copy of the baseline that can drift from the first.
 
 Everything else follows from not having a second copy.
 
+## 1a. The guarantee, split — added at revision `0003`
+
+Until `0003`, every migration added DATA, so a database at `head` was
+structurally IDENTICAL to one built from the frozen file, and the suite
+asserted exactly that. `0003` changes a function body. The sentence stops being
+true, and the wrong response would be to weaken the fingerprint until it passes
+again.
+
+The guarantee is **split into two**, and each half is stronger for being stated
+separately:
+
+**Baseline guarantee — absolute, no exceptions.**
+
+    upgrade 0001  ⇒  structurally identical to schema_v0.2.3.sql
+
+Function bodies included. Nothing excluded. **No delta may ever apply here** —
+a delta naming revision `0001` would be editing the frozen schema through the
+back door, and a test refuses it.
+
+**Head guarantee — the baseline plus named, digested deltas, and nothing else.**
+
+    upgrade head  ⇒  the frozen baseline + the deltas declared in
+                     db/gate/migration_deltas.py, with no undeclared difference
+
+There is deliberately **no general "ignore these objects" list**. Each delta
+names one object and records six things:
+
+| field | why it is required |
+|---|---|
+| `revision` | one delta belongs to one migration, so a change is attributable |
+| `object_name` + `section` | which catalog object, in which part of the fingerprint |
+| `kind` | what it is, in words, for a reader rather than for code |
+| `digest_before` / `digest_after` | **both** pinned, so the entry cannot widen: if the object changes again, `digest_after` stops matching and the check fails until a new delta is declared |
+| `reason` | why it changed — a sentence, not a ticket number |
+| `proven_by` | the BEHAVIOURAL test. A digest proves the text changed; only a test proves the change was the right one |
+
+Both directions are checked. An undeclared difference fails, **and** a declared
+delta that is not actually present fails — so the ledger can neither hide a
+change nor claim one that never happened.
+
+So the strongest sentence in this policy is not lost. It becomes more precise:
+
+> Revision `0001` matches the frozen baseline exactly, and `head` matches that
+> baseline plus named, digested, approved deltas, with no undeclared
+> difference.
+
+**What this cost, stated plainly.** Before `0003`, "head is the frozen
+baseline" needed no list to read. Now a reviewer must also read the ledger and
+judge each entry. That is the real price of correcting a frozen baseline at
+all, and it is paid deliberately rather than by loosening a check.
+
+**It found a defect on its first real use.** `0004` ran
+`CREATE EXTENSION btree_gist` under `search_path = turab, public`, which
+installed about sixty support functions into `turab`. The head check reported
+every one as undeclared. The extension is now pinned with `SCHEMA public`, and
+the episode is recorded in that revision's docstring rather than tidied away.
+
 ## 2. What is mechanically prevented
 
 | Hazard | What stops it | Test |

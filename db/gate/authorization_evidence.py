@@ -404,7 +404,7 @@ RULES: tuple[Rule, ...] = (
     Rule("R14.4 structural",
          "The migrated database is structurally identical to the frozen schema, "
          "function bodies included",
-         ("test_the_migrated_database_is_structurally_identical_to_the_frozen_schema",
+         ("test_revision_0001_is_structurally_identical_to_the_frozen_schema",
           "test_the_fingerprint_notices_a_changed_function_body",
           "test_the_version_table_is_pinned_to_public")),
     Rule("R14.4 stamp guard",
@@ -563,6 +563,45 @@ RULES: tuple[Rule, ...] = (
           "test_a_confirmation_without_a_timezone_is_refused",
           "test_a_historical_confirmation_with_an_offset_is_accepted",
           "test_a_future_confirmation_with_an_offset_is_still_refused")),
+    # --- G3-7 / 0003: relation currency in the consent gate ---------------
+    Rule("G3-7 / R4.6",
+         "The property-scoped consent gate implements RFC-001 R4.6's currency "
+         "predicate: a future, unstarted or expired relation backs nothing",
+         ("test_a_current_relation_permits_a_property_consent_binding",
+          "test_a_future_relation_is_refused",
+          "test_a_relation_with_no_start_is_refused",
+          "test_an_open_ended_relation_is_still_current",
+          "test_an_expired_relation_is_refused",
+          "test_no_relation_at_all_is_refused",
+          "test_another_partys_relation_is_refused",
+          "test_the_migrated_function_reads_valid_from")),
+    Rule("R14.4-R14.7 / baseline guarantee",
+         "Revision 0001 is structurally identical to the frozen schema, with "
+         "no delta permitted against it",
+         ("test_revision_0001_is_structurally_identical_to_the_frozen_schema",
+          "test_no_delta_is_ever_declared_against_the_baseline_revision")),
+    Rule("R14.4-R14.7 / head guarantee",
+         "head is the frozen baseline plus named, digested, approved deltas "
+         "and no undeclared difference",
+         ("test_head_is_the_baseline_plus_exactly_the_declared_deltas",
+          "test_the_delta_check_catches_an_undeclared_structural_change",
+          "test_every_delta_names_a_revision_object_reason_and_proving_test",
+          "test_the_only_declared_delta_for_0003_is_the_consent_binding_function")),
+    Rule("0003 migration safety",
+         "Re-running is safe, stepwise equals direct, and downgrade is refused "
+         "because reverting restores the weaker gate",
+         ("test_0003_is_re_runnable",
+          "test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade",
+          "test_0003_refuses_to_downgrade")),
+    Rule("G3-6 §6 / 0004",
+         "At most one current relation per (party, property, relation_code), "
+         "enforced in the database rather than only in the service",
+         ("test_two_overlapping_relations_for_one_triple_are_refused",
+          "test_a_relation_resumed_after_the_previous_one_ended_is_allowed",
+          "test_a_different_relation_code_never_conflicts",
+          "test_a_different_party_never_conflicts",
+          "test_a_relation_with_no_start_still_participates_in_the_guard",
+          "test_the_guard_is_a_database_constraint_not_a_service_check")),
     # --- Slice 3, step 1: the physical PROPERTY ---------------------------
     Rule("S3-1 PROPERTY create",
          "A customer creates a SELF_MANAGED property; assisted records are "
@@ -595,7 +634,9 @@ RULES: tuple[Rule, ...] = (
          "distinguish a missing property from an unauthorized one",
          ("test_a_customer_cannot_use_the_internal_property_read",
           "test_the_internal_read_is_audited",
-          "test_an_unknown_property_is_indistinguishable_from_an_unauthorized_one")),
+          "test_the_customer_path_cannot_be_used_to_enumerate_properties",
+          "test_a_customer_on_the_staff_path_is_refused_identically",
+          "test_on_the_staff_path_an_unknown_property_is_403")),
     Rule("Concurrency evidence",
          "Interleaving is observed in pg_stat_activity or by ordering, and an "
          "unexpected worker error fails the assertions",

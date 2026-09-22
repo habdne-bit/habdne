@@ -1,7 +1,8 @@
 # G3-7 · `enforce_consent_binding()` ignores `valid_from`
 
-**Status:** recorded, blocking the property-scoped consent path. **No code and
-no migration written yet**; the migration below is proposed for approval.
+**Status:** **RESOLVED.** Ratified and implemented as revision
+`0003_consent_relation_currency`. The sections below keep the analysis as
+submitted; §11 records what was decided and what was built.
 **Raised by:** the reviewer, on the Slice 3 plan rev 3 / G3-6 Delta round.
 **Classification:** a defect **in the frozen baseline**, not in TURAB's code.
 **Confirmed:** by reading both sources and by execution on PostgreSQL 16.13.
@@ -107,7 +108,7 @@ gate itself weak. The correction belongs in the function.
 
 ## 5. Proposed migration
 
-A new Alembic revision, `0003_consent_binding_relation_currency`, replacing the
+A new Alembic revision, `0003_consent_relation_currency`, replacing the
 function with one that implements R4.6's predicate:
 
 ```sql
@@ -188,3 +189,66 @@ quietly weakens the one check that proves a migration built the right database.
 
 Until then: no migration is written, no relation row is created by any path,
 and the property-scoped consent branch stays as described in the G3-6 Delta.
+
+
+---
+
+## 11. Decided and implemented
+
+**The predicate, adopted verbatim as ratified:**
+
+```sql
+valid_from IS NOT NULL
+AND valid_from <= now()
+AND (valid_to IS NULL OR now() < valid_to)
+```
+
+`valid_from IS NULL` is **refused**. The asymmetry with `valid_to IS NULL` —
+which does mean "still open" — is deliberate, and both halves are pinned by
+tests (`test_a_relation_with_no_start_is_refused`,
+`test_an_open_ended_relation_is_still_current`).
+
+**Classification, as confirmed:** a defect in the frozen baseline; the baseline
+file is **not** edited; it is corrected by a forward migration; a service check
+would not be sufficient, because the trigger is the database-level guarantee
+for every write path.
+
+**The eight required proofs**, each a separate test:
+
+| case | test |
+|---|---|
+| a current relation permits the binding | `test_a_current_relation_permits_a_property_consent_binding` |
+| a future relation is refused | `test_a_future_relation_is_refused` |
+| `valid_from = NULL` is refused | `test_a_relation_with_no_start_is_refused` |
+| an expired relation is refused | `test_an_expired_relation_is_refused` |
+| no relation at all is refused | `test_no_relation_at_all_is_refused` |
+| another party's relation is refused | `test_another_partys_relation_is_refused` |
+| re-running the migration is safe | `test_0003_is_re_runnable` |
+| `0001` then `upgrade head` equals a direct upgrade | `test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade` |
+
+plus `test_an_open_ended_relation_is_still_current`, which pins the other half
+of the NULL asymmetry, and `test_the_migrated_function_reads_valid_from`, so a
+database that was never migrated fails with one clear reason rather than six
+confusing ones.
+
+**Mutation check, as required.** Removing `AND valid_from IS NOT NULL AND
+valid_from <= now()` from the migration fails exactly the targeted tests —
+`test_a_future_relation_is_refused`, `test_a_relation_with_no_start_is_refused`
+and `test_the_migrated_function_reads_valid_from` — and nothing else.
+
+**`downgrade()` refuses.** Reverting restores a gate that accepts an unstarted
+or future relation, so it raises rather than performing a silent security
+rollback, and `test_0003_refuses_to_downgrade` asserts both the refusal and
+that the version is left untouched. Recovery, if ever wanted, is an explicit
+forward migration that states why.
+
+**The fingerprint is not weakened**, it is split — see
+`docs/gate/MIGRATION_POLICY.md` §1a. `0003`'s only approved delta is the body
+of `turab.enforce_consent_binding()`, pinned by both its before and after
+digests. `test_the_delta_check_catches_an_undeclared_structural_change` proves
+the detector bites.
+
+**The overlap guard is `0004`, separately**, so each structural change stays
+attributable to one decision. It is an `EXCLUDE USING gist` constraint rather
+than a service check — which removes the weakness the G3-6 Delta §6 had to
+declare, that the rule would otherwise have no database backstop.

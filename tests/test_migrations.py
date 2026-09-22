@@ -19,6 +19,7 @@ says nothing about row data, privileges or behaviour. Behaviour remains the
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pathlib
@@ -38,8 +39,11 @@ AUDIT_RESULTS = (
     / "STATIC_AUDIT_RESULTS_v0.2.3.json"
 )
 VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
+
+sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
+from migration_deltas import DELTAS, for_revision, split_row  # noqa: E402
 BASELINE = "0001_frozen_baseline_v0_2_3"
-HEAD = "0002_request_closure_reasons"
+HEAD = "0004_relation_overlap_guard"
 
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGUSER = os.environ.get("PGUSER", "turab")
@@ -201,14 +205,18 @@ def test_autogenerate_is_refused():
     test exists because the guard is a deliberate absence, and a deliberate
     absence is exactly the kind of thing a later "helpful" edit restores.
     """
+    # Snapshot, rather than a hardcoded list: what this test must prove is
+    # that autogenerate leaves NOTHING BEHIND, and that claim is independent of
+    # how many migrations the project has. The hardcoded version had to be
+    # edited for every new revision, which is exactly the kind of routine edit
+    # that eventually gets made without reading what it is asserting.
+    before = {p.name for p in VERSIONS.glob("*.py")}
     result = _alembic("revision", "--autogenerate", "-m", "should not be possible")
     output = result.stderr + result.stdout
     assert result.returncode != 0, output
     assert "--autogenerate" in output and "MetaData" in output, output
-    created = [p.name for p in VERSIONS.glob("*.py")] 
-    assert set(created) == {
-        "0001_frozen_baseline_v0_2_3.py", "0002_request_closure_reasons.py"
-    }, f"autogenerate left files behind: {created}"
+    after = {p.name for p in VERSIONS.glob("*.py")}
+    assert after == before, f"autogenerate left files behind: {sorted(after - before)}"
 
 
 def test_env_declares_no_metadata_to_diff_against():
@@ -338,21 +346,135 @@ def reference():
                    capture_output=True)
 
 
-def test_the_migrated_database_is_structurally_identical_to_the_frozen_schema(
-    migrated, reference
+@pytest.fixture(scope="module")
+def at_baseline():
+    """A database at revision 0001 exactly — `upgrade 0001`, nothing after it.
+
+    This is what the BASELINE guarantee is asserted against, and it is built by
+    Alembic rather than by running the SQL, because the whole question is
+    whether Alembic's 0001 produces the frozen schema.
+    """
+    db = f"{MIGRATION_DB}_at_0001"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, **PG_ENV}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    result = _alembic("upgrade", BASELINE, env_extra={"TURAB_DATABASE_URL": url})
+    assert result.returncode == 0, result.stderr
+    engine = create_engine(url, future=True)
+    yield engine
+    engine.dispose()
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+
+
+# --- level 1: the BASELINE guarantee, absolute and without exception --------
+
+def test_revision_0001_is_structurally_identical_to_the_frozen_schema(
+    at_baseline, reference
 ):
-    """The claim the count comparison cannot make.
+    """**No delta may ever apply here.** Revision 0001 IS the frozen baseline.
 
     Covers columns, constraint definitions, index definitions, trigger
-    definitions, function BODIES and enum labels. It does not cover row data,
-    privileges or behaviour — see baseline_fingerprint.py.
+    definitions, function BODIES and enum labels. Nothing is excluded and the
+    fingerprint is not weakened: this is the guarantee that stays absolute now
+    that later revisions may change structure.
+    """
+    with at_baseline.connect() as m, reference.connect() as r:
+        problems = diff(describe(r), describe(m))
+        assert not problems, "revision 0001 differs from the frozen schema:\n  " + \
+            "\n  ".join(problems)
+        assert fingerprint(m) == fingerprint(r)
+
+
+def test_no_delta_is_ever_declared_against_the_baseline_revision():
+    """A delta describes evolution AFTER 0001. One claiming to change the
+    baseline would be editing the frozen schema through the back door."""
+    offenders = [d.revision for d in DELTAS if d.revision == BASELINE]
+    assert not offenders, offenders
+
+
+# --- level 2: the HEAD guarantee — baseline + declared deltas, nothing else --
+
+def test_head_is_the_baseline_plus_exactly_the_declared_deltas(
+    migrated, reference
+):
+    """The precise form of the old sentence, not a weaker one.
+
+    Every structural difference between `head` and the frozen baseline must be
+    a DECLARED delta, and every declared delta must actually be present with
+    the digest it promised. Both directions are checked, so the ledger can
+    neither hide a difference nor claim one that is not there.
     """
     with migrated.connect() as m, reference.connect() as r:
         got, want = describe(m), describe(r)
-        problems = diff(want, got)
-        assert not problems, "migrated database differs structurally:\n  " + \
-            "\n  ".join(problems)
-        assert fingerprint(m) == fingerprint(r)
+
+    declared = {(d.section, d.object_name): d for d in DELTAS}
+    seen: set[tuple[str, str]] = set()
+    problems: list[str] = []
+
+    for section in sorted(set(got) | set(want)):
+        a = dict(split_row(section, row) for row in want.get(section, []))
+        b = dict(split_row(section, row) for row in got.get(section, []))
+        for name in sorted(set(a) | set(b)):
+            if a.get(name) == b.get(name):
+                continue
+            key = (section, name)
+            delta = declared.get(key)
+            if delta is None:
+                problems.append(
+                    f"UNDECLARED structural difference: {section}/{name}. "
+                    "Declare it in db/gate/migration_deltas.py with its "
+                    "revision, digests, reason and proving test — or remove it."
+                )
+                continue
+            seen.add(key)
+            before = (hashlib.sha256(a[name].encode()).hexdigest()
+                      if name in a else None)
+            after = (hashlib.sha256(b[name].encode()).hexdigest()
+                     if name in b else None)
+            if before != delta.digest_before:
+                problems.append(
+                    f"{section}/{name}: baseline digest {before} does not match "
+                    f"the declared digest_before {delta.digest_before}"
+                )
+            if after != delta.digest_after:
+                problems.append(
+                    f"{section}/{name}: head digest {after} does not match the "
+                    f"declared digest_after {delta.digest_after}"
+                )
+
+    for key, delta in declared.items():
+        if key not in seen:
+            problems.append(
+                f"declared delta {delta.revision} {key[0]}/{key[1]} is NOT "
+                "present at head; a delta that does not exist is a false claim"
+            )
+
+    assert not problems, "head does not match baseline + declared deltas:\n  " + \
+        "\n  ".join(problems)
+
+
+def test_every_delta_names_a_revision_object_reason_and_proving_test():
+    """A ledger entry that omits any of the six required fields is a note, not
+    evidence. The behavioural test matters most: a digest proves the text
+    changed, only a test proves the change was the right one."""
+    for d in DELTAS:
+        assert d.revision and (VERSIONS / f"{d.revision}.py").exists(), d
+        assert d.section and d.object_name and d.kind, d
+        assert d.digest_before or d.digest_after, d
+        assert len(d.reason) > 60, f"{d.revision}: reason is too thin to review"
+        assert d.proven_by, f"{d.revision}: no behavioural test named"
+
+
+def test_the_only_declared_delta_for_0003_is_the_consent_binding_function():
+    """Ratified scope: 0003 may change that function body and nothing else."""
+    deltas = for_revision("0003_consent_relation_currency")
+    assert len(deltas) == 1, deltas
+    assert deltas[0].section == "functions"
+    assert deltas[0].object_name == "enforce_consent_binding"
 
 
 def test_the_fingerprint_notices_a_changed_function_body(reference):
@@ -499,3 +621,100 @@ def test_the_closure_reason_migration_is_additive_and_re_runnable(migrated):
     # Running the whole chain again is a no-op, not a duplicate-key failure.
     again = _alembic("upgrade", "head")
     assert again.returncode == 0, again.stderr
+
+
+# --- 0003 specifically -----------------------------------------------------
+
+def test_0003_is_re_runnable(migrated):
+    """`CREATE OR REPLACE FUNCTION` is idempotent, and the trigger is not
+    recreated — it already points at the function by name. Applying the body a
+    second time must leave the catalog identical, digest included."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "m0003", VERSIONS / "0003_consent_relation_currency.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    with migrated.connect() as c:
+        before = fingerprint(c)
+    with migrated.begin() as w:
+        w.execute(text("SET LOCAL search_path TO turab, public"))
+        w.execute(text(module.CORRECTED))
+    with migrated.connect() as c:
+        assert fingerprint(c) == before, "re-applying 0003 changed the catalog"
+
+
+def test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade(migrated):
+    """Stepwise and direct must agree.
+
+    A migration chain that only works when run in one go is a chain nobody can
+    apply to an existing database — which is every real database.
+    """
+    db = f"{MIGRATION_DB}_stepwise"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, **PG_ENV}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    try:
+        for step in (BASELINE, "0002_request_closure_reasons", HEAD):
+            result = _alembic("upgrade", step, env_extra={"TURAB_DATABASE_URL": url})
+            assert result.returncode == 0, f"{step}: {result.stderr}"
+        stepwise = create_engine(url, future=True)
+        try:
+            with stepwise.connect() as a, migrated.connect() as b:
+                problems = diff(describe(b), describe(a))
+                assert not problems, "stepwise differs from direct:\n  " + \
+                    "\n  ".join(problems)
+                assert fingerprint(a) == fingerprint(b)
+        finally:
+            stepwise.dispose()
+    finally:
+        subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                       capture_output=True)
+
+
+def test_0003_refuses_to_downgrade(migrated):
+    """Reverting 0003 restores a gate that accepts an unstarted or future
+    relation. A silent revert would reopen that hole with no record, so the
+    revision refuses and says why — and the refusal is asserted here so it
+    cannot be quietly replaced by a working downgrade later."""
+    result = _alembic("downgrade", "0002_request_closure_reasons")
+    output = result.stderr + result.stdout
+    assert result.returncode != 0, output
+    assert "no downgrade" in output or "G3-7" in output, output
+    with migrated.connect() as c:
+        still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+    assert still == HEAD, "a refused downgrade must leave the version untouched"
+
+
+def test_the_delta_check_catches_an_undeclared_structural_change(migrated, reference):
+    """The detector must bite.
+
+    An extra structural change beyond the approved function body has to be
+    reported as UNDECLARED — otherwise the head guarantee would be a list of
+    what we remembered to write down rather than a check.
+    """
+    with migrated.begin() as w:
+        w.execute(text("""
+            CREATE OR REPLACE FUNCTION turab.turab_undeclared_probe()
+            RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN RETURN NEW; END $$
+        """))
+    try:
+        with migrated.connect() as m, reference.connect() as r:
+            got, want = describe(m), describe(r)
+        declared = {(d.section, d.object_name) for d in DELTAS}
+        undeclared = []
+        for section in set(got) | set(want):
+            a = dict(split_row(section, row) for row in want.get(section, []))
+            b = dict(split_row(section, row) for row in got.get(section, []))
+            for name in set(a) | set(b):
+                if a.get(name) != b.get(name) and (section, name) not in declared:
+                    undeclared.append((section, name))
+        assert ("functions", "turab_undeclared_probe") in undeclared, undeclared
+    finally:
+        with migrated.begin() as w:
+            w.execute(text("DROP FUNCTION IF EXISTS turab.turab_undeclared_probe()"))

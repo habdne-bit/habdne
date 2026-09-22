@@ -16,7 +16,7 @@
 | Slice 2 — REQUEST / Criteria / Freshness | **CLOSED within its agreed scope** (acceptance review of `73be3a7`) — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
 | Slice 3 — PROPERTY / OFFER / SOURCE / Truth / Identity | **In progress**, steps 1–8 authorised. Step 1 (PROPERTY) done. Blocked deliverables: G3-6, G3-7 — see [`docs/gate/SLICE_3_PLAN.md`](docs/gate/SLICE_3_PLAN.md) |
 
-Across all three: **512 tests, 133 rules evidenced**, 26 of 64 contract operations wired.
+Across all three: **536 tests, 138 rules evidenced**, 26 of 64 contract operations wired.
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -81,7 +81,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 512 tests
+./.venv/bin/pytest -q                  # 536 tests
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

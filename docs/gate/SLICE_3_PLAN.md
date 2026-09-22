@@ -606,7 +606,7 @@ reads the table at all (R4.5) — and it cannot be fixed in the service layer,
 because the trigger runs on every write including ones our code does not make.
 
 It is recorded in full, with the proof, the proposed migration
-`0003_consent_binding_relation_currency`, and the three decisions it needs, at
+`0003_consent_relation_currency`, and the three decisions it needs, at
 `docs/gate/G3-7_consent_binding_relation_currency.md`. One of those decisions
 matters beyond this fix: **`0003` would be the first migration to change the
 baseline's structure**, so it will make

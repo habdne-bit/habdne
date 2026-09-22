@@ -348,15 +348,59 @@ def test_the_internal_read_is_audited(client, ids, sink):
     assert "PROPERTY" in kinds, sink.records
 
 
-def test_an_unknown_property_is_indistinguishable_from_an_unauthorized_one(
-    client, ids
-):
-    """403 `OBJECT_NOT_AUTHORIZED`, not 404.
+def test_the_customer_path_cannot_be_used_to_enumerate_properties(client, ids):
+    """The test that matters: **same actor, same path, both answers equal.**
 
-    Deliberate, and the same answer the REQUEST internal read gives: a caller
-    must not be able to tell "no such property" from "not yours", or the pair
-    of responses becomes an enumeration oracle. Asserted here so the property
-    endpoint cannot drift to a friendlier 404 later.
+    A missing id and a real-but-unauthorized id must be indistinguishable, or
+    the pair of responses becomes an enumeration oracle — a caller learns which
+    UUIDs name real properties by the difference. Asserted as an equality
+    rather than as two separate expectations, because two expectations can
+    drift apart one commit at a time and still both look right.
+    """
+    missing = uuid.uuid4()
+    unauthorized = _new_property(client, ids, "enum", who=staff(ids),
+                                 management_mode="ASSISTED",
+                                 claim_status="UNCLAIMED")
+
+    a = client.get(f"/me/properties/{missing}", headers=cust(ids))
+    b = client.get(f"/me/properties/{unauthorized}", headers=cust(ids))
+
+    assert (a.status_code, a.json()["code"]) == (b.status_code, b.json()["code"]), (
+        f"enumeration oracle: missing -> {a.status_code}/{a.json()['code']}, "
+        f"unauthorized -> {b.status_code}/{b.json()['code']}"
+    )
+    assert a.status_code == 404, a.text
+
+
+def test_a_customer_on_the_staff_path_is_refused_identically(client, ids):
+    """The same equality on the other path a customer can reach.
+
+    Here the refusal is `ROLE_NOT_PERMITTED`, decided before any object is
+    looked up — so the object's existence cannot influence it, which is the
+    strongest form of the property.
+    """
+    missing = uuid.uuid4()
+    existing = _new_property(client, ids, "enum-staffpath")
+
+    a = client.get(f"/properties/{missing}", headers=cust(ids))
+    b = client.get(f"/properties/{existing}", headers=cust(ids))
+
+    assert (a.status_code, a.json()["code"]) == (b.status_code, b.json()["code"])
+    assert a.status_code == 403 and a.json()["code"] == "ROLE_NOT_PERMITTED"
+
+
+def test_on_the_staff_path_an_unknown_property_is_403(client, ids):
+    """403 `OBJECT_NOT_AUTHORIZED`, the same answer the REQUEST staff read
+    gives for an unknown id.
+
+    **Stated precisely, correcting an earlier docstring of ours.** On THIS
+    path a 403 does in practice mean "no such property": staff are entitled to
+    every property, so an existing one returns 200 and only a missing one is
+    refused. That is not an enumeration oracle — it tells a staff caller
+    nothing they could not learn from the backoffice queue — but it is not the
+    "does not reveal existence" property either, and claiming that would have
+    been a true result filed under a false cause. The property that DOES hold
+    is asserted above, on the paths a customer can reach.
     """
     r = client.get(f"/properties/{uuid.uuid4()}", headers=staff(ids))
     assert r.status_code == 403, r.text
