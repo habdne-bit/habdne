@@ -1,6 +1,6 @@
 # Contract Delta · G3-6 — party–property relations
 
-**Status:** **revision 2 — the implementation basis**, incorporating the
+**Status:** **revision 3 — the implementation basis**, incorporating the
 decisions taken since revision 1. **No code exists for this path**, and none
 will be written until this revision is re-confirmed. What changed:
 option A ratified (§1); rule **6a adopted**, no longer "proposed" (§6); the
@@ -131,10 +131,14 @@ Four facts follow, and each removes a design choice rather than creating one:
    `PROFESSIONAL_CHECK`).
 3. `valid_to > valid_from` is a database `CHECK`. Ending a relation is an
    `UPDATE` setting `valid_to`, not a delete.
-4. There is **no unique constraint** on `(party_id, property_id,
-   relation_code)` and no exclusion constraint on overlapping periods. Whether
-   duplicates and overlaps are forbidden is therefore a **decision this Delta
-   must record**, not something the schema settles — see §6.
+4. The FROZEN schema has **no unique constraint** on `(party_id, property_id,
+   relation_code)` and no exclusion constraint on overlapping periods, so it
+   settles nothing about duplicates or overlaps on its own. That was a
+   decision this Delta had to record, and it is now **taken and implemented**:
+   rule 6a, enforced by `party_property_relations_no_overlap`, an
+   `EXCLUDE USING gist` constraint added by revision
+   `0004_relation_overlap_guard` — a forward migration, not an edit to the
+   frozen file. See §6.
 
 ---
 

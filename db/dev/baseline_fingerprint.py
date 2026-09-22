@@ -119,11 +119,17 @@ _QUERIES: dict[str, str] = {
     # Extensions live outside `turab`, so nothing below the `turab` filter can
     # see them — which made "no undeclared difference" a wider claim than the
     # machine behind it. `btree_gist` (revision 0004) is exactly such a case.
+    #
+    # EVERY extension is listed, `plpgsql` included. A first version excluded
+    # it as "always there", which is an unexplained exception in a check whose
+    # whole value is having none: it is installed by default, but it can be
+    # dropped, and its version moves with the server. Listing it costs one
+    # constant row on both sides of every comparison and removes a carve-out
+    # that would otherwise need defending.
     "extensions": """
         SELECT e.extname, n.nspname, e.extversion
           FROM pg_extension e
           JOIN pg_namespace n ON n.oid = e.extnamespace
-         WHERE e.extname <> 'plpgsql'
          ORDER BY 1
     """,
     "enums": """

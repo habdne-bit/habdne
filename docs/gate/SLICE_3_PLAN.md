@@ -1,9 +1,9 @@
 # Slice 3 — PROPERTY / OFFER / SOURCE / Truth Layer / Identity Lite
-## Implementation plan — **revision 5**
+## Implementation plan — **revision 6**
 
 **Status:** steps 1–8 authorised. Step 1 (PROPERTY) implemented and under
 review. Migrations `0003` (G3-7) and `0004` (relation overlap) implemented.
-G3-6 awaits re-confirmation of its Contract Delta revision 2.
+G3-6 awaits re-confirmation of its Contract Delta revision 3.
 
 **Revision history**, because a file labelled `rev4` that still said
 "revision 3" inside was reported in review — the label and the content must
@@ -15,7 +15,17 @@ agree, and the way to keep them agreeing is to keep the history here:
 | 2 | `3447a7d` | 22 operations; G3-6 raised; contention claim first stated |
 | 3 | `37b7eb6` | steps 1–8 authorised; G3-6 decided (option A); contention claim corrected in four places |
 | 4 | `0ea6999` | G3-7 recorded; G3-6 reachability wording made precise |
-| 5 | this commit | `0003` and `0004` implemented, so G3-7 is RESOLVED and G3-6 §6 has its database backstop; step 1 findings R-S3-P01/P02 corrected |
+| 5 | `ca807c3` | `0003` and `0004` implemented, so G3-7 is RESOLVED and G3-6 §6 has its database backstop; step 1 findings R-S3-P01/P02 corrected |
+| 6 | this commit | the empty-string regression on CREATE fixed; the `0004` contention witness bound to the contending backend; gate evidence bound to its commit; document revisions and commit attribution made consistent |
+
+**On labels and commits.** A file delivered as `rev4` once said "revision 3"
+inside, and this plan's own hash record attributed this round's documents to
+the commit BEFORE the one the bundle was built from — because the hashes were
+stamped in one commit and the bundle assembled from the next. Both are label
+errors rather than content errors, and both are the same failure: a name that
+is written separately from the thing it names. The hash record is now stamped
+in the SAME commit it describes (amended, not appended), and every document
+states its own revision in its own first lines.
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:127–166`.
 **Predecessor:** Slice 2, closed within its agreed scope at `94639a6`.
@@ -902,11 +912,11 @@ from and is accompanied by its `sha256`, and the hashes are recorded in the
 repository at `docs/gate/evidence/DOCUMENT-HASHES.txt` so the claim is
 checkable rather than asserted.
 
-| revision | commit | sha256 of `docs/gate/SLICE_3_PLAN.md` |
-|---|---|---|
-| 1 | `c0e6ed5` | `36f569f72b0769f29d9b5c48b9483db0a0f7690639696ef06bd9187a7fe014e7` |
-| 2 | `3447a7d` | `607bd2050aecbb7e5253ae5a8b8008357be49040d68f2bd839e078bdb30d5a12` |
-| 3 | this commit | recorded in `DOCUMENT-HASHES.txt` |
+Every revision's hash is in `docs/gate/evidence/DOCUMENT-HASHES.txt`, and the
+revision history is at the top of this file. **Neither is restated here.** A
+second copy of the same table was the reason this section went stale while the
+header stayed current — two places to update means one of them is wrong, and
+the wrong one is whichever nobody is reading at the time.
 
 The reviewer's reported hash matched revision 1 exactly, which confirms the
 diagnosis: revision 2 never reached them, and the fault is ours to prevent, not

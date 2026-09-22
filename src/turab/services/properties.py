@@ -217,9 +217,14 @@ def create_property(
         "supply_mode": supply_mode,
         "created_by_account_id": created_by_account_id,
     }
+    # Presence, not truthiness, and not `is not None` either: a caller that
+    # PASSED a field gets that value written, including "" and 0. A field the
+    # caller did not pass is left out so the column default decides. Testing
+    # `if optional.get(name)` turned an empty `local_location_detail` into
+    # NULL — the contract allows the empty string, so that was data loss.
     for name in ("canonical_location_id", "local_location_detail",
                  "land_area_m2", "built_area_m2", "current_availability"):
-        if optional.get(name) is not None:
+        if name in optional:
             columns[name] = optional[name]
 
     names = ", ".join(columns)

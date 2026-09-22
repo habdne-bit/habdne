@@ -138,20 +138,30 @@ def test_the_guard_is_a_database_constraint_not_a_service_check(session):
 def test_two_concurrent_overlapping_inserts_leave_exactly_one_row(
     two_engines, engine, ids
 ):
-    """Two connections, two transactions, a deterministic handshake.
+    """Two connections, two transactions, with the wait BOUND TO THIS RACE.
 
     Unlike the primary-source case, this DOES have a winner and a loser, and
-    the reason is the difference the last review drew: there is no lock here
+    the reason is the difference an earlier review drew: there is no lock here
     that serialises two paths into both succeeding. The exclusion index makes
     the contender WAIT, and when the holder COMMITS the contender's row is
-    then genuinely excluded — so it fails, with SQLSTATE `23P01`
+    genuinely excluded — so it fails with SQLSTATE `23P01`
     (`exclusion_violation`). The refusal is the constraint's, not a version
-    guard's, which is why it is legitimate to expect one here.
+    guard's, which is why expecting a loser is legitimate here.
 
-    Both workers' outcomes are asserted, not just the surviving row: a test
-    that checked only the row count would pass if BOTH had failed.
+    **The witness is specific, not ambient.** A first version counted ANY
+    backend on the database with `wait_event_type = 'Lock'`. On a busy server —
+    or simply alongside another test — that counts someone else's wait and the
+    test would claim an interleaving it never observed. Both workers therefore
+    report their own `pg_backend_pid()`, and the watcher requires
+    `pg_blocking_pids(contender_pid)` to contain the HOLDER's pid: the database
+    stating that this contender is blocked by this holder.
+
+    Both workers' outcomes are asserted, and every thread is joined before any
+    of them is read — a test that inspects results while a worker is still
+    running is reading a race of its own.
     """
     import threading
+    import time
 
     from sqlalchemy.orm import Session as _Session
 
@@ -160,72 +170,75 @@ def test_two_concurrent_overlapping_inserts_leave_exactly_one_row(
         prop = _property(s, ids)
         s.commit()
 
-    out: dict[str, tuple[str, object]] = {}
+    out: dict[str, object] = {}
+    pids: dict[str, int] = {}
     holds = threading.Event()
-    contender_blocked = threading.Event()
+    contender_started = threading.Event()
+    witnessed = threading.Event()
 
     def holder():
         try:
             with _Session(bind=engine_a, future=True) as s:
+                pids["holder"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
                 _relate(s, party=ids.AMINA, prop=prop,
                         valid_from=NOW - timedelta(days=5))
                 holds.set()
-                # Wait until the database itself reports the contender waiting
-                # on a lock. Ordering by sleep would prove only that time
-                # passed, not that the second transaction ever reached the
-                # contended point.
-                assert contender_blocked.wait(timeout=20), (
-                    "the contender never reached the exclusion index"
+                assert witnessed.wait(timeout=30), (
+                    "the database never reported the contender blocked BY THIS "
+                    "holder; the interleaving was not observed"
                 )
                 s.commit()
-            out["holder"] = ("ok", None)
+            out["holder"] = "ok"
         except Exception as exc:                       # pragma: no cover
-            out["holder"] = ("raised", f"{type(exc).__name__}: {exc}")
+            out["holder"] = f"raised {type(exc).__name__}: {exc}"
 
     def contender():
-        assert holds.wait(timeout=20), "the holder never inserted"
+        assert holds.wait(timeout=30), "the holder never inserted"
         try:
             with _Session(bind=engine_b, future=True) as s:
+                pids["contender"] = s.execute(
+                    text("SELECT pg_backend_pid()")).scalar_one()
+                contender_started.set()
                 _relate(s, party=ids.AMINA, prop=prop,
                         valid_from=NOW - timedelta(days=1))
                 s.commit()
-            out["contender"] = ("ok", None)
+            out["contender"] = "ok"
         except Exception as exc:
-            out["contender"] = ("raised", getattr(
-                getattr(exc, "orig", None), "sqlstate", None) or f"{type(exc).__name__}")
+            out["contender"] = getattr(
+                getattr(exc, "orig", None), "sqlstate", None
+            ) or f"raised {type(exc).__name__}"
 
     def watch():
-        """Witness the contention, then release the holder."""
-        import time
-
-        deadline = time.monotonic() + 15
+        """Wait for PostgreSQL to say: this contender is blocked by this holder."""
+        assert contender_started.wait(timeout=30), "the contender never connected"
+        deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             with _Session(bind=engine, future=True) as s:
-                blocked = s.execute(
-                    text("""SELECT count(*) FROM pg_stat_activity
-                             WHERE datname = current_database()
-                               AND pid <> pg_backend_pid()
-                               AND wait_event_type = 'Lock'""")
+                blockers = s.execute(
+                    text("SELECT pg_blocking_pids(:pid)"),
+                    {"pid": pids["contender"]},
                 ).scalar_one()
-            if blocked:
-                contender_blocked.set()
+            if pids.get("holder") in (blockers or []):
+                out["blocked_by_holder"] = True
+                witnessed.set()
                 return
             time.sleep(0.02)
-        contender_blocked.set()   # release the holder so the test fails cleanly
+        out["blocked_by_holder"] = False
+        witnessed.set()          # release the holder so the test fails cleanly
 
     threads = [threading.Thread(target=holder), threading.Thread(target=contender),
                threading.Thread(target=watch)]
     for t in threads:
         t.start()
     for t in threads:
-        t.join(timeout=40)
+        t.join(timeout=60)
+    assert not any(t.is_alive() for t in threads), "a worker never finished"
 
-    assert out.get("holder") == ("ok", None), out
-    kind, payload = out.get("contender", (None, None))
-    assert kind == "raised", f"both inserts succeeded: {out}"
-    assert payload == "23P01", (
-        f"expected SQLSTATE 23P01 (exclusion_violation), got {payload!r}"
-    )
+    assert out.get("blocked_by_holder") is True, (
+        f"no interleaving witnessed for this race: {out}, pids={pids}")
+    assert out.get("holder") == "ok", out
+    assert out.get("contender") == "23P01", (
+        f"expected the contender to fail with SQLSTATE 23P01, got {out.get('contender')!r}")
 
     with _Session(bind=engine, future=True) as s:
         rows = s.execute(

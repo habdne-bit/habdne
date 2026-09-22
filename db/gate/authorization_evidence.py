@@ -607,6 +607,12 @@ RULES: tuple[Rule, ...] = (
          "function overload, which a type-name or bare-name view would miss",
          ("test_the_detector_catches_a_column_precision_change",
           "test_the_detector_catches_an_added_function_overload")),
+    Rule("R-S3-P01 empty string on CREATE",
+         "An empty free-text field survives creation as '' in the response and "
+         "in the column, and is distinguishable from an omitted field",
+         ("test_creating_with_an_empty_free_text_field_keeps_it_empty",
+          "test_omitting_the_field_is_distinct_from_sending_it_empty",
+          "test_a_zero_area_is_refused_rather_than_silently_dropped")),
     Rule("R-S3-P01 contract fidelity",
          "PropertyCreate refuses null for its omissible fields, the response "
          "omits them when absent, and carries no undeclared key",

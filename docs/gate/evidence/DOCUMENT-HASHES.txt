@@ -9,6 +9,13 @@ checkable rather than asserted.
 Verify any delivered file with:
     sha256sum <file>
 
+ON COMMIT ATTRIBUTION. The entries for the ca807c3 round named c81043a, the
+commit BEFORE the one the bundle was built from, because the hashes were
+stamped in one commit and the bundle assembled from the next. The commit
+column now names the commit whose tree CONTAINS the file, and the stamping is
+done in the same commit it describes. A label written separately from the
+thing it names is how both of this round's version errors happened.
+
 docs/gate/SLICE_3_PLAN.md
 -------------------------
   rev 1  c0e6ed5  36f569f72b0769f29d9b5c48b9483db0a0f7690639696ef06bd9187a7fe014e7
@@ -24,13 +31,13 @@ docs/gate/SLICE_3_PLAN.md
                    "revision 3" inside and described 0003 as not started.
                    Reported in review. The label and the content must agree,
                    so a revision history now lives in the plan itself.)
-  rev 5  c81043a  8ae61fe538b585cdef2c8f84c42ac857e8aeacd115e4bdeb5144a58faf1175a9
+  rev 5  ca807c3  8ae61fe538b585cdef2c8f84c42ac857e8aeacd115e4bdeb5144a58faf1175a9
 
 docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
 ---------------------------------------------------------
   rev 1  37b7eb6  be52322fda7e3ce9f210c091a00212401c25e2b5e420f69ca47c8a72e18a321d
   rev 2  0ea6999  4ca90800ceb916c68884a7dd98a61457517e987f2badb10653de13e938991ee4
-  rev 3  c81043a  17b4935ab15fbe6790b69a53167ed5b3a763c9aa39e8d534be314eadbc91e496
+  rev 3  ca807c3  17b4935ab15fbe6790b69a53167ed5b3a763c9aa39e8d534be314eadbc91e496
                   (implementation basis: 6a adopted and backstopped by 0004,
                    include_ended corrected, valid_from semantics settled)
 
@@ -46,4 +53,13 @@ docs/gate/G3-7_consent_binding_relation_currency.md
 
 docs/gate/MIGRATION_POLICY.md
 -----------------------------
-  rev 2  c81043a  176839555f03aa2b958fba17d588af2f9d2022ec247e2991d58e5ab190b087b6
+  rev 2  ca807c3  176839555f03aa2b958fba17d588af2f9d2022ec247e2991d58e5ab190b087b6
+
+--- round ca807c3 -> this commit -------------------------------------------
+docs/gate/SLICE_3_PLAN.md                     rev 6  1db1b5a1175d95020aff850dc270f2cdc5d49b7e204cd1d6b95484d9c8588445
+docs/gate/CONTRACT_DELTA_G3-6_...md           rev 3  de77ec850a2bd134e738fe3219a29307d86d2eb7c1dd8f60d173bd9e9559263c
+  (the file delivered as rev3 last round said "revision 2" inside; corrected)
+docs/gate/MIGRATION_POLICY.md                 rev 3  351c66298cbc63059b7152021e25928b2183d8b33d91db96499d5dde38a3ad30
+docs/gate/G3-7_consent_binding_relation_currency.md
+                                              rev 2  e5a774b4f0c4fa2d78ec45f82cc35a21dc0f9fab27cd608a6e56284ece33b035
+  (UNCHANGED since ca807c3 — same digest, so no new revision is claimed)

@@ -569,3 +569,66 @@ def test_a_known_location_still_works(client, ids, engine):
                     headers={**cust(ids), "Idempotency-Key": "s3-fk-ok"})
     assert r.status_code == 201, r.text
     assert r.json()["canonical_location_id"] == str(loc)
+
+
+# --- an empty string survives CREATION too ---------------------------------
+
+def test_creating_with_an_empty_free_text_field_keeps_it_empty(client, ids, engine):
+    """`local_location_detail` may be `""` in the contract, with no minimum
+    length. It must come back as `""` from the API AND be `''` in the column.
+
+    The acceptance test for this covered PATCH only, so a regression on CREATE
+    went unnoticed: `body.local_location_detail or None` stored the empty
+    string as NULL, and `_view` then omitted the key entirely. Both halves are
+    asserted here — response and database — because either one alone would
+    have passed at some point during that defect.
+    """
+    r = client.post("/properties", json=body(local_location_detail=""),
+                    headers={**cust(ids), "Idempotency-Key": "s3-empty-create"})
+    assert r.status_code == 201, r.text
+    got = r.json()
+    assert "local_location_detail" in got, "the key must not be dropped"
+    assert got["local_location_detail"] == "", got["local_location_detail"]
+    with Session(bind=engine, future=True) as s:
+        stored = s.execute(
+            text("SELECT local_location_detail FROM turab.properties "
+                 "WHERE property_id = :p"),
+            {"p": uuid.UUID(got["property_id"])},
+        ).scalar_one()
+    assert stored == "", f"stored as {stored!r}, not the empty string"
+
+
+def test_omitting_the_field_is_distinct_from_sending_it_empty(client, ids, engine):
+    """The distinction the fix exists to keep. Omitted -> NULL and absent from
+    the response; empty -> '' and present. A truthiness test cannot tell them
+    apart, which is exactly how the regression happened."""
+    omitted = client.post(
+        "/properties",
+        json={"property_type": "LAND", "supply_mode": "PUBLIC",
+              "management_mode": "SELF_MANAGED", "claim_status": "CLAIMED"},
+        headers={**cust(ids), "Idempotency-Key": "s3-omit-vs-empty-a"})
+    empty = client.post("/properties", json=body(local_location_detail=""),
+                        headers={**cust(ids), "Idempotency-Key": "s3-omit-vs-empty-b"})
+    assert omitted.status_code == 201 and empty.status_code == 201
+
+    assert "local_location_detail" not in omitted.json()
+    assert empty.json()["local_location_detail"] == ""
+
+    with Session(bind=engine, future=True) as s:
+        a = s.execute(text("SELECT local_location_detail FROM turab.properties "
+                           "WHERE property_id = :p"),
+                      {"p": uuid.UUID(omitted.json()["property_id"])}).scalar_one()
+        b = s.execute(text("SELECT local_location_detail FROM turab.properties "
+                           "WHERE property_id = :p"),
+                      {"p": uuid.UUID(empty.json()["property_id"])}).scalar_one()
+    assert a is None, f"an omitted field must be NULL, got {a!r}"
+    assert b == "", f"an empty field must be '', got {b!r}"
+
+
+def test_a_zero_area_is_refused_rather_than_silently_dropped(client, ids):
+    """The other falsy value. `land_area_m2` has `exclusiveMinimum: 0`, so 0
+    is invalid input and must be REFUSED — not quietly turned into "absent",
+    which is what `or None` did."""
+    r = client.post("/properties", json=body(land_area_m2=0),
+                    headers={**cust(ids), "Idempotency-Key": "s3-zero-area"})
+    assert r.status_code == 422, r.text

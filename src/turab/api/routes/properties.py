@@ -173,6 +173,24 @@ def create_property(request: Request, body: PropertyCreate, command: Command):
             "created by staff and claimed afterwards",
         )
 
+    # **Omitted is not the same as empty.** `or None` collapsed the two: an
+    # empty `local_location_detail` — a value the contract allows, with no
+    # minimum length — became NULL in the column and then vanished from the
+    # response. It is the R-S2-05a defect in a third place, and truthiness is
+    # what causes it every time: "" and 0.0 are falsy, and one of them is a
+    # legitimate value.
+    #
+    # `model_fields_set` is the only thing that answers the question actually
+    # being asked — WAS THIS FIELD SENT? — so the sentinel defaults are never
+    # consulted for a field the caller supplied.
+    supplied = body.model_fields_set
+    optional = {
+        name: getattr(body, name)
+        for name in ("local_location_detail", "land_area_m2",
+                     "built_area_m2", "current_availability")
+        if name in supplied
+    }
+
     def handler(session):
         row = property_service.create_property(
             session,
@@ -184,14 +202,7 @@ def create_property(request: Request, body: PropertyCreate, command: Command):
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
             canonical_location_id=body.canonical_location_id,
-            # The sentinels mean "not supplied"; the service takes None for
-            # that, and the column default decides. `exclude_unset` cannot be
-            # used here because the sentinel defaults are what the omission
-            # looks like after validation.
-            local_location_detail=body.local_location_detail or None,
-            land_area_m2=body.land_area_m2 or None,
-            built_area_m2=body.built_area_m2 or None,
-            current_availability=body.current_availability or None,
+            **optional,
         )
         return 201, _view(row)
 

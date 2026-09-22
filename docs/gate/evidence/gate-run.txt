@@ -1,3 +1,18 @@
+TURAB — PostgreSQL execution gate, recorded AT RUN TIME
+=======================================================
+Recorded    : 2026-09-22 22:17:18 UTC
+Commit      : ca807c37034d075f55ae3cf0df1a5f06db6216c3
+Working tree: 8 uncommitted change(s) — this log describes the
+              WORKING TREE, not the commit above.
+Source fingerprint (db/dev/source_fingerprint.py):
+              22344c50707093104ba788cb211c4bcdd672c0801fc10eb91850715085f962fe
+Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+The gate output below is deterministic: it is a function of the frozen
+package, so an unchanged package yields an identical body. The header
+is what binds this run to a tree; compare the fingerprint, not the body.
+-------------------------------------------------------
+
 
 [1m==> 0/8  Handoff package integrity[0m
 PASS: verified 36 handoff files
@@ -542,3 +557,5 @@ PASS: docs/api/API_INVENTORY_GENERATED.md matches /home/user/habdne/docs/api/ope
 VERSION CONSISTENCY: PASS — every statement of the baseline version agrees
 
 [1;32mPOSTGRES EXECUTION GATE: PASS[0m
+
+gate exit status: 0

@@ -1,13 +1,13 @@
 TURAB — run provenance, recorded AT RUN TIME
-R-S3-M01..M03 and R-S3-P01..P02 corrections
+empty-string regression on CREATE; contention witness bound to its backend
 ============================================
-Recorded    : 2026-09-22 20:27:58 UTC
+Recorded    : 2026-09-22 22:21:24 UTC
 Branch      : claude/postgresql-execution-gate-yqifk7
-Parent      : 2e3d704
+Parent      : ca807c3
 
 Source fingerprint
 ------------------
-  0c287f63481eef8b2f7a34fc443d139fadc67ff5f0d6f6cb1b9d63a08fe450f5
+  5fc5eb7e6277acb9cdc0cce526930e5f1b668f9aacefa4716f3bc1c3b1192e21
 
   Produced by, and reproducible with:
       python db/dev/source_fingerprint.py .
@@ -24,10 +24,16 @@ Source fingerprint
 
 Commands
 --------
-  pytest -q --junitxml=reports/junit.xml          -> 553 passed
+  pytest -q --junitxml=reports/junit.xml          -> 556 passed
   PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab \
-      db/gate/run_gate.sh                         -> 8/8 PASS
-  python db/gate/authorization_evidence.py --check -> matrix current, 143 rules
+      db/gate/record_gate_run.sh                  -> 8/8 PASS
+                                                     (writes gate-run.txt, whose
+                                                      header binds the run to a
+                                                      commit and fingerprint —
+                                                      the gate body itself carries
+                                                      no timestamp and is identical
+                                                      for an unchanged package)
+  python db/gate/authorization_evidence.py --check -> matrix current, 144 rules
   python docs/gate/evidence/followup_probes_rerun.py .
                                                   -> followup-probes-after.json
 

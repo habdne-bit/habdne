@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **143**
-- Distinct tests cited: **405**
-- Suite total: **553/553** test cases passing (459 distinct test functions)
+- Rules and invariants covered: **144**
+- Distinct tests cited: **408**
+- Suite total: **556/556** test cases passing (462 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -143,6 +143,7 @@ matrix, because it reads as assurance.
 | `0004 under contention` | Two concurrent overlapping inserts leave exactly one row; the loser fails with SQLSTATE 23P01, on two connections with the wait witnessed | `test_two_concurrent_overlapping_inserts_leave_exactly_one_row` | PASS |
 | `0004 / btree_gist placement` | The extension is in public, and a pre-existing one elsewhere is refused before the constraint is added | `test_btree_gist_is_installed_in_public`<br>`test_0004_refuses_a_btree_gist_installed_outside_public` | PASS |
 | `R14.7 / fingerprint coverage` | The structural check sees a column precision change and an added function overload, which a type-name or bare-name view would miss | `test_the_detector_catches_a_column_precision_change`<br>`test_the_detector_catches_an_added_function_overload` | PASS |
+| `R-S3-P01 empty string on CREATE` | An empty free-text field survives creation as '' in the response and in the column, and is distinguishable from an omitted field | `test_creating_with_an_empty_free_text_field_keeps_it_empty`<br>`test_omitting_the_field_is_distinct_from_sending_it_empty`<br>`test_a_zero_area_is_refused_rather_than_silently_dropped` | PASS |
 | `R-S3-P01 contract fidelity` | PropertyCreate refuses null for its omissible fields, the response omits them when absent, and carries no undeclared key | `test_create_refuses_an_explicit_null_for_an_omissible_field`<br>`test_create_accepts_a_null_canonical_location`<br>`test_an_omitted_optional_field_is_absent_from_the_response`<br>`test_the_response_carries_no_undeclared_key` | PASS |
 | `R-S3-P02 unknown location` | An unknown canonical_location_id is a typed 4xx, not a 500, and the refusal consumes no key and changes no row, version or trail | `test_creating_with_an_unknown_location_is_a_typed_4xx`<br>`test_the_refused_creation_consumes_no_idempotency_key`<br>`test_patching_to_an_unknown_location_changes_nothing`<br>`test_the_patch_command_declares_no_idempotency_key`<br>`test_a_known_location_still_works` | PASS |
 | `G3-6 §6 / 0004` | At most one current relation per (party, property, relation_code), enforced in the database rather than only in the service | `test_two_overlapping_relations_for_one_triple_are_refused`<br>`test_a_relation_resumed_after_the_previous_one_ended_is_allowed`<br>`test_a_different_relation_code_never_conflicts`<br>`test_a_different_party_never_conflicts`<br>`test_a_relation_with_no_start_still_participates_in_the_guard`<br>`test_the_guard_is_a_database_constraint_not_a_service_check` | PASS |

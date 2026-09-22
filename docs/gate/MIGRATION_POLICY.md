@@ -42,8 +42,13 @@ back door, and a test refuses it.
                      db/gate/migration_deltas.py, with no undeclared difference
 
 **What "no undeclared difference" covers, stated to match the machine.** The
-structural description is `turab`'s objects **plus installed extensions**
-(name, schema and version). Extensions were added to it when `0004` needed
+structural description is `turab`'s objects **plus every installed extension**
+(name, schema and version) — `plpgsql` included. An earlier version excluded
+`plpgsql` as "always there", which is an unexplained exception in a check whose
+value is having none: it is installed by default, but it can be dropped and its
+version moves with the server. Listing it costs one constant row on each side
+of every comparison and removes a carve-out that would otherwise need
+defending. Extensions were added to it when `0004` needed
 `btree_gist`: a `turab`-only view could not see an extension at all, which made
 the sentence wider than the check behind it. Anything else outside `turab` —
 privileges, ownership, other schemas, row data — is still **not** covered, and
