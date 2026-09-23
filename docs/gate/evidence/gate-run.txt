@@ -1,20 +1,21 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-09-23 21:35:12 UTC
-Commit      : e82d28510003879d3751b2d3951af9deb970a3e1
-Working tree: 2 uncommitted path(s) when this run started.
+Recorded    : 2026-09-23 22:23:14 UTC
+Commit      : 180235243c23ccd2d244d1eb95387a0f84654694
+Working tree: 3 uncommitted path(s) when this run started.
               This log therefore describes the WORKING TREE, not the
               commit above. Labels:
                 [gate-input] the gate READS it — a change here can
                              change the result below
                 [source]     the source fingerprint covers it
                 [other]      neither; it cannot affect this run
+                [other] docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md
                 [other] docs/gate/evidence/TEST-RUN-PROVENANCE.txt
                 [other] docs/gate/evidence/junit-run.xml
               (the output file this run writes, docs/gate/evidence/gate-run.txt, is not in
               the snapshot: it is created after it was taken)
 Source fingerprint (db/dev/source_fingerprint.py):
-              ebae14e3f5bd63e6883e67dd60b82add0d4d81f9f8031616cd3bf81a6be78b63
+              0b43d53044a30d7f39b540d155c7541594cb8627fb16e3d804a3e33450d5200f
 Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 
 The gate output below is deterministic, but not of the frozen package

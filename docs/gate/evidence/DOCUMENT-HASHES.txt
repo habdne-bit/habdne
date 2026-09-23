@@ -101,3 +101,21 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     8430cb8e44791b24f2cde95454f
 No decision document changed this round. The plan (rev 6), the G3-6 Delta
 (rev 3), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2) carry their
 previous digests; no new revision is claimed for any of them.
+
+--- round e82d285 -> 9912deb (gate_inputs refuses outside a checkout) --------
+db/gate/gate_inputs.py                        --     e76eed248c1ae5abd681ec592cac6f3c08c29e3a41c8ffaec599ab968652acbf
+  (a detached copy exits 2 with no prefixes instead of printing a partial list)
+No bound test or gate run was recorded for 9912deb alone; the runs below are
+at 1802352, whose source tree contains it.
+
+--- round 9912deb -> 1802352 (Slice 3 step 2: OFFER) -------------------------
+docs/gate/SLICE_3_STEP2_FINDINGS.md           new    339b4dea7e5062bd231269469b7a86f40b682eebe27b742879c1b8153156ca12
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     f574b939abe259a6cd791d2131ea672c4cdd4becc0a9ecd9426393ef68e4f366
+src/turab/services/offers.py                  new    901081dbbf39facf1fa4df7109738fb0fa408f1c95ec6230a36e258c31f67a75
+src/turab/api/routes/offers.py                new    4b4f379eb6211b757e07d0ad593b046036d6030354063a32c8658f6850f69c32
+src/turab/api/json_types.py                   new    b19b88efa2e1dfd637a0db8df691db53b6778743a2462458267bb675508882af
+tests/test_slice3_offers.py                   new    8497f1da2720dacb845b440d8b13456da0f7db456187ff0e3d8fed8198e57cbf
+No decision document changed this round. The plan (rev 6), the G3-6 Delta
+(rev 3), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2) carry their
+previous digests; no new revision is claimed for any of them. The four
+findings in SLICE_3_STEP2_FINDINGS.md are proposals awaiting decision.
