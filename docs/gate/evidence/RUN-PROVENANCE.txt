@@ -25,6 +25,12 @@ Source fingerprint
 Commands
 --------
   pytest -q --junitxml=reports/junit.xml          -> 556 passed
+                                                     (the report and the tree it
+                                                      ran on are bound together in
+                                                      TEST-RUN-PROVENANCE.txt; a
+                                                      JUnit file alone says when IT
+                                                      was produced, not which tree
+                                                      produced it)
   PGHOST=127.0.0.1 PGUSER=turab PGPASSWORD=turab \
       db/gate/record_gate_run.sh                  -> 8/8 PASS
                                                      (writes gate-run.txt, whose

@@ -29,8 +29,20 @@ FINGERPRINT="$($PY db/dev/source_fingerprint.py .)"
   if [ "$DIRTY" -eq 0 ]; then
     echo "Working tree: clean"
   else
-    echo "Working tree: ${DIRTY} uncommitted change(s) — this log describes the"
-    echo "              WORKING TREE, not the commit above."
+    # A bare count is not reviewable: "3 uncommitted changes" leaves a reader
+    # unable to tell a stray source edit from the evidence file this very run
+    # is writing. The paths are listed, and each is marked according to whether
+    # the source fingerprint covers it — because only those can change what the
+    # gate actually exercised.
+    echo "Working tree: ${DIRTY} uncommitted path(s); [src] means the source"
+    echo "              fingerprint covers it, [doc] means it cannot affect"
+    echo "              what ran:"
+    git status --porcelain | while read -r _ path; do
+      case "$path" in
+        src/*|tests/*|db/*|alembic.ini) echo "                [src] $path" ;;
+        *)                              echo "                [doc] $path" ;;
+      esac
+    done
   fi
   echo "Source fingerprint (db/dev/source_fingerprint.py):"
   echo "              ${FINGERPRINT}"
