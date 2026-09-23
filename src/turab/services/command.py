@@ -182,6 +182,24 @@ class CommandService:
             return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not your request")
         return ALLOW_DECISION
 
+    def _conflict_denial(self, conflict, operation_id: str, message: str) -> Decision:
+        """INV-1 on the command path, with the READ path's disclosure rule
+        (`AccessService._may_learn_of_conflict`).
+
+        A claimant already knows they claimed the resource and is told it is
+        contested; anyone else gets the ordinary concealment. The audit record
+        carries the full detail either way. Uncaught, this was a 500.
+        """
+        entitled = self._subject.account_id in conflict.accounts
+        self._auditor.claim_authority_conflict(
+            subject=self._subject, operation_id=operation_id,
+            trace_id=self._trace_id, resource_kind=conflict.kind.value,
+            resource_id=conflict.resource_id, accounts=conflict.accounts,
+            disclosed=entitled,
+        )
+        return deny(DenyReason.CLAIM_AUTHORITY_CONFLICT if entitled
+                    else DenyReason.OBJECT_NOT_AUTHORIZED, message)
+
     def authorize_property_scope(self, property_id: uuid.UUID) -> Decision:
         """A CUSTOMER may command only a PROPERTY they have authority over.
 
@@ -207,20 +225,8 @@ class CommandService:
         try:
             result = load_property(self._read_session, self._subject, property_id)
         except ClaimAuthorityConflict as conflict:
-            # INV-1 on the command path, with the READ path's disclosure rule
-            # (`AccessService._may_learn_of_conflict`): a claimant already
-            # knows they claimed it and is told it is contested; anyone else
-            # gets the ordinary concealment. Uncaught, this was a 500.
-            entitled = self._subject.account_id in conflict.accounts
-            self._auditor.claim_authority_conflict(
-                subject=self._subject, operation_id="property-scope",
-                trace_id=self._trace_id, resource_kind=conflict.kind.value,
-                resource_id=conflict.resource_id, accounts=conflict.accounts,
-                disclosed=entitled,
-            )
-            return deny(DenyReason.CLAIM_AUTHORITY_CONFLICT if entitled
-                        else DenyReason.OBJECT_NOT_AUTHORIZED,
-                        "not your property")
+            return self._conflict_denial(conflict, "property-scope",
+                                         "not your property")
         if not result.authorized:
             self._auditor.denied(
                 subject=self._subject, operation_id="property-scope",
@@ -244,9 +250,15 @@ class CommandService:
         """
         if self.is_staff:
             return ALLOW_DECISION
-        from ..auth.loaders import ResourceKind, load_offer
+        from ..auth.loaders import ClaimAuthorityConflict, ResourceKind, load_offer
 
-        result = load_offer(self._read_session, self._subject, offer_id)
+        try:
+            result = load_offer(self._read_session, self._subject, offer_id)
+        except ClaimAuthorityConflict as conflict:
+            # Raised only from condition 2, after the creator branch has
+            # already declined: the parent is contested, so a claim on it
+            # grants nothing (INV-1).
+            return self._conflict_denial(conflict, "offer-scope", "not your offer")
         if not result.authorized:
             self._auditor.denied(
                 subject=self._subject, operation_id="offer-scope",

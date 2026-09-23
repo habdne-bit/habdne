@@ -227,43 +227,71 @@ def load_offer(session: Session, subject: Subject, offer_id: uuid.UUID) -> LoadR
 
     The party match in the second branch is what stops a property claim from
     opening another party's offer on the same physical property (R4.13).
+
+    The two conditions are evaluated SEPARATELY, because they are independent
+    grants (§4.6), and only the second derives from a claim:
+
+      1. **Creator.** Decided on the offer alone. No claim is consulted, so a
+         claim conflict on the parent neither grants nor removes it.
+      2. **Parent-property claim.** The parent is first resolved to its
+         canonical property (R4.9) and the claim, the `CLAIMED` status and
+         INV-1 are all evaluated THERE — the same property `load_property`
+         evaluates. A parent claimed by more than one account raises
+         `ClaimAuthorityConflict` before this branch can grant anything, so
+         the caller audits it and applies the disclosure rule.
+
+    An earlier version tested condition 2 with a bare `EXISTS` on the offer's
+    own `property_id`: it ignored aliases and granted through a contested
+    parent (finding F-4).
     """
-    row = session.execute(
+    offer = session.execute(
         text(
             """
             SELECT o.offer_id, o.property_id, o.party_id, o.transaction_type::text,
                    o.status::text, o.asking_price_dzd, o.price_visibility::text,
-                   o.permission_scope::text, o.version
+                   o.permission_scope::text, o.version, o.created_by_account_id
               FROM turab.property_offers o
-              JOIN turab.properties p ON p.property_id = o.property_id
              WHERE o.offer_id = :offer_id
-               AND (
-                     -- condition 1: the actor created the offer
-                     (o.created_by_account_id IS NOT NULL
-                      AND o.created_by_account_id = :account_id)
-                  OR -- condition 2: all three terms together
-                     (:party_id IS NOT NULL
-                      AND o.party_id = :party_id
-                      AND p.claim_status = 'CLAIMED'
-                      AND EXISTS (
-                            SELECT 1 FROM turab.record_claim_events c
-                             WHERE c.property_id = p.property_id
-                               AND c.claimed_by_account_id = :account_id
-                          ))
+            """
+        ),
+        {"offer_id": offer_id},
+    ).mappings().first()
+    if offer is None:
+        return _denied(ResourceKind.OFFER, offer_id)
+
+    def granted() -> LoadResult:
+        row = {k: v for k, v in offer.items() if k != "created_by_account_id"}
+        return LoadResult(ResourceKind.OFFER, offer_id, row)
+
+    # Condition 1: the actor created the offer.
+    if (offer["created_by_account_id"] is not None
+            and offer["created_by_account_id"] == subject.account_id):
+        return granted()
+
+    # Condition 2 needs a party to match; without one it cannot hold, and
+    # there is nothing to evaluate on the parent.
+    if subject.party_id is None or offer["party_id"] != subject.party_id:
+        return _denied(ResourceKind.OFFER, offer_id)
+
+    parent = resolve_canonical_property(session, offer["property_id"])
+    _guard_claim_conflict(session, ResourceKind.PROPERTY, parent)
+    holds = session.execute(
+        text(
+            """
+            SELECT 1
+              FROM turab.properties p
+             WHERE p.property_id = :parent
+               AND p.claim_status = 'CLAIMED'
+               AND EXISTS (
+                     SELECT 1 FROM turab.record_claim_events c
+                      WHERE c.property_id = p.property_id
+                        AND c.claimed_by_account_id = :account_id
                    )
             """
         ),
-        {
-            "offer_id": offer_id,
-            "account_id": subject.account_id,
-            "party_id": subject.party_id,
-        },
-    ).mappings().first()
-    return (
-        LoadResult(ResourceKind.OFFER, offer_id, row)
-        if row
-        else _denied(ResourceKind.OFFER, offer_id)
-    )
+        {"parent": parent, "account_id": subject.account_id},
+    ).first()
+    return granted() if holds else _denied(ResourceKind.OFFER, offer_id)
 
 
 def load_opportunity(

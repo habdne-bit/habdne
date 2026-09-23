@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from turab.auth.audit import AccessAuditor, RecordingAuditSink
+from turab.auth.audit import AccessAuditor, AccessEvent, RecordingAuditSink
 from turab.db.session import audited_transaction
 from turab.services import offers as offer_service
 from turab.services.provenance import UpdateChannel
@@ -27,10 +27,15 @@ CONTRACT = "docs/handoff/05_API/openapi_v0.2.3.yaml"
 
 
 @pytest.fixture
-def client(engine):
+def sink():
+    return RecordingAuditSink()
+
+
+@pytest.fixture
+def client(engine, sink):
     from turab.app import create_app
 
-    app = create_app(engine=engine, auditor=AccessAuditor(RecordingAuditSink()))
+    app = create_app(engine=engine, auditor=AccessAuditor(sink))
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
 
@@ -491,6 +496,137 @@ def test_an_offer_on_a_contested_property_is_a_typed_409_to_a_claimant(client, i
                     json={"party_id": str(ids.AMINA), "transaction_type": "SALE"})
     assert r.status_code == 409, r.text
     assert r.json()["code"] == "CLAIM_AUTHORITY_CONFLICT"
+
+
+# --- F-4: the claim branch of §4.6 on a contested or aliased parent ---------
+#
+# Condition 1 (creator) and condition 2 (parent claim + party match + CLAIMED)
+# are independent grants. These tests prove each branch SEPARATELY, so a guard
+# that fixed condition 2 by also dropping condition 1 would fail here.
+# Claim events and alias rows are inserted directly: no API path creates them
+# yet (G3-2; identity review is step 7).
+
+def _claim(engine, property_id, *accounts):
+    with Session(bind=engine, future=True) as s:
+        for account in accounts:
+            s.execute(text("""INSERT INTO turab.record_claim_events
+                                     (property_id, claimed_by_account_id)
+                              VALUES (:p, :a)"""), {"p": property_id, "a": account})
+        s.commit()
+
+
+def _offer_by(engine, ids, property_id, party_id, created_by) -> dict:
+    """An offer whose creator account is chosen by the test."""
+    with Session(bind=engine, future=True) as s:
+        with audited_transaction(s, ids.ACC_OPERATOR):
+            row = offer_service.create_offer(
+                s, property_id=uuid.UUID(str(property_id)), party_id=party_id,
+                transaction_type="SALE", created_by_account_id=created_by)
+    return {"offer_id": str(row["offer_id"]), "version": row["version"]}
+
+
+def _alias(engine, ids, alias, canonical):
+    with Session(bind=engine, future=True) as s:
+        candidate = s.execute(
+            text("""INSERT INTO turab.property_identity_candidates
+                           (property_a_id, property_b_id, review_status)
+                    VALUES (:a, :b, 'PENDING_REVIEW')
+                 RETURNING identity_candidate_id"""),
+            {"a": uuid.UUID(str(alias)), "b": uuid.UUID(str(canonical))},
+        ).scalar_one()
+        s.execute(
+            text("""INSERT INTO turab.property_identity_aliases
+                           (alias_property_id, canonical_property_id,
+                            source_identity_candidate_id, resolved_by_account_id)
+                    VALUES (:alias, :canon, :cand, :acct)"""),
+            {"alias": uuid.UUID(str(alias)), "canon": uuid.UUID(str(canonical)),
+             "cand": candidate, "acct": ids.ACC_OPERATOR},
+        )
+        s.commit()
+
+
+def test_f4_a_claimant_is_admitted_on_an_uncontested_parent(client, ids, engine):
+    """The control for the next test: same shape, ONE claimant, so a refusal
+    there can only come from the conflict."""
+    pid = _property(client, staff(ids))
+    _claim(engine, pid, ids.ACC_AMINA)
+    offer = _offer_by(engine, ids, pid, ids.AMINA, ids.ACC_OPERATOR)
+    assert _patch(client, amina(ids), offer, {"asking_price_dzd": 1}).status_code == 200
+
+
+def test_f4_a_claimant_who_did_not_create_the_offer_is_refused_on_a_contested_parent(
+    client, ids, engine, sink
+):
+    """INV-1 before condition 2: the parent is claimed by two accounts, so a
+    claim on it grants nothing. She IS a claimant, so she is told why (409),
+    and the conflict is audited with `disclosed_to_caller` true."""
+    pid = _property(client, staff(ids))
+    _claim(engine, pid, ids.ACC_AMINA, ids.ACC_KHADIJA)
+    offer = _offer_by(engine, ids, pid, ids.AMINA, ids.ACC_OPERATOR)
+    r = _patch(client, amina(ids), offer, {"asking_price_dzd": 1})
+    assert r.status_code == 409, r.text
+    assert r.json()["code"] == "CLAIM_AUTHORITY_CONFLICT"
+    assert str(ids.ACC_KHADIJA) not in r.text, "the other claimant stays internal"
+    records = [x for x in sink.of(AccessEvent.CLAIM_AUTHORITY_CONFLICT)
+               if str(x.resource_id) == str(pid)]
+    assert records and records[-1].extra["disclosed_to_caller"] is True
+
+
+def test_f4_a_party_member_who_is_not_a_claimant_learns_nothing(client, ids, engine,
+                                                              sink):
+    """Same party as the offer, not a claimant, not the creator: 404, identical
+    to an offer that does not exist. The conflict is still audited."""
+    pid = _property(client, staff(ids))
+    _claim(engine, pid, ids.ACC_AMINA, ids.ACC_KHADIJA)
+    offer = _offer_by(engine, ids, pid, ids.AMINA, ids.ACC_OPERATOR)
+    second = {"Authorization": f"Bearer {ids.ACC_AMINA_SECOND}"}
+    r = _patch(client, second, offer, {"asking_price_dzd": 1})
+    assert r.status_code == 404, r.text
+    records = [x for x in sink.of(AccessEvent.CLAIM_AUTHORITY_CONFLICT)
+               if str(x.resource_id) == str(pid)]
+    assert records and records[-1].extra["disclosed_to_caller"] is False
+
+
+def test_f4_the_creator_keeps_authority_on_a_contested_parent(client, ids, engine):
+    """§4.6 condition 1 is independent of any claim. Brahim created the offer
+    and holds no claim; the parent's conflict is between two OTHER accounts
+    and neither grants nor removes his authority."""
+    pid = _property(client, staff(ids))
+    _claim(engine, pid, ids.ACC_AMINA, ids.ACC_KHADIJA)
+    offer = _offer_by(engine, ids, pid, ids.BRAHIM, ids.ACC_BRAHIM)
+    r = _patch(client, brahim(ids), offer, {"asking_price_dzd": 1})
+    assert r.status_code == 200, r.text
+
+
+def test_f4_a_claim_on_the_canonical_admits_an_offer_on_its_alias(client, ids, engine):
+    """R4.9 on condition 2: the parent resolves to its canonical, and the
+    claim and CLAIMED status are read THERE. The alias itself is ASSISTED /
+    UNCLAIMED and carries no claim, so the old per-row EXISTS refused this."""
+    canonical = _property(client, staff(ids))
+    _claim(engine, canonical, ids.ACC_AMINA)
+    r = client.post("/properties", headers={**staff(ids), **key()}, json={
+        "property_type": "APARTMENT", "supply_mode": "PUBLIC",
+        "management_mode": "ASSISTED", "claim_status": "UNCLAIMED"})
+    alias = r.json()["property_id"]
+    offer = _offer_by(engine, ids, alias, ids.AMINA, ids.ACC_OPERATOR)
+    _alias(engine, ids, alias, canonical)
+    assert _patch(client, amina(ids), offer, {"asking_price_dzd": 1}).status_code == 200
+
+
+def test_f4_a_contested_canonical_blocks_the_claim_branch_through_an_alias(
+    client, ids, engine
+):
+    """INV-1 is evaluated on the CANONICAL parent, not on the alias row."""
+    canonical = _property(client, staff(ids))
+    _claim(engine, canonical, ids.ACC_AMINA, ids.ACC_KHADIJA)
+    r = client.post("/properties", headers={**staff(ids), **key()}, json={
+        "property_type": "APARTMENT", "supply_mode": "PUBLIC",
+        "management_mode": "ASSISTED", "claim_status": "UNCLAIMED"})
+    alias = r.json()["property_id"]
+    offer = _offer_by(engine, ids, alias, ids.AMINA, ids.ACC_OPERATOR)
+    _alias(engine, ids, alias, canonical)
+    r = _patch(client, amina(ids), offer, {"asking_price_dzd": 1})
+    assert r.status_code == 409, r.text
 
 
 # --- the state machine (plan §3.5, G3-1) -----------------------------------
