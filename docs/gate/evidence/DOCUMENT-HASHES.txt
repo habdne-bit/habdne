@@ -73,3 +73,15 @@ docs/gate/SLICE_3_PLAN.md                     rev 6  1db1b5a1175d95020aff850dc27
   (UNCHANGED — same digest as the rev 6 delivered at 7f86687, no new revision)
 docs/gate/CONTRACT_DELTA_G3-6_...md           rev 3  de77ec850a2bd134e738fe3219a29307d86d2eb7c1dd8f60d173bd9e9559263c
   (UNCHANGED — same digest as the rev 3 delivered at 7f86687)
+
+--- round f58a92e -> adf24d3 (0002 re-runnability actually proven) -----------
+docs/gate/MIGRATION_POLICY.md                 rev 5  20b2be62fd8ba331d6852042df93fb80c02674533e5c7808f621f993986f17be
+  (withdraws the claim that ..._is_additive_and_re_runnable executed the body,
+   and records why the mutation that "confirmed" it did not)
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     f6b51e51edefc95830ae2e1772082c34e7c8f126c5caa924ce33bec2ff20cc37
+  (generated; cites the renamed test and the new one)
+docs/gate/SLICE_3_PLAN.md                     rev 6  1db1b5a1175d95020aff850dc270f2cdc5d49b7e204cd1d6b95484d9c8588445
+docs/gate/CONTRACT_DELTA_G3-6_...md           rev 3  de77ec850a2bd134e738fe3219a29307d86d2eb7c1dd8f60d173bd9e9559263c
+docs/gate/ALEMBIC_EVIDENCE_PACK.md            rev 2  dc6260fd98fff08e37d0544fe33f795298e261aa4bfcfba9fe4a152ed1d92486
+  (the three above are UNCHANGED this round — same digests as their last
+   delivery, so no new revision is claimed for any of them)
