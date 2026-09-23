@@ -1117,3 +1117,35 @@ def test_the_gate_recorder_takes_one_snapshot_for_the_count_and_the_list():
         "the count must be derived from the snapshot, not from a second call")
     assert 'printf \'%s\\n\' "$SNAPSHOT" | while read' in recorder, (
         "the list must be derived from the same snapshot")
+
+
+def test_gate_inputs_refuses_to_answer_outside_a_checkout(tmp_path):
+    """A copy run from outside a checkout must FAIL, not answer partially.
+
+    One did: shipped detached in a review bundle, it printed `db/gate` alone and
+    exited 0. Its root was computed from its own location, the entry script was
+    not found, and a helper that turned a missing file into "" let the walk end
+    at step one. The reviewer caught it by comparing it with the in-tree copy.
+
+    Both halves are asserted: the refusal outside a checkout, and the correct
+    answer when `--root` names one — so the fix is not simply "always fail".
+    """
+    import shutil
+
+    detached = tmp_path / "gate_inputs.py"
+    shutil.copy(REPO_ROOT / "db" / "gate" / "gate_inputs.py", detached)
+    python = str(REPO_ROOT / ".venv" / "bin" / "python")
+
+    refused = subprocess.run([python, str(detached)], capture_output=True, text=True)
+    assert refused.returncode == 2, (
+        f"a detached copy must refuse, got exit {refused.returncode} with "
+        f"stdout={refused.stdout!r}")
+    assert refused.stdout == "", (
+        "a refusal must print NO prefixes — a partial list is the defect")
+    assert "not a TURAB checkout" in refused.stderr
+
+    answered = subprocess.run([python, str(detached), "--root", str(REPO_ROOT)],
+                              capture_output=True, text=True)
+    assert answered.returncode == 0, answered.stderr
+    assert set(answered.stdout.split()) >= {
+        "db/gate", "docs/api", "docs/contract", "docs/handoff"}

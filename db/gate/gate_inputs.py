@@ -27,8 +27,18 @@ this question: naming a file an input when it is not costs a cautious label,
 while missing one produces a false assurance.
 
 Usage:
-  python db/gate/gate_inputs.py           # one path prefix per line
-  python db/gate/gate_inputs.py --classify PATH   # gate-input | source | other
+  python db/gate/gate_inputs.py                    # one path prefix per line
+  python db/gate/gate_inputs.py --classify PATH    # gate-input | source | other
+  python db/gate/gate_inputs.py --root DIR ...     # analyse another checkout
+
+**It fails rather than guessing.** A copy of this file run from outside a
+checkout once printed `db/gate` alone and exited 0: the repository root it
+computed from its own location was wrong, the entry script was therefore not
+found, and a helper that turned a missing file into an empty string let the
+walk end silently at its first step. A partial list of gate inputs is worse
+than none — it is exactly the false assurance this module exists to remove —
+so a missing entry script is now an error, and `--root` states the checkout
+explicitly when the file is not inside one.
 """
 from __future__ import annotations
 
@@ -36,6 +46,8 @@ import pathlib
 import re
 import sys
 
+#: Where this file lives in a checkout. Overridden by `--root`, and CHECKED
+#: before use: a wrong root must stop the program, not shorten its answer.
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 #: Repository-relative paths mentioned in a script. Deliberately loose.
@@ -50,12 +62,31 @@ _SOURCE_PREFIXES = ("src/", "tests/", "db/", "alembic.ini")
 ENTRY = "db/gate/run_gate.sh"
 
 
+class NotACheckout(RuntimeError):
+    """The root does not contain the gate's entry script."""
+
+
+def _require_checkout() -> None:
+    entry = ROOT / ENTRY
+    if not entry.is_file():
+        raise NotACheckout(
+            f"{entry} does not exist, so {ROOT} is not a TURAB checkout. "
+            "Refusing to report gate inputs: without the entry script the walk "
+            "would stop at its first step and print a PARTIAL list as though "
+            "it were complete. Run this file from inside a checkout, or pass "
+            "--root <checkout>."
+        )
+
+
 def _read(rel: str) -> str:
-    path = ROOT / rel
-    try:
-        return path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return ""
+    """Read a script the walk has already established EXISTS.
+
+    Callers only pass the entry (checked by `_require_checkout`) or paths that
+    `_script_candidates` found with `is_file()`. So an OSError here is a real
+    fault, and it propagates — an earlier version returned "" instead, which
+    is how a wrong root produced a short answer with exit status 0.
+    """
+    return (ROOT / rel).read_text(encoding="utf-8", errors="replace")
 
 
 def _script_candidates(text: str) -> set[str]:
@@ -75,6 +106,7 @@ def _script_candidates(text: str) -> set[str]:
 
 def reachable_paths() -> set[str]:
     """Every repository path reachable from the gate's entry script."""
+    _require_checkout()
     seen_scripts: set[str] = set()
     pending = [ENTRY]
     paths: set[str] = set()
@@ -123,12 +155,22 @@ def classify(path: str) -> str:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[0] == "--classify":
-        print(classify(argv[1]))
+    global ROOT
+    args = list(argv)
+    if "--root" in args:
+        i = args.index("--root")
+        ROOT = pathlib.Path(args[i + 1]).resolve()
+        del args[i:i + 2]
+    try:
+        if len(args) >= 2 and args[0] == "--classify":
+            print(classify(args[1]))
+            return 0
+        for prefix in sorted(input_prefixes()):
+            print(prefix)
         return 0
-    for prefix in sorted(input_prefixes()):
-        print(prefix)
-    return 0
+    except NotACheckout as exc:
+        print(f"gate_inputs: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
