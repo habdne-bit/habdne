@@ -1119,6 +1119,25 @@ def test_the_gate_recorder_takes_one_snapshot_for_the_count_and_the_list():
         "the list must be derived from the same snapshot")
 
 
+def test_the_other_label_makes_no_guarantee_the_scan_cannot_give():
+    """`[other]` means "not found by a TEXTUAL scan", nothing more.
+
+    It read "cannot affect this run" — a guarantee a text scan cannot give,
+    since a path assembled at run time never appears as text. Pinned as a text
+    check, and named as one: the reviewer's point is about what the header
+    CLAIMS, and a claim is text.
+    """
+    recorder = (REPO_ROOT / "db" / "gate" / "record_gate_run.sh").read_text(
+        encoding="utf-8")
+    echoed = "\n".join(line for line in recorder.splitlines()
+                        if line.lstrip().startswith("echo"))
+    assert "cannot affect" not in echoed, (
+        "the header must not promise that an [other] path cannot affect the run")
+    assert "not a proof" in echoed, "the header must state the label's limit"
+    doc = (REPO_ROOT / "db" / "gate" / "gate_inputs.py").read_text(encoding="utf-8")
+    assert "UNDER-include" in doc, "the derivation must document its blind spot"
+
+
 def test_gate_inputs_refuses_to_answer_outside_a_checkout(tmp_path):
     """A copy run from outside a checkout must FAIL, not answer partially.
 

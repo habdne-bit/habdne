@@ -29,6 +29,11 @@
 #     contract check from PASS to FAIL. Classification is now DERIVED by
 #     walking the call chain (db/gate/gate_inputs.py), so this script no longer
 #     makes a claim about other scripts that can drift from them.
+#   * Even the derived label overclaimed. "[other] ... cannot affect this run"
+#     is a guarantee the derivation cannot give: it is a TEXTUAL scan, and a
+#     path assembled at run time (joined from parts, read from an environment
+#     variable) is invisible to it. [other] now says only what is known — not
+#     found by the scan — and says that this is not a proof.
 set -euo pipefail
 cd "$(dirname "$0")/.."/..
 
@@ -64,7 +69,11 @@ classify() {
     echo "                [gate-input] the gate READS it — a change here can"
     echo "                             change the result below"
     echo "                [source]     the source fingerprint covers it"
-    echo "                [other]      neither; it cannot affect this run"
+    echo "                [other]      NOT FOUND by the textual scan of the"
+    echo "                             gate's call chain. This is not a proof"
+    echo "                             that the gate does not read it: a path"
+    echo "                             assembled at run time is invisible to"
+    echo "                             the scan (gate_inputs.py, 'Limits')"
     printf '%s\n' "$SNAPSHOT" | while read -r _ path rest; do
       [ -n "${path:-}" ] || continue
       printf '                [%s] %s\n' "$(classify "$path")" "$path"

@@ -21,10 +21,22 @@ call chain instead:
         -> every script THOSE invoke
           -> the repository paths any of them mention
 
-Anything reachable that way is a gate input. The walk is textual and therefore
-over-inclusive rather than under-inclusive, which is the safe direction for
-this question: naming a file an input when it is not costs a cautious label,
-while missing one produces a false assurance.
+Anything reachable that way is a gate input.
+
+**Limits — what the walk cannot see.** The walk is TEXTUAL. It over-includes
+where a path is written out (a mention in a comment still counts, which is the
+cautious direction), but it can also UNDER-include: a path assembled at run
+time — joined from parts, taken from an environment variable or an argument,
+or produced by a glob — does not appear as text, so a file read that way is
+reported `other`. An earlier docstring called the walk "over-inclusive rather
+than under-inclusive"; that was true only of written paths, and a reviewer
+rightly declined it as a guarantee. Consequently:
+
+  * `gate-input` is established: the path is mentioned in the call chain;
+  * `other` is NOT established: it means only "not found by this scan", and
+    no caller may present it as "cannot affect the gate". Making it provable
+    would need the gate's actual file reads (e.g. a traced run), which this
+    module does not do.
 
 Usage:
   python db/gate/gate_inputs.py                    # one path prefix per line
