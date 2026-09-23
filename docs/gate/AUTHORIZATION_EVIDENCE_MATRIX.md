@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **144**
-- Distinct tests cited: **409**
-- Suite total: **557/557** test cases passing (463 distinct test functions)
+- Rules and invariants covered: **145**
+- Distinct tests cited: **413**
+- Suite total: **561/561** test cases passing (467 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -137,6 +137,7 @@ matrix, because it reads as assurance.
 | `R-S2-03 follow-up` | The slot collision is a typed 409 in BOTH branches, under a parent lock, with no partial change and no key consumed | `test_moving_a_criterion_onto_an_occupied_slot_is_409`<br>`test_the_refused_move_records_no_provenance_and_frees_its_key`<br>`test_a_move_to_a_free_slot_still_succeeds`<br>`test_two_concurrent_adds_of_the_same_slot_yield_one_success_and_one_409`<br>`test_a_concurrent_move_onto_a_slot_being_taken_is_refused` | PASS |
 | `R-S2-05 follow-up` | An empty string is not a null, and a datetime without an offset is a 4xx rather than a 500 | `test_an_empty_free_text_field_is_accepted`<br>`test_null_clears_a_nullable_field`<br>`test_omitting_a_field_leaves_it_unchanged`<br>`test_null_is_still_refused_for_a_non_nullable_field`<br>`test_a_confirmation_without_a_timezone_is_refused`<br>`test_a_historical_confirmation_with_an_offset_is_accepted`<br>`test_a_future_confirmation_with_an_offset_is_still_refused` | PASS |
 | `G3-7 / R4.6` | The property-scoped consent gate implements RFC-001 R4.6's currency predicate: a future, unstarted or expired relation backs nothing | `test_a_current_relation_permits_a_property_consent_binding`<br>`test_a_future_relation_is_refused`<br>`test_a_relation_with_no_start_is_refused`<br>`test_an_open_ended_relation_is_still_current`<br>`test_an_expired_relation_is_refused`<br>`test_no_relation_at_all_is_refused`<br>`test_another_partys_relation_is_refused`<br>`test_the_migrated_function_reads_valid_from` | PASS |
+| `R14.7 / gate attribution` | A gate log names the tree it ran against, and an uncommitted path is labelled by whether the gate READS it — derived from the call chain, not from a hand-kept list | `test_the_gate_input_list_follows_the_scripts_the_gate_invokes`<br>`test_the_contract_corrections_file_is_a_gate_input`<br>`test_the_recorder_derives_its_labels_rather_than_declaring_them`<br>`test_the_gate_recorder_takes_one_snapshot_for_the_count_and_the_list` | PASS |
 | `R14.4-R14.7 / baseline guarantee` | Revision 0001 is structurally identical to the frozen schema, with no delta permitted against it | `test_revision_0001_is_structurally_identical_to_the_frozen_schema`<br>`test_no_delta_is_ever_declared_against_the_baseline_revision` | PASS |
 | `R14.4-R14.7 / head guarantee` | head is the frozen baseline plus named, digested, approved deltas and no undeclared difference | `test_head_is_the_baseline_plus_exactly_the_declared_deltas`<br>`test_the_delta_check_catches_an_undeclared_structural_change`<br>`test_every_delta_names_a_revision_object_reason_and_proving_test`<br>`test_the_only_declared_delta_for_0003_is_the_consent_binding_function` | PASS |
 | `0003 migration safety` | Re-running is safe, stepwise equals direct, and downgrade is refused because reverting restores the weaker gate | `test_0003_is_re_runnable`<br>`test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade`<br>`test_0003_refuses_to_downgrade` | PASS |

@@ -19,8 +19,16 @@
 #     a list of three. There is now ONE snapshot, taken before anything is
 #     written, and both the count and the list come from it.
 #   * It marked every non-source path "[doc] cannot affect what ran", which is
-#     false: the gate READS docs/handoff and docs/api. The labels below say
-#     what is actually true of each path.
+#     false: the gate READS docs/handoff and docs/api.
+#   * Replacing that with a hand-written prefix list did not go far enough. The
+#     list was taken from the paths written literally in run_gate.sh, so it
+#     could not see what the scripts run_gate.sh INVOKES read: step 7 calls
+#     generate_effective_contract.py, which reads
+#     docs/contract/CONTRACT_CORRECTIONS.yaml. That file was labelled "[other]
+#     cannot affect this run" while a comment-only edit to it flipped the
+#     contract check from PASS to FAIL. Classification is now DERIVED by
+#     walking the call chain (db/gate/gate_inputs.py), so this script no longer
+#     makes a claim about other scripts that can drift from them.
 set -euo pipefail
 cd "$(dirname "$0")/.."/..
 
@@ -36,16 +44,10 @@ FINGERPRINT="$($PY db/dev/source_fingerprint.py .)"
 SNAPSHOT="$(git status --porcelain || true)"
 DIRTY="$(printf '%s' "$SNAPSHOT" | grep -c . || true)"
 
-# Paths the gate actually READS, from run_gate.sh itself: the frozen handoff
-# package, the effective contract, and its own scripts. A change under one of
-# these can change the gate's result; `check_gate_inputs_are_current` in the
-# test suite fails if this list drifts from what the script references.
+# Derived, not declared: gate_inputs.py follows run_gate.sh into the scripts it
+# invokes and reports what any of them reads. Nothing here to keep in sync.
 classify() {
-  case "$1" in
-    docs/handoff/*|docs/api/*|db/gate/*) echo "gate-input" ;;
-    src/*|tests/*|db/*|alembic.ini)      echo "source" ;;
-    *)                                    echo "other" ;;
-  esac
+  $PY db/gate/gate_inputs.py --classify "$1"
 }
 
 {
@@ -76,9 +78,15 @@ classify() {
                         -U "${PGUSER:-turab}" -tAc 'SHOW server_version' postgres 2>/dev/null \
                         | sed 's/^ *//;s/ *$//')"
   echo
-  echo "The gate output below is deterministic: it is a function of the frozen"
-  echo "package, so an unchanged package yields an identical body. The header"
-  echo "is what binds this run to a tree; compare the fingerprint, not the body."
+  echo "The gate output below is deterministic, but not of the frozen package"
+  echo "alone: it is a function of every file the gate reads — the frozen"
+  echo "package AND the effective contract and its corrections under"
+  echo "docs/contract, which step 7 checks. Those inputs unchanged, the body is"
+  echo "identical. The header is what binds this run to a tree; compare the"
+  echo "fingerprint and the labels above, not the body."
+  echo
+  echo "Gate inputs, as derived by db/gate/gate_inputs.py from the call chain:"
+  $PY db/gate/gate_inputs.py | sed 's/^/                /'
   echo "-------------------------------------------------------"
   echo
 } > "$OUT"

@@ -1035,39 +1035,67 @@ def test_0004_refuses_a_btree_gist_installed_outside_public():
 
 # --- the gate-run recorder's own claims ------------------------------------
 
-def test_the_gate_recorder_classifies_the_paths_the_gate_actually_reads():
-    """`record_gate_run.sh` labels an uncommitted path `[gate-input]` when the
-    gate READS it. That label is a claim about another script, so it can drift.
+def test_the_gate_input_list_follows_the_scripts_the_gate_invokes():
+    """The classification must reach inputs of INVOKED scripts, not only paths
+    written in the entry script.
 
-    An earlier version labelled every non-source path
-    "[doc] cannot affect what ran", which was simply untrue: the gate reads the
-    frozen handoff package and the effective contract. This test pins the
-    classification to what `run_gate.sh` actually references.
+    This is the defect that made the previous version of this test useless. It
+    parsed `run_gate.sh` for literal paths and compared them against a
+    hand-written prefix list — so both sides missed
+    `docs/contract/CONTRACT_CORRECTIONS.yaml`, which step 7's
+    `generate_effective_contract.py` reads. The file was labelled "[other]
+    cannot affect this run" while a comment-only edit to it flipped the
+    contract check from PASS to FAIL.
+
+    The check is now the other way round: every path mentioned by any script
+    reachable from the entry point must classify as a gate input. A test that
+    compares a list against itself proves nothing; this one compares the
+    classifier against the scripts.
     """
     import re
+    sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
+    import gate_inputs
 
+    missed = []
+    for script in sorted(gate_inputs.reachable_paths()):
+        if not script.endswith((".py", ".sh")):
+            continue
+        text = (REPO_ROOT / script).read_text(encoding="utf-8", errors="replace")
+        for path in re.findall(r"(?<![\w./-])(?:docs|db)/[A-Za-z0-9_./-]+", text):
+            if gate_inputs.classify(path) != "gate-input":
+                missed.append((script, path, gate_inputs.classify(path)))
+    assert not missed, (
+        "these paths are read by a script the gate runs, but are not "
+        f"classified as gate inputs: {missed}"
+    )
+
+
+def test_the_contract_corrections_file_is_a_gate_input():
+    """Named explicitly, because this is the file the general rule missed.
+
+    `generate_effective_contract.py --check` is step 7 of the gate and reads
+    it; a comment-only change there makes the effective contract stale and the
+    step fail. It must never again be labelled as unable to affect the run.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
+    import gate_inputs
+
+    corrections = "docs/contract/CONTRACT_CORRECTIONS.yaml"
+    assert (REPO_ROOT / corrections).is_file(), corrections
+    assert gate_inputs.classify(corrections) == "gate-input"
+    assert "docs/contract" in gate_inputs.input_prefixes()
+
+
+def test_the_recorder_derives_its_labels_rather_than_declaring_them():
+    """A hand-kept list in the recorder is what drifted. It must call the
+    derivation, not restate it."""
     recorder = (REPO_ROOT / "db" / "gate" / "record_gate_run.sh").read_text(
         encoding="utf-8")
-    gate = (REPO_ROOT / "db" / "gate" / "run_gate.sh").read_text(encoding="utf-8")
-
-    # The prefixes the recorder calls gate inputs.
-    match = re.search(r"docs/handoff/\*\|docs/api/\*\|db/gate/\*", recorder)
-    assert match, "the recorder's gate-input case has changed shape; re-read it"
-    claimed = {"docs/handoff", "docs/api", "db/gate"}
-
-    # The top-level directories run_gate.sh reads, derived from the script.
-    referenced = {
-        "/".join(p.split("/")[:2])
-        for p in re.findall(r"(?:docs|db|src|tests)/[A-Za-z0-9_./-]+", gate)
-    }
-    reads = {p for p in referenced if p.startswith(("docs/", "db/"))}
-
-    missing = reads - claimed
-    assert not missing, (
-        f"run_gate.sh reads {sorted(missing)}, which record_gate_run.sh does "
-        "not label [gate-input] — an uncommitted change there would be "
-        "reported as unable to affect the result when it can"
-    )
+    assert "gate_inputs.py --classify" in recorder, (
+        "the recorder must classify through db/gate/gate_inputs.py")
+    assert "docs/handoff/*|docs/api/*" not in recorder, (
+        "the hand-written prefix case is back; it is what drifted from the "
+        "scripts and missed docs/contract")
 
 
 def test_the_gate_recorder_takes_one_snapshot_for_the_count_and_the_list():

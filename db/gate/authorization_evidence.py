@@ -578,6 +578,14 @@ RULES: tuple[Rule, ...] = (
           "test_no_relation_at_all_is_refused",
           "test_another_partys_relation_is_refused",
           "test_the_migrated_function_reads_valid_from")),
+    Rule("R14.7 / gate attribution",
+         "A gate log names the tree it ran against, and an uncommitted path is "
+         "labelled by whether the gate READS it — derived from the call chain, "
+         "not from a hand-kept list",
+         ("test_the_gate_input_list_follows_the_scripts_the_gate_invokes",
+          "test_the_contract_corrections_file_is_a_gate_input",
+          "test_the_recorder_derives_its_labels_rather_than_declaring_them",
+          "test_the_gate_recorder_takes_one_snapshot_for_the_count_and_the_list")),
     Rule("R14.4-R14.7 / baseline guarantee",
          "Revision 0001 is structurally identical to the frozen schema, with "
          "no delta permitted against it",
