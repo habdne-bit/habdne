@@ -8,6 +8,14 @@ with a zero fractional part", Core §4.2.1).
 
 `JsonInteger` accepts exactly the JSON Schema set: a JSON number with a zero
 fractional part, and never a boolean or a string.
+
+`JsonNumber` is the same rule for `number`: any JSON number, integers
+included (an integer IS a JSON Schema `number`), and never a boolean or a
+string. Pydantic's lax `float` accepts `true` and `"1.5"`.
+
+Neither type touches UUIDs, dates or any other field: the decision (F-3) is
+about numbers only, and global strict mode would also refuse the ISO-8601
+strings a JSON body can only carry dates as.
 """
 from __future__ import annotations
 
@@ -27,4 +35,11 @@ def _json_integer(value: Any) -> Any:
     return value
 
 
+def _json_number(value: Any) -> Any:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("must be a JSON number")
+    return value
+
+
 JsonInteger = Annotated[int, BeforeValidator(_json_integer)]
+JsonNumber = Annotated[float, BeforeValidator(_json_number)]

@@ -32,6 +32,7 @@ from ...services import requests as request_service
 from ...services.requests import UpdateChannel
 from ...services.concurrency import HEADER, IfMatchRequired, parse_if_match
 from ..deps import Access, Command
+from ..json_types import JsonInteger
 from ..problems import ProblemCode, coded, for_denial, trace_id_of
 from .parties import _run
 
@@ -71,7 +72,7 @@ class RequestCriterionInput(_Body):
     value: Any
     unit: str | None = None
     blocking_if_unknown: bool = False
-    sort_order: int = 100
+    sort_order: JsonInteger = 100
 
 
 class RequestCreate(_Body):
@@ -86,8 +87,8 @@ class RequestCreate(_Body):
     primary_location_id: uuid.UUID | None = None
     location_importance: str | None = Field(default=None, pattern=IMPORTANCE)
     local_location_detail: str | None = None
-    budget_target_dzd: int | None = Field(default=None, ge=0)
-    budget_max_dzd: int | None = Field(default=None, ge=0)
+    budget_target_dzd: JsonInteger | None = Field(default=None, ge=0)
+    budget_max_dzd: JsonInteger | None = Field(default=None, ge=0)
     budget_importance: str | None = Field(default=None, pattern=IMPORTANCE)
     budget_flexibility: str | None = Field(
         default=None, pattern="^(STRICT|LOW|MODERATE|HIGH|UNSPECIFIED)$"
@@ -135,8 +136,8 @@ class RequestPatch(_Body):
     desired_property_type: str | None = Field(default=None, pattern=PROPERTY_TYPE_PATTERN)
     primary_location_id: uuid.UUID | None = None
     local_location_detail: str | None = None
-    budget_target_dzd: int | None = Field(default=None, ge=0)
-    budget_max_dzd: int | None = Field(default=None, ge=0)
+    budget_target_dzd: JsonInteger | None = Field(default=None, ge=0)
+    budget_max_dzd: JsonInteger | None = Field(default=None, ge=0)
 
 
 class RequestStateCommand(_Body):
