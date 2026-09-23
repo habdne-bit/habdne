@@ -6,15 +6,15 @@ one as a run at the commit it shipped with. The accurate description of that
 artefact was "a saved run on an identical source tree", not "a re-run at this
 commit". This binds the two.
 
-Recorded    : 2026-09-23 18:33:57 UTC
-Commit      : adf24d3a01607b49cebb010a185bfd7c3184715c
+Recorded    : 2026-09-23 20:55:22 UTC
+Commit      : e5ae0060f4aba0bcb9faa7d3a47f7c698778f29f
 Working tree: clean at the moment the suite started
 Source fingerprint (db/dev/source_fingerprint.py):
-              297beef46a41d3e2e7028bb9d033e08c6fd1e5dfa6745189fa1266871076933a
+              dd3db134c396a9af5bf9bd9cd592d60a631a7f94644610057e3e6b7031cd7835
 Report      : docs/gate/evidence/junit-run.xml
 JUnit timestamp / totals:
-              timestamp=2026-09-23T18:33:57.328241+00:00
-              tests=557 failures=0 errors=0 skipped=0 time=38.885s
+              timestamp=2026-09-23T20:55:22.901405+00:00
+              tests=559 failures=0 errors=0 skipped=0 time=40.222s
 
 WHAT THIS DOES AND DOES NOT SAY
   * It says: these tests were run, at this time, against a tree whose source

@@ -85,3 +85,11 @@ docs/gate/CONTRACT_DELTA_G3-6_...md           rev 3  de77ec850a2bd134e738fe3219a
 docs/gate/ALEMBIC_EVIDENCE_PACK.md            rev 2  dc6260fd98fff08e37d0544fe33f795298e261aa4bfcfba9fe4a152ed1d92486
   (the three above are UNCHANGED this round — same digests as their last
    delivery, so no new revision is claimed for any of them)
+
+--- round adf24d3 -> e5ae006 (gate attribution) ------------------------------
+db/gate/record_gate_run.sh                    --     e7552781d5fd6b1a7e721086af8d833bfcd3a2986736789e4e810297efa57100
+  (one snapshot for the count and the list; labels say what the gate reads)
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     f6b51e51edefc95830ae2e1772082c34e7c8f126c5caa924ce33bec2ff20cc37
+No decision document changed this round; the plan (rev 6), the G3-6 Delta
+(rev 3), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2) all carry their
+previous digests, so no new revision is claimed for any of them.
