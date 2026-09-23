@@ -1031,3 +1031,61 @@ def test_0004_refuses_a_btree_gist_installed_outside_public():
     finally:
         subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
                        capture_output=True)
+
+
+# --- the gate-run recorder's own claims ------------------------------------
+
+def test_the_gate_recorder_classifies_the_paths_the_gate_actually_reads():
+    """`record_gate_run.sh` labels an uncommitted path `[gate-input]` when the
+    gate READS it. That label is a claim about another script, so it can drift.
+
+    An earlier version labelled every non-source path
+    "[doc] cannot affect what ran", which was simply untrue: the gate reads the
+    frozen handoff package and the effective contract. This test pins the
+    classification to what `run_gate.sh` actually references.
+    """
+    import re
+
+    recorder = (REPO_ROOT / "db" / "gate" / "record_gate_run.sh").read_text(
+        encoding="utf-8")
+    gate = (REPO_ROOT / "db" / "gate" / "run_gate.sh").read_text(encoding="utf-8")
+
+    # The prefixes the recorder calls gate inputs.
+    match = re.search(r"docs/handoff/\*\|docs/api/\*\|db/gate/\*", recorder)
+    assert match, "the recorder's gate-input case has changed shape; re-read it"
+    claimed = {"docs/handoff", "docs/api", "db/gate"}
+
+    # The top-level directories run_gate.sh reads, derived from the script.
+    referenced = {
+        "/".join(p.split("/")[:2])
+        for p in re.findall(r"(?:docs|db|src|tests)/[A-Za-z0-9_./-]+", gate)
+    }
+    reads = {p for p in referenced if p.startswith(("docs/", "db/"))}
+
+    missing = reads - claimed
+    assert not missing, (
+        f"run_gate.sh reads {sorted(missing)}, which record_gate_run.sh does "
+        "not label [gate-input] — an uncommitted change there would be "
+        "reported as unable to affect the result when it can"
+    )
+
+
+def test_the_gate_recorder_takes_one_snapshot_for_the_count_and_the_list():
+    """The count and the list must come from the SAME snapshot.
+
+    They did not: the count was taken before the output file was created and
+    the list after, so the header read "2 uncommitted path(s)" above a list of
+    three. Pinned as a text check, and named as one — there is no way to assert
+    it from a database.
+    """
+    recorder = (REPO_ROOT / "db" / "gate" / "record_gate_run.sh").read_text(
+        encoding="utf-8")
+    assert 'SNAPSHOT="$(git status --porcelain' in recorder, (
+        "the recorder must capture one snapshot into a variable")
+    assert recorder.count("git status --porcelain") == 1, (
+        "git status is called more than once; the count and the list can "
+        "then disagree, which is the defect this test exists to prevent")
+    assert 'printf \'%s\' "$SNAPSHOT" | grep -c' in recorder, (
+        "the count must be derived from the snapshot, not from a second call")
+    assert 'printf \'%s\\n\' "$SNAPSHOT" | while read' in recorder, (
+        "the list must be derived from the same snapshot")
