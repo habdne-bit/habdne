@@ -27,6 +27,7 @@ from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ...auth.loaders import ResourceKind
+from ...dto.boundaries import Audience, assert_no_forbidden_fields
 from ...services import freshness as freshness_service
 from ...services import requests as request_service
 from ...services.requests import UpdateChannel
@@ -278,6 +279,21 @@ def _internal_request(row, fresh=None, criteria=None) -> dict[str, Any]:
     return body
 
 
+def _customer_checked(command, operation_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    """Check a command response against the R9.2 floor for the caller.
+
+    `Request` requires `management_mode` and `claim_status` (via
+    `RequestCreate`), so a CUSTOMER response carries them under numbered
+    exception R9.2-EX-01, scoped to this operation's top-level keys. Any
+    other floor field fails loudly.
+    """
+    assert_no_forbidden_fields(
+        body, Audience.INTERNAL if command.is_staff else Audience.CUSTOMER,
+        operation_id=operation_id,
+    )
+    return body
+
+
 def _request_error(exc: request_service.RequestError, trace: str):
     code = (ProblemCode[exc.code] if exc.code in ProblemCode.__members__
             else ProblemCode.VALIDATION_FAILED)
@@ -351,9 +367,9 @@ def create_request(request: Request, body: RequestCreate, command: Command):
                 recorded_by_account_id=command.subject.account_id,
                 channel=_channel(command),
             )
-        return 201, _internal_request(
+        return 201, _customer_checked(command, "postRequests", _internal_request(
             request_service.read_request(session, row["request_id"])
-        )
+        ))
 
     return _run(request, command, "postRequests", "POST /requests",
                 body.model_dump(mode="json"), handler, 201,
@@ -463,7 +479,7 @@ def update_request(
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
         )
-        return 200, _internal_request(row)
+        return 200, _customer_checked(command, "patchRequestsRequestId", _internal_request(row))
 
     return _run(request, command, "patchRequestsRequestId",
                 f"PATCH /requests/{request_id}",
@@ -547,7 +563,7 @@ def change_state(request: Request, request_id: uuid.UUID,
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
         )
-        return 200, _internal_request(row)
+        return 200, _customer_checked(command, "postRequestsRequestIdState", _internal_request(row))
 
     return _run(request, command, "postRequestsRequestIdState",
                 f"POST /requests/{request_id}/state",
@@ -578,7 +594,7 @@ def reconfirm_request(request: Request, request_id: uuid.UUID,
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
         )
-        return 200, _internal_request(row)
+        return 200, _customer_checked(command, "postRequestsRequestIdReconfirm", _internal_request(row))
 
     return _run(request, command, "postRequestsRequestIdReconfirm",
                 f"POST /requests/{request_id}/reconfirm",

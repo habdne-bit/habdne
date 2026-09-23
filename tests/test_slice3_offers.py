@@ -323,8 +323,13 @@ def test_seller_expectation_never_appears_in_a_public_or_customer_payload(client
                  o=created["offer_id"])
     assert stored[0]["v"] == 222, "the value is stored, only never rendered"
 
-    public = client.get("/public/properties")
-    assert "seller_expectation_dzd" not in public.text
+    # The public list is step 6 and not served yet: a GET against it returned a
+    # 404 body, which "does not contain the field" vacuously. The public DTO
+    # TYPES exist now, and they have no such field to render.
+    from turab.dto.boundaries import PublicOfferSummary, PublicPropertySummary
+
+    for model in (PublicOfferSummary, PublicPropertySummary):
+        assert "seller_expectation_dzd" not in model.model_fields
 
 
 def test_staff_do_see_the_seller_expectation(client, ids):

@@ -27,6 +27,7 @@ from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from ...auth.loaders import ResourceKind
+from ...dto.boundaries import Audience, assert_no_forbidden_fields
 from ...services import properties as property_service
 from ...services.concurrency import HEADER, IfMatchRequired, parse_if_match
 from ...services.provenance import UpdateChannel
@@ -147,6 +148,22 @@ def _view(row) -> dict:
     return view
 
 
+def _command_view(row, command, operation_id: str) -> dict:
+    """`_view`, checked against the R9.2 floor for the caller's audience.
+
+    A CUSTOMER response here carries `management_mode` and `claim_status`
+    because the contract's `Property` requires them; that is numbered
+    exception R9.2-EX-01 (`dto/boundaries.FLOOR_EXCEPTIONS`), scoped to this
+    operation's top-level keys. Any OTHER floor field would fail loudly.
+    """
+    view = _view(row)
+    assert_no_forbidden_fields(
+        view, Audience.INTERNAL if command.is_staff else Audience.CUSTOMER,
+        operation_id=operation_id,
+    )
+    return view
+
+
 @router.post("/properties", operation_id="postProperties", status_code=201)
 def create_property(request: Request, body: PropertyCreate, command: Command):
     """Create the physical record.
@@ -205,7 +222,7 @@ def create_property(request: Request, body: PropertyCreate, command: Command):
             canonical_location_id=body.canonical_location_id,
             **optional,
         )
-        return 201, _view(row)
+        return 201, _command_view(row, command, "postProperties")
 
     return _run(request, command, "postProperties", "POST /properties",
                 body.model_dump(mode="json", exclude_unset=True), handler, 201,
@@ -261,7 +278,7 @@ def patch_property(
             recorded_by_account_id=command.subject.account_id,
             channel=_channel(command),
         )
-        return 200, _view(row)
+        return 200, _command_view(row, command, "patchPropertiesPropertyId")
 
     return _run(request, command, "patchPropertiesPropertyId",
                 f"PATCH /properties/{property_id}",

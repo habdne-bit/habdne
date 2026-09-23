@@ -12,6 +12,7 @@ simply not in the model, and nothing happens.
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -70,20 +71,82 @@ class FieldLeak(AssertionError):
     """A forbidden field reached an outward-facing payload."""
 
 
-def assert_no_forbidden_fields(payload: Any, audience: Audience) -> None:
+@dataclass(frozen=True, slots=True)
+class FloorException:
+    """A NUMBERED, bounded exception to the R9.2 floor.
+
+    ADR-06 forbids management metadata in customer DTOs "unless explicitly
+    approved by the relevant sharing contract". An exception names the
+    fields, the operations whose declared response carries them, and the
+    decision that approved it. It applies ONLY to the top-level keys of those
+    operations' responses — never to a nested object, never to another
+    operation, never to a `/me` read or the public list. The fields stay in
+    `NEVER_SERIALIZED`: the floor is not lowered, a hole is cut in it with an
+    edge a test can find.
+    """
+
+    number: str
+    fields: frozenset[str]
+    operations: frozenset[str]
+    basis: str
+
+
+#: The register. Adding to it is a decision, not an implementation choice.
+FLOOR_EXCEPTIONS: tuple[FloorException, ...] = (
+    FloorException(
+        number="R9.2-EX-01",
+        fields=frozenset({"management_mode", "claim_status"}),
+        # Every operation whose `x-roles` admits CUSTOMER and whose 2xx
+        # response is `Property` or `Request` — both `allOf` a create body that
+        # REQUIRES the two fields. Derived from the contract and asserted equal
+        # to this set by a test, so neither can drift from the other.
+        operations=frozenset({
+            "postProperties", "patchPropertiesPropertyId",
+            "postPropertiesPropertyIdReconfirm",
+            "postRequests", "patchRequestsRequestId",
+            "postRequestsRequestIdState", "postRequestsRequestIdReconfirm",
+        }),
+        basis=(
+            "Decision F-1: the declared response schema of these commands is "
+            "the explicit sharing approval ADR-06 permits. The basis is the "
+            "schema, NOT that the customer supplied the values at creation: "
+            "the response may carry state changed since."
+        ),
+    ),
+)
+
+
+def exempted_fields(operation_id: str | None) -> frozenset[str]:
+    """The floor fields an operation's TOP-LEVEL response may carry."""
+    if operation_id is None:
+        return frozenset()
+    allowed: set[str] = set()
+    for exception in FLOOR_EXCEPTIONS:
+        if operation_id in exception.operations:
+            allowed |= exception.fields
+    return frozenset(allowed)
+
+
+def assert_no_forbidden_fields(
+    payload: Any, audience: Audience, *, operation_id: str | None = None
+) -> None:
     """Belt-and-braces check on a rendered payload.
 
     The types already make a leak hard; this makes it loud. Internal payloads
     are exempt by definition — they are the audience the fields exist for.
+
+    `operation_id` admits the numbered `FLOOR_EXCEPTIONS` for that operation,
+    at the top level of the payload only.
     """
     if audience is Audience.INTERNAL:
         return
+    exempt = exempted_fields(operation_id)
     found: list[str] = []
 
     def walk(node: Any, path: str = "") -> None:
         if isinstance(node, Mapping):
             for key, value in node.items():
-                if key in NEVER_SERIALIZED:
+                if key in NEVER_SERIALIZED and not (path == "" and key in exempt):
                     found.append(f"{path}{key}")
                 walk(value, f"{path}{key}.")
         elif isinstance(node, (list, tuple)):

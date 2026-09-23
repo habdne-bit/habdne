@@ -221,3 +221,73 @@ arrive in step 7).
 - Full suite: **678 passed** on PostgreSQL 16.13. The bound run is recorded in
   `docs/gate/evidence/TEST-RUN-PROVENANCE.txt` and `junit-run.xml` at the
   commit named there.
+
+---
+
+## 4. Decisions received, and how each was applied
+
+The decisions were issued against the code at `d5f8c85`. That round had not
+received the `1802352` bundle. Each item below names the commit that applies
+it.
+
+### F-4 · applied in `d3c016e`
+
+- The claim branch of §4.6 now resolves the parent to its canonical property.
+- It checks INV-1 on that canonical parent before granting anything.
+- The creator branch is evaluated on its own and is not affected by a claim
+  conflict. §4.6 grants it independently. Removing it too would be a further
+  narrowing, and that needs its own decision text.
+- A conflict is audited. A claimant gets 409; anyone else gets 404.
+
+Tests prove each branch separately:
+- a non-creator claimant on a contested parent is refused;
+- the creator on the same kind of parent is admitted.
+
+### F-2 · applied in `6d4ba7a`
+
+- A new write to an identity alias is refused with
+  `409 IDENTITY_ALIAS_NOT_CANONICAL`.
+- The refusal is raised after the object check on the canonical property, so
+  an unauthorized caller still gets 404.
+- Existing offers on the alias are neither moved nor relinked (ADR-03).
+- On refusal, the row, its version, its provenance claims, its audit rows and
+  the idempotency key are all unchanged.
+
+### F-3 · applied in `3a1a88b`
+
+- `JsonInteger` and `JsonNumber` are applied to the numeric fields of Slice 2
+  and step 1.
+- `true`, `"123"` and `"1.5"` are 422 field errors. Nothing is written, and
+  the key is not consumed.
+- An integer is a valid `number`.
+- `null` keeps its meaning where the contract allows it.
+- UUIDs and dates are untouched.
+
+### F-1 · applied as numbered exception **R9.2-EX-01**
+
+- **Register:** `dto/boundaries.FLOOR_EXCEPTIONS`. Both fields stay in
+  `NEVER_SERIALIZED`.
+- **Scope:** the top-level keys of the responses of seven operations. A test
+  derives those seven operations from the contract and asserts they equal
+  the register: CUSTOMER in `x-roles`, and a 2xx body of `Property` or
+  `Request`. One of the seven, `postPropertiesPropertyIdReconfirm`, belongs
+  to step 4 and is not implemented yet; the exception covers it in advance.
+- **Enforcement:** the floor check now runs on the six implemented customer
+  command responses. With the exception disabled, those responses become 500.
+- **Tests confirm the fields never appear:**
+  - in a nested object;
+  - on any other operation;
+  - in a `/me` read;
+  - in the public DTO types.
+- **Basis:** the declared response schema, as the explicit approval ADR-06
+  permits. The argument in §2 F-1 above, that the customer sent the values
+  themselves, is **rejected as the basis**. A response may carry state that
+  changed after creation.
+
+### A weak assertion found while applying F-1
+
+`test_seller_expectation_never_appears_in_a_public_or_customer_payload`
+checked that the field was absent from the text of `GET /public/properties`.
+That route is step 6 and is not served yet. The response was a 404 body, so
+the assertion held without testing anything. It now asserts on the public DTO
+types, which exist. An HTTP check against the list belongs to step 6.
