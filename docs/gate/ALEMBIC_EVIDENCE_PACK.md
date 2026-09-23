@@ -173,7 +173,7 @@ passing**:
 | structural equality (§3.2) | `test_the_migrated_database_is_structurally_identical_to_the_frozen_schema`, `test_the_fingerprint_notices_a_changed_function_body` |
 | baseline integrity (R14.6) | `test_the_migration_refuses_a_baseline_that_is_not_the_frozen_one`, `test_the_declared_digest_is_the_frozen_one` |
 | autogenerate refused (R14.4) | `test_autogenerate_is_refused`, `test_env_declares_no_metadata_to_diff_against`, `test_there_is_no_downgrade_from_the_baseline` |
-| the stamp path (§3.3) | `test_a_stamped_database_is_already_at_head`, `test_upgrading_a_stamped_database_is_a_no_op`, `test_the_dev_reset_script_stamps_through_the_guard`, `test_stamping_a_database_that_is_not_the_baseline_is_refused`, `test_stamping_the_real_baseline_succeeds` |
+| the stamp path (§3.3) | `test_a_stamped_database_is_at_the_baseline_not_head`, `test_the_first_upgrade_after_stamping_applies_the_later_revisions`, `test_the_dev_reset_script_stamps_through_the_guard`, `test_stamping_a_database_that_is_not_the_baseline_is_refused`, `test_stamping_the_real_baseline_succeeds` |
 | version table location (§3.4) | `test_the_version_table_is_pinned_to_public` |
 
 Whole suite at the time of writing: **355 passing**. Evidence matrix: **0

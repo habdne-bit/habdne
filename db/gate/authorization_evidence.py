@@ -354,8 +354,10 @@ RULES: tuple[Rule, ...] = (
           "test_env_declares_no_metadata_to_diff_against",
           "test_there_is_no_downgrade_from_the_baseline")),
     Rule("R14.4 stamp",
-         "A database built from the frozen SQL is stamped, so upgrade is a no-op",
-         ("test_a_stamped_database_is_already_at_head",
+         "A database built from the frozen SQL is stamped at the BASELINE, so "
+         "the baseline is not re-applied; the first upgrade then applies the "
+         "later revisions and the second changes nothing",
+         ("test_a_stamped_database_is_at_the_baseline_not_head",
           "test_the_first_upgrade_after_stamping_applies_the_later_revisions",
           "test_the_dev_reset_script_stamps_through_the_guard")),
     # --- CORRECTION-001 / decision D7 ---------------------------------------

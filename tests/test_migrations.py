@@ -248,6 +248,35 @@ def test_there_is_no_downgrade_from_the_baseline():
 # applies the whole baseline on top of itself and dies on the first duplicate
 # object. That is the trap Slice 2 would have walked into.
 
+def _migration_data(connection) -> dict[str, object]:
+    """The ROW data a migration writes, which the structural fingerprint does
+    not cover and a re-run could therefore disturb unnoticed.
+
+    Only `0002` writes rows (three `reason_codes` in category
+    `REQUEST_CLOSURE`); `0003` replaces a function body and `0004` adds a
+    constraint, neither of which touches data. The whole `reason_codes` table
+    is digested rather than just that category, so a migration that modified a
+    SEEDED row — the thing a migration must never do — would also show up.
+    """
+    import hashlib
+
+    rows = connection.execute(
+        text("""SELECT code, category, label_ar, label_en, active
+                  FROM turab.reason_codes ORDER BY code""")
+    ).fetchall()
+    digest = hashlib.sha256(
+        "\n".join("\x1f".join(str(v) for v in r) for r in rows).encode()
+    ).hexdigest()
+    return {
+        "reason_codes_digest": digest,
+        "reason_codes_count": len(rows),
+        "request_closure_count": connection.execute(
+            text("SELECT count(*) FROM turab.reason_codes "
+                 "WHERE category = 'REQUEST_CLOSURE'")
+        ).scalar_one(),
+    }
+
+
 @pytest.fixture(scope="module")
 def stamped():
     """A database built the way reset_db.sh builds one: SQL, then stamp."""
@@ -272,7 +301,13 @@ def stamped():
                    capture_output=True)
 
 
-def test_a_stamped_database_is_already_at_head(stamped):
+def test_a_stamped_database_is_at_the_baseline_not_head(stamped):
+    """Renamed. It was `..._is_already_at_head`, which said the opposite of
+    what it asserts — its own failure message already said "the BASELINE, not
+    the head". The name was true when the baseline WAS the head, and stayed
+    behind when `0002` arrived; the migration policy then cited it by that
+    name, so a reader checking the claim met a test that disproved it.
+    """
     engine, _ = stamped
     with engine.connect() as c:
         assert c.execute(text("SELECT version_num FROM alembic_version")).scalar_one() \
@@ -327,12 +362,47 @@ def test_the_first_upgrade_after_stamping_applies_the_later_revisions(stamped):
     assert overlap == 1, "0004 was not applied"
     assert reasons == 3, "0002 was not applied"
 
-    # 3. the SECOND upgrade is the real no-op — same fingerprint, byte for byte
+    # 3. the SECOND upgrade changes nothing — structure, the rows the
+    #    migrations write, AND the recorded version.
+    #
+    #    The structural fingerprint alone cannot carry this claim: it
+    #    deliberately excludes row data (see baseline_fingerprint's docstring),
+    #    so on its own it would prove only that the CATALOG is unchanged, while
+    #    `0002` writes rows and no catalog object at all.
+    #
+    #    **What this does and does not establish**, established by experiment
+    #    rather than assumed. A second `upgrade head` applies NOTHING: alembic
+    #    reads `alembic_version`, sees the database already at head, and runs
+    #    no migration body — confirmed by the absence of any "Running upgrade"
+    #    line in its output. So what is proven here is that alembic's
+    #    bookkeeping holds and that nothing drifted, NOT that the migration
+    #    bodies are individually idempotent.
+    #
+    #    That separate property — 0002 applied twice inserting nothing twice —
+    #    is proven by `test_the_closure_reason_migration_is_additive_and_re_runnable`,
+    #    which executes the body directly. Mutating 0002 to insert
+    #    unconditionally fails THAT test and leaves this one passing, which is
+    #    how the division of labour was checked.
+    with engine.connect() as c:
+        rows_before = _migration_data(c)
+        version_before = c.execute(
+            text("SELECT version_num FROM alembic_version")).scalar_one()
+
     again = _alembic("upgrade", "head", env_extra={"TURAB_DATABASE_URL": url})
     assert again.returncode == 0, again.stderr
+
     with engine.connect() as c:
         assert fingerprint(c) == after_first, (
-            "a second upgrade changed the catalog; it must be a no-op")
+            "a second upgrade changed the catalog; it must change nothing")
+        assert _migration_data(c) == rows_before, (
+            "a second upgrade changed the rows the migrations write; "
+            "`INSERT ... WHERE NOT EXISTS` is what makes 0002 re-runnable")
+        assert c.execute(
+            text("SELECT version_num FROM alembic_version")).scalar_one() \
+            == version_before == HEAD
+        assert c.execute(
+            text("SELECT count(*) FROM alembic_version")).scalar_one() == 1, (
+            "alembic_version must hold exactly one row")
 
 
 def test_the_dev_reset_script_stamps_through_the_guard(stamped):

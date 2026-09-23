@@ -116,8 +116,21 @@ The accurate statement, and what is now asserted in three steps:
    `enforce_consent_binding` (no `valid_from`);
 2. the first `upgrade head` reaches head and the deltas are visibly applied —
    the corrected gate, the overlap constraint, and the `REQUEST_CLOSURE` codes;
-3. the **second** upgrade is the real no-op, asserted by an unchanged
-   structural fingerprint rather than by a count.
+3. the **second** upgrade changes nothing — asserted on three things, not on
+   a count and not on the fingerprint alone: the structural fingerprint, the
+   ROW data the migrations write (the fingerprint excludes row data, and
+   `0002` writes rows and no catalog object), and `alembic_version`.
+
+**Said exactly, because the mechanism is not what the phrase "no-op" suggests.**
+A second `upgrade head` applies *nothing*: alembic reads `alembic_version`,
+sees the database at head, and runs no migration body — there is no "Running
+upgrade" line in its output. So that test establishes that the bookkeeping
+holds and nothing drifted; it does **not** establish that the migration bodies
+are individually idempotent. That is a different property, proven separately by
+`test_the_closure_reason_migration_is_additive_and_re_runnable`, which executes
+the body directly. Mutating `0002` to insert unconditionally fails that test and
+leaves the no-op test passing — which is how the division was checked rather
+than assumed.
 
 ## 2. What is mechanically prevented
 
@@ -127,7 +140,7 @@ The accurate statement, and what is now asserted in three steps:
 | The digest guard being compared against a stale constant | The declared digest is asserted equal to the file's | `test_the_declared_digest_is_the_frozen_one` |
 | Autogenerate proposing a migration that drops the baseline | `env.py` sets `target_metadata = None`, so Alembic refuses `--autogenerate` before writing any revision file | `test_autogenerate_is_refused`, `test_env_declares_no_metadata_to_diff_against` |
 | A second root revision nobody noticed | One head asserted | `test_there_is_exactly_one_head` |
-| A development database invisible to Alembic | `reset_db.sh` stamps the **initial** revision, so the baseline is not re-applied onto itself. The first `upgrade head` then applies `0002`–`0004`; the SECOND is the no-op — see the correction below | `test_a_stamped_database_is_already_at_head`, `test_the_first_upgrade_after_stamping_applies_the_later_revisions`, `test_the_dev_reset_script_stamps` |
+| A development database invisible to Alembic | `reset_db.sh` stamps the **initial** revision, so the baseline is not re-applied onto itself. The first `upgrade head` then applies `0002`–`0004`; the SECOND is the no-op — see the correction below | `test_a_stamped_database_is_at_the_baseline_not_head`, `test_the_first_upgrade_after_stamping_applies_the_later_revisions`, `test_the_dev_reset_script_stamps` |
 | A migration that "runs" but builds a partial schema | The migrated catalog is compared to the static audit's **independent parse** of the same file | `test_the_migrated_catalog_matches_the_static_audit` |
 
 The last row is the one that carries weight. The other checks ask whether the
