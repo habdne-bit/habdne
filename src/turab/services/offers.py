@@ -185,6 +185,23 @@ class UnknownReasonCode(OfferError):
         )
 
 
+class AliasParent(OfferError):
+    """Decided F-2: an offer is not created on an identity alias. See
+    `properties.AliasNotCanonical`, whose rule and ordering this shares."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__("IDENTITY_ALIAS_NOT_CANONICAL", detail)
+
+
+def _refuse_alias_parent(session: Session, property_id: uuid.UUID) -> None:
+    from .properties import AliasNotCanonical, refuse_alias
+
+    try:
+        refuse_alias(session, property_id)
+    except AliasNotCanonical as exc:
+        raise AliasParent(exc.detail) from exc
+
+
 class OfferStateChanged(OfferError):
     """The compare-and-set lost: the offer left the state this transition was
     decided from before the transition could be applied (plan §6.3)."""
@@ -272,6 +289,7 @@ def create_offer(
     unknown = set(optional) - set(CREATE_OPTIONAL)
     if unknown:
         raise NotPatchable(sorted(unknown))
+    _refuse_alias_parent(session, property_id)
     if (transaction_type != "SALE"
             and optional.get("seller_expectation_dzd") is not None):
         raise SellerExpectationOnRent()

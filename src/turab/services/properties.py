@@ -115,6 +115,44 @@ class UnknownLocation(PropertyError):
         )
 
 
+class AliasNotCanonical(PropertyError):
+    """A write names an identity ALIAS rather than its canonical property.
+
+    Decided F-2: refused with `409 IDENTITY_ALIAS_NOT_CANONICAL`. The refusal
+    is raised INSIDE the command, i.e. after the route's object check, which
+    already resolved the alias to the canonical (R4.9): an actor with no
+    authority is refused with the ordinary 404 before this can be reached, so
+    the 409 never tells an unauthorized caller that the id exists.
+
+    Nothing already attached to the alias is moved or relinked (ADR-03:
+    identity resolution is non-destructive). Only NEW writes are refused.
+    """
+
+    def __init__(self, property_id, canonical_id) -> None:
+        self.canonical_id = canonical_id
+        super().__init__(
+            "IDENTITY_ALIAS_NOT_CANONICAL",
+            f"property {property_id} is an identity alias of {canonical_id}; "
+            "write to the canonical property",
+        )
+
+
+def refuse_alias(session: Session, property_id: uuid.UUID) -> None:
+    """Raise `AliasNotCanonical` if `property_id` is an identity alias.
+
+    Aliases are created only by identity review (plan step 7), which will have
+    to take the property's row lock so this check and a concurrent aliasing
+    cannot interleave; until then no path creates one.
+    """
+    canonical = session.execute(
+        text("""SELECT canonical_property_id FROM turab.property_identity_aliases
+                 WHERE alias_property_id = :p"""),
+        {"p": property_id},
+    ).scalar_one_or_none()
+    if canonical is not None:
+        raise AliasNotCanonical(property_id, canonical)
+
+
 class NotPatchable(PropertyError):
     """Names the field AND why, because 'unknown field' would be misleading
     for `current_availability`, which is a real column reached another way."""
@@ -287,6 +325,7 @@ def patch_property(
         raise PropertyError("VALIDATION_FAILED", "no fields to update")
 
     before = _row(session, property_id)
+    refuse_alias(session, property_id)
     assignments = ", ".join(
         f"{c} = CAST(:{c} AS {_CASTS[c]})" if c in _CASTS else f"{c} = :{c}"
         for c in changes

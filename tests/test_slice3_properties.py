@@ -688,3 +688,87 @@ def test_the_command_path_audits_the_conflict(client, ids, engine, sink):
 
     records = sink.of(AccessEvent.CLAIM_AUTHORITY_CONFLICT)
     assert [str(r.resource_id) for r in records] == [pid], records
+
+
+# --- F-2: a write aimed at an identity alias --------------------------------
+#
+# Alias rows are inserted directly: identity review, the only path that creates
+# them, is step 7.
+
+def _aliased_pair(client, ids, engine):
+    """Amina's canonical property, and a staff-created alias of it."""
+    canonical = _new_property(client, ids, f"f2-canon-{uuid.uuid4()}")
+    alias = _new_property(client, ids, f"f2-alias-{uuid.uuid4()}", who=staff(ids),
+                          management_mode="ASSISTED", claim_status="UNCLAIMED")
+    with Session(bind=engine, future=True) as s:
+        candidate = s.execute(
+            text("""INSERT INTO turab.property_identity_candidates
+                           (property_a_id, property_b_id, review_status)
+                    VALUES (:a, :b, 'PENDING_REVIEW')
+                 RETURNING identity_candidate_id"""),
+            {"a": uuid.UUID(alias), "b": uuid.UUID(canonical)},
+        ).scalar_one()
+        s.execute(
+            text("""INSERT INTO turab.property_identity_aliases
+                           (alias_property_id, canonical_property_id,
+                            source_identity_candidate_id, resolved_by_account_id)
+                    VALUES (:alias, :canon, :cand, :acct)"""),
+            {"alias": uuid.UUID(alias), "canon": uuid.UUID(canonical),
+             "cand": candidate, "acct": ids.ACC_OPERATOR},
+        )
+        s.commit()
+    return canonical, alias
+
+
+def _footprint(engine, property_id):
+    """Everything a write would change: the row, its version, its trail."""
+    with Session(bind=engine, future=True) as s:
+        row = dict(s.execute(text(
+            """SELECT version, local_location_detail, updated_at
+                 FROM turab.properties WHERE property_id = :p"""),
+            {"p": property_id}).mappings().one())
+        row["claims"] = s.execute(text(
+            "SELECT count(*) FROM turab.claims WHERE property_id = :p"),
+            {"p": property_id}).scalar_one()
+        row["audit"] = s.execute(text(
+            """SELECT count(*) FROM turab.audit_log
+                WHERE entity_table = 'properties' AND entity_id = :p"""),
+            {"p": property_id}).scalar_one()
+    return row
+
+
+def test_f2_a_patch_on_an_alias_is_refused_and_changes_nothing(client, ids, engine):
+    """Authorized through the canonical (R4.9), so the caller is told WHY."""
+    _, alias = _aliased_pair(client, ids, engine)
+    before = _footprint(engine, alias)
+    r = client.patch(f"/properties/{alias}", json={"local_location_detail": "x"},
+                     headers={**cust(ids), "If-Match-Version": str(before["version"])})
+    assert r.status_code == 409, r.text
+    assert r.json()["code"] == "IDENTITY_ALIAS_NOT_CANONICAL"
+    assert _footprint(engine, alias) == before
+
+
+def test_f2_staff_are_refused_the_same_way(client, ids, engine):
+    _, alias = _aliased_pair(client, ids, engine)
+    before = _footprint(engine, alias)
+    r = client.patch(f"/properties/{alias}", json={"local_location_detail": "x"},
+                     headers={**staff(ids), "If-Match-Version": str(before["version"])})
+    assert r.status_code == 409, r.text
+    assert _footprint(engine, alias) == before
+
+
+def test_f2_an_unauthorized_caller_gets_404_not_the_alias_refusal(client, ids, engine):
+    """The alias check runs AFTER the object check: a 409 here would tell an
+    actor with no authority that the id exists and is an alias."""
+    _, alias = _aliased_pair(client, ids, engine)
+    brahim = {"Authorization": f"Bearer {ids.ACC_BRAHIM}"}
+    r = client.patch(f"/properties/{alias}", json={"local_location_detail": "x"},
+                     headers={**brahim, "If-Match-Version": "1"})
+    assert r.status_code == 404, r.text
+
+
+def test_f2_the_canonical_is_still_writable(client, ids, engine):
+    canonical, _ = _aliased_pair(client, ids, engine)
+    r = client.patch(f"/properties/{canonical}", json={"local_location_detail": "x"},
+                     headers={**cust(ids), "If-Match-Version": "1"})
+    assert r.status_code == 200, r.text

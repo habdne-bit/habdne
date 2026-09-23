@@ -629,6 +629,53 @@ def test_f4_a_contested_canonical_blocks_the_claim_branch_through_an_alias(
     assert r.status_code == 409, r.text
 
 
+# --- F-2: no new offer on an identity alias ---------------------------------
+
+def test_f2_an_offer_is_not_created_on_an_alias(client, ids, engine):
+    """409 after authorization, nothing written, and the key not consumed."""
+    canonical = _property(client, amina(ids))
+    r = client.post("/properties", headers={**staff(ids), **key()}, json={
+        "property_type": "APARTMENT", "supply_mode": "PUBLIC",
+        "management_mode": "ASSISTED", "claim_status": "UNCLAIMED"})
+    alias = r.json()["property_id"]
+    _alias(engine, ids, alias, canonical)
+
+    k = {"Idempotency-Key": f"s3o-f2-{uuid.uuid4()}"}
+    body = {"party_id": str(ids.AMINA), "transaction_type": "SALE"}
+    r = client.post(f"/properties/{alias}/offers", headers={**amina(ids), **k},
+                    json=body)
+    assert r.status_code == 409, r.text
+    assert r.json()["code"] == "IDENTITY_ALIAS_NOT_CANONICAL"
+    assert not _db(engine, "SELECT 1 FROM turab.property_offers WHERE property_id = :p",
+                   p=alias)
+    assert not _db(engine, "SELECT 1 FROM turab.idempotency_records "
+                           "WHERE idempotency_key = :k", k=k["Idempotency-Key"])
+
+
+def test_f2_an_unauthorized_caller_is_told_nothing_about_the_alias(client, ids, engine):
+    canonical = _property(client, amina(ids))
+    alias = _property(client, staff(ids))
+    _alias(engine, ids, alias, canonical)
+    r = client.post(f"/properties/{alias}/offers", headers={**brahim(ids), **key()},
+                    json={"party_id": str(ids.BRAHIM), "transaction_type": "SALE"})
+    assert r.status_code == 404, r.text
+
+
+def test_f2_existing_offers_on_an_alias_are_left_where_they_are(client, ids, engine):
+    """ADR-03: identity resolution is non-destructive. The refusal applies to
+    NEW writes; an offer made before the alias existed is not moved."""
+    canonical = _property(client, staff(ids))
+    alias = _property(client, staff(ids))
+    offer = _offer(client, staff(ids), alias, ids.BRAHIM)
+    _alias(engine, ids, alias, canonical)
+    r = client.post(f"/properties/{alias}/offers", headers={**staff(ids), **key()},
+                    json={"party_id": str(ids.BRAHIM), "transaction_type": "SALE"})
+    assert r.status_code == 409
+    rows = _db(engine, "SELECT property_id::text AS p FROM turab.property_offers "
+                       "WHERE offer_id = :o", o=offer["offer_id"])
+    assert rows[0]["p"] == alias
+
+
 # --- the state machine (plan §3.5, G3-1) -----------------------------------
 
 #: How to reach each state from DRAFT with staff transitions.
