@@ -49,6 +49,15 @@ class ProblemCode(StrEnum):
     #: 422: the body is well formed and the request is refused because of
     #: the resource's current state, which is what a conflict is.
     DUPLICATE_CRITERION_SLOT = "DUPLICATE_CRITERION_SLOT"
+    #: An offer transition lost its compare-and-set: the offer left the state
+    #: the transition was decided from before it could apply (Slice 3 plan
+    #: §6.3). 409 for the same reason as above — the body is well formed and
+    #: the refusal is about the resource's current state.
+    OFFER_STATE_CHANGED = "OFFER_STATE_CHANGED"
+    #: `ux_offer_primary_source` reached despite the parent-offer lock. Not the
+    #: normal outcome of two lock-serialised links (plan §3.6), which both
+    #: succeed; mapped so that a path bypassing the lock is a 409, not a 500.
+    PRIMARY_SOURCE_CONFLICT = "PRIMARY_SOURCE_CONFLICT"
     #: The contract's declared condition on `postRecordsClaim` is not met.
     #: 403, not 404: the caller already named a record they may not claim,
     #: and concealing it would leave them unable to tell a wrong id from a
@@ -83,6 +92,8 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.RESOURCE_ALREADY_CLAIMED: (409, "Already claimed"),
     ProblemCode.RESOURCE_NOT_CLAIMABLE: (409, "Not claimable"),
     ProblemCode.DUPLICATE_CRITERION_SLOT: (409, "Duplicate criterion"),
+    ProblemCode.OFFER_STATE_CHANGED: (409, "Offer state changed"),
+    ProblemCode.PRIMARY_SOURCE_CONFLICT: (409, "Primary source conflict"),
     ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),

@@ -177,6 +177,8 @@ _SCOPE_GUARDS = (
     # Slice 3. R4.1 evaluated by REUSING `load_property`, the loader the read
     # path uses, so one authority rule has one implementation.
     "authorize_property_scope",
+    # Slice 3, step 2. RFC-001 §4.6 evaluated by REUSING `load_offer`.
+    "authorize_offer_scope",
     "authorize_staff_only",
 )
 

@@ -202,9 +202,25 @@ class CommandService:
         """
         if self.is_staff:
             return ALLOW_DECISION
-        from ..auth.loaders import ResourceKind, load_property
+        from ..auth.loaders import ClaimAuthorityConflict, ResourceKind, load_property
 
-        result = load_property(self._read_session, self._subject, property_id)
+        try:
+            result = load_property(self._read_session, self._subject, property_id)
+        except ClaimAuthorityConflict as conflict:
+            # INV-1 on the command path, with the READ path's disclosure rule
+            # (`AccessService._may_learn_of_conflict`): a claimant already
+            # knows they claimed it and is told it is contested; anyone else
+            # gets the ordinary concealment. Uncaught, this was a 500.
+            entitled = self._subject.account_id in conflict.accounts
+            self._auditor.claim_authority_conflict(
+                subject=self._subject, operation_id="property-scope",
+                trace_id=self._trace_id, resource_kind=conflict.kind.value,
+                resource_id=conflict.resource_id, accounts=conflict.accounts,
+                disclosed=entitled,
+            )
+            return deny(DenyReason.CLAIM_AUTHORITY_CONFLICT if entitled
+                        else DenyReason.OBJECT_NOT_AUTHORIZED,
+                        "not your property")
         if not result.authorized:
             self._auditor.denied(
                 subject=self._subject, operation_id="property-scope",
@@ -214,6 +230,32 @@ class CommandService:
             )
             return deny(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED,
                         "not your property")
+        return ALLOW_DECISION
+
+    def authorize_offer_scope(self, offer_id: uuid.UUID) -> Decision:
+        """A CUSTOMER may command only an OFFER they have authority over.
+
+        RFC-001 §4.6 exactly, by reusing `load_offer` — the one
+        implementation of that rule — for the same reason
+        `authorize_property_scope` reuses `load_property`: the creator
+        account, OR a parent-property claim AND a party match AND a `CLAIMED`
+        parent. `offer.party_id` alone never grants (R4.12), and a claim on
+        the property never opens another party's offer on it (R4.13).
+        """
+        if self.is_staff:
+            return ALLOW_DECISION
+        from ..auth.loaders import ResourceKind, load_offer
+
+        result = load_offer(self._read_session, self._subject, offer_id)
+        if not result.authorized:
+            self._auditor.denied(
+                subject=self._subject, operation_id="offer-scope",
+                trace_id=self._trace_id,
+                reason_code=(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED).value,
+                resource_kind=ResourceKind.OFFER.value, resource_id=offer_id,
+            )
+            return deny(result.reason or DenyReason.OBJECT_NOT_AUTHORIZED,
+                        "not your offer")
         return ALLOW_DECISION
 
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:

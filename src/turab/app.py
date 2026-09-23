@@ -14,7 +14,8 @@ from sqlalchemy import text as sa_text
 from .api import handlers
 from .api.routes import (
     auth, consents, internal, me, parties,
-    properties as property_routes, records, requests as request_routes,
+    offers as offer_routes, properties as property_routes, records,
+    requests as request_routes,
 )
 from .auth.audit import AccessAuditor
 from .auth.contract import build_policy_table, verify_policy_matches_contract
@@ -94,4 +95,5 @@ def create_app(
     app.include_router(records.router)
     app.include_router(request_routes.router)
     app.include_router(property_routes.router)
+    app.include_router(offer_routes.router)
     return app

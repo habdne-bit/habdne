@@ -632,3 +632,59 @@ def test_a_zero_area_is_refused_rather_than_silently_dropped(client, ids):
     r = client.post("/properties", json=body(land_area_m2=0),
                     headers={**cust(ids), "Idempotency-Key": "s3-zero-area"})
     assert r.status_code == 422, r.text
+
+
+# --- INV-1 on the COMMAND path ---------------------------------------------
+
+def _contested_property(client, ids, engine):
+    """A property Amina created, then claimed by TWO distinct accounts.
+
+    The claim events are inserted directly: PROPERTY claim eligibility is still
+    undecided (G3-2), so no API path creates them. This proves what a command
+    does when the condition exists, not that a flow creates it.
+    """
+    pid = _new_property(client, ids, f"contested-{uuid.uuid4()}")
+    with Session(bind=engine, future=True) as s:
+        for account in (ids.ACC_AMINA, ids.ACC_KHADIJA):
+            s.execute(text("""INSERT INTO turab.record_claim_events
+                                     (property_id, claimed_by_account_id)
+                              VALUES (:p, :a)"""), {"p": pid, "a": account})
+        s.commit()
+    return pid
+
+
+def test_a_contested_property_is_a_typed_409_to_a_claimant_on_a_command(
+    client, ids, engine
+):
+    """INV-1: authority goes to nobody — and the refusal is TYPED.
+
+    `authorize_property_scope` reuses `load_property`, which raises
+    `ClaimAuthorityConflict`; nothing on the command path caught it, so the
+    customer got a 500. The read path's rule is applied instead: a claimant
+    already knows they claimed it and is told the claim is contested.
+    """
+    pid = _contested_property(client, ids, engine)
+    r = client.patch(f"/properties/{pid}", json={"local_location_detail": "x"},
+                     headers={**cust(ids), "If-Match-Version": "1"})
+    assert r.status_code == 409, r.text
+    assert r.json()["code"] == "CLAIM_AUTHORITY_CONFLICT"
+
+
+def test_a_contested_property_is_concealed_from_an_unrelated_customer(
+    client, ids, engine
+):
+    pid = _contested_property(client, ids, engine)
+    brahim = {"Authorization": f"Bearer {ids.ACC_BRAHIM}"}
+    r = client.patch(f"/properties/{pid}", json={"local_location_detail": "x"},
+                     headers={**brahim, "If-Match-Version": "1"})
+    assert r.status_code == 404, r.text
+
+
+def test_the_command_path_audits_the_conflict(client, ids, engine, sink):
+    pid = _contested_property(client, ids, engine)
+    client.patch(f"/properties/{pid}", json={"local_location_detail": "x"},
+                 headers={**cust(ids), "If-Match-Version": "1"})
+    from turab.auth.audit import AccessEvent
+
+    records = sink.of(AccessEvent.CLAIM_AUTHORITY_CONFLICT)
+    assert [str(r.resource_id) for r in records] == [pid], records
