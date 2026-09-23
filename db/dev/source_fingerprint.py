@@ -4,7 +4,8 @@
 The previous rounds computed this with an ad-hoc shell pipeline that was
 never committed, which means the recorded value could not be reproduced by a
 reviewer. The recipe therefore lives here now, and the value recorded in
-`docs/gate/evidence/RUN-PROVENANCE.txt` is this script's output.
+`docs/gate/evidence/TEST-RUN-PROVENANCE.txt` and `gate-run.txt`
+carry this script's output, each bound to the run it describes.
 
 Recipe, deliberately simple enough to re-implement in any language:
 

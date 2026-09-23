@@ -13,7 +13,7 @@ round revisited none of them. Matching is not started, and PROPERTY claim
 eligibility is not decided — neither may be settled implicitly.
 
 The 485 test cases and the 8/8 gate are the developer's own run, recorded in
-`docs/gate/evidence/RUN-PROVENANCE.txt`. The acceptance review states it did
+`docs/gate/evidence/ARCHIVE-RUN-PROVENANCE-2026-09-22.txt` (renamed from `RUN-PROVENANCE.txt`). The acceptance review states it did
 not re-run the PostgreSQL suite or the concurrency tests on an independent
 server, and its acceptance is not presented as confirmation that they did.
 

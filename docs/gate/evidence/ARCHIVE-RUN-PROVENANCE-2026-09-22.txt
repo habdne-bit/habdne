@@ -1,3 +1,11 @@
+*** HISTORICAL — superseded. Renamed from RUN-PROVENANCE.txt. ***
+***
+*** This records a run of 2026-09-22 and sat beside the CURRENT round's logs,
+*** where it could be read as describing them. The live evidence is:
+***     gate-run.txt              the gate, bound to its commit and fingerprint
+***     TEST-RUN-PROVENANCE.txt   the test report, bound the same way
+*** Kept rather than deleted: it is the provenance of an earlier round.
+***
 TURAB — run provenance, recorded AT RUN TIME
 empty-string regression on CREATE; contention witness bound to its backend
 ============================================

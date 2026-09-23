@@ -462,7 +462,8 @@ RULES: tuple[Rule, ...] = (
           "test_a_reason_from_another_category_is_refused",
           "test_the_other_closure_reason_requires_a_note",
           "test_closing_is_not_a_substitute_for_staleness_or_pausing",
-          "test_the_closure_reason_migration_is_additive_and_re_runnable")),
+          "test_the_closure_reason_migration_is_additive",
+          "test_0002_body_re_executed_inserts_nothing_twice")),
     Rule("G-1 corrected",
          "The actor is distinguished from the source: channel, asserted party, "
          "whether a source was recorded, and the previous value",

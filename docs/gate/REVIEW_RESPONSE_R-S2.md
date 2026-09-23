@@ -418,7 +418,7 @@ declared operational gap and D4 open, this slice supports development and
 review, not a live trial.
 
 **Source of the results.** The 485 test cases and the 8/8 gate are **our**
-saved run, recorded in `docs/gate/evidence/RUN-PROVENANCE.txt`. The acceptance
+saved run, recorded in `docs/gate/evidence/ARCHIVE-RUN-PROVENANCE-2026-09-22.txt` (renamed from `RUN-PROVENANCE.txt`, so it cannot be mistaken for a later round's log). The acceptance
 review states it did not re-run the PostgreSQL suite or the concurrency tests
 on an independent server, and we do not present its acceptance as
 independent confirmation that they ran.

@@ -4,8 +4,8 @@
 **Do not edit.** The status column is a real test result, not an assertion.
 
 - Rules and invariants covered: **144**
-- Distinct tests cited: **408**
-- Suite total: **556/556** test cases passing (462 distinct test functions)
+- Distinct tests cited: **409**
+- Suite total: **557/557** test cases passing (463 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -118,7 +118,7 @@ matrix, because it reads as assurance.
 | `Slice 2 mandatory 5` | An assisted request cannot be CLAIMED | `test_the_management_pair_is_refused_when_incoherent`<br>`test_the_database_refuses_it_too`<br>`test_an_assisted_request_is_created_unclaimed`<br>`test_an_assisted_record_cannot_be_created_claimed` | PASS |
 | `CORRECTION-002 / §5.2` | The adopted transition table is enforced; undefined edges are refused | `test_the_documented_path_works_end_to_end`<br>`test_an_undefined_transition_is_refused_not_guessed`<br>`test_an_undefined_transition_is_refused_over_http`<br>`test_an_active_request_may_be_paused_or_closed_directly` | PASS |
 | `CORRECTION-002 / reactivation` | Reactivation is the state command itself; it refreshes no confirmation, and reconfirming never resurrects PAUSED or CLOSED | `test_reactivation_is_the_explicit_command_itself`<br>`test_reactivation_does_not_refresh_the_confirmation`<br>`test_reconfirming_does_not_resurrect_a_paused_or_closed_request` | PASS |
-| `CORRECTION-002 / closure reasons` | Closing requires an adopted REQUEST_CLOSURE reason; OTHER needs a note | `test_the_adopted_closure_reasons_exist`<br>`test_closing_requires_a_reason`<br>`test_a_reason_from_another_category_is_refused`<br>`test_the_other_closure_reason_requires_a_note`<br>`test_closing_is_not_a_substitute_for_staleness_or_pausing`<br>`test_the_closure_reason_migration_is_additive_and_re_runnable` | PASS |
+| `CORRECTION-002 / closure reasons` | Closing requires an adopted REQUEST_CLOSURE reason; OTHER needs a note | `test_the_adopted_closure_reasons_exist`<br>`test_closing_requires_a_reason`<br>`test_a_reason_from_another_category_is_refused`<br>`test_the_other_closure_reason_requires_a_note`<br>`test_closing_is_not_a_substitute_for_staleness_or_pausing`<br>`test_the_closure_reason_migration_is_additive`<br>`test_0002_body_re_executed_inserts_nothing_twice` | PASS |
 | `G-1 corrected` | The actor is distinguished from the source: channel, asserted party, whether a source was recorded, and the previous value | `test_a_self_service_change_is_attributed_to_the_party`<br>`test_a_staff_recorded_change_asserts_nothing_about_the_party`<br>`test_the_absence_of_a_source_is_recorded_as_such`<br>`test_a_recorded_source_is_carried_when_one_exists`<br>`test_the_previous_value_is_recorded`<br>`test_no_update_raises_the_verification_level` | PASS |
 | `G-5 corrected` | The freshness pass is an administrative command that must be RUN; re-running is safe and reconfirmed requests are untouched | `test_the_freshness_command_moves_stale_requests`<br>`test_running_it_twice_moves_nothing_the_second_time`<br>`test_a_reconfirmed_request_is_left_alone_by_the_pass`<br>`test_the_dry_run_changes_nothing`<br>`test_nothing_in_the_application_calls_the_pass_by_itself` | PASS |
 | `R14.4 / revision ids` | Every revision id fits alembic_version.version_num | `test_every_revision_id_fits_the_version_column` | PASS |

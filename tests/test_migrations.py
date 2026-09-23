@@ -378,11 +378,19 @@ def test_the_first_upgrade_after_stamping_applies_the_later_revisions(stamped):
     #    bookkeeping holds and that nothing drifted, NOT that the migration
     #    bodies are individually idempotent.
     #
-    #    That separate property — 0002 applied twice inserting nothing twice —
-    #    is proven by `test_the_closure_reason_migration_is_additive_and_re_runnable`,
-    #    which executes the body directly. Mutating 0002 to insert
-    #    unconditionally fails THAT test and leaves this one passing, which is
-    #    how the division of labour was checked.
+    #    That separate property — 0002's body applied twice inserting nothing
+    #    twice — is proven by `test_0002_body_re_executed_inserts_nothing_twice`,
+    #    which winds `alembic_version` back and makes the body run again for
+    #    real. Removing the `WHERE NOT EXISTS` guard fails THAT test with a
+    #    duplicate-key violation and leaves this one passing.
+    #
+    #    An earlier version of this comment credited
+    #    `..._is_additive_and_re_runnable` with executing the body. It did not:
+    #    it ended with `upgrade head` on a database already at head, which
+    #    applies nothing. The mutation that "confirmed" it had also changed the
+    #    reason CODES, so it failed on the FIRST application's data — a true
+    #    result under a false cause, which is the error this project keeps
+    #    finding and this comment had reproduced.
     with engine.connect() as c:
         rows_before = _migration_data(c)
         version_before = c.execute(
@@ -390,6 +398,12 @@ def test_the_first_upgrade_after_stamping_applies_the_later_revisions(stamped):
 
     again = _alembic("upgrade", "head", env_extra={"TURAB_DATABASE_URL": url})
     assert again.returncode == 0, again.stderr
+    # State assertions alone cannot show that NO BODY RAN — a body that happens
+    # to be idempotent would leave the same state. Alembic announces each
+    # revision it applies, so its silence is the direct evidence.
+    assert "Running upgrade" not in (again.stderr + again.stdout), (
+        "the second upgrade applied a migration body; it must apply none:\n"
+        + again.stderr + again.stdout)
 
     with engine.connect() as c:
         assert fingerprint(c) == after_first, (
@@ -707,8 +721,16 @@ def test_every_revision_id_fits_the_version_column():
     assert not too_long, f"revision ids exceed varchar(32): {too_long}"
 
 
-def test_the_closure_reason_migration_is_additive_and_re_runnable(migrated):
-    """It adds rows; it changes nothing that was seeded."""
+def test_the_closure_reason_migration_is_additive(migrated):
+    """It adds rows; it changes nothing that was seeded.
+
+    **Renamed.** It was `..._is_additive_and_re_runnable`, and the second half
+    of that name was unsupported: the test ended with `alembic upgrade head` on
+    a database ALREADY at head, which applies nothing at all. It therefore said
+    nothing about running 0002's body twice. Re-runnability is proven by
+    `test_0002_body_re_executed_inserts_nothing_twice` below, which forces the
+    body to run again for real.
+    """
     with migrated.connect() as c:
         adopted = c.execute(text(
             "SELECT code FROM turab.reason_codes WHERE category = 'REQUEST_CLOSURE' "
@@ -724,9 +746,76 @@ def test_the_closure_reason_migration_is_additive_and_re_runnable(migrated):
     # OTHER row is absent — and the migration must not have invented one.
     assert touched_other == 0, "the migration must not create or alter OTHER"
 
-    # Running the whole chain again is a no-op, not a duplicate-key failure.
-    again = _alembic("upgrade", "head")
-    assert again.returncode == 0, again.stderr
+
+def test_0002_body_re_executed_inserts_nothing_twice():
+    """Run 0002's BODY a second time, for real, and require no duplication.
+
+    This is the test that was missing. Alembic will not re-run a migration it
+    has already recorded, so "run `upgrade head` again" can never exercise a
+    body — which is exactly why the previous claim was unsupported. The version
+    row is therefore wound back to `0001` and `upgrade 0002` is invoked again,
+    so the real body executes twice through the real machinery.
+
+    Winding back `alembic_version` by hand is something production must never
+    do. It is legitimate here because forcing the re-execution IS the
+    experiment: the property under test is what the body does when it runs on a
+    database that already carries its effects, which is the situation after a
+    partial failure or a restored backup.
+
+    `INSERT ... WHERE NOT EXISTS` is what makes it safe, and an unconditional
+    INSERT fails here — verified by mutation.
+    """
+    db = f"{MIGRATION_DB}_rerun0002"
+    url = f"postgresql+psycopg://{PGUSER}:{PGPASSWORD}@{PGHOST}/{db}"
+    env = {**os.environ, **PG_ENV}
+    base = ["-h", PGHOST, "-U", PGUSER]
+    subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                   capture_output=True)
+    subprocess.run(["createdb", *base, db], check=True, env=env, capture_output=True)
+    engine = create_engine(url, future=True)
+    try:
+        first = _alembic("upgrade", "0002_request_closure_reasons",
+                         env_extra={"TURAB_DATABASE_URL": url})
+        assert first.returncode == 0, first.stderr
+        assert "Running upgrade" in first.stderr + first.stdout, (
+            "the first upgrade must actually have applied migrations")
+
+        with engine.connect() as c:
+            before = _migration_data(c)
+        assert before["request_closure_count"] == 3, before
+
+        # Force the body to run again: alembic will only re-apply a revision
+        # it does not believe is already applied.
+        with engine.begin() as w:
+            w.execute(text("UPDATE alembic_version SET version_num = :v"),
+                      {"v": BASELINE})
+
+        second = _alembic("upgrade", "0002_request_closure_reasons",
+                          env_extra={"TURAB_DATABASE_URL": url})
+        # A non-zero exit here IS the failure this test exists to catch: the
+        # body raised on a database that already carries its rows. Reported as
+        # that, rather than as a bare stderr dump, so the diagnosis is in the
+        # failure and not only in the traceback.
+        assert second.returncode == 0, (
+            "0002's body failed when applied to a database that already has "
+            "its rows — it is not safe to re-run. Removing the "
+            "`WHERE NOT EXISTS` guard produces exactly this:\n"
+            + second.stderr)
+        assert "Running upgrade" in second.stderr + second.stdout, (
+            "the body did NOT run a second time, so this test proved nothing; "
+            "that was the defect in the claim this test replaces")
+
+        with engine.connect() as c:
+            after = _migration_data(c)
+        assert after == before, (
+            "re-running 0002's body changed the data: "
+            f"{before} -> {after}. `INSERT ... WHERE NOT EXISTS` is what makes "
+            "the migration safe to apply to a database that already has its rows")
+        assert after["request_closure_count"] == 3
+    finally:
+        engine.dispose()
+        subprocess.run(["dropdb", *base, "--if-exists", db], check=True, env=env,
+                       capture_output=True)
 
 
 # --- 0003 specifically -----------------------------------------------------

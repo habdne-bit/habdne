@@ -126,11 +126,22 @@ A second `upgrade head` applies *nothing*: alembic reads `alembic_version`,
 sees the database at head, and runs no migration body — there is no "Running
 upgrade" line in its output. So that test establishes that the bookkeeping
 holds and nothing drifted; it does **not** establish that the migration bodies
-are individually idempotent. That is a different property, proven separately by
-`test_the_closure_reason_migration_is_additive_and_re_runnable`, which executes
-the body directly. Mutating `0002` to insert unconditionally fails that test and
-leaves the no-op test passing — which is how the division was checked rather
-than assumed.
+are individually idempotent. That is a different property, and it needed a test that did not exist.
+`test_0002_body_re_executed_inserts_nothing_twice` winds `alembic_version` back
+to `0001` and re-invokes `upgrade 0002`, so the body genuinely runs a second
+time through the real machinery, and asserts alembic announced it ("Running
+upgrade"). Removing the `WHERE NOT EXISTS` guard fails it with a duplicate-key
+violation.
+
+**A claim this policy made and had to withdraw.** It previously credited
+`..._is_additive_and_re_runnable` with executing the body. It did not: that
+test ended with `upgrade head` on a database already at head, which applies
+nothing, so the second half of its name was unsupported — it is now
+`..._is_additive`. The mutation offered as confirmation had also changed the
+reason CODES, so it failed on the FIRST application's data; the failure was
+real and the explanation was wrong. A state assertion cannot show that no body
+ran, which is why the no-op test now also asserts alembic's output contains no
+"Running upgrade" line.
 
 ## 2. What is mechanically prevented
 
