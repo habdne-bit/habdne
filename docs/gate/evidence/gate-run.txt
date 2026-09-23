@@ -1,16 +1,8 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-09-23 12:07:05 UTC
-Commit      : 44c0a101823c95e4717fc57f392c2931158a9088
-Working tree: 6 uncommitted path(s); [src] means the source
-              fingerprint covers it, [doc] means it cannot affect
-              what ran:
-                [src] db/gate/record_gate_run.sh
-                [doc] docs/gate/evidence/RUN-PROVENANCE.txt
-                [doc] docs/gate/evidence/gate-run.txt
-                [doc] docs/gate/evidence/junit-R-S2.xml
-                [doc] docs/gate/evidence/TEST-RUN-PROVENANCE.txt
-                [doc] docs/gate/evidence/junit-run.xml
+Recorded    : 2026-09-23 12:08:16 UTC
+Commit      : f58a92e7b43dcaaea641ae477d187a22a50ef8e3
+Working tree: clean
 Source fingerprint (db/dev/source_fingerprint.py):
               4d2bdb2cc09a31fd85ffc6592403b6548403852ad082bb752b90488b4f8adba5
 Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)

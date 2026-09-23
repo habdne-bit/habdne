@@ -63,3 +63,13 @@ docs/gate/MIGRATION_POLICY.md                 rev 3  351c66298cbc63059b7152021e2
 docs/gate/G3-7_consent_binding_relation_currency.md
                                               rev 2  e5a774b4f0c4fa2d78ec45f82cc35a21dc0f9fab27cd608a6e56284ece33b035
   (UNCHANGED since ca807c3 — same digest, so no new revision is claimed)
+
+--- round 7f86687 -> f58a92e (Alembic evidence corrections) ------------------
+docs/gate/MIGRATION_POLICY.md                 rev 4  4dce52e09e80e212ec796dec5b40d05d6f549a6b976ca6ab0c9a125245576cb3
+  (states what the second upgrade proves, and what it does not)
+docs/gate/ALEMBIC_EVIDENCE_PACK.md            rev 2  dc6260fd98fff08e37d0544fe33f795298e261aa4bfcfba9fe4a152ed1d92486
+  (cited a test renamed this round and another removed two rounds ago)
+docs/gate/SLICE_3_PLAN.md                     rev 6  1db1b5a1175d95020aff850dc270f2cdc5d49b7e204cd1d6b95484d9c8588445
+  (UNCHANGED — same digest as the rev 6 delivered at 7f86687, no new revision)
+docs/gate/CONTRACT_DELTA_G3-6_...md           rev 3  de77ec850a2bd134e738fe3219a29307d86d2eb7c1dd8f60d173bd9e9559263c
+  (UNCHANGED — same digest as the rev 3 delivered at 7f86687)

@@ -6,25 +6,19 @@ one as a run at the commit it shipped with. The accurate description of that
 artefact was "a saved run on an identical source tree", not "a re-run at this
 commit". This binds the two.
 
-Recorded    : 2026-09-23 12:05:46 UTC
-Commit      : 44c0a101823c95e4717fc57f392c2931158a9088
-Working tree: HEAD was clean when the suite started. The only
-              uncommitted paths are the evidence files THIS run
-              writes:
-                docs/gate/evidence/TEST-RUN-PROVENANCE.txt
-                docs/gate/evidence/junit-run.xml
-              Neither is in the source fingerprint, so the value
-              below is the fingerprint the tests actually ran on.
+Recorded    : 2026-09-23 12:08:16 UTC
+Commit      : f58a92e7b43dcaaea641ae477d187a22a50ef8e3
+Working tree: clean at the moment the suite started
 Source fingerprint (db/dev/source_fingerprint.py):
-              6aa7a0567d59b3ec62f4ee9904387acd7f0f93a8b58366d6076498d093eb68f3
+              4d2bdb2cc09a31fd85ffc6592403b6548403852ad082bb752b90488b4f8adba5
 Report      : docs/gate/evidence/junit-run.xml
 JUnit timestamp / totals:
-              timestamp=2026-09-23T12:05:46.732344+00:00
-              tests=556 failures=0 errors=0 skipped=0 time=42.475s
+              timestamp=2026-09-23T12:07:19.272071+00:00
+              tests=556 failures=0 errors=0 skipped=0 time=44.557s
 
 WHAT THIS DOES AND DOES NOT SAY
   * It says: these tests were run, at this time, against a tree whose source
-    fingerprint is the value above.
+    fingerprint is the value above, with nothing uncommitted.
   * It does not say the reviewer's environment would produce the same result.
     Nobody but us has re-run this suite; every result we report is ours.
   * The fingerprint covers src/, tests/, db/ and alembic.ini — not docs/. A
