@@ -1,7 +1,7 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-09-23 20:56:06 UTC
-Commit      : e5ae0060f4aba0bcb9faa7d3a47f7c698778f29f
+Recorded    : 2026-09-23 21:35:12 UTC
+Commit      : e82d28510003879d3751b2d3951af9deb970a3e1
 Working tree: 2 uncommitted path(s) when this run started.
               This log therefore describes the WORKING TREE, not the
               commit above. Labels:
@@ -14,12 +14,21 @@ Working tree: 2 uncommitted path(s) when this run started.
               (the output file this run writes, docs/gate/evidence/gate-run.txt, is not in
               the snapshot: it is created after it was taken)
 Source fingerprint (db/dev/source_fingerprint.py):
-              dd3db134c396a9af5bf9bd9cd592d60a631a7f94644610057e3e6b7031cd7835
+              ebae14e3f5bd63e6883e67dd60b82add0d4d81f9f8031616cd3bf81a6be78b63
 Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 
-The gate output below is deterministic: it is a function of the frozen
-package, so an unchanged package yields an identical body. The header
-is what binds this run to a tree; compare the fingerprint, not the body.
+The gate output below is deterministic, but not of the frozen package
+alone: it is a function of every file the gate reads — the frozen
+package AND the effective contract and its corrections under
+docs/contract, which step 7 checks. Those inputs unchanged, the body is
+identical. The header is what binds this run to a tree; compare the
+fingerprint and the labels above, not the body.
+
+Gate inputs, as derived by db/gate/gate_inputs.py from the call chain:
+                db/gate
+                docs/api
+                docs/contract
+                docs/handoff
 -------------------------------------------------------
 
 

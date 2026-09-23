@@ -93,3 +93,11 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     f6b51e51edefc95830ae2e17720
 No decision document changed this round; the plan (rev 6), the G3-6 Delta
 (rev 3), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2) all carry their
 previous digests, so no new revision is claimed for any of them.
+
+--- round e5ae006 -> e82d285 (gate inputs derived from the call chain) -------
+db/gate/gate_inputs.py                        new    828fcc3af854c124fcf73fd7b78c36047ee58b824a870e5b1a14682476c0766e
+db/gate/record_gate_run.sh                    --     df8b8d25312d90095db4755acb4653a81a9fe109063135af1375deac6e0d334a
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     8430cb8e44791b24f2cde95454f754edcc82fda88cdd808265a469285a1bd2d7
+No decision document changed this round. The plan (rev 6), the G3-6 Delta
+(rev 3), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2) carry their
+previous digests; no new revision is claimed for any of them.
