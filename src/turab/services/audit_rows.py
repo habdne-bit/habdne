@@ -24,6 +24,11 @@ AUDITED_BY_COMMAND = {
     "party_property_relations": "party_property_relation_id",
     "sources": "source_id",
     "external_leads": "external_lead_id",
+    # Slice 3 step 5: the truth-layer tables without a trigger. `claims` and
+    # `resolved_values` HAVE one (audit_claims, audit_resolved_values).
+    "observations": "observation_id",
+    "verification_events": "verification_event_id",
+    "property_attributes": "property_attribute_id",
 }
 
 

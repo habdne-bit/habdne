@@ -15,7 +15,7 @@ from .api import handlers
 from .api.routes import (
     auth, consents, external_leads as lead_routes, internal, me, parties,
     offers as offer_routes, properties as property_routes, records,
-    relations as relation_routes,
+    relations as relation_routes, truth as truth_routes,
     requests as request_routes,
 )
 from .auth.audit import AccessAuditor
@@ -99,4 +99,5 @@ def create_app(
     app.include_router(offer_routes.router)
     app.include_router(relation_routes.router)
     app.include_router(lead_routes.router)
+    app.include_router(truth_routes.router)
     return app

@@ -68,6 +68,10 @@ class ProblemCode(StrEnum):
     #: path (Slice 8) and a declared conversion schema exist. 409, a status the
     #: operation declares: the body is valid; the preconditions are not.
     EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE = "EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE"
+    #: G3-11: claims and resolutions about a PARTY, REQUEST or OFFER — the
+    #: controlled vocabulary registers property attributes only. 422: the
+    #: subject is well formed; no rule exists yet for what may be said of it.
+    ATTRIBUTE_VOCABULARY_UNDECIDED = "ATTRIBUTE_VOCABULARY_UNDECIDED"
     #: The contract's declared condition on `postRecordsClaim` is not met.
     #: 403, not 404: the caller already named a record they may not claim,
     #: and concealing it would leave them unable to tell a wrong id from a
@@ -107,6 +111,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.RELATION_OVERLAP: (409, "Overlapping relation"),
     ProblemCode.RELATION_ALREADY_ENDED: (409, "Relation already ended"),
     ProblemCode.EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE: (409, "Conversion not available"),
+    ProblemCode.ATTRIBUTE_VOCABULARY_UNDECIDED: (422, "Attribute vocabulary undecided"),
     ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),
