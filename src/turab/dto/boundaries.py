@@ -196,32 +196,72 @@ class PublicOfferSummary(_Strict):
         )
 
 
+#: `PublicPropertySummary.availability` in the effective contract.
+#: `TEMPORARILY_UNAVAILABLE` and `UNAVAILABLE` are not in it, so they are never
+#: rendered here (the public list does not list such a property at all).
+PUBLIC_AVAILABILITY: frozenset[str] = frozenset({
+    "AVAILABLE", "POTENTIALLY_AVAILABLE", "UNDER_DISCUSSION",
+    "NEEDS_CONFIRMATION", "UNKNOWN",
+})
+
+
 class PublicPropertySummary(_Strict):
+    """Slice 3 step 6 corrected three renderings (step-6 note, §2).
+
+    - `availability` passed through any value, including
+      `TEMPORARILY_UNAVAILABLE` and `UNAVAILABLE`, which the contract's enum
+      does not declare. A value outside that enum is now omitted, never
+      rendered. The column is `NOT NULL`, so there is no null case.
+    - The areas were `Decimal`, which serializes to a JSON STRING. The
+      contract declares `number`. `numeric(12,2)` has at most 12 significant
+      digits, and a double carries 15 (`DBL_DIG`), so the float is exact.
+    - `local_location_detail` was copied unconditionally. Developer Spec §23,
+      invariant 11: "Public visibility does not mean every detail may be
+      shared; sharing_scope governs the detail." No field-to-scope mapping is
+      decided (G3-12), so this free text is withheld. The field stays declared,
+      because the contract declares it.
+    """
+
     property_id: uuid.UUID
     property_type: str
     canonical_location_id: uuid.UUID | None = None
     local_location_detail: str | None = None
-    land_area_m2: Decimal | None = None
-    built_area_m2: Decimal | None = None
+    land_area_m2: float | None = None
+    built_area_m2: float | None = None
     supply_mode: str
-    availability: str
+    availability: str | None = None
     offers: tuple[PublicOfferSummary, ...] = ()
 
     @classmethod
     def render(
         cls, row: Mapping[str, Any], offers: list[Mapping[str, Any]] | None = None
     ) -> "PublicPropertySummary":
+        availability = row.get("current_availability")
+        if availability is not None and str(availability) not in PUBLIC_AVAILABILITY:
+            availability = None
         return cls(
             property_id=row["property_id"],
             property_type=str(row["property_type"]),
             canonical_location_id=row.get("canonical_location_id"),
-            local_location_detail=row.get("local_location_detail"),
+            # G3-12: withheld until a sharing_scope mapping is decided.
+            local_location_detail=None,
+            # `float` fields: Pydantic converts the column's Decimal.
             land_area_m2=row.get("land_area_m2"),
             built_area_m2=row.get("built_area_m2"),
             supply_mode=str(row["supply_mode"]),
-            availability=str(row.get("current_availability", "UNKNOWN")),
+            availability=None if availability is None else str(availability),
             offers=tuple(PublicOfferSummary.render(o) for o in (offers or [])),
         )
+
+    def to_json(self) -> dict[str, Any]:
+        """The JSON body, with the two fields that must be ABSENT rather than
+        null removed: `availability` is not nullable in the contract, and a
+        withheld `local_location_detail` is not a recorded "no detail"."""
+        body = self.model_dump(mode="json")
+        for key in ("availability", "local_location_detail"):
+            if body[key] is None:
+                del body[key]
+        return body
 
 
 # --- Customer --------------------------------------------------------------

@@ -20,6 +20,7 @@ from ..db.session import read_session
 from ..services.access import AccessService
 from ..services.command import CommandService
 from ..services.otp import OtpService, VerificationProvider
+from ..services.public_listing import PublicReads
 
 
 def get_policies(request: Request) -> PolicyTable:
@@ -156,11 +157,22 @@ def get_otp(
     return OtpService(session, provider, getattr(request.state, "trace_id", "-"))
 
 
+def get_public(
+    session: Annotated[Session, Depends(get_session)],
+    policies: Annotated[PolicyTable, Depends(get_policies)],
+) -> PublicReads:
+    """For the closed list of unauthenticated reads. It never resolves a
+    subject: an `Authorization` header sent to a public operation is not
+    read."""
+    return PublicReads(session, policies)
+
+
 Access = Annotated[AccessService, Depends(get_access)]
 Command = Annotated[CommandService, Depends(get_command)]
 Otp = Annotated[OtpService, Depends(get_otp)]
+Public = Annotated[PublicReads, Depends(get_public)]
 
 __all__ = [
-    "Access", "Command", "Otp", "get_access", "get_command", "get_otp",
-    "get_policies", "get_auditor", "build_policy_table",
+    "Access", "Command", "Otp", "Public", "get_access", "get_command", "get_otp",
+    "get_public", "get_policies", "get_auditor", "build_policy_table",
 ]
