@@ -361,3 +361,20 @@ def reconfirm_property(request: Request, property_id: uuid.UUID,
                 f"POST /properties/{property_id}/reconfirm",
                 body.model_dump(mode="json", exclude_unset=True), handler, 200,
                 extra_errors=property_service.PropertyError)
+
+
+@router.get("/backoffice/queues/properties", operation_id="getBackofficeQueuesProperties",
+            tags=["BackOffice"])
+def property_review_queue(request: Request, access: Access):
+    """`QueuePage` of properties needing review (Developer Spec §19). Staff
+    only by `x-roles` (ADMIN, OPERATOR, REVIEWER); audited once for the list.
+
+    Omitted from step 1, found by the STOP GATE C generator in step 8: the
+    plan listed the operation and no route served it."""
+    decision = access.authorize_operation("getBackofficeQueuesProperties")
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    rows = access.property_review_queue(operation_id="getBackofficeQueuesProperties")
+    return {"items": [property_service.review_queue_item(r) for r in rows],
+            "next_cursor": None}

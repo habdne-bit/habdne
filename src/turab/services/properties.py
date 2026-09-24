@@ -525,3 +525,64 @@ def mark_stale_availability(
         {"convertible": list(STALE_CONVERTIBLE), "now": now, "days": days,
          "limit": limit},
     ).scalars().all())
+
+
+# --- the back-office review queue (Slice 3 step 8; step 1's omission) --------
+
+#: Developer Spec §19: "Properties needing review | تعارض/نقص/إتاحة قديمة أو
+#: Identity candidate". Three of the four are defined in data, and each has
+#: one rule. "نقص" (missing) names no required-field rule; none is invented.
+#: The order here is the order of `reasons` in a queue item.
+REVIEW_REASONS = ("CLAIM_CONFLICT_FOUND", "IDENTITY_CANDIDATE_PENDING",
+                  "AVAILABILITY_NEEDS_CONFIRMATION")
+
+_REVIEW_QUEUE = """
+    SELECT p.property_id, p.created_at,
+           ARRAY_REMOVE(ARRAY[
+             CASE WHEN EXISTS (
+               SELECT 1 FROM turab.claims c
+                 JOIN turab.verification_events v ON v.claim_id = c.claim_id
+                WHERE c.property_id = p.property_id AND v.outcome = 'CONFLICT_FOUND')
+             THEN 'CLAIM_CONFLICT_FOUND' END,
+             CASE WHEN EXISTS (
+               SELECT 1 FROM turab.property_identity_candidates i
+                WHERE p.property_id IN (i.property_a_id, i.property_b_id)
+                  AND i.review_status IN ('PENDING_REVIEW', 'UNSURE'))
+             THEN 'IDENTITY_CANDIDATE_PENDING' END,
+             CASE WHEN p.current_availability = 'NEEDS_CONFIRMATION'
+             THEN 'AVAILABILITY_NEEDS_CONFIRMATION' END
+           ], NULL) AS reasons
+      FROM turab.properties p
+     WHERE NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases a
+                        WHERE a.alias_property_id = p.property_id)
+"""
+
+
+def review_queue(session: Session) -> list[Mapping[str, Any]]:
+    """Properties needing a staff decision, oldest first, id as the tie-break.
+
+    An identity ALIAS is not queued: writes to it are refused (F-2), so its
+    work belongs to its canonical record. No paging: the contract declares no
+    parameter for this operation. This was accepted for this slice's queues
+    (review of 0a66f8e, Q-5 to Q-8), and a paging contract is needed before
+    operational volume.
+    """
+    return session.execute(text(f"""
+        SELECT * FROM ({_REVIEW_QUEUE}) q
+         WHERE cardinality(q.reasons) > 0
+         ORDER BY q.created_at, q.property_id""")).mappings().all()
+
+
+def review_queue_item(row: Mapping[str, Any]) -> dict[str, Any]:
+    """`QueueItem` (open: `additionalProperties: true`).
+
+    - `reason` is the first reason in `REVIEW_REASONS` order;
+    - `reasons` lists all of them;
+    - `priority` is `NORMAL`: no priority rule exists (step 3, Q-4);
+    - `created_at` is the property's own creation time. Whether it should be
+      the moment the item entered the queue is noted in the step-8 note.
+    """
+    reasons = list(row["reasons"])
+    return {"id": str(row["property_id"]), "kind": "PROPERTY", "priority": "NORMAL",
+            "created_at": row["created_at"].isoformat(), "reason": reasons[0],
+            "reasons": reasons}

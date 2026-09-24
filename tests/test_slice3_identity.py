@@ -1284,7 +1284,9 @@ def test_two_concurrent_reviews_cannot_build_an_alias_chain(client, ids, engine,
 
 def test_generating_the_same_pair_twice_concurrently_yields_one_candidate(
         client, ids, engine, two_engines):
-    """Nothing serialises generation (no parent row). `ux_identity_pair`
+    """Two generators are not serialised by their row locks. Both take
+    `FOR SHARE` on the same properties, and `FOR SHARE` locks are compatible
+    with each other (PostgreSQL 16 documentation, §13.3.2). `ux_identity_pair`
     admits one row; the other INSERT waits on it, fails inside its
     SAVEPOINT, and reads the winner's row. Both calls succeed, with the same
     candidate.

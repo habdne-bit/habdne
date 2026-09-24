@@ -253,6 +253,18 @@ class AccessService:
         )
         return items, total
 
+    def property_review_queue(self, *, operation_id: str):
+        """The properties review queue, on the READ session, audited once
+        (R6.3c)."""
+        from . import properties as property_service
+
+        rows = property_service.review_queue(self._session)
+        self.record_list_access(
+            operation_id=operation_id, resource_kind="PROPERTY", result_count=len(rows),
+            query_shape={"reasons": list(property_service.REVIEW_REASONS)},
+        )
+        return rows
+
     def external_lead_queue(self, *, operation_id: str):
         """The external-leads queue, on the READ session, audited once."""
         from . import external_leads as lead_service

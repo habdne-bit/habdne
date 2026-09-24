@@ -214,7 +214,11 @@ def generate(session: Session, *, property_id: uuid.UUID | None,
       idempotent (plan §3.10).
     - Two generators racing on one pair: `ux_identity_pair` admits one row.
       The other's INSERT fails inside a SAVEPOINT and reads the winner's row,
-      so both calls succeed (plan §6.3, third row). No parent row is locked.
+      so both calls succeed (plan §6.3, third row). Generation DOES lock
+      rows: `_lock_and_recheck` takes `FOR SHARE` on every property it may
+      pair. Two generators' `FOR SHARE` locks are compatible with each other
+      (PostgreSQL 16 documentation, §13.3.2), so the locks do not serialise
+      two generators. What decides between them is the pair index.
     """
     version = CONTRACT_DEFAULT_VERSION if algorithm_version is None else algorithm_version
     if version not in KNOWN_VERSIONS:
