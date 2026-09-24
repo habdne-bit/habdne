@@ -89,10 +89,11 @@ classify() {
   echo
   echo "The gate output below is deterministic, but not of the frozen package"
   echo "alone: it is a function of every file the gate reads — the frozen"
-  echo "package AND the effective contract and its corrections under"
-  echo "docs/contract, which step 7 checks. Those inputs unchanged, the body is"
-  echo "identical. The header is what binds this run to a tree; compare the"
-  echo "fingerprint and the labels above, not the body."
+  echo "package, the corrections and approved addenda under docs/contract, the"
+  echo "Contract Deltas under docs/gate each addendum is bound to by sha256, and"
+  echo "the policy code under src/turab/auth that step 7 compares against. Those"
+  echo "inputs unchanged, the body is identical. The header is what binds this"
+  echo "run to a tree; compare the fingerprint and the labels above, not the body."
   echo
   echo "Gate inputs, as derived by db/gate/gate_inputs.py from the call chain:"
   $PY db/gate/gate_inputs.py | sed 's/^/                /'

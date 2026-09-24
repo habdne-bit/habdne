@@ -3,8 +3,8 @@
 **Do not edit.** Regenerate with `db/gate/generate_api_inventory.py`.
 
 - Source: `docs/api/openapi_effective_v0.2.3.yaml`
-- Source SHA-256: `0705789820848ffe2e70897b83b97e569beefa0c931e2a5524ecbe061c4431af`
-- Operations: 64 · role-annotated: 57 · unauthenticated: 6
+- Source SHA-256: `b9a5071d4818c56bad7cfb7f032c45ecd8f056432cc085994f2b45c95d6d5687`
+- Operations: 67 · role-annotated: 60 · unauthenticated: 6
 
 ## Unauthenticated operations
 
@@ -51,6 +51,7 @@ Each needs an explicit policy decision before implementation.
 | `getPartiesPartyId` | GET | `/parties/{party_id}` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal resource access; role check plus business-purpose authorization. Customer access uses /me/* endpoints. |
 | `getPartiesPartyIdTimeline` | GET | `/parties/{party_id}/timeline` | `ADMIN`, `OPERATOR`, `REVIEWER` | — |
 | `getPropertiesPropertyId` | GET | `/properties/{property_id}` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal resource access; role check plus business-purpose authorization. Customer access uses /me/* endpoints. |
+| `getPropertiesPropertyIdRelations` | GET | `/properties/{property_id}/relations` | `ADMIN`, `OPERATOR`, `REVIEWER` | — |
 | `getPublicProperties` | GET | `/public/properties` | — | — |
 | `getReasonCodes` | GET | `/reason-codes` | — | — |
 | `getRequestsRequestId` | GET | `/requests/{request_id}` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal resource access; role check plus business-purpose authorization. Customer access uses /me/* endpoints. |
@@ -87,6 +88,8 @@ Each needs an explicit policy decision before implementation.
 | `postProperties` | POST | `/properties` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postPropertiesPropertyIdOffers` | POST | `/properties/{property_id}/offers` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postPropertiesPropertyIdReconfirm` | POST | `/properties/{property_id}/reconfirm` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
+| `postPropertiesPropertyIdRelations` | POST | `/properties/{property_id}/relations` | `ADMIN`, `OPERATOR` | Staff-only. The server validates that the party and the property both exist. Creating a relation grants the party's accounts no authority over the property or its offers, and the server must not treat it as an authorization input (RFC-001 R4.5, R4.12). |
+| `postPropertyRelationEnd` | POST | `/properties/{property_id}/relations/{relation_id}/end` | `ADMIN`, `OPERATOR` | — |
 | `postRecordsClaim` | POST | `/records/claim` | `CUSTOMER`, `ADMIN`, `OPERATOR` | For customer, verified contact point and resource party relationship are mandatory. Command changes ASSISTED/UNCLAIMED to SHARED_MANAGEMENT/CLAIMED transactionally; no duplicate resource is created. |
 | `postRequests` | POST | `/requests` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
 | `postRequestsRequestIdCriteria` | POST | `/requests/{request_id}/criteria` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |

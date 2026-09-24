@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 
 from turab.auth.audit import AccessAuditor, RecordingAuditSink
 from turab.auth.contract import (
+    load_contract,
     CORRECTIONS_PATH,
     ContractError,
     build_policy_table,
@@ -328,7 +329,8 @@ def test_the_committed_correction_describes_the_contract_as_it_stands():
 # roles that are not the ones enforced. The effective contract is the derived
 # artifact that says what is actually in force; these tests keep it derived.
 
-EFFECTIVE = pathlib.Path("docs/api/openapi_effective_v0.2.3.yaml")
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+EFFECTIVE = ROOT / "docs" / "api" / "openapi_effective_v0.2.3.yaml"
 
 
 def _effective() -> dict:
@@ -353,27 +355,45 @@ def test_the_effective_contract_is_current():
 
 
 def test_the_effective_contract_matches_the_policy_table():
-    """The binding claim. The policy table is built from frozen + corrections;
-    the effective contract is generated from the same two inputs by different
-    code. If they ever disagree, one of them is lying to somebody."""
-    table = build_policy_table()
-    problems = []
-    for _, _, op in _operations(_effective()):
-        policy = table.get(op["operationId"])
-        if policy is None:
-            problems.append(f"{op['operationId']}: absent from the policy table")
-            continue
-        if op.get("security") == []:
-            continue
-        declared = op.get("x-roles")
-        if declared is None:
-            continue
-        if policy.roles != frozenset(Role(r) for r in declared):
-            problems.append(
-                f"{op['operationId']}: effective {sorted(declared)} != policy "
-                f"{sorted(r.value for r in policy.roles)}"
-            )
-    assert not problems, problems
+    """The binding claim, in BOTH directions.
+
+    This test used to walk the effective contract and look each operation up
+    in the policy table — one direction only — so the three G3-6 operations,
+    enforced by the table and absent from the document, passed it (review of
+    0a66f8e). It now runs the gate's own parity check: documented, listed and
+    enforced must be one set, with the same roles.
+    """
+    sys.path.insert(0, str(ROOT / "db" / "gate"))
+    import verify_policy_parity
+
+    assert verify_policy_parity.problems() == []
+
+
+def test_every_added_operation_carries_its_addendum_identity():
+    """An addition is recoverable from the document: which addendum, which
+    decision, and which Delta text by sha256 — and that digest is the one the
+    Delta has NOW."""
+    import hashlib
+
+    from turab.auth.contract import load_addenda
+
+    added = {op["operationId"]: op for _, _, op in _operations(_effective())
+             if "x-turab-addendum" in op}
+    expected = {op["operationId"] for a in load_addenda()
+                for _, _, op in _operations(a)}
+    assert set(added) == expected and len(expected) == 3
+    for op in added.values():
+        identity = op["x-turab-addendum"]
+        assert identity["id"] == "ADD-G3-6" and identity["kind"] == "ADDITION"
+        delta = ROOT / identity["delta_document"]
+        assert hashlib.sha256(delta.read_bytes()).hexdigest() == identity["delta_sha256"]
+
+
+def test_no_added_operation_exists_in_the_frozen_package():
+    frozen = {op["operationId"] for _, _, op in _operations(load_contract())}
+    added = {op["operationId"] for _, _, op in _operations(_effective())
+             if "x-turab-addendum" in op}
+    assert added and not (added & frozen)
 
 
 def test_every_corrected_operation_carries_its_correction_identity():
@@ -405,7 +425,27 @@ def test_the_effective_contract_changes_nothing_else():
         pathlib.Path("docs/handoff/05_API/openapi_v0.2.3.yaml").read_text(encoding="utf-8")
     )
     effective = _effective()
-    assert set(frozen["paths"]) == set(effective["paths"])
+    # Frozen paths, plus exactly the paths the approved addenda add — nothing
+    # else. The additions themselves are compared with their addendum below.
+    from turab.auth.contract import load_addenda
+
+    addenda = load_addenda()
+    added_paths = {p for a in addenda for p in a["paths"]}
+    assert set(effective["paths"]) == set(frozen["paths"]) | added_paths
+
+    for addendum in addenda:
+        for path, method, op in _operations(addendum):
+            got = dict(effective["paths"][path][method])
+            assert got.pop("x-turab-addendum")["id"] == addendum["addendum"]["id"]
+            assert got == op, f"{op['operationId']} differs from its addendum"
+        for section, entries in (addendum.get("components") or {}).items():
+            assert not set(entries) & set(frozen["components"].get(section, {}))
+            for name, value in entries.items():
+                assert effective["components"][section][name] == value
+    for section, entries in frozen["components"].items():
+        for name, value in entries.items():
+            assert effective["components"][section][name] == value, (
+                f"components.{section}.{name} was altered")
 
     role_corrected = set(load_corrections())
     for path, method, op in _operations(frozen):
@@ -464,3 +504,36 @@ def test_the_api_inventory_is_generated_from_the_effective_contract():
     row = next(ln for ln in inventory.splitlines() if "`postParties`" in ln)
     assert "`ADMIN`, `OPERATOR`" in row
     assert "CUSTOMER" not in row.split("|")[4]
+
+
+def test_the_parity_check_fails_on_the_documents_that_shipped_in_0a66f8e(
+    tmp_path, monkeypatch
+):
+    """The regression, reproduced: an effective contract and an inventory
+    without the three G3-6 operations — what 0a66f8e shipped — must fail,
+    naming exactly those three, in the enforced-but-undocumented direction."""
+    sys.path.insert(0, str(ROOT / "db" / "gate"))
+    import verify_policy_parity
+
+    doc = _effective()
+    added = {op["operationId"] for _, _, op in _operations(doc)
+             if "x-turab-addendum" in op}
+    for path in [p for p, item in doc["paths"].items()
+                 if any(isinstance(op, dict) and "x-turab-addendum" in op
+                        for op in item.values())]:
+        del doc["paths"][path]
+    stale = tmp_path / "effective.yaml"
+    stale.write_text(yaml.safe_dump(doc), encoding="utf-8")
+    inventory = (ROOT / "docs" / "api" / "API_INVENTORY_GENERATED.md").read_text(
+        encoding="utf-8")
+    stale_inventory = tmp_path / "inventory.md"
+    stale_inventory.write_text("\n".join(
+        line for line in inventory.splitlines()
+        if not any(f"`{op}`" in line for op in added)) + "\n", encoding="utf-8")
+    monkeypatch.setattr(verify_policy_parity, "EFFECTIVE", stale)
+    monkeypatch.setattr(verify_policy_parity, "INVENTORY", stale_inventory)
+
+    found = verify_policy_parity.problems()
+    assert sorted(found) == sorted(
+        f"{op}: in the policy table, absent from the effective contract"
+        for op in added)

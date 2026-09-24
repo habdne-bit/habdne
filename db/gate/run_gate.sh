@@ -46,10 +46,13 @@ psql -v ON_ERROR_STOP=1 -q -f "$GATE_DIR/postgres_execution_gate_tests.sql"
 step "6/8  OpenAPI parse / lint"
 python3 "$GATE_DIR/lint_openapi.py" "$API_DIR/openapi_v0.2.3.yaml"
 
-step "7/8  Effective contract (frozen package + approved corrections)"
+step "7/8  Effective contract (frozen package + approved corrections + approved additions)"
 python3 "$GATE_DIR/generate_effective_contract.py" --check
 python3 "$GATE_DIR/generate_api_inventory.py" \
   "$REPO_ROOT/docs/api/openapi_effective_v0.2.3.yaml" --check
+# Documented == listed == enforced, in BOTH directions, roles included. The
+# one-directional check this replaces let 3 enforced operations go undocumented.
+python3 "$GATE_DIR/verify_policy_parity.py"
 
 step "8/8  Baseline version consistency"
 # D6 was a version stated in eleven places and wrong in one, and every runtime

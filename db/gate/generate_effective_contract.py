@@ -1,7 +1,31 @@
 #!/usr/bin/env python3
-"""Generate the EFFECTIVE API contract: frozen package + approved corrections.
+"""Generate the EFFECTIVE API contract: frozen package + approved corrections
++ approved additions.
 
-Ref: RFC-001 R14.1-R14.3; `docs/contract/CONTRACT_CORRECTIONS.yaml`.
+Ref: RFC-001 R14.1-R14.3; `docs/contract/CONTRACT_CORRECTIONS.yaml`;
+`docs/contract/addenda/*.yaml`, each bound to its Contract Delta
+`docs/gate/CONTRACT_DELTA_*.md` by sha256.
+
+## Additions (review of 0a66f8e)
+
+This file used to read the frozen package and the corrections only, so the
+three G3-6 operations — enforced by the runtime policy table since `7ef416b`
+— were absent from the effective contract and from the inventory generated
+from it: 64 operations documented, 67 served. The effective contract now also
+merges every approved addendum, validated by the SAME function the runtime
+uses (`src/turab/auth/contract.py`, `load_addenda`: bound to its Delta by
+sha256, additions only, x-roles required), and marks each added operation:
+
+    x-turab-addendum:
+      id: ADD-G3-6
+      kind: ADDITION
+      decision: ...
+      delta_document: docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
+      delta_sha256: ...
+
+`verify_policy_parity.py` then checks, in the gate, that the effective
+contract, the generated inventory and the runtime policy table hold the SAME
+set of operations in both directions.
 
 ## Why this exists
 
@@ -30,8 +54,8 @@ not what is enforced.
 |---|---|
 | The authority, and what is frozen | `docs/handoff/05_API/openapi_v0.2.3.yaml` |
 | Documentation, client generation, API inventory | the effective contract |
-| Building the policy table | frozen + corrections, in `auth/contract.py` |
-| Proving the two agree | `--check` here, plus `test_the_effective_contract_matches_the_policy_table` |
+| Building the policy table | frozen + corrections + addenda, in `auth/contract.py` |
+| Proving the two agree | `--check` here, `verify_policy_parity.py` in the gate, and `test_the_effective_contract_matches_the_policy_table` |
 
 Usage:
   db/gate/generate_effective_contract.py            # write
@@ -47,6 +71,9 @@ import sys
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+if str(ROOT / "src") not in sys.path:
+    # The addendum rules have ONE implementation, in the runtime.
+    sys.path.insert(0, str(ROOT / "src"))
 FROZEN = ROOT / "docs" / "handoff" / "05_API" / "openapi_v0.2.3.yaml"
 CORRECTIONS = ROOT / "docs" / "contract" / "CONTRACT_CORRECTIONS.yaml"
 OUT = ROOT / "docs" / "api" / "openapi_effective_v0.2.3.yaml"
@@ -58,7 +85,7 @@ HEADER = """\
 # GENERATED — DO NOT EDIT.
 #
 # The EFFECTIVE TURAB API contract: the frozen package with every approved
-# correction applied. Regenerate with:
+# correction applied and every approved ADDITION merged. Regenerate with:
 #
 #     db/gate/generate_effective_contract.py
 #
@@ -73,17 +100,69 @@ HEADER = """\
 # WORKFLOW was adopted rather than whose roles were narrowed carries
 # `x-turab-workflow` instead, pointing at where that workflow is written down.
 #
+# Every operation added by an approved addendum carries `x-turab-addendum`,
+# naming the addendum, its decision, and the Contract Delta it is bound to by
+# sha256. Such an operation does not exist in the frozen package.
+#
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          {frozen_sha}
 #   CONTRACT_CORRECTIONS.yaml    {corrections_sha}
+{addenda_digests}
 #
 # Corrections applied: {applied}
+# Additions merged: {added}
 # =============================================================================
 """
 
 
 def _sha(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _merge_addenda(doc: dict) -> tuple[list[str], list[str]]:
+    """Merge every approved addendum into `doc`; return (added, digest lines).
+
+    Validation is `load_addenda`'s — the runtime's — so the effective contract
+    and the policy table cannot accept different addenda. Components may only
+    be ADDED too: a name the frozen package already defines is refused, since
+    replacing it would silently change a frozen operation's schema.
+    """
+    from turab.auth.contract import ADDENDA_DIR, load_addenda
+
+    added: list[str] = []
+    digests: list[str] = []
+    for path in sorted(ADDENDA_DIR.glob("*.yaml")):
+        digests.append(f"#   addenda/{path.name:<40} {_sha(path)}")
+    for addendum in load_addenda():
+        meta = addendum["addendum"]
+        identity = {
+            "id": meta["id"],
+            "kind": meta["kind"],
+            "decision": " ".join(str(meta["decision"]).split()),
+            "delta_document": meta["delta_document"],
+            "delta_sha256": meta["delta_sha256"],
+        }
+        for route, item in addendum.get("paths", {}).items():
+            target = doc.setdefault("paths", {}).setdefault(route, {})
+            for method in _METHODS:
+                op = item.get(method)
+                if not isinstance(op, dict):
+                    continue
+                if method in target:
+                    raise SystemExit(f"{meta['id']}: {method.upper()} {route} "
+                                     "already exists; an addendum may only add")
+                op = dict(op)
+                op["x-turab-addendum"] = dict(identity)
+                target[method] = op
+                added.append(f"{meta['id']} ({op['operationId']})")
+        for section, entries in (addendum.get("components") or {}).items():
+            existing = doc.setdefault("components", {}).setdefault(section, {})
+            for name, value in entries.items():
+                if name in existing:
+                    raise SystemExit(f"{meta['id']}: components.{section}.{name} "
+                                     "already exists; an addendum may only add")
+                existing[name] = value
+    return added, digests
 
 
 def build() -> tuple[str, list[str]]:
@@ -158,13 +237,17 @@ def build() -> tuple[str, list[str]]:
             f"corrections name operations the contract does not have: {sorted(unmatched)}"
         )
 
+    added, digests = _merge_addenda(doc)
+
     header = HEADER.format(
         frozen_sha=_sha(FROZEN),
         corrections_sha=_sha(CORRECTIONS),
+        addenda_digests="\n".join(digests) if digests else "#   (no addenda)",
         applied=", ".join(applied + adopted) if (applied or adopted) else "none",
+        added=", ".join(added) if added else "none",
     )
     body = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=100)
-    return header + body, applied + adopted
+    return header + body, applied + adopted + added
 
 
 def main() -> int:
@@ -183,12 +266,12 @@ def main() -> int:
             print(f"{OUT} is stale; regenerate it", file=sys.stderr)
             return 1
         print(f"PASS: {OUT.relative_to(ROOT)} is current "
-              f"({len(applied)} correction(s) applied)")
+              f"({len(applied)} correction(s), adoption(s) and addition(s))")
         return 0
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(rendered, encoding="utf-8")
-    print(f"wrote {OUT} ({len(applied)} correction(s) applied)")
+    print(f"wrote {OUT} ({len(applied)} correction(s), adoption(s) and addition(s))")
     for line in applied:
         print(f"  {line}")
     return 0
