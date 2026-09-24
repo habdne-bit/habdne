@@ -121,7 +121,8 @@ class UnknownCriterionCode(RequestError):
     def __init__(self, code: str, known: list[str]) -> None:
         super().__init__(
             "VALIDATION_FAILED",
-            f"{code!r} is not a criterion in the master registry; "
+            # `code` is the caller's text and matched nothing: not echoed.
+            "criterion_code is not a criterion in the master registry; "
             f"GET /master/criterion-definitions lists them ({len(known)} active)",
         )
 
@@ -143,7 +144,8 @@ class UnknownReasonCode(RequestError):
     def __init__(self, code: str, known: list[str]) -> None:
         super().__init__(
             "VALIDATION_FAILED",
-            f"{code!r} is not a REQUEST_CLOSURE reason; the adopted codes are "
+            # `code` is the caller's text and matched nothing: not echoed.
+            "close_reason_code is not a REQUEST_CLOSURE reason; the adopted codes are "
             f"{known}",
         )
 

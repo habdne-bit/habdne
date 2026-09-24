@@ -42,7 +42,10 @@ from . import audit_rows
 SUBJECT_COLUMN = {"PARTY": "party_id", "REQUEST": "request_id",
                   "PROPERTY": "property_id", "OFFER": "offer_id"}
 
-#: The subjects the controlled vocabulary actually covers (G3-11).
+#: G3-11, DECIDED as option (c) (review of 1c2f6c5): the truth layer is
+#: PROPERTY-only in this version. Claims and resolutions about a PARTY,
+#: REQUEST or OFFER stay refused with a typed code until a later slice needs
+#: them and a vocabulary for them is decided.
 DELIVERED_SUBJECTS = frozenset({"PROPERTY"})
 
 CONFIRMING_OUTCOME = "CONFIRMED"
@@ -69,9 +72,9 @@ class AttributeVocabularyUndecided(TruthError):
         super().__init__(
             "ATTRIBUTE_VOCABULARY_UNDECIDED",
             f"claims and resolutions about a {subject_type} are not available "
-            "in this version: the controlled attribute vocabulary "
-            "(attribute_definitions) registers property attributes only, and "
-            f"no vocabulary for a {subject_type} has been decided (G3-11)",
+            "in this version: the truth layer covers PROPERTY subjects only "
+            "(decision G3-11), because the controlled attribute vocabulary "
+            "(attribute_definitions) registers property attributes only",
         )
 
 
@@ -155,8 +158,9 @@ def validate_attribute(session: Session, *, property_type: str,
         {"c": attribute_code},
     ).mappings().first()
     if definition is None:
-        raise Invalid(f"attribute_code {attribute_code!r} is not a registered "
-                      "attribute")
+        # The code is the caller's text and matched nothing: it is NOT echoed
+        # (a detail carries only what the registry itself holds).
+        raise Invalid("attribute_code is not a registered attribute")
     if not definition["active"]:
         raise Invalid(f"attribute_code {attribute_code!r} is not active")
     applies_to = definition["applies_to"]
@@ -174,7 +178,8 @@ def validate_attribute(session: Session, *, property_type: str,
              "o": value if isinstance(value, str) else None},
         ).first()
         if not isinstance(value, str) or registered is None:
-            raise Invalid(f"{value!r} is not a registered, active option of "
+            # The value is the caller's and matched no option: not echoed.
+            raise Invalid("the value is not a registered, active option of "
                           f"{attribute_code!r}")
     elif kind == "NUMBER":
         if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -367,7 +372,7 @@ def resolve(
                           f"{claim['attribute_code']!r}, not {attribute_code!r}")
     if resolution_reason_code is not None and not _exists(
             session, "reason_codes", "code", resolution_reason_code):
-        raise Invalid(f"{resolution_reason_code!r} is not a known reason code")
+        raise Invalid("resolution_reason_code is not a known reason code")
     _not_future(session, valid_from, "valid_from")
 
     start = valid_from if valid_from is not None else _now(session)

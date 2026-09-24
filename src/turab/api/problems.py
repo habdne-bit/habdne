@@ -68,7 +68,8 @@ class ProblemCode(StrEnum):
     #: path (Slice 8) and a declared conversion schema exist. 409, a status the
     #: operation declares: the body is valid; the preconditions are not.
     EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE = "EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE"
-    #: G3-11: claims and resolutions about a PARTY, REQUEST or OFFER — the
+    #: G3-11, decided (c): the truth layer is PROPERTY-only in this version.
+    #: Claims and resolutions about a PARTY, REQUEST or OFFER are refused: the
     #: controlled vocabulary registers property attributes only. 422: the
     #: subject is well formed; no rule exists yet for what may be said of it.
     ATTRIBUTE_VOCABULARY_UNDECIDED = "ATTRIBUTE_VOCABULARY_UNDECIDED"

@@ -13,14 +13,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...services import truth
 from ..deps import Command
-from ..json_types import JsonNumber
+from ..json_types import FiniteJson, FiniteJsonObject, JsonNumber
 from ..problems import for_denial, trace_id_of
 from .parties import _run
 
@@ -53,7 +52,7 @@ class ObservationInput(_Body):
     observed_at: datetime | None = None
     #: Omissible, never null.
     raw_text: str = None  # type: ignore[assignment]
-    payload: dict[str, Any] = None  # type: ignore[assignment]
+    payload: FiniteJsonObject = None  # type: ignore[assignment]
 
     _observed = field_validator("observed_at")(classmethod(lambda cls, v: _instant(v)))
 
@@ -65,7 +64,7 @@ class ClaimInput(_Body):
 
     subject: SubjectRef
     attribute_code: str
-    claimed_value: Any
+    claimed_value: FiniteJson
     asserted_by_party_id: uuid.UUID | None = None
     source_id: uuid.UUID | None = None
     observation_id: uuid.UUID | None = None
@@ -92,7 +91,7 @@ class VerificationEventInput(_Body):
 class ResolutionInput(_Body):
     subject: SubjectRef
     attribute_code: str
-    resolved_value: Any
+    resolved_value: FiniteJson
     source_claim_id: uuid.UUID | None = None
     resolution_reason_code: str = None  # type: ignore[assignment]
     valid_from: datetime | None = None

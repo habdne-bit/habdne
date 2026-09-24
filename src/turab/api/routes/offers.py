@@ -34,7 +34,7 @@ from ...services import offers as offer_service
 from ...services.concurrency import HEADER, IfMatchRequired, parse_if_match
 from ...services.provenance import UpdateChannel
 from ..deps import Command
-from ..json_types import JsonInteger
+from ..json_types import BIGINT_MAX, JsonInteger
 from ..problems import ProblemCode, coded, for_denial, trace_id_of
 from .parties import _run
 
@@ -62,10 +62,10 @@ class OfferCreate(_Body):
 
     party_id: uuid.UUID
     transaction_type: str = Field(pattern=TRANSACTION_TYPE_PATTERN)
-    asking_price_dzd: JsonInteger = Field(default=0, ge=0)
+    asking_price_dzd: JsonInteger = Field(default=0, ge=0, le=BIGINT_MAX)
     raw_price_text: str = ""
     price_negotiable: str = Field(default="UNKNOWN", pattern=NEGOTIABLE_PATTERN)
-    seller_expectation_dzd: JsonInteger = Field(default=0, ge=0)
+    seller_expectation_dzd: JsonInteger = Field(default=0, ge=0, le=BIGINT_MAX)
     price_visibility: str = Field(default="PUBLIC", pattern=VISIBILITY_PATTERN)
     permission_scope: str = Field(default="SUMMARY_ONLY", pattern=SCOPE_PATTERN)
 
@@ -79,10 +79,10 @@ class OfferPatch(_Body):
     is a field error rather than a NOT NULL violation surfacing as a 500.
     """
 
-    asking_price_dzd: JsonInteger | None = Field(default=None, ge=0)
+    asking_price_dzd: JsonInteger | None = Field(default=None, ge=0, le=BIGINT_MAX)
     raw_price_text: str | None = None
     price_negotiable: str = Field(default="", pattern=NEGOTIABLE_PATTERN)
-    seller_expectation_dzd: JsonInteger | None = Field(default=None, ge=0)
+    seller_expectation_dzd: JsonInteger | None = Field(default=None, ge=0, le=BIGINT_MAX)
     price_visibility: str = Field(default="", pattern=VISIBILITY_PATTERN)
 
 

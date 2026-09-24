@@ -34,7 +34,7 @@ from ...services import properties as property_service
 from ...services.concurrency import HEADER, IfMatchRequired, parse_if_match
 from ...services.provenance import UpdateChannel
 from ..deps import Access, Command
-from ..json_types import JsonNumber
+from ..json_types import NUMERIC_12_2_MAX, JsonNumber
 from ..problems import ProblemCode, coded, for_denial, trace_id_of
 from .parties import _run
 
@@ -79,8 +79,8 @@ class PropertyCreate(_Body):
     canonical_location_id: uuid.UUID | None = None
     #: Omissible, never null — hence the sentinel defaults.
     local_location_detail: str = ""
-    land_area_m2: JsonNumber = Field(default=0.0, gt=0)
-    built_area_m2: JsonNumber = Field(default=0.0, gt=0)
+    land_area_m2: JsonNumber = Field(default=0.0, gt=0, le=NUMERIC_12_2_MAX)
+    built_area_m2: JsonNumber = Field(default=0.0, gt=0, le=NUMERIC_12_2_MAX)
     current_availability: str = Field(default="", pattern=AVAILABILITY_PATTERN)
 
 
@@ -96,8 +96,8 @@ class PropertyPatch(_Body):
     property_type: str = Field(default="", pattern=PROPERTY_TYPE_PATTERN)
     canonical_location_id: uuid.UUID | None = None
     local_location_detail: str | None = None
-    land_area_m2: JsonNumber | None = Field(default=None, gt=0)
-    built_area_m2: JsonNumber | None = Field(default=None, gt=0)
+    land_area_m2: JsonNumber | None = Field(default=None, gt=0, le=NUMERIC_12_2_MAX)
+    built_area_m2: JsonNumber | None = Field(default=None, gt=0, le=NUMERIC_12_2_MAX)
 
 
 class PropertyReconfirm(_Body):

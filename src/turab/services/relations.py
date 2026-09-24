@@ -113,7 +113,8 @@ class EndNotAfterStart(RelationError):
 
 class UnknownReasonCode(RelationError):
     def __init__(self, code: str) -> None:
-        super().__init__("VALIDATION_FAILED", f"{code!r} is not an active reason code")
+        # `code` is the caller's text and matched nothing: not echoed.
+        super().__init__("VALIDATION_FAILED", "reason_code is not an active reason code")
 
 
 def _row(session: Session, relation_id: uuid.UUID) -> Mapping[str, Any]:

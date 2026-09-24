@@ -47,6 +47,15 @@ place, both succeed, the second closes the first, and both rows are kept.
 
 ## 2. Finding G3-11 — a vocabulary for PARTY, REQUEST and OFFER attributes
 
+> **DECIDED (review of 1c2f6c5): option (c).** The truth layer is
+> **PROPERTY-only** in this version. Claims and resolutions about a PARTY, a
+> REQUEST or an OFFER stay refused with `422 ATTRIBUTE_VOCABULARY_UNDECIDED`.
+> The refusal's `detail` states this: "the truth layer covers PROPERTY
+> subjects only (decision G3-11)". It is pinned by
+> `test_claims_and_resolutions_about_other_subjects_are_refused_naming_g3_11`
+> and recorded at `truth.DELIVERED_SUBJECTS`. A vocabulary for those subjects
+> is a later slice's decision, and needs one of the options below.
+
 **The problem.** `ClaimInput` and `ResolutionInput` accept four subject
 types. §3.9 validates `attribute_code` against `attribute_definitions`,
 whose `applies_to` is a **list of property types** and whose seeded rows are
@@ -73,8 +82,8 @@ offer.
   definitions.
 - (c) Keep them refused until a later slice needs them.
 
-**Recommendation:** (c) for Slice 3. Nothing in STOP GATE C requires claims
-about parties, requests or offers.
+**Recommendation (as submitted):** (c) for Slice 3. Nothing in STOP GATE C
+requires claims about parties, requests or offers. This option was approved.
 
 ## 3. Choices within the rules, and one limit, stated for review
 
@@ -123,3 +132,139 @@ helper. `test_every_command_route_performs_an_object_check` refused it,
 because the check was not visible in the route itself. The guard was right
 and was left as it is. Each route now calls `command.authorize` and
 `command.authorize_staff_only` directly.
+
+## 6. Input hardening (review of 1c2f6c5): two families of routes to a 500
+
+The review found two inputs that turned a refusal into a 500. Step 5 stays
+open until both are refused over HTTP and tested. Each was treated as a
+**family**: every member found in the code base is fixed, including Slice 2
+and earlier-step members of the same defect.
+
+### 6.1 Family 1: the caller's text echoed into `detail`
+
+**Mechanism.** `problems._check_detail` refuses a `detail` containing an
+implementation marker (`otp`, `turab.`, `SELECT `, … compared
+case-insensitively) and raises `DetailLeak`, which is a 500. A typed domain
+error that quoted the caller's own text therefore became a 500 whenever that
+text contained a marker. The validation handler already followed the rule of
+never echoing input values; the domain errors did not.
+
+**Members, all fixed.** Each now names the field, never its value:
+
+| Site | Operation | Slice |
+|---|---|---|
+| `truth.validate_attribute`: unknown `attribute_code` | `postClaims`, `postResolutions`, and the `property_attributes` projection (one validator) | 3 · step 5 |
+| `truth.validate_attribute`: unregistered ENUM value (the reviewer's `"otp"`) | the same | 3 · step 5 |
+| `truth.resolve`: unknown `resolution_reason_code` | `postResolutions` | 3 · step 5 |
+| `offers.UnknownReasonCode` | `POST /offers/{id}/state` | 3 · step 1 |
+| `relations.UnknownReasonCode` | `POST /properties/{id}/relations/{rid}/end` | G3-6 |
+| `requests.UnknownCriterionCode` | `POST /requests/{id}/criteria` | **2** |
+| `requests.UnknownReasonCode` (closure) | `POST /requests/{id}/state` | **2** |
+
+**What a `detail` may still quote.** Only text that did not come from the
+caller as free text:
+- a value that has **matched a registry row**, such as "`'ROOMS'` takes a JSON
+  number". `test_no_registered_code_contains_a_leak_marker` pins that none of
+  the 68 seeded codes contains a marker. The codes are those in
+  `attribute_definitions`, `attribute_options`, `criterion_definitions` and
+  `reason_codes`.
+- a value **held to a closed pattern** by the route, such as `management_mode`
+  or `target_status`;
+- UUIDs and timestamps. Their characters are hexadecimal digits, digits and
+  separators, and cannot spell a marker.
+
+The remaining interpolations in `src/turab` were audited against these three
+cases. No other member was found.
+
+### 6.2 Family 2: a number the database cannot store
+
+**Mechanism.** Python's `json.loads`, which parses every request body,
+accepts `1e400` (as `inf`), `NaN`, `Infinity` and `-Infinity`. None of these
+is a JSON number: RFC 8259 §6 says "Numeric values that cannot be represented
+in the grammar below (such as Infinity and NaN) are not permitted". Inside a
+free JSON field they reached `json.dumps` as `Infinity`, then
+`CAST(... AS jsonb)`, which PostgreSQL refuses. Through a typed field, an
+out-of-range integer or area reached a column that cannot hold it.
+
+**Fix** (`src/turab/api/json_types.py`):
+- `JsonNumber` refuses a non-finite value.
+- `JsonInteger` already did: `float.is_integer()` is False for inf and NaN
+  (Python documentation: "finite with integral value").
+- `FiniteJson` and `FiniteJsonObject` type every free JSON field and refuse a
+  non-finite number **at any depth**. The walk is iterative and names neither
+  path nor value.
+- Column bounds are the frozen columns' own, so nothing storable is refused:
+  - `bigint` (PostgreSQL 16 documentation §8.1.1, Table 8.2);
+  - `smallint` (the same table);
+  - `numeric(12,2)` (§8.1.2).
+
+  The contract declares no maximum. This is not a contract change: it refuses
+  earlier, with a typed 422, what the frozen schema already refused with an
+  error.
+
+| Field | Operation | Refusal |
+|---|---|---|
+| `claimed_value`, `extraction_confidence` | `postClaims` | non-finite at any depth; `[0,1]` |
+| `resolved_value` | `postResolutions` | non-finite at any depth |
+| `payload` (nested) | `postObservations` | non-finite at any depth |
+| `source.metadata`, `raw_payload` (nested) | `postExternalLeads` | non-finite at any depth |
+| convert `payload` | `postExternalLeadsLeadIdConvert` | typed the same way (\*) |
+| `value` of a criterion | `POST /requests/{id}/criteria` (Slice **2**) | non-finite at any depth |
+| `sort_order` of a criterion | the same (Slice **2**) | `smallint` range |
+| `budget_target_dzd`, `budget_max_dzd` | `postRequests`, request PATCH (Slice **2**) | `≤ 2⁶³−1` |
+| `asking_price_dzd`, `seller_expectation_dzd` | offer create and PATCH | `≤ 2⁶³−1` |
+| `land_area_m2`, `built_area_m2` | property create and PATCH | finite, `≤ 9 999 999 999.99` |
+
+(\*) The conversion is refused by decision G3-10 and writes nothing. Its
+payload is typed like the others for consistency, and is not separately tested
+over HTTP.
+
+### 6.3 Tests: `tests/test_input_hardening.py`, 86 cases over HTTP on PostgreSQL
+
+Each HTTP case asserts three things:
+1. a typed 4xx with a stable code (`VALIDATION_FAILED` or `UNKNOWN_FIELD`),
+   never a 500;
+2. **nothing written**, as a row count or version before and after;
+3. **the refusal consumed nothing**: the SAME `Idempotency-Key`, or the SAME
+   `If-Match-Version` for a PATCH, then succeeds with a valid body.
+
+The marked values are `otp`, `turab.x` and `SELECT 1`. This covers both cases
+the review required: the ENUM value `"otp"`, and an unknown attribute code
+containing `turab.`. The non-finite values are `1e400`, `-1e400`, `NaN`,
+`Infinity` and `-Infinity`, each sent as raw JSON text exactly as a client
+sends it.
+
+**The cause, not only the status.** This file's test client raises server
+exceptions. A regression to a 500 therefore fails with its exception
+(`DetailLeak`, a psycopg `DataError`), not merely with a status code.
+
+Before any fix, the file reproduced the defects: **71 failed, 3 passed**.
+
+### 6.4 Mutations, with the cause each failure reports
+
+The mutations are run by `db/dev/mutate_input_hardening.py`. Its output,
+bound to the commit and source fingerprint it ran on, is
+`docs/gate/evidence/STEP5-INPUT-HARDENING-MUTATIONS.txt`.
+
+| # | Mutation (production code) | Tests failing | Cause reported |
+|---|---|---|---|
+| M1 | echo the unknown `attribute_code` | 3 | `DetailLeak` |
+| M2 | echo the ENUM value | 3 | `DetailLeak` |
+| M3 | echo `resolution_reason_code` | 3 | `DetailLeak` |
+| M4 | echo the offer reason code | 3 | `DetailLeak` |
+| M5 | echo the relation reason code | 3 | `DetailLeak` |
+| M6 | echo the criterion code (Slice 2) | 3 | `DetailLeak` |
+| M7 | echo the closure reason (Slice 2) | 3 | `DetailLeak` |
+| M8 | drop `JsonNumber`'s finite check | 5 (type level only) | `DID NOT RAISE` |
+| M9 | drop the `FiniteJson` walk | 31 | `InvalidTextRepresentation: invalid input syntax for type json` |
+| M10 | drop the offer `bigint` bound | 3 | `NumericValueOutOfRange: bigint out of range` |
+| M11 | drop the request `bigint` bound | 2 | the same |
+| M12 | drop the `smallint` bound | 2 | `NumericValueOutOfRange: smallint out of range` |
+| M13 | drop the `numeric(12,2)` bound | 3 | `NumericValueOutOfRange: numeric field overflow` |
+
+**A limit, stated.** M8 fails **no HTTP test**. Every `JsonNumber` field in
+the API today also carries `ge`, `gt` or `le` bounds, and those bounds refuse
+inf and NaN on their own: NaN fails every comparison, and inf exceeds `le`.
+The type's own check guards a future field with no bounds. It is proven on the
+type itself: `test_json_number_refuses_a_non_finite_value_with_no_bounds`.
+It is not claimed as the HTTP mechanism.

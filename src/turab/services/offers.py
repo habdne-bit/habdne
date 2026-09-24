@@ -181,7 +181,8 @@ class UnknownReasonCode(OfferError):
     def __init__(self, code: str) -> None:
         super().__init__(
             "VALIDATION_FAILED",
-            f"{code!r} is not an active reason code",
+            # `code` is the caller's text and matched nothing: not echoed.
+            "reason_code is not an active reason code",
         )
 
 

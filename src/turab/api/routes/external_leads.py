@@ -14,13 +14,13 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import datetime
-from typing import Any
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...services import external_leads as lead_service
 from ..deps import Access, Command
+from ..json_types import FiniteJsonObject
 from ..problems import for_denial, trace_id_of
 from .parties import _run
 
@@ -52,7 +52,7 @@ class SourceInput(_Body):
     title: str = None  # type: ignore[assignment]
     raw_text: str = None  # type: ignore[assignment]
     captured_at: datetime = None  # type: ignore[assignment]
-    metadata: dict[str, Any] = None  # type: ignore[assignment]
+    metadata: FiniteJsonObject = None  # type: ignore[assignment]
 
     @field_validator("external_url")
     @classmethod
@@ -73,7 +73,7 @@ class SourceInput(_Body):
 class ExternalLeadCreate(_Body):
     lead_kind: str = Field(pattern="^(PROPERTY|REQUEST)$")
     source: SourceInput
-    raw_payload: dict[str, Any] = None  # type: ignore[assignment]
+    raw_payload: FiniteJsonObject = None  # type: ignore[assignment]
 
 
 class ExternalLeadConvert(_Body):
@@ -82,7 +82,7 @@ class ExternalLeadConvert(_Body):
     party_id: uuid.UUID
     consent_id: uuid.UUID
     target: str = Field(default=None, pattern="^(REQUEST|PROPERTY)$")  # type: ignore[assignment]
-    payload: dict[str, Any] = None  # type: ignore[assignment]
+    payload: FiniteJsonObject = None  # type: ignore[assignment]
 
 
 @router.post("/external-leads", operation_id="postExternalLeads", status_code=201)

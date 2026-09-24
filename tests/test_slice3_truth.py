@@ -278,8 +278,9 @@ def test_a_claim_about_an_unknown_property_is_404(client, ids):
 def test_claims_and_resolutions_about_other_subjects_are_refused_naming_g3_11(
     client, ids, engine, subject_type
 ):
-    """No vocabulary is registered for these subjects (G3-11): refused,
-    typed, and nothing written — not accepted by accident."""
+    """G3-11, decided (c): the truth layer is PROPERTY-only in this version.
+    No vocabulary is registered for these subjects: refused, typed, the
+    refusal says so, and nothing written — not accepted by accident."""
     subject_id = {"PARTY": ids.AMINA, "REQUEST": ids.REQ_AMINA,
                   "OFFER": ids.OFFER_OWNER_SALE}[subject_type]
     before = _db(engine, "SELECT count(*) AS n FROM turab.claims")[0]["n"]
@@ -290,6 +291,7 @@ def test_claims_and_resolutions_about_other_subjects_are_refused_naming_g3_11(
     assert r.status_code == 422, r.text
     assert r.json()["code"] == "ATTRIBUTE_VOCABULARY_UNDECIDED"
     assert "G3-11" in r.json()["detail"]
+    assert "PROPERTY subjects only" in r.json()["detail"]
     assert _db(engine, "SELECT count(*) AS n FROM turab.claims")[0]["n"] == before
     r = client.post("/resolutions", headers=op(ids), json={
         "subject": body["subject"], "attribute_code": "ROOMS", "resolved_value": 3})
