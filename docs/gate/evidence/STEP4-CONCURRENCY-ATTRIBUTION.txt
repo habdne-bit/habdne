@@ -1,0 +1,74 @@
+TURAB — step 4: which mechanism protects a concurrent reconfirmation
+====================================================================
+Base commit       : edea2970cccf73bb73e52c1ccc94644a3535c4ff
+Source fingerprint: f301de35e89c397a94e873eaf6e559da291269829ef48222f87224fafda2f412
+                    (the base tree; each mutation is applied, run, and reverted)
+Recorded          : 2026-09-24 10:48:59 UTC
+Server            : PostgreSQL 16.13
+
+Each mutation is applied to the PRODUCTION pass (_STALE_AVAILABILITY_SQL in
+src/turab/services/properties.py) and the SHIPPED test is run. Its assertion
+prints the observed facts in full:
+  waited  PostgreSQL reported the pass blocked by the holder (pg_blocking_pids)
+  wrote   the pass's UPDATE returned the contended row
+  final   the availability that survived both commits
+  holder  the holder committed (it never waits for the pass to finish)
+The holder's concurrent value is AVAILABLE (fresh) or UNAVAILABLE (excluded).
+
+=== baseline (no mutation) ===
+2 passed, 84 deselected, 2 warnings in 3.16s
+
+=== M4: lock removed, outer predicate kept ===
+--- mutation (git diff -U0 against edea2970cccf73bb73e52c1ccc94644a3535c4ff) ---
+-                       FOR UPDATE SKIP LOCKED) AS candidate
++                       ) AS candidate
+--- pytest -k test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation ---
+AssertionError: waited=True wrote=False final=AVAILABLE holder=committed
+AssertionError: waited=True wrote=False final=UNAVAILABLE holder=committed
+FAILED tests/test_slice3_step4.py::test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation[AVAILABLE]
+FAILED tests/test_slice3_step4.py::test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation[UNAVAILABLE]
+2 failed, 84 deselected, 2 warnings in 3.22s
+    (restored: cmp identical)
+
+=== M4 + outer predicate removed ===
+--- mutation (git diff -U0 against edea2970cccf73bb73e52c1ccc94644a3535c4ff) ---
+-                       FOR UPDATE SKIP LOCKED) AS candidate
++                       ) AS candidate
+-                  AND p.current_availability::text = ANY(:convertible)
+-                  AND p.availability_last_confirmed_at IS NOT NULL
+-                  AND p.availability_last_confirmed_at
+-                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
+--- pytest -k test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation ---
+AssertionError: waited=True wrote=True final=NEEDS_CONFIRMATION holder=committed
+AssertionError: waited=True wrote=True final=NEEDS_CONFIRMATION holder=committed
+FAILED tests/test_slice3_step4.py::test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation[AVAILABLE]
+FAILED tests/test_slice3_step4.py::test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation[UNAVAILABLE]
+2 failed, 84 deselected, 2 warnings in 3.40s
+    (restored: cmp identical)
+
+=== outer predicate removed, lock kept ===
+--- mutation (git diff -U0 against edea2970cccf73bb73e52c1ccc94644a3535c4ff) ---
+-                  AND p.current_availability::text = ANY(:convertible)
+-                  AND p.availability_last_confirmed_at IS NOT NULL
+-                  AND p.availability_last_confirmed_at
+-                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
+--- pytest -k test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation ---
+2 passed, 84 deselected, 2 warnings in 3.03s
+    (restored: cmp identical)
+
+=== reading ===
+M4 (lock removed): the pass WAITED for the locked row and did NOT write it;
+  the concurrent value survived. The shipped test fails only on waited=True,
+  i.e. because the no-wait skip is gone. What protected the value was the
+  OUTER re-asserted predicate, re-evaluated after the wait (PostgreSQL 16,
+  §13.2.1). This is the attribution the earlier harness could not show: there
+  the same mutation failed by TIMEOUT.
+M4 + outer predicate removed: the pass waited, WROTE the row, and the
+  concurrent reconfirmation was overwritten to NEEDS_CONFIRMATION — the lost
+  update both guards exist to prevent.
+Outer predicate removed, lock kept: passes. SKIP LOCKED alone protects; the
+  outer predicate is redundant while the lock is present, and a guard when it
+  is not (previous two runs).
+The same five variants run on every suite run as
+test_which_mechanism_protects_a_concurrent_reconfirmation; their facts are
+recorded per case as JUnit properties in junit-run.xml.

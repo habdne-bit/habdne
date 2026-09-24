@@ -172,3 +172,10 @@ src/turab/services/offers.py                                   --   07116cd06f41
 db/dev/run_freshness_pass.py                                   --   129d26e25e1fb0fbad7849142bfed4ff96a787a13ee5e991420923adeda0767d
 tests/test_slice3_step4.py                                     new  b719442f8da5f4a1d96b741bb595a66a62a1579510df4d018da57faf96a0b834
 No decision document changed revision. The plan stays at rev 6 and the G3-6 Delta at 3a.
+
+--- round 0db04c4 -> step-4 concurrency attribution (review of 0db04c4) ---
+docs/gate/SLICE_3_STEP4_DELIVERY.md                            --   a305a0c5a63dd524d96d42ba60099f933c54f8eeaa3d9be86ebba17443791bf5
+docs/gate/evidence/STEP4-CONCURRENCY-ATTRIBUTION.txt           new  edd847cb0a6c6a64807262f7ca63d74b43dd2eac4d286a0be64ccfdec4ada361
+tests/test_slice3_step4.py                                     --   e1d46a8c6b6d48e867e20edfb392dd36c0eebc560e15b067da139b037d538cd0
+src/turab/services/properties.py                               --   245408848af2212728559b470aaed274d251a261b9b1313bfca982621f417ca8
+properties.py: the pass SQL moved into _STALE_AVAILABILITY_SQL with its text unchanged.
