@@ -59,7 +59,14 @@ rule:
 **Tests:** `tests/test_slice3_property_queue.py`, 9 cases. Each criterion
 ENTERS a property that was not queued before. The mutation script is
 `db/dev/mutate_property_queue.py`: 8 mutations, each failing at least one
-test (`STEP8-PROPERTY-QUEUE-MUTATIONS.txt`).
+test (`STEP8-PROPERTY-QUEUE-MUTATIONS.txt`, clean tree at a558e4c).
+
+**Q8 is killed by a crash, not by an assertion.** The mutation admits
+properties with no reason. `review_queue_item` then indexes an empty
+`reasons` list, and all 9 tests fail with `IndexError`. Four tests do assert
+that a property is absent before it is given a reason
+(`assert pid not in _queue(...)`). Those assertions are never reached under
+Q8, so this run does not show that they would catch it.
 
 **Observed, not changed:** `getBackofficeQueuesRequests` (an earlier slice)
 returns an always-empty list, a placeholder. It is outside this slice and is

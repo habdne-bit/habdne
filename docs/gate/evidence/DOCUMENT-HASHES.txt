@@ -279,3 +279,22 @@ db/dev/mutate_identity.py                                      --   ce0662ddeae1
 db/dev/mutation_runner.py                                      --   6768ce6a6fbc36cc3cd80b227a307253c2cce48f04cebc6812536c2c47c8c6da
 tests/test_slice3_identity.py                                  --   eec16223c6386d53e84094201ebebb432ad48f7b012a5f6e5a7d2424ae79016e
 No decision document changed revision.
+
+--- round e72432b -> step 8 and STOP GATE C (review of e72432b) ---
+docs/gate/SLICE_3_STEP8_DELIVERY.md                            new  4089d9edaf78bfe2555d909d775897eac8f0afa95745fe786ea794f845cee329
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   8ec344a4d8d97f73e7cf1b0bd78811422fa3010232cf3d5da374276ed1d38bc4
+docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt             --   ae523fb096ea63eeca68226cf642284f26e98c172fea549376796730ef3084af
+docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt                --   5a3c5158720ff158035c07f878ec4349ca7e5e61813e82779074c5e305e52d8a
+docs/gate/evidence/STEP8-PROPERTY-QUEUE-MUTATIONS.txt          new  197771c9f7458ad59fb46ab1a9f4f5aa5717d013311bcefb0aa9a79549110390
+src/turab/services/identity.py                                 --   bb32dd456738a7cbcc1de1a9796fcc071b4d0a1a27aeb9423dac1c2135f7f0a9
+src/turab/services/properties.py                               --   3e25fdc6968e0de77ee9bf9a39746d587ed7bb555c0af330a144defe9827821a
+src/turab/services/access.py                                   --   c2046d9063cddbd60829394a028392fd99beb21f92986222e3ccef1230e74d9c
+src/turab/api/routes/properties.py                             --   30d799680f900e22fdf9c98691735fb0b701bb5d7c5a0224a571ac1b7a73e909
+db/gate/stop_gate_c_evidence.py                                new  5978eef7b5a8817b75724f6b02fe748c99740fdc1a18229b92ff324e5d3f703d
+db/gate/authorization_evidence.py                              --   33a67ff2ed5a2e53342fe5bf94a95b04d6592bc731669773f7effdca682f23ab
+db/dev/mutate_property_queue.py                                new  0651e5b4aed55290c0707d5ddb806edff5d15459f60c29c716e7b659aef9f4fb
+tests/test_slice3_scenarios.py                                 new  9bb3f648bc8e53745f9e49698537fcbf35d0c631b54e189bc0ba5fbda1d96327
+tests/test_slice3_stop_gate_c.py                               new  e2ec91536cdb2dba02505470c92f4c9eaeb8e9139f98e3bd5a6d0a0de8f23134
+tests/test_slice3_property_queue.py                            new  14310123bcbbba611d83b104056ffa5748c818c2de1886af7fa218fdcdd7de32
+tests/test_slice3_identity.py                                  --   a9cb5385b96d899b8dd457e80eb2d7d1b0a87b5d1fa1d595d3c15e964cbcf452
+docs/gate/SLICE_3_STOP_GATE_C.md is generated from the clean-tree JUnit report and committed with TEST-RUN-PROVENANCE.txt; its digest is in the bundle MANIFEST. No decision document changed revision.

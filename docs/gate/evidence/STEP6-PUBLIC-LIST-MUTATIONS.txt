@@ -1,26 +1,26 @@
 TURAB — step 6: which clause refuses which case in the public list
 ============================================================
-Base commit       : 8e65de633b961ef83e218e43791b2988166e2530
-Source fingerprint: 198cd2241970e53833a1eda4de3713bb6164f0dd51d8269d99584cd3063b9532
+Base commit       : a558e4cc36e86af3b3beea3f924e385ffc8ec70b
+Source fingerprint: e24f79583c79bbf86e86b481d3dfb0f7793ed1dccee8a77c36fa2501b766385a
 Working tree      : CLEAN
-Recorded          : 2026-09-24 22:32:29 UTC
+Recorded          : 2026-09-24 23:34:03 UTC
 Test file         : tests/test_slice3_public.py
 
 === baseline (no mutation) ===
-   70 passed, 2 warnings in 10.17s
+   70 passed, 2 warnings in 8.60s
 == P1 supply_mode = PUBLIC dropped [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   3 failed, 67 passed, 2 warnings in 10.07s
+   3 failed, 67 passed, 2 warnings in 8.88s
    FAILED test_a_property_that_is_not_public_is_absent[POTENTIAL]
    FAILED test_a_property_that_is_not_public_is_absent[PRIVATE]
    FAILED test_every_item_conforms_to_the_contracts_public_property_summary
    cause: AssertionError: assert ['$.supply_mo...eclared enum'] == []
-   cause: AssertionError: assert ['b24a7773-1f...91dd1679b8da'] == []
-   cause: AssertionError: assert ['c559af6b-04...399fafd04575'] == []
+   cause: AssertionError: assert ['6a52b705-0f...bed426b084b1'] == []
+   cause: AssertionError: assert ['fa8315eb-4c...0dd55e66b3d5'] == []
    cause: E   AssertionError: assert ['$.supply_mo...eclared enum'] == []
-   cause: E   AssertionError: assert ['b24a7773-1f...91dd1679b8da'] == []
-   cause: E   AssertionError: assert ['c559af6b-04...399fafd04575'] == []
+   cause: E   AssertionError: assert ['6a52b705-0f...bed426b084b1'] == []
+   cause: E   AssertionError: assert ['fa8315eb-4c...0dd55e66b3d5'] == []
 == P2 offer status = ACTIVE dropped [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   7 failed, 63 passed, 2 warnings in 10.07s
+   7 failed, 63 passed, 2 warnings in 8.69s
    FAILED test_a_consented_offer_that_is_not_active_does_not_list_its_property[CLOSED]
    FAILED test_a_consented_offer_that_is_not_active_does_not_list_its_property[DRAFT]
    FAILED test_a_consented_offer_that_is_not_active_does_not_list_its_property[PAUSED]
@@ -28,14 +28,14 @@ Test file         : tests/test_slice3_public.py
    FAILED test_a_consented_offer_that_is_not_active_does_not_list_its_property[WITHDRAWN]
    FAILED test_d04_a_public_property_whose_offers_are_all_withdrawn_is_absent
    FAILED test_only_active_consented_offers_are_projected
-   cause: AssertionError: assert ['1fde4a1b-c8...64ad3b62a723'] == []
-   cause: AssertionError: assert ['307910ee-d2...26b4134ecedf'] == []
-   cause: AssertionError: assert ['4408573e-e0...bb0ea09d32ec'] == ['4408573e-e0...2ad31bb9f83a']
-   cause: AssertionError: assert ['44a8bb89-51...e573421059b8'] == []
-   cause: AssertionError: assert ['4bda33fd-ef...509ed7fafb94'] == []
-   cause: AssertionError: assert ['95952ce3-b9...4a52fc8781c8'] == []
+   cause: AssertionError: assert ['1db17e52-9d...f4e5f6f08e66'] == []
+   cause: AssertionError: assert ['67539e6a-e4...5114d367d5d3'] == ['67539e6a-e4...ec7138d3d76a']
+   cause: AssertionError: assert ['8d53bf40-85...fa4f9f8c04d7'] == []
+   cause: AssertionError: assert ['8f2612a0-53...e90de315166a'] == []
+   cause: AssertionError: assert ['914294e4-33...951f561e765c'] == []
+   cause: AssertionError: assert ['96a6223f-40...c2340113e32d'] == []
 == P3 binding not tied to THIS offer [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   13 failed, 57 passed, 2 warnings in 10.14s
+   13 failed, 57 passed, 2 warnings in 9.05s
    FAILED test_a_binding_for_another_purpose_does_not_list
    FAILED test_a_binding_that_starts_in_the_future_does_not_list_yet
    FAILED test_a_binding_whose_purpose_is_not_public_listing_does_not_list
@@ -49,54 +49,54 @@ Test file         : tests/test_slice3_public.py
    FAILED test_only_active_consented_offers_are_projected
    FAILED test_revoking_the_grant_delists_although_the_binding_row_survives
    FAILED test_the_fixture_world_lists_the_villa_with_its_one_consented_offer
-   cause: AssertionError: assert ['0f167ef2-96...d97eeb9f7ee8'] == []
-   cause: AssertionError: assert ['1c8dadc5-56...1b338cb08c9b'] == []
-   cause: AssertionError: assert ['2affad0f-ca...65fe2332b084'] == ['2affad0f-ca...aa89c7d828a7']
-   cause: AssertionError: assert ['4acf4b5c-0f...3b26b2eb8e26'] == []
-   cause: AssertionError: assert ['703f78cd-e4...e198479698b0'] == []
-   cause: AssertionError: assert ['71ffe8be-d3...4461c20901d9'] == []
+   cause: AssertionError: assert ['079fdaa9-98...3ed8bc8eda5c'] == []
+   cause: AssertionError: assert ['092aebd5-ad...b507650716af'] == []
+   cause: AssertionError: assert ['13194c7e-b4...b70cf5bf43c8'] == ['13194c7e-b4...fda9a8ec451f']
+   cause: AssertionError: assert ['142b8577-9f...4c201474214f'] == []
+   cause: AssertionError: assert ['22081d93-69...1e5d88f9e79e'] == []
+   cause: AssertionError: assert ['6cfd7a2c-50...dbf72eecd9d3'] == []
 == P4 binding purpose dropped [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 9.98s
+   1 failed, 69 passed, 2 warnings in 9.02s
    FAILED test_a_binding_whose_purpose_is_not_public_listing_does_not_list
-   cause: AssertionError: assert ['1ac3b63d-32...341c715a2ee0'] == []
-   cause: E   AssertionError: assert ['1ac3b63d-32...341c715a2ee0'] == []
+   cause: AssertionError: assert ['fa085a60-ec...48b87ab5fefb'] == []
+   cause: E   AssertionError: assert ['fa085a60-ec...48b87ab5fefb'] == []
 == P5 binding revocation ignored [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.23s
+   1 failed, 69 passed, 2 warnings in 8.97s
    FAILED test_a_revoked_binding_does_not_list
-   cause: AssertionError: assert ['5ee169ba-62...4e57593f440f'] == []
-   cause: E   AssertionError: assert ['5ee169ba-62...4e57593f440f'] == []
+   cause: AssertionError: assert ['229a3df0-f9...690364a98006'] == []
+   cause: E   AssertionError: assert ['229a3df0-f9...690364a98006'] == []
 == P6 binding start ignored [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.28s
+   1 failed, 69 passed, 2 warnings in 8.67s
    FAILED test_a_binding_that_starts_in_the_future_does_not_list_yet
-   cause: AssertionError: assert ['137e7f8a-fc...9dad7a5faf2c'] == []
-   cause: E   AssertionError: assert ['137e7f8a-fc...9dad7a5faf2c'] == []
+   cause: AssertionError: assert ['b9ee9e0e-57...60d7713721a1'] == []
+   cause: E   AssertionError: assert ['b9ee9e0e-57...60d7713721a1'] == []
 == P7 grant scope dropped [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.15s
+   1 failed, 69 passed, 2 warnings in 8.76s
    FAILED test_a_grant_whose_scope_changed_after_binding_does_not_list
-   cause: AssertionError: assert ['0a46ce35-c2...12d357bf88f2'] == []
-   cause: E   AssertionError: assert ['0a46ce35-c2...12d357bf88f2'] == []
+   cause: AssertionError: assert ['96a5bb9f-a4...ed795446028a'] == []
+   cause: E   AssertionError: assert ['96a5bb9f-a4...ed795446028a'] == []
 == P8 grant status dropped [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.15s
+   1 failed, 69 passed, 2 warnings in 8.61s
    FAILED test_a_revoked_status_alone_delists_although_no_date_is_recorded
-   cause: AssertionError: assert ['3bf482a4-2b...86524090226f'] == []
-   cause: E   AssertionError: assert ['3bf482a4-2b...86524090226f'] == []
+   cause: AssertionError: assert ['f17535a6-58...fad21ace2530'] == []
+   cause: E   AssertionError: assert ['f17535a6-58...fad21ace2530'] == []
 == P8b grant revocation date ignored (review of 3a53b0a) [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.11s
+   1 failed, 69 passed, 2 warnings in 8.36s
    FAILED test_a_revocation_date_alone_delists_although_the_status_says_granted
-   cause: AssertionError: assert ['ed6786eb-fd...ff77333d2869'] == []
-   cause: E   AssertionError: assert ['ed6786eb-fd...ff77333d2869'] == []
+   cause: AssertionError: assert ['08868a8c-72...fba3f55c468c'] == []
+   cause: E   AssertionError: assert ['08868a8c-72...fba3f55c468c'] == []
 == P9 grant start ignored [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.22s
+   1 failed, 69 passed, 2 warnings in 8.62s
    FAILED test_a_grant_that_starts_in_the_future_does_not_list_yet
-   cause: AssertionError: assert ['9e5eabe6-7a...676c80665ae3'] == []
-   cause: E   AssertionError: assert ['9e5eabe6-7a...676c80665ae3'] == []
+   cause: AssertionError: assert ['72c132cc-fe...624828f30e1f'] == []
+   cause: E   AssertionError: assert ['72c132cc-fe...624828f30e1f'] == []
 == P10 grant party not the offer's [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.13s
+   1 failed, 69 passed, 2 warnings in 8.63s
    FAILED test_a_consent_from_a_party_other_than_the_offers_does_not_list
-   cause: AssertionError: assert ['4d7da4ec-5a...94e3c46fb182'] == []
-   cause: E   AssertionError: assert ['4d7da4ec-5a...94e3c46fb182'] == []
+   cause: AssertionError: assert ['c0906264-72...9513b8588936'] == []
+   cause: E   AssertionError: assert ['c0906264-72...9513b8588936'] == []
 == P11 property listed by any listable offer [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   21 failed, 49 passed, 2 warnings in 10.59s
+   21 failed, 49 passed, 2 warnings in 8.41s
    FAILED test_a_binding_for_another_purpose_does_not_list
    FAILED test_a_binding_that_starts_in_the_future_does_not_list_yet
    FAILED test_a_binding_whose_purpose_is_not_public_listing_does_not_list
@@ -121,20 +121,20 @@ Test file         : tests/test_slice3_public.py
    cause: E   TypeError: 'NoneType' object is not iterable
    cause: TypeError: 'NoneType' object is not iterable
 == P12 availability outside the public enum allowed [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   2 failed, 68 passed, 2 warnings in 10.19s
+   2 failed, 68 passed, 2 warnings in 8.44s
    FAILED test_rule_r6_p1_a_temporarily_or_wholly_unavailable_property_is_not_published[TEMPORARILY_UNAVAILABLE]
    FAILED test_rule_r6_p1_a_temporarily_or_wholly_unavailable_property_is_not_published[UNAVAILABLE]
-   cause: AssertionError: assert ['f07fc5ee-6c...a3d59c78842f'] == []
-   cause: AssertionError: assert ['fba7ba1f-30...56c06397283b'] == []
-   cause: E   AssertionError: assert ['f07fc5ee-6c...a3d59c78842f'] == []
-   cause: E   AssertionError: assert ['fba7ba1f-30...56c06397283b'] == []
+   cause: AssertionError: assert ['2787071e-59...b9b17fb811e4'] == []
+   cause: AssertionError: assert ['8c7f2eb8-a2...5e11a56b2415'] == []
+   cause: E   AssertionError: assert ['2787071e-59...b9b17fb811e4'] == []
+   cause: E   AssertionError: assert ['8c7f2eb8-a2...5e11a56b2415'] == []
 == P13 aliases listed [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.16s
+   1 failed, 69 passed, 2 warnings in 8.85s
    FAILED test_an_alias_is_not_listed_and_its_offers_are_not_folded_in
-   cause: AssertionError: assert ['0a0fda57-c1...c9bb17047d02'] == ['9ed57de1-c9...c9bb17047d02']
-   cause: E   AssertionError: assert ['0a0fda57-c1...c9bb17047d02'] == ['9ed57de1-c9...c9bb17047d02']
+   cause: AssertionError: assert ['cb87c46b-db...f1389ed1154c'] == ['97a48ae8-15...f1389ed1154c']
+   cause: E   AssertionError: assert ['cb87c46b-db...f1389ed1154c'] == ['97a48ae8-15...f1389ed1154c']
 == P14 location filter ignored [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   35 failed, 35 passed, 2 warnings in 10.14s
+   35 failed, 35 passed, 2 warnings in 8.58s
    FAILED test_a_binding_for_another_purpose_does_not_list
    FAILED test_a_binding_that_starts_in_the_future_does_not_list_yet
    FAILED test_a_binding_whose_purpose_is_not_public_listing_does_not_list
@@ -171,65 +171,65 @@ Test file         : tests/test_slice3_public.py
    FAILED test_the_property_type_filter
    cause: AssertionError: assert (200 == 200 and 25 == 1)
    cause: AssertionError: assert 25 == 1
-   cause: AssertionError: assert ['04e0ac26-a5...60919c7', ...] == ['ad763453-58...8c559e21ac0e']
-   cause: AssertionError: assert ['07066f0c-b0...000000000001'] == ['07066f0c-b0...9cac71d900dc']
-   cause: AssertionError: assert ['07066f0c-b0...fd9f045', ...] == ['1b367023-87...dc74b60919c7']
-   cause: AssertionError: assert ['18cf60de-b8...1d900dc', ...] == ['18cf60de-b8...099928f37df5']
+   cause: AssertionError: assert ['0b7d8e79-be...6a38c07', ...] == ['b487819e-8e...31ec3734a9da']
+   cause: AssertionError: assert ['0b7d8e79-be...8d5f5df', ...] == ['0b7d8e79-be...28d2ac073cf6']
+   cause: AssertionError: assert ['0b7d8e79-be...8d5f5df', ...] == []
+   cause: AssertionError: assert ['0dcbbf9e-7a...a79afe1', ...] == ['4cafdd3f-4c...0ab8977a7af4']
 == P14b location filter exact only (G3-14) [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   2 failed, 68 passed, 2 warnings in 10.15s
+   2 failed, 68 passed, 2 warnings in 8.74s
    FAILED test_the_location_filter_ends_on_a_cycle_in_the_hierarchy
    FAILED test_the_location_filter_matches_the_location_and_everything_beneath_it
-   cause: AssertionError: assert ['29e6f3fd-9e...1affb4596098'] == ['0dd9513e-8e...1affb4596098']
-   cause: AssertionError: assert {'76539d35-f1...f6d1bd6bbcdd'} == {'095100c6-68...3a01a8074ce0'}
-   cause: E   AssertionError: assert ['29e6f3fd-9e...1affb4596098'] == ['0dd9513e-8e...1affb4596098']
-   cause: E   AssertionError: assert {'76539d35-f1...f6d1bd6bbcdd'} == {'095100c6-68...3a01a8074ce0'}
+   cause: AssertionError: assert ['e998786f-f1...94dfd45e72ff'] == ['5e2dacdb-45...94dfd45e72ff']
+   cause: AssertionError: assert {'bb15ede1-11...5de108b90d55'} == {'1524ee2c-ea...d30abb7eada4'}
+   cause: E   AssertionError: assert ['e998786f-f1...94dfd45e72ff'] == ['5e2dacdb-45...94dfd45e72ff']
+   cause: E   AssertionError: assert {'bb15ede1-11...5de108b90d55'} == {'1524ee2c-ea...d30abb7eada4'}
 == P15 property_type filter ignored [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   5 failed, 65 passed, 2 warnings in 10.12s
+   5 failed, 65 passed, 2 warnings in 8.67s
    FAILED test_a_property_type_naming_no_type_matches_nothing[NOT_A_TYPE]
    FAILED test_a_property_type_naming_no_type_matches_nothing[SELECT
    FAILED test_a_property_type_naming_no_type_matches_nothing[otp]
    FAILED test_a_property_type_naming_no_type_matches_nothing[turab.x]
    FAILED test_the_property_type_filter
    cause: AssertionError: assert (200 == 200 and [{'property_i...: 250.5, ...}] == []
-   cause: AssertionError: assert ['ab9e44c4-e4...946f283c3fb6'] == ['c155c77c-d6...946f283c3fb6']
+   cause: AssertionError: assert ['182c55a9-eb...4f32d650071c'] == ['87547aa7-13...4f32d650071c']
    cause: E   AssertionError: assert (200 == 200 and [{'property_i...: 250.5, ...}] == []
-   cause: E   AssertionError: assert ['ab9e44c4-e4...946f283c3fb6'] == ['c155c77c-d6...946f283c3fb6']
+   cause: E   AssertionError: assert ['182c55a9-eb...4f32d650071c'] == ['87547aa7-13...4f32d650071c']
 == P16 page taken oldest first [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 9.91s
+   1 failed, 69 passed, 2 warnings in 8.42s
    FAILED test_pages_are_newest_first_disjoint_and_complete
-   cause: AssertionError: assert ['8164fc19-9e...7f0ee010c607'] == ['a166bfe7-53...21f452ac52c9']
-   cause: E   AssertionError: assert ['8164fc19-9e...7f0ee010c607'] == ['a166bfe7-53...21f452ac52c9']
+   cause: AssertionError: assert ['a7391ef6-3a...84c6fab6f8d6'] == ['f41c4ac6-21...d9889558f06d']
+   cause: E   AssertionError: assert ['a7391ef6-3a...84c6fab6f8d6'] == ['f41c4ac6-21...d9889558f06d']
 == P17 every offer of the property projected [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   2 failed, 68 passed, 2 warnings in 10.29s
+   2 failed, 68 passed, 2 warnings in 8.46s
    FAILED test_only_active_consented_offers_are_projected
    FAILED test_the_fixture_world_lists_the_villa_with_its_one_consented_offer
-   cause: AssertionError: assert ['ed560fa8-ce...ed72151fee94'] == ['ed560fa8-ce...a61a1e3a38a5']
+   cause: AssertionError: assert ['29e93174-6a...13c9d03044f4'] == ['29e93174-6a...db74fbdfec72']
    cause: AssertionError: assert ['f6000000-00...000000000003'] == ['f6000000-00...000000000001']
-   cause: E   AssertionError: assert ['ed560fa8-ce...ed72151fee94'] == ['ed560fa8-ce...a61a1e3a38a5']
+   cause: E   AssertionError: assert ['29e93174-6a...13c9d03044f4'] == ['29e93174-6a...db74fbdfec72']
    cause: E   AssertionError: assert ['f6000000-00...000000000003'] == ['f6000000-00...000000000001']
 == P18 offers newest first [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.47s
+   1 failed, 69 passed, 2 warnings in 8.57s
    FAILED test_projected_offers_are_in_creation_order
-   cause: AssertionError: assert ['c0c90bbc-cf...7374a0431c68'] == ['52e65ff6-03...912397180cf5']
-   cause: E   AssertionError: assert ['c0c90bbc-cf...7374a0431c68'] == ['52e65ff6-03...912397180cf5']
+   cause: AssertionError: assert ['8cd7a409-9c...9972f7392b70'] == ['3f376aa9-7e...4d8094aadc3a']
+   cause: E   AssertionError: assert ['8cd7a409-9c...9972f7392b70'] == ['3f376aa9-7e...4d8094aadc3a']
 == P19 local_location_detail rendered [src/turab/dto/boundaries.py, 1 site(s)]  restored: sha256 9462e3c774dfa547 identical
-   2 failed, 68 passed, 2 warnings in 10.20s
+   2 failed, 68 passed, 2 warnings in 8.54s
    FAILED test_the_dto_renders_areas_as_numbers_and_withholds_the_local_detail
    FAILED test_the_local_location_detail_is_withheld_by_decision_g3_12
-   cause: AssertionError: assert 'local_location_detail' not in {'property_id': 'aea24592-8750-47f8-b398-9eba58eca92f', 'property_type': 'LAND', 'canonical_location_id': None, 'loc
-   cause: AssertionError: assert 'local_location_detail' not in {'property_id': 'f9ada6ce-61eb-4a69-aa71-dbdb7135c153', 'property_type': 'LAND', 'canonical_location_id': '2321b637-
-   cause: E   AssertionError: assert 'local_location_detail' not in {'property_id': 'aea24592-8750-47f8-b398-9eba58eca92f', 'property_type': 'LAND', 'canonical_location_id': None, 
-   cause: E   AssertionError: assert 'local_location_detail' not in {'property_id': 'f9ada6ce-61eb-4a69-aa71-dbdb7135c153', 'property_type': 'LAND', 'canonical_location_id': '2321b
+   cause: AssertionError: assert 'local_location_detail' not in {'property_id': '285bd637-92d0-4902-bc71-df0c70cd492a', 'property_type': 'LAND', 'canonical_location_id': None, 'loc
+   cause: AssertionError: assert 'local_location_detail' not in {'property_id': '4da9c2b1-5a34-4a7a-84be-a0f3d2dff489', 'property_type': 'LAND', 'canonical_location_id': 'de2e1216-
+   cause: E   AssertionError: assert 'local_location_detail' not in {'property_id': '285bd637-92d0-4902-bc71-df0c70cd492a', 'property_type': 'LAND', 'canonical_location_id': None, 
+   cause: E   AssertionError: assert 'local_location_detail' not in {'property_id': '4da9c2b1-5a34-4a7a-84be-a0f3d2dff489', 'property_type': 'LAND', 'canonical_location_id': 'de2e1
 == P20 availability outside the enum rendered [src/turab/dto/boundaries.py, 1 site(s)]  restored: sha256 9462e3c774dfa547 identical
-   2 failed, 68 passed, 2 warnings in 10.20s
+   2 failed, 68 passed, 2 warnings in 8.90s
    FAILED test_the_dto_never_renders_an_availability_the_contract_does_not_declare[TEMPORARILY_UNAVAILABLE]
    FAILED test_the_dto_never_renders_an_availability_the_contract_does_not_declare[UNAVAILABLE]
-   cause: AssertionError: assert 'availability' not in {'property_id': '2312df37-d024-4c4c-b8de-94a18ce7bebe', 'property_type': 'LAND', 'canonical_location_id': None, 'land_area_m2
-   cause: AssertionError: assert 'availability' not in {'property_id': '3b7a83f6-ae73-40e4-833e-f9722f52b7db', 'property_type': 'LAND', 'canonical_location_id': None, 'land_area_m2
-   cause: E   AssertionError: assert 'availability' not in {'property_id': '2312df37-d024-4c4c-b8de-94a18ce7bebe', 'property_type': 'LAND', 'canonical_location_id': None, 'land_are
-   cause: E   AssertionError: assert 'availability' not in {'property_id': '3b7a83f6-ae73-40e4-833e-f9722f52b7db', 'property_type': 'LAND', 'canonical_location_id': None, 'land_are
+   cause: AssertionError: assert 'availability' not in {'property_id': 'd37d8882-6355-4274-89e0-70b7021c48fe', 'property_type': 'LAND', 'canonical_location_id': None, 'land_area_m2
+   cause: AssertionError: assert 'availability' not in {'property_id': 'f48fa899-b8cf-4bc8-855c-3315bae096f3', 'property_type': 'LAND', 'canonical_location_id': None, 'land_area_m2
+   cause: E   AssertionError: assert 'availability' not in {'property_id': 'd37d8882-6355-4274-89e0-70b7021c48fe', 'property_type': 'LAND', 'canonical_location_id': None, 'land_are
+   cause: E   AssertionError: assert 'availability' not in {'property_id': 'f48fa899-b8cf-4bc8-855c-3315bae096f3', 'property_type': 'LAND', 'canonical_location_id': None, 'land_are
 == P21 area fields typed Decimal again [src/turab/dto/boundaries.py, 1 site(s)]  restored: sha256 9462e3c774dfa547 identical
-   3 failed, 67 passed, 2 warnings in 9.88s
+   3 failed, 67 passed, 2 warnings in 9.01s
    FAILED test_areas_are_json_numbers_equal_to_the_column
    FAILED test_every_item_conforms_to_the_contracts_public_property_summary
    FAILED test_the_dto_renders_areas_as_numbers_and_withholds_the_local_detail
@@ -240,26 +240,26 @@ Test file         : tests/test_slice3_public.py
    cause: E   assert ["$.land_area...'null']", ...] == []
    cause: assert ["$.land_area...'null']", ...] == []
 == P22 price redaction removed [src/turab/dto/boundaries.py, 1 site(s)]  restored: sha256 9462e3c774dfa547 identical
-   2 failed, 68 passed, 2 warnings in 10.02s
+   2 failed, 68 passed, 2 warnings in 8.80s
    FAILED test_the_price_is_redacted_unless_its_visibility_is_public[ON_REQUEST]
    FAILED test_the_price_is_redacted_unless_its_visibility_is_public[PRIVATE]
    cause: E   assert 3300000 is None
    cause: assert 3300000 is None
 == P23 public gate no longer requires a public policy [src/turab/services/public_listing.py, 1 site(s)]  restored: sha256 e5e6e81e4a9c0746 identical
-   1 failed, 69 passed, 2 warnings in 10.20s
+   1 failed, 69 passed, 2 warnings in 9.14s
    FAILED test_public_reads_refuse_an_operation_that_is_not_public
    cause: AssertionError: assert (not True)
    cause: E   AssertionError: assert (not True)
 == P24 page bounds not validated [src/turab/api/routes/public.py, 1 site(s)]  restored: sha256 1bc6a2dc207e6592 identical
-   4 failed, 66 passed, 2 warnings in 10.08s
+   4 failed, 66 passed, 2 warnings in 8.96s
    FAILED test_a_malformed_query_is_a_typed_422[query1]
    FAILED test_a_malformed_query_is_a_typed_422[query2]
    FAILED test_a_malformed_query_is_a_typed_422[query5]
    FAILED test_a_malformed_query_is_a_typed_422[query6]
    cause: AssertionError: []
-   cause: AssertionError: [{"property_id":"12c0ab73-cdf3-44a7-9ff0-981c8be5a8fa","property_type":"LAND","canonical_location_id":"0496b8a3-f874-4d00-84c2-a2d0cd8c08a7","land_area_m2
+   cause: AssertionError: [{"property_id":"02e6c584-8438-4647-973e-4511b12b0d7b","property_type":"LAND","canonical_location_id":"2cbdfee7-7e44-4adb-b7cc-e28a62a356ac","land_area_m2
    cause: E   AssertionError: []
-   cause: E   AssertionError: [{"property_id":"12c0ab73-cdf3-44a7-9ff0-981c8be5a8fa","property_type":"LAND","canonical_location_id":"0496b8a3-f874-4d00-84c2-a2d0cd8c08a7","land_are
+   cause: E   AssertionError: [{"property_id":"02e6c584-8438-4647-973e-4511b12b0d7b","property_type":"LAND","canonical_location_id":"2cbdfee7-7e44-4adb-b7cc-e28a62a356ac","land_are
    cause: E   psycopg.errors.InvalidRowCountInResultOffsetClause: OFFSET must not be negative
    cause: E   sqlalchemy.exc.DataError: (psycopg.errors.InvalidRowCountInResultOffsetClause) OFFSET must not be negative
 
