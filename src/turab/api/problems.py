@@ -73,6 +73,9 @@ class ProblemCode(StrEnum):
     #: controlled vocabulary registers property attributes only. 422: the
     #: subject is well formed; no rule exists yet for what may be said of it.
     ATTRIBUTE_VOCABULARY_UNDECIDED = "ATTRIBUTE_VOCABULARY_UNDECIDED"
+    #: Step 7: a CONFIRMED_SAME or CONFIRMED_DISTINCT decision is final. 409:
+    #: the body is valid; the candidate's state does not admit it.
+    IDENTITY_CANDIDATE_DECIDED = "IDENTITY_CANDIDATE_DECIDED"
     #: The contract's declared condition on `postRecordsClaim` is not met.
     #: 403, not 404: the caller already named a record they may not claim,
     #: and concealing it would leave them unable to tell a wrong id from a
@@ -113,6 +116,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.RELATION_ALREADY_ENDED: (409, "Relation already ended"),
     ProblemCode.EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE: (409, "Conversion not available"),
     ProblemCode.ATTRIBUTE_VOCABULARY_UNDECIDED: (422, "Attribute vocabulary undecided"),
+    ProblemCode.IDENTITY_CANDIDATE_DECIDED: (409, "Identity decision is final"),
     ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),

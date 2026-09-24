@@ -237,6 +237,22 @@ class AccessService:
         )
         return items, total
 
+    def list_identity_candidates(self, *, status: str | None, page: int,
+                                 page_size: int, operation_id: str):
+        """Step 7, on the READ session, audited once for the page (R6.3c).
+        Staff-only by role (ADMIN, OPERATOR, REVIEWER): a candidate is not a
+        customer resource and has no loader."""
+        from . import identity as identity_service
+
+        items, total = identity_service.list_candidates(
+            self._session, status=status, page=page, page_size=page_size)
+        self.record_list_access(
+            operation_id=operation_id, resource_kind="IDENTITY_CANDIDATE",
+            result_count=len(items),
+            query_shape={"status": status, "page": page, "page_size": page_size},
+        )
+        return items, total
+
     def external_lead_queue(self, *, operation_id: str):
         """The external-leads queue, on the READ session, audited once."""
         from . import external_leads as lead_service

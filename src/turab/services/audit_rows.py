@@ -29,6 +29,11 @@ AUDITED_BY_COMMAND = {
     "observations": "observation_id",
     "verification_events": "verification_event_id",
     "property_attributes": "property_attribute_id",
+    # Slice 3 step 7: Identity Lite, and the review work it raises. None of
+    # the three has an audit trigger in the frozen schema.
+    "property_identity_candidates": "identity_candidate_id",
+    "property_identity_aliases": "alias_property_id",
+    "tasks": "task_id",
 }
 
 

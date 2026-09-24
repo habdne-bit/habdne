@@ -185,8 +185,9 @@ Folding would move a party's consented offer onto a record it did not name.
 - (b) Fold an alias's listable offers into its canonical record.
 - (c) List both records.
 
-Step 7 (Identity Lite) creates aliases through the API. The choice matters
-from then on.
+Step 7 (Identity Lite) creates aliases through the API. The integration
+test the review of 3a53b0a asked for is there, with an alias made by that API:
+`test_an_alias_made_through_the_api_leaves_the_public_list` (step-7 note, §4).
 
 ### G3-14 · what `location_id` matches — implemented as subtree, for review
 
@@ -258,3 +259,16 @@ back to `Decimal`: 3 tests fail on `'220.00' == 220.0`.
   evidence, are step 8's.
 - No consent-capture flow is in this slice (plan §6.4). Consents here are
   seeded or granted through the Slice 1 service.
+
+## 8. The review of 3a53b0a — the three closure items
+
+| Item | Where |
+|---|---|
+| the grant revocation date (`g.revoked_at IS NULL`), with a test changing only that column | §1 (correction note), P8b; reproduction on 3a53b0a: exactly that test fails |
+| G3-14 | §4: subtree match implemented after the question was declined; P14b |
+| the alias integration test with step 7 | step-7 note §4: `test_an_alias_made_through_the_api_leaves_the_public_list` |
+
+The two wordings were also corrected:
+- rule R6-P1 is stated as OUR precautionary rule, not something the schema
+  forces (§3, item 3);
+- the float claim is limited to what the tests show (§2).
