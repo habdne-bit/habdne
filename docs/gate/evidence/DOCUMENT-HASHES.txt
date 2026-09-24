@@ -218,3 +218,17 @@ src/turab/api/routes/properties.py                             --   fcb7ef7608c6
 db/dev/mutate_input_hardening.py                               --   459d92f3e14ed5cc812b85bfce064ad2f2933516e137b9a922ac20dfc16863a0
 tests/test_input_hardening.py                                  --   9ac7a547179e19ad5f4e4d03c35b81428db9a8e08c488d3cde47c9b178c83859
 No decision document changed revision.
+
+--- round 37afb76 -> step 6 (public list) ---
+docs/gate/SLICE_3_STEP6_DELIVERY.md                            new  3604c2b36750e145eb17551fb8d3b004f6a01b2c317aeae01fa02e7abe10064e
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   4e0c38720c6a1fba67939be7c1a27fedb8e22f58657f08bd31bbc15b04660940
+docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt             new  72e780ebfae05e098783cc4602699c0f44bcefbcca44357d72e4f4b674056e99
+src/turab/services/public_listing.py                           new  79734fe31bfd34037b69336f5615b3c81136d3dea2a0d2f2ba78fd1260e11e3d
+src/turab/api/routes/public.py                                 new  1bc6a2dc207e65927448bbc46da11aa6b3378643cdd46498581582dfdc1fd6fd
+src/turab/api/deps.py                                          --   502f364d0728af12d1ba992fec43426547ec56d19b264ccbe2bef79a9c28835f
+src/turab/app.py                                               --   09b2a4bfcbdf42eaaf34e1d89d2f2ca320a66435d14c17a456484ff4a4371141
+src/turab/dto/boundaries.py                                    --   de90bdf366f9a44df170ed0597ee521ee2ee4252f81af82700614ad8d665adc8
+db/dev/mutation_runner.py                                      new  e04038766af7d0f15ba7e718a93c3db97a606cfd5528e1adde802185b4e9198b
+db/dev/mutate_public_list.py                                   new  3e785f7564cba9754f6091531816a7c9324784377f6ed7c0ecc3b83df442cb89
+tests/test_slice3_public.py                                    new  92df6e3685c79f2d30afb85ddc756035e0c0463bba43fa42f4fec35d9c742bc2
+No decision document changed revision. Findings G3-12, G3-13 and G3-14 are raised in the step-6 note.
