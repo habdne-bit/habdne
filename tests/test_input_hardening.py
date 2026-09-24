@@ -321,7 +321,21 @@ def test_request_criterion_with_a_non_finite_value_is_a_typed_422(client, ids, e
     assert _send(client, "POST", path, h, json.dumps(body)).status_code == 201
 
 
-@pytest.mark.parametrize("bad", ["1e400", "NaN", "Infinity", "10000000000"])
+#: Refused: each is either not a finite number or not storable as a positive
+#: numeric(12,2) once PostgreSQL has rounded it to two decimals.
+#:   9999999999.995     -> 10000000000.00, overflow
+#:   9999999999.994999  -> 15 significant digits give 9999999999.995 -> overflow
+#:                         (its repr would round DOWN; the column does not)
+#:   0.004, 0.0049999999999999 -> 0.00, breaks CHECK (> 0)
+AREA_REFUSED = ["1e400", "NaN", "Infinity", "10000000000", "9999999999.995",
+                "9999999999.994999", "0.004", "0.0049999999999999", "0", "-1"]
+
+#: Accepted, with the value the column holds afterwards.
+AREA_ACCEPTED = [("9999999999.991", "9999999999.99"), ("9999999999.9949", "9999999999.99"),
+                 ("9999999999.99", "9999999999.99"), ("0.005", "0.01"), ("0.01", "0.01")]
+
+
+@pytest.mark.parametrize("bad", AREA_REFUSED)
 @pytest.mark.parametrize("field", ["land_area_m2", "built_area_m2"])
 def test_property_area_that_the_column_cannot_store_is_a_typed_422(client, ids, engine,
                                                                    bad, field):
@@ -337,7 +351,7 @@ def test_property_area_that_the_column_cannot_store_is_a_typed_422(client, ids, 
     assert _send(client, "POST", "/properties", h, json.dumps(body)).status_code == 201
 
 
-@pytest.mark.parametrize("bad", ["1e400", "NaN", "10000000000"])
+@pytest.mark.parametrize("bad", AREA_REFUSED)
 def test_property_area_patch_that_the_column_cannot_store_is_a_typed_422(client, ids,
                                                                          engine, bad):
     pid = _property(client, ids)
@@ -349,6 +363,83 @@ def test_property_area_patch_that_the_column_cannot_store_is_a_typed_422(client,
     # The refusal consumed nothing: the SAME If-Match-Version still applies.
     assert _send(client, "PATCH", f"/properties/{pid}", h,
                  json.dumps({"land_area_m2": 9999999999.99})).status_code == 200
+
+
+# Review of 3010cb9: `le=9999999999.99` refused values the column stores.
+# PostgreSQL rounds to the scale BEFORE checking capacity, so a value that
+# rounds into range is storable, and must be accepted.
+
+def test_the_premise_postgresql_rounds_before_it_checks_capacity(engine):
+    """The reviewer's check, run on the server: rounding comes first."""
+    with Session(bind=engine, future=True) as s:
+        assert str(s.execute(text("SELECT 9999999999.991::numeric(12,2)")).scalar()) \
+            == "9999999999.99"
+        assert str(s.execute(text("SELECT 0.005::numeric(12,2)")).scalar()) == "0.01"
+        with pytest.raises(Exception, match="numeric field overflow"):
+            s.execute(text("SELECT 9999999999.995::numeric(12,2)"))
+
+
+def _area(engine, pid, field):
+    with Session(bind=engine, future=True) as s:
+        return str(s.execute(text(f"SELECT {field} FROM turab.properties "
+                                  "WHERE property_id = :p"), {"p": pid}).scalar())
+
+
+@pytest.mark.parametrize("sent,stored", AREA_ACCEPTED)
+@pytest.mark.parametrize("field", ["land_area_m2", "built_area_m2"])
+def test_property_area_the_column_stores_is_accepted_on_create(client, ids, engine,
+                                                               sent, stored, field):
+    body = {"property_type": "LAND", "supply_mode": "PUBLIC",
+            "management_mode": "ASSISTED", "claim_status": "UNCLAIMED", field: BAD}
+    r = _send(client, "POST", "/properties", _h(ids.ACC_OPERATOR), _raw(body, sent))
+    assert r.status_code == 201, r.text
+    assert _area(engine, r.json()["property_id"], field) == stored
+
+
+@pytest.mark.parametrize("sent,stored", AREA_ACCEPTED)
+@pytest.mark.parametrize("field", ["land_area_m2", "built_area_m2"])
+def test_property_area_the_column_stores_is_accepted_on_patch(client, ids, engine,
+                                                              sent, stored, field):
+    pid = _property(client, ids)
+    h = {**_h(ids.ACC_OPERATOR, with_key=False), "If-Match-Version": "1"}
+    r = _send(client, "PATCH", f"/properties/{pid}", h, _raw({field: BAD}, sent))
+    assert r.status_code == 200, r.text
+    assert _area(engine, pid, field) == stored
+
+
+#: Edge values, including one where 15 significant digits and repr() round
+#: differently (9999999999.994999) and one at each side of both ends.
+AREA_EDGES = [9999999999.99, 9999999999.991, 9999999999.9949, 9999999999.994999,
+              9999999999.995, 9999999999.999, 10000000000.0, 0.005, 0.0049999999999999,
+              0.004, 0.001, 0.0, -0.001, 1234.565, 0.015]
+
+
+def test_the_area_rule_agrees_with_the_live_column_value_by_value(client, ids, engine):
+    """Differential: `numeric_12_2_stores_as_positive` against the REAL
+    `turab.properties.land_area_m2` column, the value bound the way the
+    service binds it (a Python float), each write rolled back."""
+    from turab.api.json_types import numeric_12_2_stores_as_positive
+
+    pid = _property(client, ids)
+    disagreements, outcomes = [], set()
+    with engine.connect() as conn:
+        outer = conn.begin()
+        for value in AREA_EDGES:
+            savepoint = conn.begin_nested()
+            try:
+                conn.execute(text("UPDATE turab.properties SET land_area_m2 = :v "
+                                  "WHERE property_id = :p"), {"v": value, "p": pid})
+                column_accepts = True
+            except Exception:  # overflow or CHECK: the column refuses it
+                column_accepts = False
+            savepoint.rollback()
+            outcomes.add(column_accepts)
+            if column_accepts != numeric_12_2_stores_as_positive(value):
+                disagreements.append((value, column_accepts))
+        outer.rollback()
+    assert outcomes == {True, False}, "the edges must include both outcomes"
+    assert not disagreements, (
+        f"(value sent, column accepts) where the rule disagrees: {disagreements}")
 
 
 BIGINT_OVER = str(2 ** 63)

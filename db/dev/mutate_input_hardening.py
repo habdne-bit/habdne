@@ -46,8 +46,15 @@ M = [
   'ge=0, le=BIGINT_MAX', 'ge=0'),
  ("M12 sort_order smallint bound removed", "src/turab/api/routes/requests.py",
   'Field(default=100, ge=SMALLINT_MIN, le=SMALLINT_MAX)', 'Field(default=100)'),
- ("M13 area numeric(12,2) bound removed", "src/turab/api/routes/properties.py",
-  ', le=NUMERIC_12_2_MAX)', ')'),
+ ("M13 area upper end back to le=9999999999.99 (review of 3010cb9)", "src/turab/api/json_types.py",
+  '_AREA_LOWEST <= as_bound_to_numeric(value) < _AREA_BEYOND',
+  '_AREA_LOWEST <= as_bound_to_numeric(value) <= Decimal("9999999999.99")'),
+ ("M14 area upper end widened past the column", "src/turab/api/json_types.py",
+  '_AREA_BEYOND = Decimal("9999999999.995")', '_AREA_BEYOND = Decimal("10000000000.005")'),
+ ("M15 area lower end back to gt=0", "src/turab/api/json_types.py",
+  '_AREA_LOWEST <= as_bound_to_numeric(value)', 'Decimal(0) < as_bound_to_numeric(value)'),
+ ("M16 area rule reads repr() instead of 15 significant digits", "src/turab/api/json_types.py",
+  'format(value, ".15g")', 'repr(value)'),
 ]
 only = sys.argv[1:]
 
@@ -84,7 +91,15 @@ for name, rel, old, new in M:
     assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, "not restored"
     out = r.stdout
     failed = sorted(set(re.findall(r"^FAILED tests/test_input_hardening.py::(\S+)", out, re.M)))
-    causes = sorted(set(re.sub(r"^/\S+:\d+: ", "", l)[:170] for l in out.splitlines()
+    def _cause(line):
+        # A refused body carries a per-request trace_id; its field message is
+        # the cause, so that is what is kept.
+        field = re.search(r'"status":(\d+).*?"message":"([^"]+)"', line)
+        if field:
+            return f"HTTP {field.group(1)} field error: {field.group(2)}"
+        return re.sub(r"^/\S+:\d+: ", "", line)[:170]
+
+    causes = sorted(set(_cause(l) for l in out.splitlines()
                         if re.match(r"^/.*:\d+: ", l) or l.startswith("E   ")))
     summary = out.strip().splitlines()[-1]
     print(f"== {name} [{rel}, {n} site(s)]  restored: sha256 {digest[:16]} identical\n   {summary}")

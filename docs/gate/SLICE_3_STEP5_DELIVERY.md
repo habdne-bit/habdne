@@ -196,7 +196,9 @@ out-of-range integer or area reached a column that cannot hold it.
 - Column bounds are the frozen columns' own, so nothing storable is refused:
   - `bigint` (PostgreSQL 16 documentation §8.1.1, Table 8.2);
   - `smallint` (the same table);
-  - `numeric(12,2)` (§8.1.2).
+  - `numeric(12,2)` (§8.1.2), as the column **rounds** it. See §6.5: in
+    3010cb9 this bound was a plain `le=9999999999.99`, which made this
+    sentence false.
 
   The contract declares no maximum. This is not a contract change: it refuses
   earlier, with a typed 422, what the frozen schema already refused with an
@@ -213,13 +215,15 @@ out-of-range integer or area reached a column that cannot hold it.
 | `sort_order` of a criterion | the same (Slice **2**) | `smallint` range |
 | `budget_target_dzd`, `budget_max_dzd` | `postRequests`, request PATCH (Slice **2**) | `≤ 2⁶³−1` |
 | `asking_price_dzd`, `seller_expectation_dzd` | offer create and PATCH | `≤ 2⁶³−1` |
-| `land_area_m2`, `built_area_m2` | property create and PATCH | finite, `≤ 9 999 999 999.99` |
+| `land_area_m2`, `built_area_m2` | property create and PATCH | finite, and storable as a positive `numeric(12,2)` after rounding: `0.005 ≤ d < 9999999999.995` (§6.5) |
 
 (\*) The conversion is refused by decision G3-10 and writes nothing. Its
 payload is typed like the others for consistency, and is not separately tested
 over HTTP.
 
-### 6.3 Tests: `tests/test_input_hardening.py`, 86 cases over HTTP on PostgreSQL
+### 6.3 Tests: `tests/test_input_hardening.py`, 127 cases on PostgreSQL
+
+The file had 86 cases at 3010cb9. §6.5 adds 41.
 
 Each HTTP case asserts three things:
 1. a typed 4xx with a stable code (`VALIDATION_FAILED` or `UNKNOWN_FIELD`),
@@ -260,7 +264,13 @@ bound to the commit and source fingerprint it ran on, is
 | M10 | drop the offer `bigint` bound | 3 | `NumericValueOutOfRange: bigint out of range` |
 | M11 | drop the request `bigint` bound | 2 | the same |
 | M12 | drop the `smallint` bound | 2 | `NumericValueOutOfRange: smallint out of range` |
-| M13 | drop the `numeric(12,2)` bound | 3 | `NumericValueOutOfRange: numeric field overflow` |
+| M13 | area upper end back to `le=9999999999.99` (the 3010cb9 bound) | 9 | 422 on a storable value; differential: `[(9999999999.991, True), (9999999999.9949, True)]` |
+| M14 | area upper end widened past the column | 10 | `NumericValueOutOfRange: numeric field overflow` |
+| M15 | area lower end back to `gt=0` | 7 | `CheckViolation: …properties_land_area_m2_check` (a 500) |
+| M16 | area rule reads `repr()` instead of 15 significant digits | 4 | `numeric field overflow`; differential: `[(9999999999.994999, False)]` |
+
+The M13 row of 3010cb9 ("drop the `numeric(12,2)` bound") is replaced: that
+bound no longer exists. M1–M12 are unchanged.
 
 **A limit, stated.** M8 fails **no HTTP test**. Every `JsonNumber` field in
 the API today also carries `ge`, `gt` or `le` bounds, and those bounds refuse
@@ -268,3 +278,56 @@ inf and NaN on their own: NaN fails every comparison, and inf exceeds `le`.
 The type's own check guards a future field with no bounds. It is proven on the
 type itself: `test_json_number_refuses_a_non_finite_value_with_no_bounds`.
 It is not claimed as the HTTP mechanism.
+
+### 6.5 Correction after the review of 3010cb9: the `numeric(12,2)` bound
+
+**The reviewer's finding.** `le=9999999999.99` refused `9999999999.991`, a
+value the column stores. PostgreSQL rounds a value to the column's scale
+**before** it checks capacity (documentation §8.1.2). So
+`SELECT 9999999999.991::numeric(12,2)` gives `9999999999.99`.
+
+**The same defect at the other end, found while fixing it (ours, missed at
+3010cb9).** `gt=0` accepted `0.004`. The column rounds it to `0.00`, and
+`CHECK (land_area_m2 > 0)` refuses it. The result was a **500**
+(`CheckViolation`), measured over HTTP at 3010cb9.
+
+**The conversion path, measured, not assumed.**
+- The service binds the area as a plain parameter. psycopg sends a Python
+  float as `double precision`: `pg_typeof(:v)` is `double precision`.
+- PostgreSQL converts `double precision` to `numeric` through 15 significant
+  digits (`DBL_DIG`, `float8_numeric` in `src/backend/utils/adt/numeric.c`).
+  It then rounds half away from zero to the scale.
+- The two models disagree on `9999999999.994999`:
+  - `repr()` gives `9999999999.994999`, which would round down to
+    `…99.99`;
+  - 15 digits give `9999999999.995`, which rounds up and overflows;
+  - the server **overflows**. So the rule uses 15 digits.
+
+**The rule** (`json_types.PositiveArea`). A value is accepted exactly when its
+15-significant-digit decimal `d` satisfies `0.005 ≤ d < 9999999999.995`.
+Such values are stored in `[0.01, 9999999999.99]`, and no other value is
+storable. The contract's `exclusiveMinimum: 0` is implied. The rule is one
+interval, not a `quantize()`, so a huge finite value is refused rather than
+raising `decimal.InvalidOperation`.
+
+**Tests added.**
+
+| Test | Asserts |
+|---|---|
+| `test_the_premise_postgresql_rounds_before_it_checks_capacity` | the reviewer's check, on the server: `9999999999.991::numeric(12,2)` is `9999999999.99`, `0.005` becomes `0.01`, `9999999999.995` overflows |
+| `…_the_column_stores_is_accepted_on_create` and `…_on_patch` (20 cases) | `9999999999.991`, `9999999999.9949`, `9999999999.99`, `0.005` and `0.01` are accepted through create and PATCH, for both fields. The value the column holds afterwards is asserted: `9999999999.99` or `0.01`. |
+| `…_that_the_column_cannot_store_is_a_typed_422` (create, both fields) and `…_patch_…` | now also cover `9999999999.995` and `9999999999.994999` (both round to `10000000000.00`), `0.004`, `0.0049999999999999`, `0` and `-1`. Each is a typed 422, with nothing written and the key or version not consumed. |
+| `test_the_area_rule_agrees_with_the_live_column_value_by_value` | differential: for 15 edge values, the rule's verdict equals whether the REAL `turab.properties.land_area_m2` accepts the value bound as the service binds it (each write is rolled back). It asserts that both outcomes occur. |
+
+**Reproduction on the 3010cb9 code** (the two source files restored from it,
+the new tests kept): **15 failed**.
+- 6 lower-end cases: `CheckViolation`, a 500.
+- 8 acceptance cases: 422 "less than or equal to 9999999999.99".
+- The differential test fails on that tree only structurally: the function it
+  compares did not exist (`ImportError`). Its behavioral evidence is M13 and
+  M16 in §6.4.
+
+**Scope checked.** No other input column is affected.
+- `extraction_confidence numeric(5,4)` is bounded by the contract itself to
+  `[0,1]`, and every value in `[0,1]` rounds within `[0,1]`.
+- `latitude`, `longitude` and `soft_score` have no input path in this slice.

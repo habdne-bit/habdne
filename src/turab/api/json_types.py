@@ -34,6 +34,21 @@ token `json.dumps` writes for them. So:
 frozen columns do (`bigint`, `smallint`, `numeric(12,2)`). A value outside the
 column is not storable, and reached the database as an error. The bounds
 below are the columns' own, so nothing storable is refused.
+
+- For the integer columns the bound is exact: an integer is stored as sent.
+- For `numeric(12,2)` it is NOT a comparison on the value sent.
+  - PostgreSQL ROUNDS to the column's scale before it checks capacity or the
+    `CHECK (… > 0)` (documentation §8.1.2).
+  - A Python float is bound as `double precision`. Its conversion to
+    `numeric` goes through 15 significant digits (`DBL_DIG`, `float8_numeric`
+    in `src/backend/utils/adt/numeric.c`).
+  - So `9999999999.991` is stored as `9999999999.99`, `9999999999.995`
+    overflows, `0.005` is stored as `0.01`, and `0.004` becomes `0.00` and
+    breaks the CHECK.
+  - `PositiveArea` applies exactly that rule (review of 3010cb9). An earlier
+    `le=9999999999.99` refused storable values and let `0.004` reach the
+    CHECK as a 500. A differential test compares this rule with the live
+    column value by value.
 """
 from __future__ import annotations
 
@@ -47,7 +62,12 @@ from pydantic import AfterValidator, BeforeValidator
 #: Table 8.2) and the largest `numeric(12,2)` (§8.1.2: precision 12, scale 2).
 BIGINT_MAX = 2**63 - 1
 SMALLINT_MIN, SMALLINT_MAX = -(2**15), 2**15 - 1
-NUMERIC_12_2_MAX = float(Decimal("9999999999.99"))
+
+#: A positive `numeric(12,2)` value, as PostgreSQL rounds it (half away from
+#: zero, to two places): every decimal in [0.005, 9999999999.995) is stored
+#: as a value in [0.01, 9999999999.99]; nothing outside that interval is.
+_AREA_LOWEST = Decimal("0.005")
+_AREA_BEYOND = Decimal("9999999999.995")
 
 
 def _json_integer(value: Any) -> Any:
@@ -72,6 +92,33 @@ def _json_number(value: Any) -> Any:
     return value
 
 
+def as_bound_to_numeric(value: float | int) -> Decimal:
+    """The decimal PostgreSQL converts this parameter to, before the typmod.
+
+    A float travels as `double precision` and is converted with 15
+    significant digits (`DBL_DIG`); an int is exact.
+    """
+    return Decimal(str(value) if isinstance(value, int) else format(value, ".15g"))
+
+
+def numeric_12_2_stores_as_positive(value: float | int) -> bool:
+    """True exactly when a `numeric(12,2) CHECK (> 0)` column accepts it."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return False
+    return _AREA_LOWEST <= as_bound_to_numeric(value) < _AREA_BEYOND
+
+
+def _positive_area(value: Any) -> Any:
+    if not numeric_12_2_stores_as_positive(value):
+        # No value is echoed: it is the caller's.
+        raise ValueError(
+            "must be an area the column stores as a positive numeric(12,2): "
+            "PostgreSQL rounds to two decimals first, so it must be at least "
+            "0.005 (stored as 0.01) and below 9999999999.995 (stored as "
+            "9999999999.99)")
+    return value
+
+
 def _finite_tree(value: Any) -> Any:
     """Refuse a non-finite float anywhere inside a parsed JSON value.
 
@@ -93,5 +140,9 @@ def _finite_tree(value: Any) -> Any:
 
 JsonInteger = Annotated[int, BeforeValidator(_json_integer)]
 JsonNumber = Annotated[float, BeforeValidator(_json_number)]
+#: `land_area_m2` / `built_area_m2`. The contract's `exclusiveMinimum: 0` is
+#: implied: every accepted value is at least 0.005.
+PositiveArea = Annotated[float, BeforeValidator(_json_number),
+                         AfterValidator(_positive_area)]
 FiniteJson = Annotated[Any, AfterValidator(_finite_tree)]
 FiniteJsonObject = Annotated[dict[str, Any], AfterValidator(_finite_tree)]
