@@ -158,9 +158,12 @@ def signals_for(a: Mapping[str, Any], b: Mapping[str, Any], *,
     return signals, explanation
 
 
-# Blocking (Developer Spec §8.1 step 2): both canonical (neither is an alias),
-# the same property type, the same known canonical location. Each unordered
-# pair appears once, as (LEAST, GREATEST).
+# Blocking (Developer Spec §8.1 step 2): the same property type and the same
+# known canonical location. Each unordered pair appears once, as (LEAST,
+# GREATEST). "Neither is an alias" is decided in `_lock_and_recheck`, AFTER
+# the lock. A filter here, before the lock, read the same table earlier and
+# was subsumed by it: its mutation survived, so it was removed (review of
+# c3aac8a).
 _BLOCKED_PAIRS = """
     SELECT LEAST(p.property_id, q.property_id)    AS a_id,
            GREATEST(p.property_id, q.property_id) AS b_id
@@ -172,8 +175,6 @@ _BLOCKED_PAIRS = """
      WHERE p.canonical_location_id IS NOT NULL
        AND (CAST(:focus AS uuid) IS NULL
             OR CAST(:focus AS uuid) IN (p.property_id, q.property_id))
-       AND NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases x
-                        WHERE x.alias_property_id IN (p.property_id, q.property_id))
      ORDER BY 1, 2
 """
 
@@ -225,12 +226,8 @@ def generate(session: Session, *, property_id: uuid.UUID | None,
             {"p": property_id}).first()
         if exists is None:
             raise NotFound("property")
-        alias_of = session.execute(text(
-            "SELECT canonical_property_id FROM turab.property_identity_aliases "
-            "WHERE alias_property_id = :p"), {"p": property_id}).scalar_one_or_none()
-        if alias_of is not None:
-            raise NotCanonical("this property is an identity alias; generate "
-                               "candidates for its canonical property")
+        # A focus that is an alias is refused in `_lock_and_recheck`, after
+        # the lock. A check here, before it, was subsumed and removed.
 
     pairs = session.execute(text(_BLOCKED_PAIRS), {"focus": property_id}).all()
     pairs = _lock_and_recheck(session, pairs, property_id)

@@ -35,7 +35,7 @@ No table, column, migration or reason code was added. The ops count stays at
 | a decided pair is not reopened | not returned, and no new row | `test_a_decided_pair_is_not_reopened_by_generation` | I6 |
 | **the pair race** (plan §6.3, third row) | `ux_identity_pair`; the loser's INSERT fails inside a SAVEPOINT and reads the winner's row | `test_generating_the_same_pair_twice_concurrently_yields_one_candidate`: `waited=True`, both calls succeed with the same one candidate | I7 |
 | pairs are stored least-first | `LEAST`/`GREATEST` | `test_a_pair_is_stored_least_first_whichever_side_generated_it` | I4 |
-| blocking (Spec §8.1 step 2) | same type, same known canonical location, neither an alias | `test_blocking_proposes_no_pair_across_type_or_location` (type; location; no location); `test_generation_for_an_alias_is_refused_and_aliases_are_never_paired` | I8, I9, I10, I11 |
+| blocking (Spec §8.1 step 2) | same type, same known canonical location, neither an alias | `test_blocking_proposes_no_pair_across_type_or_location` (type; location; no location); `test_generation_for_an_alias_is_refused_and_aliases_are_never_paired` | I8, I9; aliases: I37, I38 (I10, I11 retired, §6.3) |
 | OPERATOR excluded from the decision (maker-checker) | `x-roles`; INV-2 through the shared policy path (`test_inv2_separation.py`) | `test_an_operator_cannot_review`; `test_an_operator_generates_and_a_reviewer_cannot` | — |
 | mandatory test 6: SAME without a canonical | typed 422 naming what is missing | `test_confirmed_same_without_a_canonical_id_is_refused` | I16 |
 | mandatory test 6: the canonical must be one of the pair | typed 422 | `test_the_canonical_must_be_one_of_the_candidate_pair` | I17 |
@@ -59,7 +59,8 @@ No table, column, migration or reason code was added. The ops count stays at
 | the list | status as text; `PageMeta`; audited once (R6.3c); CUSTOMER refused | `test_the_list_filters_by_status_and_pages`; `test_a_customer_cannot_list_candidates` | I34 |
 
 `tests/test_slice3_identity.py` has 64 cases: 57 at c3aac8a, and 7 added in
-the review of c3aac8a (§6). Thirty-eight mutations are run
+the review of c3aac8a (§6). Thirty-six mutations are active (I10 and I11 are
+retired, §6.3), and are run
 by `db/dev/mutate_identity.py`, through the shared runner, and **every one
 fails at least one test**. The output, bound to its commit and fingerprint, is
 `docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt`.
@@ -238,3 +239,17 @@ the unfixed code, and I36 (the lock removed) fails it.
 **The lesson carried forward.** Passing generation mutations do not measure a
 window that no test enters. The reviewer said so, and it was true of our
 first window-(b) test as well.
+
+### 6.3 Two pre-lock checks, subsumed by the fix and removed
+
+The mutation run at e7bab83 found two survivors:
+- I10: the `NOT EXISTS` alias filter in `_BLOCKED_PAIRS`;
+- I11: the focus-alias check at entry.
+
+Both read `property_identity_aliases` BEFORE generation's lock.
+`_lock_and_recheck` reads the same table AFTER it, so both became subsumed.
+No data can separate the two reads: the same rows are read earlier and then
+later. That differs from step 6's revocation date, where two columns could
+disagree. The two checks were removed. Their numbers are retired, not reused,
+so the evidence files stay comparable across rounds. The behavior they
+provided is proven by I37 and I38.

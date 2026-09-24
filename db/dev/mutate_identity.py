@@ -36,11 +36,10 @@ MUTATIONS = [
   "       AND q.property_type = p.property_type\n", ""),
  ("I9 blocking ignores the location", SVC,
   "       AND q.canonical_location_id = p.canonical_location_id\n", ""),
- ("I10 aliases are paired", SVC,
-  "       AND NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases x\n"
-  "                        WHERE x.alias_property_id IN (p.property_id, q.property_id))\n", ""),
- ("I11 generation for an alias is allowed", SVC,
-  "        if alias_of is not None:", "        if False:"),
+ # I10 and I11 are RETIRED (review of c3aac8a). They removed two checks made
+ # BEFORE generation's lock. The re-check after the lock (I37, I38) reads the
+ # same table later and subsumes both; they survived at e7bab83, and the two
+ # checks were removed.
  # rules-0.1.0
  ("I12 CLOSE threshold moved", SVC,
   'AREA_CLOSE_MAX_RATIO = Decimal("1.10")', 'AREA_CLOSE_MAX_RATIO = Decimal("1.20")'),
