@@ -470,6 +470,31 @@ def stale_available_properties(
     ).scalars().all())
 
 
+#: The staleness pass, as ONE statement. A module constant so the step-4
+#: concurrency experiment can run controlled variants of exactly this text
+#: (tests/test_slice3_step4.py) and check each variant really differs from it.
+_STALE_AVAILABILITY_SQL = text(
+    """UPDATE turab.properties p
+                  SET current_availability = 'NEEDS_CONFIRMATION'
+                 FROM (
+                      SELECT property_id FROM turab.properties
+                       WHERE current_availability::text = ANY(:convertible)
+                         AND availability_last_confirmed_at IS NOT NULL
+                         AND availability_last_confirmed_at
+                             < COALESCE(:now, clock_timestamp())
+                               - make_interval(days => :days)
+                       ORDER BY availability_last_confirmed_at, property_id
+                       LIMIT :limit
+                       FOR UPDATE SKIP LOCKED) AS candidate
+                WHERE p.property_id = candidate.property_id
+                  AND p.current_availability::text = ANY(:convertible)
+                  AND p.availability_last_confirmed_at IS NOT NULL
+                  AND p.availability_last_confirmed_at
+                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
+            RETURNING p.property_id"""
+)
+
+
 def mark_stale_availability(
     session: Session, *, now=None, limit: int = 500
 ) -> list[uuid.UUID]:
@@ -496,26 +521,7 @@ def mark_stale_availability(
 
     days, _ = freshness.property_threshold_days(session)
     return list(session.execute(
-        text(
-            """UPDATE turab.properties p
-                  SET current_availability = 'NEEDS_CONFIRMATION'
-                 FROM (
-                      SELECT property_id FROM turab.properties
-                       WHERE current_availability::text = ANY(:convertible)
-                         AND availability_last_confirmed_at IS NOT NULL
-                         AND availability_last_confirmed_at
-                             < COALESCE(:now, clock_timestamp())
-                               - make_interval(days => :days)
-                       ORDER BY availability_last_confirmed_at, property_id
-                       LIMIT :limit
-                       FOR UPDATE SKIP LOCKED) AS candidate
-                WHERE p.property_id = candidate.property_id
-                  AND p.current_availability::text = ANY(:convertible)
-                  AND p.availability_last_confirmed_at IS NOT NULL
-                  AND p.availability_last_confirmed_at
-                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
-            RETURNING p.property_id"""
-        ),
+        _STALE_AVAILABILITY_SQL,
         {"convertible": list(STALE_CONVERTIBLE), "now": now, "days": days,
          "limit": limit},
     ).scalars().all())

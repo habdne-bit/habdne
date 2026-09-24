@@ -287,7 +287,72 @@ def test_the_sweep_is_audited_with_its_operation(client, ids, engine):
     assert rows[0]["context"]["operation"] == "freshness-pass:property"
 
 
-# --- the re-assertion at write time, under real contention -------------------
+# --- the write-time re-check, under real contention ---------------------------
+#
+# Review of 0db04c4: the previous harness made the holder's COMMIT wait for
+# the pass to FINISH. With the lock removed (M4) the pass then waited for the
+# holder's row while the holder waited for the pass — the test failed by
+# TIMEOUT, which says nothing about whether any predicate protected the value.
+#
+# This harness never makes the commit depend on the pass finishing. A witness
+# releases the holder as soon as EITHER is observed:
+#
+#   * the pass has finished (it did not wait for this row), or
+#   * PostgreSQL reports the pass BLOCKED BY THE HOLDER —
+#     `pg_blocking_pids(pass_pid)` contains `holder_pid`.
+#
+# Each run records three facts: did the pass WAIT, did it WRITE the row, and
+# what value survived. Those facts, not a pass/fail, say which mechanism
+# protected the value. The same experiment runs against controlled variants of
+# the pass's own SQL (`_STALE_AVAILABILITY_SQL`), each checked to differ from
+# it, so the attribution is executed rather than argued:
+#
+#   variant                     expected: waited  wrote  value kept  because
+#   production                  no      no     yes   SKIP LOCKED skipped the row
+#   for_update_without_skip     yes     no     yes   FOR UPDATE re-checked the
+#                                                    subquery WHERE after the wait
+#   no_lock                     yes     no     yes   the OUTER re-asserted predicate,
+#                                                    re-evaluated after the wait
+#   no_lock_no_outer_predicate  yes     YES    NO    nothing re-checks: the defect
+#   lock_without_outer_predicate no     no     yes   SKIP LOCKED alone
+#
+# `no_lock` is the row that proves the outer re-assertion is a real guard when
+# the lock is absent; `no_lock_no_outer_predicate` is the defect it guards
+# against. PostgreSQL 16 documentation: §13.2.1 "Read Committed Isolation
+# Level" (a waiting UPDATE / SELECT FOR UPDATE re-evaluates its WHERE against
+# the updated row), and SELECT "The Locking Clause" (SKIP LOCKED skips rows
+# that cannot be locked immediately).
+
+import time
+
+from turab.services.properties import _STALE_AVAILABILITY_SQL
+
+_PRODUCTION = str(_STALE_AVAILABILITY_SQL)
+_LOCK = "FOR UPDATE SKIP LOCKED"
+_OUTER = """
+                  AND p.current_availability::text = ANY(:convertible)
+                  AND p.availability_last_confirmed_at IS NOT NULL
+                  AND p.availability_last_confirmed_at
+                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)"""
+
+
+def _variant(name: str) -> str:
+    """A controlled edit of the production text; refuses an edit that does
+    not apply, so a variant can never silently BE the production SQL."""
+    assert _LOCK in _PRODUCTION and _OUTER in _PRODUCTION, "production SQL changed"
+    edits = {
+        "production": [],
+        "for_update_without_skip": [(_LOCK, "FOR UPDATE")],
+        "no_lock": [(_LOCK, "")],
+        "no_lock_no_outer_predicate": [(_LOCK, ""), (_OUTER, "")],
+        "lock_without_outer_predicate": [(_OUTER, "")],
+    }[name]
+    sql = _PRODUCTION
+    for old, new in edits:
+        sql = sql.replace(old, new)
+    assert (sql == _PRODUCTION) == (name == "production"), name
+    return sql
+
 
 @pytest.fixture
 def two_engines(database_url):
@@ -298,62 +363,119 @@ def two_engines(database_url):
     b.dispose()
 
 
-def _pass_inside_a_locked_change(engine_a, engine_b, ids, pid, value):
-    """Holder: reconfirm `pid` to `value` (row locked, uncommitted). The pass
-    runs ENTIRELY inside the holder's open transaction — the holder commits
-    only after the pass has finished — which is the interleaving under test.
-    `FOR UPDATE SKIP LOCKED` never blocks, so blocked-backend evidence is the
-    wrong witness here; completion inside the window is the right one."""
-    out: dict[str, object] = {}
-    locked, passed = threading.Event(), threading.Event()
+def _experiment(engine, engine_a, engine_b, ids, pid, holder_value, sql) -> dict:
+    """Holder: reconfirm `pid` to `holder_value`, row locked, uncommitted.
+    Pass: run `sql`. Witness: release the holder when the pass has finished
+    OR is blocked by the holder. Returns the observed facts."""
+    facts: dict[str, object] = {}
+    pids: dict[str, int] = {}
+    locked, finished, release = threading.Event(), threading.Event(), threading.Event()
 
     def holder():
         try:
             with Session(bind=engine_a, future=True) as s:
                 with audited_transaction(s, ids.ACC_OPERATOR):
+                    pids["holder"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
                     property_service.reconfirm_availability(
-                        s, property_id=uuid.UUID(pid), availability=value,
+                        s, property_id=uuid.UUID(pid), availability=holder_value,
                         recorded_by_account_id=ids.ACC_OPERATOR,
                         channel=UpdateChannel.STAFF_RECORDED)
                     locked.set()
-                    assert passed.wait(30), "the pass never ran inside the window"
-            out["holder"] = "ok"
+                    assert release.wait(30), "the witness never released the holder"
+            facts["holder"] = "committed"
         except Exception as exc:
-            out["holder"] = f"raised {type(exc).__name__}: {exc}"
+            facts["holder"] = f"raised {type(exc).__name__}: {exc}"
         finally:
             locked.set()
 
     def sweeper():
         assert locked.wait(30)
         try:
-            out["moved"] = _run_pass(engine_b)
+            with Session(bind=engine_b, future=True) as s:
+                with audited_transaction(s, None, {"operation": "freshness-pass:property"},
+                                         require_actor=False):
+                    pids["pass"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                    days, _ = freshness.property_threshold_days(s)
+                    facts["moved"] = s.execute(text(sql), {
+                        "convertible": list(CONVERTIBLE), "now": None,
+                        "days": days, "limit": 500}).scalars().all()
         except Exception as exc:
-            out["moved"] = f"raised {type(exc).__name__}: {exc}"
+            facts["moved"] = f"raised {type(exc).__name__}: {exc}"
         finally:
-            passed.set()
+            finished.set()
 
-    threads = [threading.Thread(target=holder), threading.Thread(target=sweeper)]
+    def witness():
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            if finished.is_set():
+                facts.setdefault("waited", False)
+                break
+            if "pass" in pids and "holder" in pids:
+                with Session(bind=engine, future=True) as s:
+                    blockers = s.execute(text("SELECT pg_blocking_pids(:p)"),
+                                         {"p": pids["pass"]}).scalar_one()
+                if pids["holder"] in blockers:
+                    facts["waited"] = True
+                    break
+            time.sleep(0.005)
+        release.set()
+
+    threads = [threading.Thread(target=f) for f in (holder, sweeper, witness)]
     for t in threads:
         t.start()
     for t in threads:
-        t.join(90)
-    assert not any(t.is_alive() for t in threads)
-    return out
+        t.join(60)
+    assert not any(t.is_alive() for t in threads), "a worker did not finish"
+    assert "waited" in facts, "the witness observed neither completion nor a block"
+    facts["wrote"] = (isinstance(facts["moved"], list)
+                      and uuid.UUID(pid) in facts["moved"])
+    facts["final"] = _availability(engine, pid)["a"]
+    return facts
+
+
+#: variant -> (waited, wrote). The value is kept exactly when nothing wrote.
+_EXPECTED = {
+    "production": (False, False),
+    "for_update_without_skip": (True, False),
+    "no_lock": (True, False),
+    "no_lock_no_outer_predicate": (True, True),
+    "lock_without_outer_predicate": (False, False),
+}
+
+
+@pytest.mark.parametrize("value", ["AVAILABLE", "UNAVAILABLE"])
+@pytest.mark.parametrize("variant", list(_EXPECTED))
+def test_which_mechanism_protects_a_concurrent_reconfirmation(
+    client, ids, engine, two_engines, record_property, variant, value
+):
+    """The attribution experiment. `production` is the behaviour shipped;
+    every other row is a controlled variant run to show WHY it holds.
+
+    The facts are recorded as JUnit properties, so the saved report states,
+    per case, whether the pass waited, whether it wrote, and what survived.
+    """
+    pid = _stale_property(client, ids, "AVAILABLE")
+    facts = _experiment(engine, *two_engines, ids, pid, value, _variant(variant))
+    for name in ("waited", "wrote", "final", "holder"):
+        record_property(name, str(facts[name]))
+    assert facts["holder"] == "committed", facts
+    assert isinstance(facts["moved"], list), facts
+    waited, wrote = _EXPECTED[variant]
+    assert (facts["waited"], facts["wrote"]) == (waited, wrote), facts
+    assert facts["final"] == ("NEEDS_CONFIRMATION" if wrote else value), facts
 
 
 @pytest.mark.parametrize("value", ["AVAILABLE", "UNAVAILABLE"])
 def test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation(
     client, ids, engine, two_engines, value
 ):
-    """The property is stale when sampled; a reconfirmation is in flight.
-    Whatever the reconfirmation says — a fresh AVAILABLE, or an excluded
-    UNAVAILABLE — it must stand after both commit."""
+    """The shipped behaviour, through the shipped function: the pass does not
+    wait for the locked row, does not write it, and the reconfirmation stands."""
     pid = _stale_property(client, ids, "AVAILABLE")
-    out = _pass_inside_a_locked_change(*two_engines, ids, pid, value)
-    assert out["holder"] == "ok", out
-    assert isinstance(out["moved"], list), out
-    assert uuid.UUID(pid) not in out["moved"]
-    assert _availability(engine, pid)["a"] == value
+    facts = _experiment(engine, *two_engines, ids, pid, value,
+                        str(_STALE_AVAILABILITY_SQL))
+    assert facts["holder"] == "committed" and facts["waited"] is False, facts
+    assert facts["wrote"] is False and facts["final"] == value, facts
 
 
 # --- §3.4 offer reconfirmation and offer_terms freshness ----------------------

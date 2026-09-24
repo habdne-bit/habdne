@@ -54,31 +54,61 @@ thresholds come from the seeded active policy:
 
 ## 3. The write-time re-check: what is proven, and what is not
 
-The pass selects candidates in a subquery with `FOR UPDATE SKIP LOCKED`. The
-outer `UPDATE` then **re-asserts** every condition, including the four-value
-set, on the row it writes.
+### 3.1 Correction (review of `0db04c4`)
 
-**Proven.** A reconfirmation in flight while the pass runs — whether to a
-fresh `AVAILABLE` or to the excluded `UNAVAILABLE` — stands after both
-commit:
-- test: `test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation`, 2
-  cases;
-- witness: the pass runs entirely inside the holder's open transaction, and
-  the holder commits only after the pass has finished. `SKIP LOCKED` never
-  blocks, so a blocked-backend witness would be the wrong evidence;
-- mutation: removing the lock (M4) fails both cases.
+The first version of this section said the re-check was "proven by the
+concurrency tests, which fail when the row lock is removed (M4)". That
+attributed too much.
 
-**Not independently proven: the outer re-assertion.** With the outer
-predicate removed and the lock kept, all 76 tests still pass.
+- **The flaw.** The old harness made the holder's COMMIT wait for the pass
+  to FINISH. With the lock removed, the pass waited for the holder's row
+  while the holder waited for the pass.
+- **What M4 showed.** The test failed by **timeout**, so the failure showed
+  a mutual wait, not that any predicate had protected the value. It proved
+  the no-wait skip and that the pass does not touch a still-locked row;
+  nothing more.
 
-That is expected. In Read Committed, a row locked by `FOR UPDATE` has the
-subquery's `WHERE` re-evaluated against its latest committed version, and a
-row another transaction holds is skipped. So the re-check at write time is
-already performed inside the same statement. Sources: PostgreSQL 16
-documentation, §13.2.1 "Read Committed Isolation Level", and SELECT, "The
-Locking Clause". The outer predicate is kept as redundant defence, as in the
-REQUEST pass. No test can make it the sole guard while the lock is present,
-and none is claimed to.
+### 3.2 The experiment that replaces it
+
+`test_which_mechanism_protects_a_concurrent_reconfirmation` (in
+`tests/test_slice3_step4.py`) works as follows:
+
+- **Holder:** reconfirms the property and holds the row lock, uncommitted.
+- **Pass:** runs the staleness SQL.
+- **Witness:** releases the holder as soon as the pass has **finished**, or
+  PostgreSQL reports it **blocked by the holder** (`pg_blocking_pids(pass)`
+  contains the holder's pid). The holder's commit never depends on the pass
+  finishing.
+- **Recorded:** each run records whether the pass **waited**, whether it
+  **wrote** the row, and the **final** value. These facts are saved as JUnit
+  properties in `junit-run.xml`.
+
+The same experiment runs over five controlled variants of the pass's own SQL
+(`_STALE_AVAILABILITY_SQL`). Each variant is checked to differ from the
+production text, and each is run with a concurrent `AVAILABLE` and a
+concurrent `UNAVAILABLE`:
+
+| Variant | Waited | Wrote | Value kept | What protected it |
+|---|---|---|---|---|
+| `production` | no | no | yes | `SKIP LOCKED` skipped the locked row |
+| `for_update_without_skip` | yes | no | yes | `FOR UPDATE` re-evaluated the subquery `WHERE` after the wait |
+| `no_lock` | yes | no | yes | **the outer re-asserted predicate**, re-evaluated after the wait |
+| `no_lock_no_outer_predicate` | yes | **yes** | **no** | nothing: the lost update |
+| `lock_without_outer_predicate` | no | no | yes | `SKIP LOCKED` alone |
+
+The "What protected it" column rests on PostgreSQL 16 documentation, §13.2.1
+"Read Committed Isolation Level", and SELECT, "The Locking Clause".
+
+### 3.3 What is now proven
+
+- The shipped pass does not wait for a locked row and does not write it.
+- **With the lock removed, the outer re-assertion alone prevents the lost
+  update:** compare `no_lock`, where the value is kept, with
+  `no_lock_no_outer_predicate`, where it is overwritten. This is the evidence
+  the earlier harness could not give.
+- With the lock present, the outer predicate is redundant
+  (`lock_without_outer_predicate`). It is a second line, and there is now a
+  test of what it does when it is the only line.
 
 ## 4. Mutations (each applied, run, restored and verified)
 
@@ -87,11 +117,12 @@ and none is claimed to.
 | M1: the pass also converts `UNKNOWN` | `test_the_sweep_leaves_unknown_untouched` |
 | M2: the pass also converts `NEEDS_CONFIRMATION` | `test_the_sweep_leaves_needs_confirmation_untouched` |
 | M3: the pass also converts `UNAVAILABLE` | `test_the_sweep_leaves_unavailable_untouched` |
-| M4: no `FOR UPDATE SKIP LOCKED` in the pass | both concurrent-reconfirmation cases |
+| M4: no `FOR UPDATE SKIP LOCKED` in the pass | both concurrent-reconfirmation cases — **with the cause now visible**: the pass WAITED and did NOT write, because the outer predicate protected the value (see `05_results/STEP4-CONCURRENCY-ATTRIBUTION.txt`). The old harness failed by timeout here. |
+| M4 + outer predicate removed | both cases: the pass waited and WROTE, and the concurrent value was overwritten |
 | M5: offer reconfirm writes only `last_confirmed_at` | `…updates_both_confirmation_columns`, `…stated_confirmation_time…`, and 4 more (the empty column also breaks the provenance record) |
 | M6: offer freshness reads `last_confirmed_at` | `…measured_on_commercial_terms_last_confirmed_at` |
 | M7: offer freshness uses the `property` threshold | the same test, and `…stale_on_its_commercial_terms_clock` |
 | M8: no alias refusal on property reconfirm | `test_reconfirming_an_alias_is_refused` |
-| outer re-assertion only | **none** — see §3 |
+| outer re-assertion only, lock kept | **none** — expected (§3.3): with the lock present the predicate is redundant; `no_lock` proves it guards when alone |
 
-`tests/test_slice3_step4.py`: 76 tests.
+`tests/test_slice3_step4.py`: 86 tests (the attribution experiment adds 10).
