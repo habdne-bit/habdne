@@ -119,3 +119,24 @@ No decision document changed this round. The plan (rev 6), the G3-6 Delta
 (rev 3), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2) carry their
 previous digests; no new revision is claimed for any of them. The four
 findings in SLICE_3_STEP2_FINDINGS.md are proposals awaiting decision.
+
+--- round 951ac4f -> 6b886c5 (decisions F-1..F-4, gate label, G3-6, SOURCE) ---
+docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md  3a  e2550c095d6cba9a152e89ec0e73b015fb61f8089c7b3ad5c6445cd720abdbf8
+docs/contract/addenda/ADD-G3-6_party_property_relations.yaml  new  21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
+docs/gate/G3-6_DELIVERY.md                    new    e7db2305945826a07288e4fa15a6f1cd1598f2864ec698964dcdd9330c17a5b7
+docs/gate/G3-10_external_lead_conversion.md   new    cf6662538ded19d219f73a876f006871918479a170d668ca66c959ab479fa825
+docs/gate/SLICE_3_STEP2_FINDINGS.md           --     7959aa497d3517f2cf027c54841f2a60a6d6315fbb644cc108d4adbdca5c7431
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md    --     0918163a1c2c6a786a76f387b18c514c403222d3db9dc617a9d4a25daa9050b8
+db/gate/record_gate_run.sh                    --     16ba857365e05ac210734826865cd1d167d8d22c42f64ba1f388ae8d0bc8a53f
+db/gate/gate_inputs.py                        --     fc353fed52e06035ac6349a03f790bf02ceac4f6a71dd29ddcf7454659d0a21b
+src/turab/auth/loaders.py                     --     42d529dc5bb58844957017666d1629fc267619ed14b1b3e2f72788aab552fca2
+src/turab/auth/contract.py                    --     0c4e6a281400ad5e1d68dd12e629e26282495adef6b377fe0175b50b1271b899
+src/turab/dto/boundaries.py                   --     ff034c3c9340fd37e186d580c686aa9c23ebda52e5e4cb22cb4463f7cdfcc954
+src/turab/services/relations.py               new    f71665b1c386b01d8f86f33286920517cc97c73fd900732ea29fc970bccd3cfa
+src/turab/services/external_leads.py          new    c2765bbc8a8feb756f2fc15c3fd6f082d57648c4e9aed704f8e369ab9e7316b1
+src/turab/services/audit_rows.py              new    74064e396d16f081d20044ff11dfe8c5c6f91d434de697125eaa8ed5a96ca6b3
+The G3-6 Delta moves from revision 3 to 3a: two textual corrections, as
+instructed with the re-confirmation. The addendum's delta_sha256 equals the
+3a digest above; contract.load_addenda refuses to start if they diverge.
+The plan (rev 6), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2)
+carry their previous digests; no new revision is claimed for them.
