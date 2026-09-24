@@ -208,3 +208,13 @@ db/dev/mutate_input_hardening.py                               new  be2e048af627
 tests/test_input_hardening.py                                  new  7193de1cf24601e679d3b3be270f6fc3674446b1acf4a5b5b06cdf10c47b00a5
 tests/test_slice3_truth.py                                     --   95259f8d8c7fc36b54822bb3048fce1c52712a15651a35a17b9dae0d9e646531
 No decision document changed revision. G3-11 is recorded as decided (c): the truth layer is PROPERTY-only.
+
+--- round 3010cb9 -> numeric(12,2) area bound (review of 3010cb9) ---
+docs/gate/SLICE_3_STEP5_DELIVERY.md                            --   cc2c4b5a928911e697137214bbc859f4b76b74fc6f61dd0578cfc3904d6a18ce
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   9c8d275513fbaaa033cf71172f9956c6bbe5d6b439fc8317096f9fe21b483a82
+docs/gate/evidence/STEP5-INPUT-HARDENING-MUTATIONS.txt         --   08ca2ed2c57de51de8a07afe2bf71e291a20225affa098098fd10d4468bd66b9
+src/turab/api/json_types.py                                    --   23956e95fe22db037d3e151eddad8a5778c3a73cfecb3fcf2c4b409a8180f5d1
+src/turab/api/routes/properties.py                             --   fcb7ef7608c63bc0029d4b6e74986d113f964461289d24a6ff53d23d36a59740
+db/dev/mutate_input_hardening.py                               --   459d92f3e14ed5cc812b85bfce064ad2f2933516e137b9a922ac20dfc16863a0
+tests/test_input_hardening.py                                  --   9ac7a547179e19ad5f4e4d03c35b81428db9a8e08c488d3cde47c9b178c83859
+No decision document changed revision.
