@@ -433,6 +433,13 @@ def _experiment(engine, engine_a, engine_b, ids, pid, holder_value, sql) -> dict
     return facts
 
 
+def _said(facts: dict) -> str:
+    """The facts, printed in full in every assertion message, so a failing
+    run states its cause rather than only that it failed."""
+    return (f"waited={facts.get('waited')} wrote={facts.get('wrote')} "
+            f"final={facts.get('final')} holder={facts.get('holder')}")
+
+
 #: variant -> (waited, wrote). The value is kept exactly when nothing wrote.
 _EXPECTED = {
     "production": (False, False),
@@ -458,11 +465,11 @@ def test_which_mechanism_protects_a_concurrent_reconfirmation(
     facts = _experiment(engine, *two_engines, ids, pid, value, _variant(variant))
     for name in ("waited", "wrote", "final", "holder"):
         record_property(name, str(facts[name]))
-    assert facts["holder"] == "committed", facts
-    assert isinstance(facts["moved"], list), facts
+    assert facts["holder"] == "committed", _said(facts)
+    assert isinstance(facts["moved"], list), _said(facts)
     waited, wrote = _EXPECTED[variant]
-    assert (facts["waited"], facts["wrote"]) == (waited, wrote), facts
-    assert facts["final"] == ("NEEDS_CONFIRMATION" if wrote else value), facts
+    assert (facts["waited"], facts["wrote"]) == (waited, wrote), _said(facts)
+    assert facts["final"] == ("NEEDS_CONFIRMATION" if wrote else value), _said(facts)
 
 
 @pytest.mark.parametrize("value", ["AVAILABLE", "UNAVAILABLE"])
@@ -474,8 +481,8 @@ def test_the_sweep_does_not_overwrite_a_concurrent_reconfirmation(
     pid = _stale_property(client, ids, "AVAILABLE")
     facts = _experiment(engine, *two_engines, ids, pid, value,
                         str(_STALE_AVAILABILITY_SQL))
-    assert facts["holder"] == "committed" and facts["waited"] is False, facts
-    assert facts["wrote"] is False and facts["final"] == value, facts
+    assert (facts["holder"], facts["waited"], facts["wrote"], facts["final"]) == \
+        ("committed", False, False, value), _said(facts)
 
 
 # --- §3.4 offer reconfirmation and offer_terms freshness ----------------------
