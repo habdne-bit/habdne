@@ -826,6 +826,63 @@ def test_generations_lock_holds_the_blocking_facts_against_any_writer(
     assert out["generated"] == 1 and out["writer"] == "committed", _said(out)
 
 
+@pytest.mark.parametrize("unrelated", ["another_type", "another_location"])
+def test_generation_locks_only_the_properties_it_may_pair(client, ids, engine,
+                                                         monkeypatch, unrelated):
+    """The lock's SCOPE. Blocking in `_BLOCKED_PAIRS` (same type, same known
+    location) is no longer the correctness guard: the post-lock re-check is.
+    It still decides WHICH properties are locked `FOR SHARE`. Without it,
+    generating for one property would lock every property in the database and
+    hold back unrelated writers until it committed. While generation holds its
+    lock, a plain UPDATE of an unrelated property must go through at once
+    (`lock_timeout` 1 s); the related one must not."""
+    from turab.db.session import audited_transaction
+    from turab.services import identity
+
+    loc = _location(engine)
+    b, c = (_property(client, ids, loc) for _ in range(2))
+    other = (_property(client, ids, loc, ptype="APARTMENT", land=None, built=90)
+             if unrelated == "another_type" else _property(client, ids, _location(engine)))
+    original = identity._candidate_for_pair
+    in_window, release = threading.Event(), threading.Event()
+
+    def paused(session, x, y):
+        if not in_window.is_set():
+            in_window.set()
+            release.wait(30)
+        return original(session, x, y)
+
+    monkeypatch.setattr(identity, "_candidate_for_pair", paused)
+
+    def generator():
+        with Session(bind=engine, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR):
+                identity.generate(s, property_id=uuid.UUID(c), algorithm_version=None)
+
+    t = threading.Thread(target=generator)
+    t.start()
+    assert in_window.wait(30)
+
+    def update_at_once(pid):
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("SET LOCAL lock_timeout = '1s'"))
+                conn.execute(text("UPDATE turab.properties SET local_location_detail = 'x' "
+                                  "WHERE property_id = :p"), {"p": pid})
+            return "updated"
+        except Exception as exc:
+            return type(getattr(exc, "orig", exc)).__name__
+
+    try:
+        unrelated_outcome = update_at_once(other)
+        related_outcome = update_at_once(b)
+    finally:
+        release.set()
+        t.join(60)
+    assert unrelated_outcome == "updated", unrelated_outcome
+    assert related_outcome == "LockNotAvailable", "the related property must be held"
+
+
 # --- the corrective effect (ADR-03, E04) -------------------------------------------
 
 def _request(client, ids):

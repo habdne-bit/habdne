@@ -35,7 +35,7 @@ No table, column, migration or reason code was added. The ops count stays at
 | a decided pair is not reopened | not returned, and no new row | `test_a_decided_pair_is_not_reopened_by_generation` | I6 |
 | **the pair race** (plan §6.3, third row) | `ux_identity_pair`; the loser's INSERT fails inside a SAVEPOINT and reads the winner's row | `test_generating_the_same_pair_twice_concurrently_yields_one_candidate`: `waited=True`, both calls succeed with the same one candidate | I7 |
 | pairs are stored least-first | `LEAST`/`GREATEST` | `test_a_pair_is_stored_least_first_whichever_side_generated_it` | I4 |
-| blocking (Spec §8.1 step 2) | same type, same known canonical location, neither an alias | `test_blocking_proposes_no_pair_across_type_or_location` (type; location; no location); `test_generation_for_an_alias_is_refused_and_aliases_are_never_paired` | I8, I9; aliases: I37, I38 (I10, I11 retired, §6.3) |
+| blocking (Spec §8.1 step 2) | same type, same known canonical location, neither an alias | `test_blocking_proposes_no_pair_across_type_or_location` (type; location; no location); `test_generation_for_an_alias_is_refused_and_aliases_are_never_paired` | I8, I9 (which now prove the lock's scope, §6.4); aliases: I37, I38 (I10, I11 retired, §6.3) |
 | OPERATOR excluded from the decision (maker-checker) | `x-roles`; INV-2 through the shared policy path (`test_inv2_separation.py`) | `test_an_operator_cannot_review`; `test_an_operator_generates_and_a_reviewer_cannot` | — |
 | mandatory test 6: SAME without a canonical | typed 422 naming what is missing | `test_confirmed_same_without_a_canonical_id_is_refused` | I16 |
 | mandatory test 6: the canonical must be one of the pair | typed 422 | `test_the_canonical_must_be_one_of_the_candidate_pair` | I17 |
@@ -58,8 +58,8 @@ No table, column, migration or reason code was added. The ops count stays at
 | every identity write audited | `audit_rows`, for candidates, aliases and tasks | `test_every_identity_write_is_audited` (exact sequence) | I33 |
 | the list | status as text; `PageMeta`; audited once (R6.3c); CUSTOMER refused | `test_the_list_filters_by_status_and_pages`; `test_a_customer_cannot_list_candidates` | I34 |
 
-`tests/test_slice3_identity.py` has 67 cases: 57 at c3aac8a, 7 added in the
-review of c3aac8a, and 3 in the review of 1935dc1 (§6). Thirty-eight mutations
+`tests/test_slice3_identity.py` has 69 cases: 57 at c3aac8a, 7 added in the
+review of c3aac8a, and 5 in the review of 1935dc1 (§6). Thirty-eight mutations
 are active (I10 and I11 are retired, §6.3), and are run
 by `db/dev/mutate_identity.py`, through the shared runner, and **every one
 fails at least one test**. The output, bound to its commit and fingerprint, is
@@ -306,3 +306,20 @@ its blocking facts.**
   stray `.orig` file. The working file was verified byte-identical to that
   backup, which shows it was never mutated. The runner now checks the anchor
   first.
+
+**What `_BLOCKED_PAIRS` is for now: the lock's scope.** The mutation run at
+7f43865 found I8 and I9 surviving (the type or the location condition
+removed from `_BLOCKED_PAIRS`). The post-lock re-check now decides which
+pairs are kept, so neither condition is the correctness guard any longer.
+
+Unlike I10 and I11, these were NOT removed. They still decide **which
+properties are locked `FOR SHARE`**. Without them, generating for one
+property would lock every property in the database and hold back unrelated
+writers until it committed.
+
+That behavior had no test. It now has one:
+`test_generation_locks_only_the_properties_it_may_pair`.
+- While generation holds its lock, a plain UPDATE of a property of another
+  type, or in another location, goes through at once (`lock_timeout` 1 s).
+- The related property is held (`LockNotAvailable`).
+- I8 and I9 each fail their case.
