@@ -188,3 +188,23 @@ src/turab/api/routes/truth.py                                  new  fdd117182cf3
 src/turab/services/audit_rows.py                               --   9e638ecb4190c6012c579467c2def1d6c778b0bba2e9119a34a43259a86c3489
 tests/test_slice3_truth.py                                     new  bee8616915686a4779c6a358f41c081d06677e323f1f7f0eafeb1c4883b0af6b
 No decision document changed revision. Finding G3-11 is raised in the step-5 note.
+
+--- round 1c2f6c5 -> step 5 input hardening (review of 1c2f6c5) ---
+docs/gate/SLICE_3_STEP5_DELIVERY.md                            --   76318401331c8727b3bf611cfebe76f15bd2628bcd043f760b977e42df01ada0
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   da91ab54f6184cc70baa550e5bc165753fd87bbdeafaf9d1e30b41b99ac1172c
+docs/gate/evidence/STEP5-INPUT-HARDENING-MUTATIONS.txt         new  145b46b5fad8ca7b15b6e1117ab4bb11e3fd0596b446e338873457cac5a30dad
+src/turab/api/json_types.py                                    --   5377bebca937b5f7285ce346e4ae0ab3ed422312912cce9d95061d334681bd26
+src/turab/services/truth.py                                    --   302491012e190dbe8fd3ed9172ac3a1ca22601c2fd29f5ab95a49d1a64af434f
+src/turab/api/routes/truth.py                                  --   d1e19cc7ea999ccb1125e2e3efefd15e55c68b7960d133a6eaf68e2ecd05d4b5
+src/turab/services/offers.py                                   --   e0c33ac0c2f50aeb5af6f1afb02b00be4a634a0652740cba019e736e00bc94aa
+src/turab/services/relations.py                                --   7fb6c13f9cbe9c70dd45027f09e521dd49c69b5683a7261635a554e469c39e72
+src/turab/services/requests.py                                 --   3ff820223d554a6cca3615e7095c5c18636d9701c5cb82912cd7939c3f24fd34
+src/turab/api/problems.py                                      --   474b3b15bd0183eb0769103aa8ca9dbf8affdb774a104b44f6eaa397a02423a2
+src/turab/api/routes/external_leads.py                         --   a3b4a76190de1f4c8f476d904cf02b05b3ba1addc0574b2501e4d8c9f1a85246
+src/turab/api/routes/offers.py                                 --   f74a5d459d9b1fbe1e2d5d12162085e7c2a7b930e5fee2333e40403c48f69b06
+src/turab/api/routes/properties.py                             --   51d7e0a013c1a269b9fdf538164d691f692d52ee2b7b8fe39ea8a58897b731c1
+src/turab/api/routes/requests.py                               --   94593b5b4a624f95fe2e2bc0cce6e49bb1b8f529bedaf0164ee5b0a2d3e0e41a
+db/dev/mutate_input_hardening.py                               new  be2e048af6273f7146a700923326ef25af4a5f4f80914f8c5fc1b1b0aeca44c1
+tests/test_input_hardening.py                                  new  7193de1cf24601e679d3b3be270f6fc3674446b1acf4a5b5b06cdf10c47b00a5
+tests/test_slice3_truth.py                                     --   95259f8d8c7fc36b54822bb3048fce1c52712a15651a35a17b9dae0d9e646531
+No decision document changed revision. G3-11 is recorded as decided (c): the truth layer is PROPERTY-only.

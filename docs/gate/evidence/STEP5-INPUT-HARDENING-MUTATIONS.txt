@@ -1,0 +1,163 @@
+TURAB — step 5: which mechanism refuses which hostile input
+============================================================
+Base commit       : aa7efda896c1ea418195200db946c7a631aa4679
+Source fingerprint: 949a8589bba7787685587d30a599ee2f8b3a5f06203d4e6d67401dcbf1c658b4
+Working tree      : CLEAN
+Recorded          : 2026-09-24 16:13:19 UTC
+
+=== baseline (no mutation) ===
+   86 passed, 2 warnings in 13.54s
+== M1 unknown attribute_code echoed [src/turab/services/truth.py, 1 site(s)]  restored: sha256 302491012e190dbe identical
+   3 failed, 83 passed, 2 warnings in 13.15s
+   FAILED test_claim_with_a_marked_unknown_attribute_code_is_a_typed_422[SELECT
+   FAILED test_claim_with_a_marked_unknown_attribute_code_is_a_typed_422[otp]
+   FAILED test_claim_with_a_marked_unknown_attribute_code_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.truth.Invalid: attribute_code 'SELECT 1' is not a registered attribute
+   cause: E   turab.services.truth.Invalid: attribute_code 'otp' is not a registered attribute
+   cause: E   turab.services.truth.Invalid: attribute_code 'turab.x' is not a registered attribute
+== M2 ENUM value echoed [src/turab/services/truth.py, 1 site(s)]  restored: sha256 302491012e190dbe identical
+   3 failed, 83 passed, 2 warnings in 13.73s
+   FAILED test_claim_with_a_marked_enum_value_is_a_typed_422[SELECT
+   FAILED test_claim_with_a_marked_enum_value_is_a_typed_422[otp]
+   FAILED test_claim_with_a_marked_enum_value_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.truth.Invalid: 'SELECT 1' is not a registered, active option of 'RIGHT_TYPE'
+   cause: E   turab.services.truth.Invalid: 'otp' is not a registered, active option of 'RIGHT_TYPE'
+   cause: E   turab.services.truth.Invalid: 'turab.x' is not a registered, active option of 'RIGHT_TYPE'
+== M3 resolution reason echoed [src/turab/services/truth.py, 1 site(s)]  restored: sha256 302491012e190dbe identical
+   3 failed, 83 passed, 2 warnings in 12.81s
+   FAILED test_resolution_with_a_marked_reason_code_is_a_typed_422[SELECT
+   FAILED test_resolution_with_a_marked_reason_code_is_a_typed_422[otp]
+   FAILED test_resolution_with_a_marked_reason_code_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.truth.Invalid: 'SELECT 1' is not a known reason code
+   cause: E   turab.services.truth.Invalid: 'otp' is not a known reason code
+   cause: E   turab.services.truth.Invalid: 'turab.x' is not a known reason code
+== M4 offer reason echoed [src/turab/services/offers.py, 1 site(s)]  restored: sha256 e0c33ac0c2f50aeb identical
+   3 failed, 83 passed, 2 warnings in 13.66s
+   FAILED test_offer_transition_with_a_marked_reason_code_is_a_typed_422[SELECT
+   FAILED test_offer_transition_with_a_marked_reason_code_is_a_typed_422[otp]
+   FAILED test_offer_transition_with_a_marked_reason_code_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.offers.UnknownReasonCode: 'SELECT 1' is not an active reason code
+   cause: E   turab.services.offers.UnknownReasonCode: 'otp' is not an active reason code
+   cause: E   turab.services.offers.UnknownReasonCode: 'turab.x' is not an active reason code
+== M5 relation reason echoed [src/turab/services/relations.py, 1 site(s)]  restored: sha256 7fb6c13f9cbe9c70 identical
+   3 failed, 83 passed, 2 warnings in 13.57s
+   FAILED test_relation_end_with_a_marked_reason_code_is_a_typed_422[SELECT
+   FAILED test_relation_end_with_a_marked_reason_code_is_a_typed_422[otp]
+   FAILED test_relation_end_with_a_marked_reason_code_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.relations.UnknownReasonCode: 'SELECT 1' is not an active reason code
+   cause: E   turab.services.relations.UnknownReasonCode: 'otp' is not an active reason code
+   cause: E   turab.services.relations.UnknownReasonCode: 'turab.x' is not an active reason code
+== M6 criterion code echoed [src/turab/services/requests.py, 1 site(s)]  restored: sha256 3ff820223d554a6c identical
+   3 failed, 83 passed, 2 warnings in 13.29s
+   FAILED test_request_criterion_with_a_marked_code_is_a_typed_422[SELECT
+   FAILED test_request_criterion_with_a_marked_code_is_a_typed_422[otp]
+   FAILED test_request_criterion_with_a_marked_code_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.requests.UnknownCriterionCode: 'SELECT 1' is not a criterion in the master registry; GET /master/criterion-definitions lists them (12 active)
+   cause: E   turab.services.requests.UnknownCriterionCode: 'otp' is not a criterion in the master registry; GET /master/criterion-definitions lists them (12 active)
+   cause: E   turab.services.requests.UnknownCriterionCode: 'turab.x' is not a criterion in the master registry; GET /master/criterion-definitions lists them (12 active)
+== M7 closure reason echoed [src/turab/services/requests.py, 1 site(s)]  restored: sha256 3ff820223d554a6c identical
+   3 failed, 83 passed, 2 warnings in 13.26s
+   FAILED test_request_closure_with_a_marked_reason_code_is_a_typed_422[SELECT
+   FAILED test_request_closure_with_a_marked_reason_code_is_a_typed_422[otp]
+   FAILED test_request_closure_with_a_marked_reason_code_is_a_typed_422[turab.x]
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'SELECT ': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'turab.': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.requests.UnknownReasonCode: 'SELECT 1' is not a REQUEST_CLOSURE reason; the adopted codes are ['REQUEST_CLOSED_OTHER', 'REQUEST_FULFILLED', 'REQUEST_WI
+   cause: E   turab.services.requests.UnknownReasonCode: 'otp' is not a REQUEST_CLOSURE reason; the adopted codes are ['REQUEST_CLOSED_OTHER', 'REQUEST_FULFILLED', 'REQUEST_WITHDRA
+   cause: E   turab.services.requests.UnknownReasonCode: 'turab.x' is not a REQUEST_CLOSURE reason; the adopted codes are ['REQUEST_CLOSED_OTHER', 'REQUEST_FULFILLED', 'REQUEST_WIT
+== M8 JsonNumber finite check removed [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 5377bebca937b5f7 identical
+   5 failed, 81 passed, 2 warnings in 14.76s
+   FAILED test_json_number_refuses_a_non_finite_value_with_no_bounds[-1e400]
+   FAILED test_json_number_refuses_a_non_finite_value_with_no_bounds[-Infinity]
+   FAILED test_json_number_refuses_a_non_finite_value_with_no_bounds[1e400]
+   FAILED test_json_number_refuses_a_non_finite_value_with_no_bounds[Infinity]
+   FAILED test_json_number_refuses_a_non_finite_value_with_no_bounds[NaN]
+   cause: E   Failed: DID NOT RAISE ValidationError
+   cause: Failed: DID NOT RAISE ValidationError
+== M9 FiniteJson walk removed [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 5377bebca937b5f7 identical
+   31 failed, 55 passed, 2 warnings in 13.79s
+   FAILED test_claim_with_a_non_finite_number_is_a_typed_422[claimed_value--1e400]
+   FAILED test_claim_with_a_non_finite_number_is_a_typed_422[claimed_value--Infinity]
+   FAILED test_claim_with_a_non_finite_number_is_a_typed_422[claimed_value-1e400]
+   FAILED test_claim_with_a_non_finite_number_is_a_typed_422[claimed_value-Infinity]
+   FAILED test_claim_with_a_non_finite_number_is_a_typed_422[claimed_value-NaN]
+   FAILED test_finite_json_refuses_a_non_finite_value_at_depth
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[metadata--1e400]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[metadata--Infinity]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[metadata-1e400]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[metadata-Infinity]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[metadata-NaN]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[raw_payload--1e400]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[raw_payload--Infinity]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[raw_payload-1e400]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[raw_payload-Infinity]
+   FAILED test_lead_with_a_non_finite_nested_number_is_a_typed_422[raw_payload-NaN]
+   FAILED test_observation_payload_with_a_non_finite_nested_number_is_a_typed_422[-1e400]
+   FAILED test_observation_payload_with_a_non_finite_nested_number_is_a_typed_422[-Infinity]
+   FAILED test_observation_payload_with_a_non_finite_nested_number_is_a_typed_422[1e400]
+   FAILED test_observation_payload_with_a_non_finite_nested_number_is_a_typed_422[Infinity]
+   FAILED test_observation_payload_with_a_non_finite_nested_number_is_a_typed_422[NaN]
+   FAILED test_request_criterion_with_a_non_finite_value_is_a_typed_422[-1e400]
+   FAILED test_request_criterion_with_a_non_finite_value_is_a_typed_422[-Infinity]
+   FAILED test_request_criterion_with_a_non_finite_value_is_a_typed_422[1e400]
+   FAILED test_request_criterion_with_a_non_finite_value_is_a_typed_422[Infinity]
+   FAILED test_request_criterion_with_a_non_finite_value_is_a_typed_422[NaN]
+   FAILED test_resolution_with_a_non_finite_value_is_a_typed_422[-1e400]
+   FAILED test_resolution_with_a_non_finite_value_is_a_typed_422[-Infinity]
+   FAILED test_resolution_with_a_non_finite_value_is_a_typed_422[1e400]
+   FAILED test_resolution_with_a_non_finite_value_is_a_typed_422[Infinity]
+   FAILED test_resolution_with_a_non_finite_value_is_a_typed_422[NaN]
+   cause: E   Failed: DID NOT RAISE ValidationError
+   cause: E   psycopg.errors.InvalidTextRepresentation: invalid input syntax for type json
+   cause: E   sqlalchemy.exc.DataError: (psycopg.errors.InvalidTextRepresentation) invalid input syntax for type json
+   cause: Failed: DID NOT RAISE ValidationError
+   cause: sqlalchemy.exc.DataError: (psycopg.errors.InvalidTextRepresentation) invalid input syntax for type json
+== M10 offer bigint bound removed [src/turab/api/routes/offers.py, 4 site(s)]  restored: sha256 f74a5d459d9b1fbe identical
+   3 failed, 83 passed, 2 warnings in 13.51s
+   FAILED test_offer_amount_beyond_bigint_is_a_typed_422[asking_price_dzd]
+   FAILED test_offer_amount_beyond_bigint_is_a_typed_422[seller_expectation_dzd]
+   FAILED test_offer_patch_beyond_bigint_is_a_typed_422
+   cause: E   psycopg.errors.NumericValueOutOfRange: bigint out of range
+   cause: E   sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) bigint out of range
+   cause: sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) bigint out of range
+== M11 request bigint bound removed [src/turab/api/routes/requests.py, 4 site(s)]  restored: sha256 94593b5b4a624f95 identical
+   2 failed, 84 passed, 2 warnings in 12.80s
+   FAILED test_request_budget_beyond_bigint_is_a_typed_422[budget_max_dzd]
+   FAILED test_request_budget_beyond_bigint_is_a_typed_422[budget_target_dzd]
+   cause: E   psycopg.errors.NumericValueOutOfRange: bigint out of range
+   cause: E   sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) bigint out of range
+   cause: sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) bigint out of range
+== M12 sort_order smallint bound removed [src/turab/api/routes/requests.py, 1 site(s)]  restored: sha256 94593b5b4a624f95 identical
+   2 failed, 84 passed, 2 warnings in 13.56s
+   FAILED test_criterion_sort_order_beyond_smallint_is_a_typed_422[-32769]
+   FAILED test_criterion_sort_order_beyond_smallint_is_a_typed_422[32768]
+   cause: E   psycopg.errors.NumericValueOutOfRange: smallint out of range
+   cause: E   sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) smallint out of range
+   cause: sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) smallint out of range
+== M13 area numeric(12,2) bound removed [src/turab/api/routes/properties.py, 4 site(s)]  restored: sha256 51d7e0a013c1a269 identical
+   3 failed, 83 passed, 2 warnings in 13.96s
+   FAILED test_property_area_patch_that_the_column_cannot_store_is_a_typed_422[10000000000]
+   FAILED test_property_area_that_the_column_cannot_store_is_a_typed_422[built_area_m2-10000000000]
+   FAILED test_property_area_that_the_column_cannot_store_is_a_typed_422[land_area_m2-10000000000]
+   cause: E   psycopg.errors.NumericValueOutOfRange: numeric field overflow
+   cause: E   sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) numeric field overflow
+   cause: sqlalchemy.exc.DataError: (psycopg.errors.NumericValueOutOfRange) numeric field overflow
