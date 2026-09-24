@@ -222,76 +222,105 @@ def load_property(session: Session, subject: Subject, property_id: uuid.UUID) ->
     )
 
 
+#: RFC-001 §4.6 in ONE statement (R10.3, R5.2: filter, never fetch-then-compare).
+#:
+#: `scoped` derives, for the one offer named, the facts §4.6 decides on — the
+#: creator, the canonical parent (R4.9), that parent's claim status and its
+#: DISTINCT claimant accounts — and the outer query returns a row only through
+#: one of two arms, each carrying the authority predicate:
+#:
+#:   GRANTED    condition 1 (the actor created the offer), OR condition 2
+#:              (party match AND canonical parent CLAIMED AND the actor holds a
+#:              claim on it AND it is the ONLY claimant — INV-1);
+#:   CONTESTED  not the creator, party match, and the canonical parent has more
+#:              than one claimant. It carries the contested canonical property
+#:              and its claimant accounts — what the INV-1 audit record needs —
+#:              and NO offer data (every offer column is NULL), so the caller can audit the
+#:              conflict and apply the disclosure rule without an unauthorized
+#:              row ever reaching Python.
+#:
+#: An actor for whom neither arm holds gets no row at all, exactly as for an
+#: offer id that does not exist.
+_OFFER_AUTHORITY_SQL = text(
+    """
+    WITH scoped AS (
+        SELECT o.offer_id, o.property_id, o.party_id,
+               o.transaction_type::text AS transaction_type,
+               o.status::text AS status, o.asking_price_dzd,
+               o.price_visibility::text AS price_visibility,
+               o.permission_scope::text AS permission_scope, o.version,
+               (o.created_by_account_id IS NOT NULL
+                AND o.created_by_account_id = :account_id)      AS by_creator,
+               (CAST(:party_id AS uuid) IS NOT NULL
+                AND o.party_id = CAST(:party_id AS uuid))        AS party_match,
+               p.property_id                                      AS parent_id,
+               p.claim_status::text                               AS parent_claim_status,
+               COALESCE((SELECT array_agg(DISTINCT c.claimed_by_account_id)
+                           FROM turab.record_claim_events c
+                          WHERE c.property_id = p.property_id),
+                        '{}'::uuid[])                             AS parent_claimants
+          FROM turab.property_offers o
+          JOIN turab.properties p
+            ON p.property_id = COALESCE(
+                 (SELECT a.canonical_property_id
+                    FROM turab.property_identity_aliases a
+                   WHERE a.alias_property_id = o.property_id),
+                 o.property_id)
+         WHERE o.offer_id = :offer_id
+    )
+    SELECT 'GRANTED' AS outcome, offer_id, property_id, party_id,
+           transaction_type, status, asking_price_dzd, price_visibility,
+           permission_scope, version,
+           NULL::uuid AS conflict_property_id, NULL::uuid[] AS conflict_accounts
+      FROM scoped
+     WHERE by_creator
+        OR (party_match
+            AND parent_claim_status = 'CLAIMED'
+            AND CAST(:account_id AS uuid) = ANY(parent_claimants)
+            AND cardinality(parent_claimants) = 1)
+    UNION ALL
+    SELECT 'CONTESTED', offer_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+           parent_id, parent_claimants
+      FROM scoped
+     WHERE NOT by_creator
+       AND party_match
+       AND cardinality(parent_claimants) > 1
+    """
+)
+
+
 def load_offer(session: Session, subject: Subject, offer_id: uuid.UUID) -> LoadResult:
     """Q9 / §4.6. Creator account, OR (parent claim AND party match AND parent CLAIMED).
 
-    The party match in the second branch is what stops a property claim from
-    opening another party's offer on the same physical property (R4.13).
+    ONE statement, `_OFFER_AUTHORITY_SQL`, carries the whole authority
+    predicate. An earlier version (F-4 round) fetched the offer by
+    `offer_id` alone and then decided in Python — the fetch-then-compare shape
+    R10.3 / R5.2 forbid, even though no HTTP response leaked: an unauthorized
+    row was read before authority was decided. A structural test now pins
+    the shape (`test_load_offer_issues_one_authority_scoped_statement`).
 
-    The two conditions are evaluated SEPARATELY, because they are independent
-    grants (§4.6), and only the second derives from a claim:
-
-      1. **Creator.** Decided on the offer alone. No claim is consulted, so a
-         claim conflict on the parent neither grants nor removes it.
-      2. **Parent-property claim.** The parent is first resolved to its
-         canonical property (R4.9) and the claim, the `CLAIMED` status and
-         INV-1 are all evaluated THERE — the same property `load_property`
-         evaluates. A parent claimed by more than one account raises
-         `ClaimAuthorityConflict` before this branch can grant anything, so
-         the caller audits it and applies the disclosure rule.
-
-    An earlier version tested condition 2 with a bare `EXISTS` on the offer's
-    own `property_id`: it ignored aliases and granted through a contested
-    parent (finding F-4).
+    The two §4.6 conditions stay INDEPENDENT: the creator branch consults no
+    claim, so a conflict on the parent neither grants nor removes it; the claim
+    branch resolves the parent to its canonical property (R4.9) and applies
+    INV-1 there. The party match is what stops a property claim from opening
+    another party's offer on the same physical property (R4.13).
     """
-    offer = session.execute(
-        text(
-            """
-            SELECT o.offer_id, o.property_id, o.party_id, o.transaction_type::text,
-                   o.status::text, o.asking_price_dzd, o.price_visibility::text,
-                   o.permission_scope::text, o.version, o.created_by_account_id
-              FROM turab.property_offers o
-             WHERE o.offer_id = :offer_id
-            """
-        ),
-        {"offer_id": offer_id},
+    row = session.execute(
+        _OFFER_AUTHORITY_SQL,
+        {"offer_id": offer_id, "account_id": subject.account_id,
+         "party_id": subject.party_id},
     ).mappings().first()
-    if offer is None:
+    if row is None:
         return _denied(ResourceKind.OFFER, offer_id)
-
-    def granted() -> LoadResult:
-        row = {k: v for k, v in offer.items() if k != "created_by_account_id"}
-        return LoadResult(ResourceKind.OFFER, offer_id, row)
-
-    # Condition 1: the actor created the offer.
-    if (offer["created_by_account_id"] is not None
-            and offer["created_by_account_id"] == subject.account_id):
-        return granted()
-
-    # Condition 2 needs a party to match; without one it cannot hold, and
-    # there is nothing to evaluate on the parent.
-    if subject.party_id is None or offer["party_id"] != subject.party_id:
-        return _denied(ResourceKind.OFFER, offer_id)
-
-    parent = resolve_canonical_property(session, offer["property_id"])
-    _guard_claim_conflict(session, ResourceKind.PROPERTY, parent)
-    holds = session.execute(
-        text(
-            """
-            SELECT 1
-              FROM turab.properties p
-             WHERE p.property_id = :parent
-               AND p.claim_status = 'CLAIMED'
-               AND EXISTS (
-                     SELECT 1 FROM turab.record_claim_events c
-                      WHERE c.property_id = p.property_id
-                        AND c.claimed_by_account_id = :account_id
-                   )
-            """
-        ),
-        {"parent": parent, "account_id": subject.account_id},
-    ).first()
-    return granted() if holds else _denied(ResourceKind.OFFER, offer_id)
+    if row["outcome"] == "CONTESTED":
+        # The parent is ambiguous: authority goes to nobody through a claim
+        # (INV-1). Raised so the caller audits it and decides disclosure.
+        # The row carries no offer data by construction.
+        raise ClaimAuthorityConflict(ResourceKind.PROPERTY, row["conflict_property_id"],
+                                     frozenset(row["conflict_accounts"]))
+    granted = {k: v for k, v in row.items()
+               if k not in ("outcome", "conflict_property_id", "conflict_accounts")}
+    return LoadResult(ResourceKind.OFFER, offer_id, granted)
 
 
 def load_opportunity(
