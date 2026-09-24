@@ -1,25 +1,25 @@
 TURAB — step 7: which mechanism refuses which case in Identity Lite
 ============================================================
-Base commit       : a54ffd34f80495184b0aea6783a425f8d421a203
-Source fingerprint: 4e8bafea672b5f5250c20a77a2660284fda5de3cb14f94e005419fa21c2487b2
+Base commit       : 8e65de633b961ef83e218e43791b2988166e2530
+Source fingerprint: 198cd2241970e53833a1eda4de3713bb6164f0dd51d8269d99584cd3063b9532
 Working tree      : CLEAN
-Recorded          : 2026-09-24 21:18:05 UTC
+Recorded          : 2026-09-24 22:37:50 UTC
 Test file         : tests/test_slice3_identity.py
 
 === baseline (no mutation) ===
-   64 passed, 2 warnings in 13.74s
-== I1 the column default decides the version [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.31s
+   69 passed, 2 warnings in 15.66s
+== I1 the column default decides the version [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.91s
    FAILED test_an_omitted_algorithm_version_is_stored_as_the_contract_default
    cause: AssertionError: assert 'rules-0.2.0' == 'rules-0.1.0'
    cause: E   AssertionError: assert 'rules-0.2.0' == 'rules-0.1.0'
-== I2 an unimplemented version is accepted [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.22s
+== I2 an unimplemented version is accepted [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.94s
    FAILED test_an_algorithm_version_that_names_no_implemented_algorithm_is_refused
-   cause: AssertionError: [{"identity_candidate_id":"4c9bfbd6-dfdd-4347-abbc-9c2102bc7826","property_a_id":"2e3aa384-cf58-40a3-90b7-72a2187aaafb","property_b_id":"df105954-381e-41e
-   cause: E   AssertionError: [{"identity_candidate_id":"4c9bfbd6-dfdd-4347-abbc-9c2102bc7826","property_a_id":"2e3aa384-cf58-40a3-90b7-72a2187aaafb","property_b_id":"df105954-381e
-== I3 generation writes a decided status [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   5 failed, 59 passed, 2 warnings in 13.09s
+   cause: AssertionError: [{"identity_candidate_id":"b00d36c6-e76d-42f7-af2c-62398f251ebc","property_a_id":"30e519c7-6da4-4b11-978b-387bd56a9dc5","property_b_id":"dc39b280-34d0-46f
+   cause: E   AssertionError: [{"identity_candidate_id":"b00d36c6-e76d-42f7-af2c-62398f251ebc","property_a_id":"30e519c7-6da4-4b11-978b-387bd56a9dc5","property_b_id":"dc39b280-34d0
+== I3 generation writes a decided status [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   5 failed, 64 passed, 2 warnings in 15.50s
    FAILED test_a_canonical_record_may_not_become_an_alias
    FAILED test_generating_the_same_pair_twice_concurrently_yields_one_candidate
    FAILED test_generating_twice_is_idempotent_for_a_pending_pair
@@ -28,141 +28,112 @@ Test file         : tests/test_slice3_identity.py
    cause: AssertionError: assert 'UNSURE' == 'PENDING_REVIEW'
    cause: AssertionError: assert ['UNSURE'] == ['PENDING_REVIEW']
    cause: AssertionError: assert [{'identity_c...e, ...}, ...}] == []
-   cause: AssertionError: waited=True holder=['325d4e57-c489-4a2c-99d6-c3269b366ff6'] contender=[]
+   cause: AssertionError: waited=True holder=['d49d273e-0b94-4466-bec4-3219c084676a'] contender=[]
    cause: E   AssertionError: assert 'UNSURE' == 'PENDING_REVIEW'
    cause: E   AssertionError: assert ['UNSURE'] == ['PENDING_REVIEW']
-== I4 the pair is not stored least-first [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   4 failed, 60 passed, 2 warnings in 13.19s
+== I4 the pair is not stored least-first [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   4 failed, 65 passed, 2 warnings in 15.52s
    FAILED test_a_decided_pair_is_not_reopened_by_generation
    FAILED test_a_pair_is_stored_least_first_whichever_side_generated_it
    FAILED test_generating_the_same_pair_twice_concurrently_yields_one_candidate
    FAILED test_generating_twice_is_idempotent_for_a_pending_pair
-   cause: AssertionError: assert ('923902bf-63...eb65a553cb7f') == ('5ce54fda-d0...800585c37267')
-   cause: AssertionError: waited=True holder=['084c9a50-a81e-41f8-a79d-8d206e62d93c'] contender=raised TypeError: 'NoneType' object is not subscriptable
-   cause: E   AssertionError: assert ('923902bf-63...eb65a553cb7f') == ('5ce54fda-d0...800585c37267')
-   cause: E   AssertionError: waited=True holder=['084c9a50-a81e-41f8-a79d-8d206e62d93c'] contender=raised TypeError: 'NoneType' object is not subscriptable
+   cause: AssertionError: assert ('b6531105-71...6dae0dc8b3de') == ('9e67eb16-64...b1e070eab0fa')
+   cause: AssertionError: waited=True holder=['6c74c88d-758b-4299-adfa-fa4959f0eaf9'] contender=raised TypeError: 'NoneType' object is not subscriptable
+   cause: E   AssertionError: assert ('b6531105-71...6dae0dc8b3de') == ('9e67eb16-64...b1e070eab0fa')
+   cause: E   AssertionError: waited=True holder=['6c74c88d-758b-4299-adfa-fa4959f0eaf9'] contender=raised TypeError: 'NoneType' object is not subscriptable
    cause: E   TypeError: 'NoneType' object is not subscriptable
    cause: TypeError: 'NoneType' object is not subscriptable
-== I5 a pending pair is not returned again [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 13.04s
+== I5 a pending pair is not returned again [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 15.38s
    FAILED test_generating_the_same_pair_twice_concurrently_yields_one_candidate
    FAILED test_generating_twice_is_idempotent_for_a_pending_pair
    cause: AssertionError: assert [{'identity_c...e, ...}, ...}] == []
-   cause: AssertionError: waited=True holder=['41a49c69-14f2-4b53-b5c9-994d2f2de7e7'] contender=[]
+   cause: AssertionError: waited=True holder=['7100c3a3-4663-4ea2-aae8-e6bb359c52ae'] contender=[]
    cause: E   AssertionError: assert [{'identity_c...e, ...}, ...}] == []
-   cause: E   AssertionError: waited=True holder=['41a49c69-14f2-4b53-b5c9-994d2f2de7e7'] contender=[]
-== I6 a decided pair is returned again [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.41s
+   cause: E   AssertionError: waited=True holder=['7100c3a3-4663-4ea2-aae8-e6bb359c52ae'] contender=[]
+== I6 a decided pair is returned again [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.32s
    FAILED test_a_decided_pair_is_not_reopened_by_generation
    cause: AssertionError: assert [{'identity_c...e, ...}, ...}] == []
    cause: E   AssertionError: assert [{'identity_c...e, ...}, ...}] == []
-== I7 the pair index violation is not absorbed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.26s
+== I7 the pair index violation is not absorbed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.38s
    FAILED test_generating_the_same_pair_twice_concurrently_yields_one_candidate
-   cause: AssertionError: waited=True holder=['3c90bbdb-daf3-41c5-995f-b430d0968368'] contender=raised IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates
-   cause: E   AssertionError: waited=True holder=['3c90bbdb-daf3-41c5-995f-b430d0968368'] contender=raised IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value viol
-== I8 blocking ignores the type [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.31s
-   FAILED test_blocking_proposes_no_pair_across_type_or_location[type]
-   cause: AssertionError: assert [{'identity_c...e, ...}, ...}] == []
-   cause: E   AssertionError: assert [{'identity_c...e, ...}, ...}] == []
-== I9 blocking ignores the location [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   26 failed, 38 passed, 2 warnings in 20.26s
-   FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_DISTINCT-None]
-   FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_SAME-b]
-   FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_SAME-c]
-   FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[UNSURE-None]
-   FAILED test_a_canonical_record_may_not_become_an_alias
-   FAILED test_a_decided_pair_is_not_reopened_by_generation
-   FAILED test_a_match_whose_latest_review_is_not_rejected_is_still_open
-   FAILED test_a_replayed_review_returns_the_same_answer_and_writes_once
-   FAILED test_an_alias_made_through_the_api_leaves_the_public_list
-   FAILED test_an_alias_made_through_the_api_refuses_writes
-   FAILED test_an_alias_may_not_become_an_alias_again
-   FAILED test_blocking_proposes_no_pair_across_type_or_location[location]
-   FAILED test_blocking_proposes_no_pair_across_type_or_location[no_location]
-   FAILED test_blocking_proposes_no_pair_across_type_or_location[type]
-   FAILED test_confirmed_same_writes_the_alias_before_the_status
-   FAILED test_confirming_same_raises_review_work_for_affected_open_records
-   FAILED test_e02_a_new_match_on_the_alias_is_refused_by_the_schema
-   FAILED test_e04_a_duplicate_open_opportunity_is_surfaced_not_closed
-   FAILED test_every_identity_write_is_audited
-   FAILED test_generating_the_same_pair_twice_concurrently_yields_one_candidate
-   FAILED test_generating_twice_is_idempotent_for_a_pending_pair
-   FAILED test_generation_for_an_alias_is_refused_and_aliases_are_never_paired
-   FAILED test_generation_only_ever_writes_pending_review
-   FAILED test_generation_rechecks_aliases_after_its_lock
-   FAILED test_the_canonical_resolver_returns_the_canonical_for_an_alias
-   FAILED test_two_concurrent_reviews_of_one_candidate_leave_one_final_decision
-   cause: AssertionError: assert 12 == 1
-   cause: AssertionError: assert 409 == 200
-   cause: AssertionError: assert ['PENDING_REV..._REVIEW', ...] == ['PENDING_REVIEW']
-   cause: AssertionError: assert [('property_i...s', 'INSERT')] == [('property_i...s', 'INSERT')]
-   cause: AssertionError: assert [] == ['2e1e3660-5c...9015df46896d']
-   cause: AssertionError: assert [] == [{'canon': '4...00000000003'}]
-== I12 CLOSE threshold moved [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.21s
+   cause: AssertionError: waited=True holder=['b27cc201-3936-42a2-9e50-c566a13f0187'] contender=raised IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates
+   cause: E   AssertionError: waited=True holder=['b27cc201-3936-42a2-9e50-c566a13f0187'] contender=raised IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value viol
+== I8 blocking ignores the type [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.28s
+   FAILED test_generation_locks_only_the_properties_it_may_pair[another_type]
+   cause: AssertionError: LockNotAvailable
+   cause: E   AssertionError: LockNotAvailable
+== I9 blocking ignores the location [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.74s
+   FAILED test_generation_locks_only_the_properties_it_may_pair[another_location]
+   cause: AssertionError: LockNotAvailable
+   cause: E   AssertionError: LockNotAvailable
+== I12 CLOSE threshold moved [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.58s
    FAILED test_area_signal_boundaries_of_rules_0_1_0[100-110.01-APART]
    cause: AssertionError: assert 'CLOSE' == 'APART'
    cause: E   AssertionError: assert 'CLOSE' == 'APART'
-== I13 CONTRADICTION threshold moved [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.09s
+== I13 CONTRADICTION threshold moved [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.46s
    FAILED test_area_signal_boundaries_of_rules_0_1_0[100-150-CONTRADICTION]
    cause: AssertionError: assert 'APART' == 'CONTRADICTION'
    cause: E   AssertionError: assert 'APART' == 'CONTRADICTION'
-== I14 local detail compared raw [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.01s
+== I14 local detail compared raw [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.59s
    FAILED test_the_local_detail_is_compared_normalized
    cause: AssertionError: assert 'DIFFERENT' == 'EQUAL'
    cause: E   AssertionError: assert 'DIFFERENT' == 'EQUAL'
-== I15 shared party never found [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.18s
+== I15 shared party never found [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.65s
    FAILED test_a_party_offering_on_both_properties_is_a_strong_signal
    cause: E   assert False is True
    cause: assert False is True
-== I16 SAME without a canonical allowed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.26s
+== I16 SAME without a canonical allowed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.99s
    FAILED test_confirmed_same_without_a_canonical_id_is_refused
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"b30529c791be46a889e4276f72fce77a","detail":"canonica
-   cause: E   AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"b30529c791be46a889e4276f72fce77a","detail":"cano
-== I17 a canonical outside the pair allowed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.37s
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"a983400e550347709edb60787a301428","detail":"canonica
+   cause: E   AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"a983400e550347709edb60787a301428","detail":"cano
+== I17 a canonical outside the pair allowed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.47s
    FAILED test_the_canonical_must_be_one_of_the_candidate_pair
    cause: E   psycopg.errors.RaiseException: Alias/canonical pair must match identity candidate pair
    cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Alias/canonical pair must match identity candidate pair
    cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Alias/canonical pair must match identity candidate pair
-== I18 a canonical with another decision allowed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 13.53s
+== I18 a canonical with another decision allowed [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 15.81s
    FAILED test_a_canonical_id_with_another_decision_is_refused[CONFIRMED_DISTINCT]
    FAILED test_a_canonical_id_with_another_decision_is_refused[UNSURE]
-   cause: AssertionError: {"identity_candidate_id":"a4572177-d3be-4538-8b73-2848259417d0","property_a_id":"00a4b856-9605-41c2-817e-ea3cb0fb90b5","property_b_id":"d774cc0a-7ba6-4acb
-   cause: AssertionError: {"identity_candidate_id":"b3fdb2e5-a691-485e-8bf7-c56ca5b6ed01","property_a_id":"758cf701-41af-4102-8d55-818b64a57e4c","property_b_id":"a4d35d1f-b933-4601
-   cause: E   AssertionError: {"identity_candidate_id":"a4572177-d3be-4538-8b73-2848259417d0","property_a_id":"00a4b856-9605-41c2-817e-ea3cb0fb90b5","property_b_id":"d774cc0a-7ba6-
-   cause: E   AssertionError: {"identity_candidate_id":"b3fdb2e5-a691-485e-8bf7-c56ca5b6ed01","property_a_id":"758cf701-41af-4102-8d55-818b64a57e4c","property_b_id":"a4d35d1f-b933-
-== I19 reason category not checked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.19s
+   cause: AssertionError: {"identity_candidate_id":"1f96f573-5aae-4ad1-851e-e88625c87e10","property_a_id":"7b943929-2138-4a74-9527-c52ac2a61d0c","property_b_id":"ae177847-21d4-478e
+   cause: AssertionError: {"identity_candidate_id":"2c16d625-e758-415f-8c7a-3ef55175fc36","property_a_id":"cc32ccff-9203-4f26-a34a-7d12709146b1","property_b_id":"dca30044-9dbc-4e6a
+   cause: E   AssertionError: {"identity_candidate_id":"1f96f573-5aae-4ad1-851e-e88625c87e10","property_a_id":"7b943929-2138-4a74-9527-c52ac2a61d0c","property_b_id":"ae177847-21d4-
+   cause: E   AssertionError: {"identity_candidate_id":"2c16d625-e758-415f-8c7a-3ef55175fc36","property_a_id":"cc32ccff-9203-4f26-a34a-7d12709146b1","property_b_id":"dca30044-9dbc-
+== I19 reason category not checked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.14s
    FAILED test_a_reason_code_outside_the_identity_category_is_refused[OWNER_REJECTED]
-   cause: AssertionError: {"identity_candidate_id":"2a08f072-ef02-4f0b-9f6b-c826ca711cb4","property_a_id":"78cd1459-ec43-472f-8294-ba9bade7deaa","property_b_id":"a11a4ebb-39a4-4567
-   cause: E   AssertionError: {"identity_candidate_id":"2a08f072-ef02-4f0b-9f6b-c826ca711cb4","property_a_id":"78cd1459-ec43-472f-8294-ba9bade7deaa","property_b_id":"a11a4ebb-39a4-
-== I20 a final decision reviewed again [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   4 failed, 60 passed, 2 warnings in 13.68s
+   cause: AssertionError: {"identity_candidate_id":"979e710e-2bd8-4706-b9a7-c91b14a952eb","property_a_id":"8ab95856-6387-4a9d-bf00-8183be08d21b","property_b_id":"b9969b3b-fcb0-43c7
+   cause: E   AssertionError: {"identity_candidate_id":"979e710e-2bd8-4706-b9a7-c91b14a952eb","property_a_id":"8ab95856-6387-4a9d-bf00-8183be08d21b","property_b_id":"b9969b3b-fcb0-
+== I20 a final decision reviewed again [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   4 failed, 65 passed, 2 warnings in 16.25s
    FAILED test_a_final_decision_is_not_reviewed_again[CONFIRMED_DISTINCT-CONFIRMED_SAME]
    FAILED test_a_final_decision_is_not_reviewed_again[CONFIRMED_SAME-CONFIRMED_DISTINCT]
    FAILED test_a_final_decision_is_not_reviewed_again[CONFIRMED_SAME-UNSURE]
    FAILED test_two_concurrent_reviews_of_one_candidate_leave_one_final_decision
-   cause: AssertionError: waited=True; holder={'identity_candidate_id': UUID('fd6c6e2a-bf8b-4beb-aa6b-85963a49f909'), 'property_a_id': UUID('56f99028-02e6-4c62-9362-c8c88c29f890'),
-   cause: AssertionError: {"identity_candidate_id":"14a4d48b-15f1-49f1-b320-40b26cf50c5f","property_a_id":"57b6926d-06da-4a44-a8c4-119f4a4e70c4","property_b_id":"f31dde03-f68e-4c83
-   cause: AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"3fe206d78b2e43e398cc5d3536bf20dd","d
-   cause: AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"5f6e6e4ffcd545e6a3fcf227aebb41d9","d
-   cause: E   AssertionError: waited=True; holder={'identity_candidate_id': UUID('fd6c6e2a-bf8b-4beb-aa6b-85963a49f909'), 'property_a_id': UUID('56f99028-02e6-4c62-9362-c8c88c29f89
-   cause: E   AssertionError: {"identity_candidate_id":"14a4d48b-15f1-49f1-b320-40b26cf50c5f","property_a_id":"57b6926d-06da-4a44-a8c4-119f4a4e70c4","property_b_id":"f31dde03-f68e-
-== I21 the candidate row not locked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.17s
+   cause: AssertionError: waited=True; holder={'identity_candidate_id': UUID('dc3c4726-cfc0-41f3-bda9-da2beb6e550f'), 'property_a_id': UUID('18e95898-4c8c-45ec-a34f-6fbaa996974f'),
+   cause: AssertionError: {"identity_candidate_id":"fea51f40-6ba5-4643-95cd-8e9eb61c5251","property_a_id":"1107e237-9366-4a21-a26a-a705ac73e12d","property_b_id":"cbeeb8fb-570e-42e1
+   cause: AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"45bc63bac1e34a6897011aba19a8a598","d
+   cause: AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"c2bcf77eb2e44e769ad9373bcf8a512e","d
+   cause: E   AssertionError: waited=True; holder={'identity_candidate_id': UUID('dc3c4726-cfc0-41f3-bda9-da2beb6e550f'), 'property_a_id': UUID('18e95898-4c8c-45ec-a34f-6fbaa996974
+   cause: E   AssertionError: {"identity_candidate_id":"fea51f40-6ba5-4643-95cd-8e9eb61c5251","property_a_id":"1107e237-9366-4a21-a26a-a705ac73e12d","property_b_id":"cbeeb8fb-570e-
+== I21 the candidate row not locked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.47s
    FAILED test_two_concurrent_reviews_of_one_candidate_leave_one_final_decision
-   cause: AssertionError: waited=True; holder={'identity_candidate_id': UUID('727d2006-97a5-43b2-bd72-c96d5e9f1c84'), 'property_a_id': UUID('403509e7-8023-4862-83dd-c88a37b905ab'),
-   cause: E   AssertionError: waited=True; holder={'identity_candidate_id': UUID('727d2006-97a5-43b2-bd72-c96d5e9f1c84'), 'property_a_id': UUID('403509e7-8023-4862-83dd-c88a37b905a
-== I22 the alias not written [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   27 failed, 37 passed, 2 warnings in 13.11s
+   cause: AssertionError: waited=True; holder={'identity_candidate_id': UUID('104a9d5f-c695-4b7b-93a0-62994b02dc35'), 'property_a_id': UUID('2d4bc090-5d2a-443e-8714-3c7aa0516d7d'),
+   cause: E   AssertionError: waited=True; holder={'identity_candidate_id': UUID('104a9d5f-c695-4b7b-93a0-62994b02dc35'), 'property_a_id': UUID('2d4bc090-5d2a-443e-8714-3c7aa0516d7
+== I22 the alias not written [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   27 failed, 42 passed, 2 warnings in 15.87s
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_DISTINCT-None]
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_SAME-b]
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_SAME-c]
@@ -191,134 +162,157 @@ Test file         : tests/test_slice3_identity.py
    FAILED test_two_concurrent_reviews_of_one_candidate_leave_one_final_decision
    FAILED test_unsure_may_be_reviewed_again
    cause: AssertionError: no property lock serialised them: holder=NoResultFound('No row was found when one was required'); contender=NoResultFound('No row was found when one was r
-   cause: AssertionError: the candidate lock did not serialise them: holder=NoResultFound('No row was found when one was required'); contender={'identity_candidate_id': UUID('b9eff
+   cause: AssertionError: the candidate lock did not serialise them: holder=NoResultFound('No row was found when one was required'); contender={'identity_candidate_id': UUID('aec60
    cause: AssertionError: waited=True; generator='committed'; review=NoResultFound('No row was found when one was required')
    cause: E   AssertionError: no property lock serialised them: holder=NoResultFound('No row was found when one was required'); contender=NoResultFound('No row was found when one w
-   cause: E   AssertionError: the candidate lock did not serialise them: holder=NoResultFound('No row was found when one was required'); contender={'identity_candidate_id': UUID('b
+   cause: E   AssertionError: the candidate lock did not serialise them: holder=NoResultFound('No row was found when one was required'); contender={'identity_candidate_id': UUID('a
    cause: E   AssertionError: waited=True; generator='committed'; review=NoResultFound('No row was found when one was required')
-== I23 the pair's property rows not locked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 13.20s
+== I23 the pair's property rows not locked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 16.74s
    FAILED test_a_review_waits_for_a_generation_between_its_lock_and_its_insert
    FAILED test_two_concurrent_reviews_cannot_build_an_alias_chain
-   cause: AssertionError: no property lock serialised them: contender={'identity_candidate_id': UUID('814af7d6-f008-43ad-bb37-254d7ff2c3b0'), 'property_a_id': UUID('99d99fcf-b4e6-4
+   cause: AssertionError: no property lock serialised them: contender={'identity_candidate_id': UUID('619aa4ea-d429-477a-87be-0b04a3877cad'), 'property_a_id': UUID('0a541df4-08bf-4
    cause: AssertionError: the review did not wait for the generation: review='committed'; waited=False; generator='committed'
-   cause: E   AssertionError: no property lock serialised them: contender={'identity_candidate_id': UUID('814af7d6-f008-43ad-bb37-254d7ff2c3b0'), 'property_a_id': UUID('99d99fcf-b4
+   cause: E   AssertionError: no property lock serialised them: contender={'identity_candidate_id': UUID('619aa4ea-d429-477a-87be-0b04a3877cad'), 'property_a_id': UUID('0a541df4-08
    cause: E   AssertionError: the review did not wait for the generation: review='committed'; waited=False; generator='committed'
-== I24 canonical-is-alias not named [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.25s
+== I24 canonical-is-alias not named [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.61s
    FAILED test_the_chosen_canonical_may_not_itself_be_an_alias
-   cause: AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"9b88da8ac3214d1db73332a41f8811b3","d
-   cause: E   AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"9b88da8ac3214d1db73332a41f8811b3
-== I25 a pair member that is an alias not refused [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   6 failed, 58 passed, 2 warnings in 12.89s
+   cause: AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"605a06152b5c4dd9bbe373d37bad0113","d
+   cause: E   AssertionError: {"type":"about:blank","title":"Alias is not canonical","status":409,"code":"IDENTITY_ALIAS_NOT_CANONICAL","trace_id":"605a06152b5c4dd9bbe373d37bad0113
+== I25 a pair member that is an alias not refused [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   6 failed, 63 passed, 2 warnings in 16.13s
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_DISTINCT-None]
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_SAME-b]
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_SAME-c]
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[UNSURE-None]
    FAILED test_an_alias_may_not_become_an_alias_again
    FAILED test_the_chosen_canonical_may_not_itself_be_an_alias
-   cause: AssertionError: {"identity_candidate_id":"80799a75-82cb-4355-805d-538badae5859","property_a_id":"26c58ec1-62d9-4d99-97a5-aee5072ee30e","property_b_id":"9ceecc58-3c9a-400b
-   cause: AssertionError: {"identity_candidate_id":"de8786c1-6c4d-46fb-90a2-536d4202f24d","property_a_id":"270fe2bd-463e-4559-bae3-fae5b5cedeef","property_b_id":"50828f9f-f8cc-4d13
-   cause: E   AssertionError: {"identity_candidate_id":"80799a75-82cb-4355-805d-538badae5859","property_a_id":"26c58ec1-62d9-4d99-97a5-aee5072ee30e","property_b_id":"9ceecc58-3c9a-
-   cause: E   AssertionError: {"identity_candidate_id":"de8786c1-6c4d-46fb-90a2-536d4202f24d","property_a_id":"270fe2bd-463e-4559-bae3-fae5b5cedeef","property_b_id":"50828f9f-f8cc-
+   cause: AssertionError: {"identity_candidate_id":"875337cf-a49d-4f67-9b8d-61a22e71d0fa","property_a_id":"05488d3d-b1b0-4722-bb1e-3e9d2980683e","property_b_id":"284d41f5-8b03-41db
+   cause: AssertionError: {"identity_candidate_id":"8bf5c162-227d-4f39-a9b1-53388e8b5a21","property_a_id":"79e1b3df-c0d5-4a61-8230-e8cecdf405d2","property_b_id":"ffb1132e-095d-4751
+   cause: E   AssertionError: {"identity_candidate_id":"875337cf-a49d-4f67-9b8d-61a22e71d0fa","property_a_id":"05488d3d-b1b0-4722-bb1e-3e9d2980683e","property_b_id":"284d41f5-8b03-
+   cause: E   AssertionError: {"identity_candidate_id":"8bf5c162-227d-4f39-a9b1-53388e8b5a21","property_a_id":"79e1b3df-c0d5-4a61-8230-e8cecdf405d2","property_b_id":"ffb1132e-095d-
    cause: E   psycopg.errors.RaiseException: Canonical property cannot itself be an alias
    cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "property_identity_aliases_pkey"
-== I26 alias-is-canonical not pre-checked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 13.07s
+== I26 alias-is-canonical not pre-checked [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 16.08s
    FAILED test_a_canonical_record_may_not_become_an_alias
    FAILED test_two_concurrent_reviews_cannot_build_an_alias_chain
-   cause: AssertionError: waited=True; holder={'identity_candidate_id': UUID('d5064c50-b7f2-4ee9-9a15-efe5e49a9472'), 'property_a_id': UUID('1a09dd3d-00ee-48ac-906b-584ac0e51950'),
-   cause: E   AssertionError: waited=True; holder={'identity_candidate_id': UUID('d5064c50-b7f2-4ee9-9a15-efe5e49a9472'), 'property_a_id': UUID('1a09dd3d-00ee-48ac-906b-584ac0e5195
+   cause: AssertionError: waited=True; holder={'identity_candidate_id': UUID('435ff131-ccec-4f87-bdf0-8a3d99fb4230'), 'property_a_id': UUID('0d1e3950-d2f3-43d3-b018-c0b3c5fd837d'),
+   cause: E   AssertionError: waited=True; holder={'identity_candidate_id': UUID('435ff131-ccec-4f87-bdf0-8a3d99fb4230'), 'property_a_id': UUID('0d1e3950-d2f3-43d3-b018-c0b3c5fd837
    cause: E   psycopg.errors.RaiseException: A property already acting as canonical cannot later become an alias; consolidate explicitly
    cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) A property already acting as canonical cannot later become an alias; consolidate explicitly
    cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) A property already acting as canonical cannot later become an alias; consolidate explicitly
-== I35 review checks only CONFIRMED_SAME (the defect reported) [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 12.88s
+== I35 review checks only CONFIRMED_SAME (the defect reported) [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 15.69s
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_DISTINCT-None]
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[UNSURE-None]
-   cause: AssertionError: {"identity_candidate_id":"9c71ee21-8bda-4beb-a884-6e5ed1bfe73c","property_a_id":"b7b87c09-a6cd-45c1-a38e-15b6b09d92a8","property_b_id":"cb81aa4c-54ca-4267
-   cause: AssertionError: {"identity_candidate_id":"ef6eee99-692c-41b3-81f2-7c4fb9f5da61","property_a_id":"ba6612dc-7f97-4f55-bf74-1b73ebe2ada7","property_b_id":"beb6fd47-99ac-44fe
-   cause: E   AssertionError: {"identity_candidate_id":"9c71ee21-8bda-4beb-a884-6e5ed1bfe73c","property_a_id":"b7b87c09-a6cd-45c1-a38e-15b6b09d92a8","property_b_id":"cb81aa4c-54ca-
-   cause: E   AssertionError: {"identity_candidate_id":"ef6eee99-692c-41b3-81f2-7c4fb9f5da61","property_a_id":"ba6612dc-7f97-4f55-bf74-1b73ebe2ada7","property_b_id":"beb6fd47-99ac-
-== I36 generation does not lock the involved properties [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 12.95s
+   cause: AssertionError: {"identity_candidate_id":"143ef188-9c9a-4aec-85e4-cac76556a358","property_a_id":"14a4944d-7516-4780-9c5e-9128ad0837cc","property_b_id":"ffb59da9-6ad0-4016
+   cause: AssertionError: {"identity_candidate_id":"3dbf514d-9a96-4c8f-b8e5-76880a574b77","property_a_id":"568c9826-6ae0-48a5-925c-20a993321728","property_b_id":"6b903f58-aae0-4c7a
+   cause: E   AssertionError: {"identity_candidate_id":"143ef188-9c9a-4aec-85e4-cac76556a358","property_a_id":"14a4944d-7516-4780-9c5e-9128ad0837cc","property_b_id":"ffb59da9-6ad0-
+   cause: E   AssertionError: {"identity_candidate_id":"3dbf514d-9a96-4c8f-b8e5-76880a574b77","property_a_id":"568c9826-6ae0-48a5-925c-20a993321728","property_b_id":"6b903f58-aae0-
+== I36 generation does not lock the involved properties [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   4 failed, 65 passed, 2 warnings in 14.03s
    FAILED test_a_review_waits_for_a_generation_between_its_lock_and_its_insert
+   FAILED test_generation_locks_only_the_properties_it_may_pair[another_location]
+   FAILED test_generation_locks_only_the_properties_it_may_pair[another_type]
+   FAILED test_generations_lock_holds_the_blocking_facts_against_any_writer
+   cause: AssertionError: the UPDATE did not wait for generation: writer='committed'; waited=False; generated=1
+   cause: AssertionError: the related property must be held
    cause: AssertionError: the review did not wait for the generation: review='committed'; waited=False; generator='committed'
+   cause: E   AssertionError: the UPDATE did not wait for generation: writer='committed'; waited=False; generated=1
+   cause: E   AssertionError: the related property must be held
    cause: E   AssertionError: the review did not wait for the generation: review='committed'; waited=False; generator='committed'
-== I37 generation does not re-check aliases after its lock [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   4 failed, 60 passed, 2 warnings in 13.49s
-   FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[CONFIRMED_DISTINCT-None]
+== I37 generation does not re-check aliases after its lock [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   3 failed, 66 passed, 2 warnings in 15.95s
    FAILED test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided[UNSURE-None]
    FAILED test_generation_for_an_alias_is_refused_and_aliases_are_never_paired
    FAILED test_generation_rechecks_aliases_after_its_lock
-   cause: AssertionError: assert {'004a3dd6-81...a3ea4c0d4d0a'} == {'004a3dd6-81...af31add71867'}
-   cause: AssertionError: assert {'2728d0d7-5b...bed8f8478799'} == {'810ff03f-f5...bed8f8478799'}
+   cause: AssertionError: assert {'59cc0bb4-dc...4a45ccc49ba4'} == {'a8c00015-ec...cab60ab87153'}
    cause: AssertionError: the alias is not a generation input
-   cause: AssertionError: {'generated': [{'1b0ec21e-a7f5-4a1f-9e3b-f4bc1c5160b4', '8f360d30-95a3-4eaf-9187-234321a3bddf'}, {'1b0ec21e-a7f5-4a1f-9e3b-f4bc1c5160b4', 'a0c99293-9c41-4
-   cause: E   AssertionError: assert {'004a3dd6-81...a3ea4c0d4d0a'} == {'004a3dd6-81...af31add71867'}
-   cause: E   AssertionError: assert {'2728d0d7-5b...bed8f8478799'} == {'810ff03f-f5...bed8f8478799'}
-== I38 a focus that became an alias is not refused after the lock [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 13.17s
+   cause: AssertionError: {'generated': [{'94731a38-6dfa-4418-b4aa-ae9235a50196', 'b0d07400-5069-42a2-8213-70e86786771f'}, {'b0d07400-5069-42a2-8213-70e86786771f', 'ccab045c-b117-4
+   cause: E   AssertionError: assert {'59cc0bb4-dc...4a45ccc49ba4'} == {'a8c00015-ec...cab60ab87153'}
+   cause: E   AssertionError: the alias is not a generation input
+   cause: E   AssertionError: {'generated': [{'94731a38-6dfa-4418-b4aa-ae9235a50196', 'b0d07400-5069-42a2-8213-70e86786771f'}, {'b0d07400-5069-42a2-8213-70e86786771f', 'ccab045c-b1
+== I38 a focus that became an alias is not refused after the lock [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 15.75s
    FAILED test_generation_for_a_property_that_became_an_alias_in_the_window_is_409
    FAILED test_generation_for_an_alias_is_refused_and_aliases_are_never_paired
    cause: AssertionError: {'generated': []}
    cause: E   AssertionError: {'generated': []}
    cause: E   assert (201 == 409)
    cause: assert (201 == 409)
-== I27 no review work raised [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   4 failed, 60 passed, 2 warnings in 13.24s
+== I39 blocking not re-checked after the lock [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 16.34s
+   FAILED test_a_patch_in_generations_window_leaves_no_stale_candidate[canonical_location_id]
+   FAILED test_a_patch_in_generations_window_leaves_no_stale_candidate[property_type]
+   cause: AssertionError: {'generated': [['1250b57b-fd8c-4fce-be32-c8658818d711', 'd2c3187c-ae8c-47f7-afb6-b7485fa3fa61'], ['cb588179-3e5e-4a54-95f5-9dbc4cd9fec4', 'd2c3187c-ae8c-4
+   cause: AssertionError: {'generated': [['35399b66-7f25-4ca2-a03c-14035b4d198e', 'cc76e8fd-1c51-4e17-82f5-b02224fe2721'], ['544b7ac4-c400-4176-a7f9-1cf9e00fa92d', 'cc76e8fd-1c51-4
+   cause: E   AssertionError: {'generated': [['1250b57b-fd8c-4fce-be32-c8658818d711', 'd2c3187c-ae8c-47f7-afb6-b7485fa3fa61'], ['cb588179-3e5e-4a54-95f5-9dbc4cd9fec4', 'd2c3187c-ae
+   cause: E   AssertionError: {'generated': [['35399b66-7f25-4ca2-a03c-14035b4d198e', 'cc76e8fd-1c51-4e17-82f5-b02224fe2721'], ['544b7ac4-c400-4176-a7f9-1cf9e00fa92d', 'cc76e8fd-1c
+== I40 generation locks FOR KEY SHARE (the mode before this review) [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   3 failed, 66 passed, 2 warnings in 14.12s
+   FAILED test_generation_locks_only_the_properties_it_may_pair[another_location]
+   FAILED test_generation_locks_only_the_properties_it_may_pair[another_type]
+   FAILED test_generations_lock_holds_the_blocking_facts_against_any_writer
+   cause: AssertionError: the UPDATE did not wait for generation: writer='committed'; waited=False; generated=1
+   cause: AssertionError: the related property must be held
+   cause: E   AssertionError: the UPDATE did not wait for generation: writer='committed'; waited=False; generated=1
+   cause: E   AssertionError: the related property must be held
+== I27 no review work raised [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   4 failed, 65 passed, 2 warnings in 15.84s
    FAILED test_a_match_whose_latest_review_is_not_rejected_is_still_open
    FAILED test_confirming_same_raises_review_work_for_affected_open_records
    FAILED test_e04_a_duplicate_open_opportunity_is_surfaced_not_closed
    FAILED test_every_identity_write_is_audited
    cause: AssertionError: assert [('property_i...s', 'UPDATE')] == [('property_i...s', 'INSERT')]
-   cause: AssertionError: assert [] == ['f908f4d5-c3...8b133f5a88fd']
+   cause: AssertionError: assert [] == ['492ad3d5-53...c43c40673b6f']
    cause: AssertionError: assert [] == [('MATCH', 'R...ONSOLIDATED')]
    cause: E   AssertionError: assert [('property_i...s', 'UPDATE')] == [('property_i...s', 'INSERT')]
-   cause: E   AssertionError: assert [] == ['f908f4d5-c3...8b133f5a88fd']
+   cause: E   AssertionError: assert [] == ['492ad3d5-53...c43c40673b6f']
    cause: E   AssertionError: assert [] == [('MATCH', 'R...ONSOLIDATED')]
-== I28 a match's EARLIEST review decides [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.50s
+== I28 a match's EARLIEST review decides [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.14s
    FAILED test_a_match_whose_latest_review_is_not_rejected_is_still_open
-   cause: AssertionError: assert [] == ['27cd611f-d8...f94bf05ef75a']
-   cause: E   AssertionError: assert [] == ['27cd611f-d8...f94bf05ef75a']
-== I29 rejected matches count as open [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   4 failed, 60 passed, 2 warnings in 13.34s
+   cause: AssertionError: assert [] == ['9fc6be15-81...95a205ad71e1']
+   cause: E   AssertionError: assert [] == ['9fc6be15-81...95a205ad71e1']
+== I29 rejected matches count as open [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   4 failed, 65 passed, 2 warnings in 16.16s
    FAILED test_a_match_whose_latest_review_is_not_rejected_is_still_open
    FAILED test_confirming_same_raises_review_work_for_affected_open_records
    FAILED test_e04_a_duplicate_open_opportunity_is_surfaced_not_closed
    FAILED test_every_identity_write_is_audited
-   cause: AssertionError: assert ['163205c9-82...5a1eeff22923'] == ['16e3aa1e-bb...0127de64eee6']
+   cause: AssertionError: assert ['b5a35801-95...1c21b7e7c5db'] == ['c99f6450-62...78f16040493c']
    cause: AssertionError: assert [('MATCH', 'R...ONSOLIDATED')] == [('MATCH', 'R...ONSOLIDATED')]
    cause: AssertionError: assert [('property_i...INSERT'), ...] == [('property_i...s', 'INSERT')]
-   cause: E   AssertionError: assert ['163205c9-82...5a1eeff22923'] == ['16e3aa1e-bb...0127de64eee6']
+   cause: E   AssertionError: assert ['b5a35801-95...1c21b7e7c5db'] == ['c99f6450-62...78f16040493c']
    cause: E   AssertionError: assert [('MATCH', 'R...ONSOLIDATED')] == [('MATCH', 'R...ONSOLIDATED')]
    cause: E   AssertionError: assert [('property_i...INSERT'), ...] == [('property_i...s', 'INSERT')]
-== I30 a match carried by an opportunity counts twice [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   2 failed, 62 passed, 2 warnings in 12.79s
+== I30 a match carried by an opportunity counts twice [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   2 failed, 67 passed, 2 warnings in 15.87s
    FAILED test_confirming_same_raises_review_work_for_affected_open_records
    FAILED test_e04_a_duplicate_open_opportunity_is_surfaced_not_closed
    cause: AssertionError: assert [('MATCH', 'R...ONSOLIDATED')] == [('MATCH', 'R...ONSOLIDATED')]
    cause: E   AssertionError: assert [('MATCH', 'R...ONSOLIDATED')] == [('MATCH', 'R...ONSOLIDATED')]
    cause: E   ValueError: too many values to unpack (expected 1)
    cause: ValueError: too many values to unpack (expected 1)
-== I31 closed opportunities count as open [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 12.93s
+== I31 closed opportunities count as open [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.93s
    FAILED test_confirming_same_raises_review_work_for_affected_open_records
    cause: AssertionError: assert [('MATCH', 'R...ONSOLIDATED')] == [('MATCH', 'R...ONSOLIDATED')]
    cause: E   AssertionError: assert [('MATCH', 'R...ONSOLIDATED')] == [('MATCH', 'R...ONSOLIDATED')]
-== I32 duplicates on the canonical not surfaced [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 12.94s
+== I32 duplicates on the canonical not surfaced [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.49s
    FAILED test_e04_a_duplicate_open_opportunity_is_surfaced_not_closed
-   cause: AssertionError: assert [] == ['80eb14f5-aa...f09b8f121952']
-   cause: E   AssertionError: assert [] == ['80eb14f5-aa...f09b8f121952']
-== I33 review work not audited [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.07s
+   cause: AssertionError: assert [] == ['75a4c65c-8d...199cdd2bd630']
+   cause: E   AssertionError: assert [] == ['75a4c65c-8d...199cdd2bd630']
+== I33 review work not audited [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 15.82s
    FAILED test_every_identity_write_is_audited
    cause: AssertionError: assert [('property_i...s', 'UPDATE')] == [('property_i...s', 'INSERT')]
    cause: E   AssertionError: assert [('property_i...s', 'UPDATE')] == [('property_i...s', 'INSERT')]
-== I34 the status filter ignored [src/turab/services/identity.py, 1 site(s)]  restored: sha256 baab88d17b756c7e identical
-   1 failed, 63 passed, 2 warnings in 13.30s
+== I34 the status filter ignored [src/turab/services/identity.py, 1 site(s)]  restored: sha256 f22b0094017f8d3c identical
+   1 failed, 68 passed, 2 warnings in 16.17s
    FAILED test_the_list_filters_by_status_and_pages
    cause: AssertionError: assert {'CONFIRMED_D...EW', 'UNSURE'} == {'UNSURE'}
    cause: E   AssertionError: assert {'CONFIRMED_D...EW', 'UNSURE'} == {'UNSURE'}

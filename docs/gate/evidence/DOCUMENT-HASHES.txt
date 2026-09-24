@@ -267,3 +267,15 @@ db/dev/mutate_identity.py                                      --   06acdae182bf
 tests/test_slice3_identity.py                                  --   246cb19b9ea0eb88abc4033a64b9524844cb8f2890f4ebf2a36c6f5d163587b3
 tests/test_slice3_public.py                                    --   4bc474fcffe4e867b8ebb97a63f1e6aef6f2577ca830213dd16289b2db540f17
 Correction to the previous round's closing line: G3-12, G3-13 and G3-14 were decided in the review of 3a53b0a; they are recorded as APPROVED in the step-6 note, section 4. No decision document changed revision.
+
+--- round 1935dc1 -> blocking facts in generation's window (review of 1935dc1) ---
+docs/gate/SLICE_3_STEP7_DELIVERY.md                            --   3869e2491d4e9470f844e9fc4abc4dd4af3cdf3e9fe91fc63d87c23b5661085f
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   402090b7c86eaf9b480eae64b22481160209e52a28f467f35fe855d378865815
+docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt             --   69b134ad9c9f2f55b23b6ecf270e4741062e26016923c3624fba665e74ffd48e
+docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt                --   53f1a034ec9fc7c8b2f76a1f163b48c4a693eaee7124e6dc7e405d9974ee016c
+docs/gate/evidence/STEP7-PATCH-RACE-BEFORE-FIX.txt             new  e3795ab43892298c49c5bace7f7051bd070861d175baf9be20bba239c8c42278
+src/turab/services/identity.py                                 --   f22b0094017f8d3cf316a9d37ffed2165d80dbc0af5c60995994f00255478015
+db/dev/mutate_identity.py                                      --   ce0662ddeae1852a65933c747ecdff9006b0d04d8a235ec91543b8ac296cf8f1
+db/dev/mutation_runner.py                                      --   6768ce6a6fbc36cc3cd80b227a307253c2cce48f04cebc6812536c2c47c8c6da
+tests/test_slice3_identity.py                                  --   eec16223c6386d53e84094201ebebb432ad48f7b012a5f6e5a7d2424ae79016e
+No decision document changed revision.
