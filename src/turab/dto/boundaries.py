@@ -213,8 +213,10 @@ class PublicPropertySummary(_Strict):
       does not declare. A value outside that enum is now omitted, never
       rendered. The column is `NOT NULL`, so there is no null case.
     - The areas were `Decimal`, which serializes to a JSON STRING. The
-      contract declares `number`. `numeric(12,2)` has at most 12 significant
-      digits, and a double carries 15 (`DBL_DIG`), so the float is exact.
+      contract declares `number`. They are now `float`, so they serialize as
+      JSON numbers. What the tests establish is that the JSON number written
+      equals the value shown (`220.0`, `9999999999.99`). They claim nothing
+      about binary representation.
     - `local_location_detail` was copied unconditionally. Developer Spec §23,
       invariant 11: "Public visibility does not mean every detail may be
       shared; sharing_scope governs the detail." No field-to-scope mapping is

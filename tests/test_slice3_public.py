@@ -238,6 +238,34 @@ def test_revoking_the_grant_delists_although_the_binding_row_survives(client, en
     assert _ids(client, loc) == []
 
 
+def test_a_revocation_date_alone_delists_although_the_status_says_granted(client,
+                                                                          engine, ids):
+    """ADR-04: the "current grant/revocation state". The frozen schema allows
+    a GRANTED row with `revoked_at` filled. Here ONLY that column changes, on a
+    grant whose offer was listed. `revoke_consent` changes status and date
+    together, so it cannot isolate this."""
+    loc, pid, _, consent, _ = _listed_world(engine, ids)
+    assert _ids(client, loc) == [str(pid)]
+    _run(engine, "UPDATE turab.consent_grants SET revoked_at = now() "
+                 "WHERE consent_id = :c", c=consent)
+    assert _one(engine, "SELECT status::text FROM turab.consent_grants "
+                        "WHERE consent_id = :c", c=consent) == "GRANTED"
+    assert _ids(client, loc) == []
+
+
+def test_a_revoked_status_alone_delists_although_no_date_is_recorded(client, engine,
+                                                                    ids):
+    """The mirror case: status REVOKED, `revoked_at` still NULL. The schema
+    allows it too; only `g.status` refuses it."""
+    loc, pid, _, consent, _ = _listed_world(engine, ids)
+    assert _ids(client, loc) == [str(pid)]
+    _run(engine, "UPDATE turab.consent_grants SET status = 'REVOKED' "
+                 "WHERE consent_id = :c", c=consent)
+    assert _one(engine, "SELECT revoked_at IS NULL FROM turab.consent_grants "
+                        "WHERE consent_id = :c", c=consent) is True
+    assert _ids(client, loc) == []
+
+
 def test_a_binding_for_another_purpose_does_not_list(client, engine, ids):
     loc = _location(engine)
     pid = _property(engine, loc)
@@ -345,12 +373,14 @@ def test_projected_offers_are_in_creation_order(client, engine, ids):
     assert [o["offer_id"] for o in body[0]["offers"]] == [str(first), str(second)]
 
 
-# --- exclusions the contract's schema implies ----------------------------------
+# --- publication rule R6-P1, and the alias exclusion ---------------------------
 
 @pytest.mark.parametrize("availability", ["TEMPORARILY_UNAVAILABLE", "UNAVAILABLE"])
-def test_a_property_the_public_schema_cannot_describe_is_absent(client, engine, ids,
-                                                                availability):
-    """`PublicPropertySummary.availability` does not contain these values."""
+def test_rule_r6_p1_a_temporarily_or_wholly_unavailable_property_is_not_published(
+        client, engine, ids, availability):
+    """Our precautionary rule R6-P1, accepted for now. It is NOT forced by the
+    response schema: `availability` is optional there, so the property could
+    have been listed without the field."""
     loc, pid, *_ = _listed_world(engine, ids, availability=availability)
     assert _ids(client, loc) == []
 
@@ -551,15 +581,44 @@ def test_a_property_type_naming_no_type_matches_nothing(client, engine, ids, val
     assert r.status_code == 200 and r.json() == []
 
 
-def test_the_location_filter_is_an_exact_match_pending_g3_14(client, engine, ids):
-    """Pins the literal reading, not a decision: a property in a CHILD
-    location is not returned for its parent (G3-14)."""
-    parent = _location(engine)
-    child = _location(engine, parent=parent)
-    pid = _property(engine, child)
-    _consented_offer(engine, pid, ids.BRAHIM)
-    assert _ids(client, child) == [str(pid)]
-    assert _ids(client, parent) == []
+def test_the_location_filter_matches_the_location_and_everything_beneath_it(client,
+                                                                          engine, ids):
+    """G3-14: a property recorded at any depth under the requested location is
+    returned; a sibling branch's is not; a location's own property is."""
+    wilaya = _location(engine)
+    commune = _location(engine, parent=wilaya)
+    ksar = _location(engine, parent=commune)
+    sibling = _location(engine, parent=wilaya)
+    at = {}
+    for name, loc in (("wilaya", wilaya), ("commune", commune), ("ksar", ksar),
+                      ("sibling", sibling)):
+        at[name] = _property(engine, loc)
+        _consented_offer(engine, at[name], ids.BRAHIM)
+    def listed(loc):
+        return set(_ids(client, loc, page_size=100))
+    assert listed(wilaya) == {str(at[n]) for n in ("wilaya", "commune", "ksar", "sibling")}
+    assert listed(commune) == {str(at["commune"]), str(at["ksar"])}
+    assert listed(ksar) == {str(at["ksar"])}
+    assert listed(sibling) == {str(at["sibling"])}
+
+
+def test_the_location_filter_ends_on_a_cycle_in_the_hierarchy(client, engine, ids):
+    """The schema does not forbid `parent_id` cycles. The recursion uses UNION,
+    which discards rows already produced, so it ends; the answer is the cycle's
+    members, each once."""
+    a = _location(engine)
+    b = _location(engine, parent=a)
+    _run(engine, "UPDATE turab.locations SET parent_id = :b WHERE location_id = :a",
+         a=a, b=b)
+    pa, pb = _property(engine, a), _property(engine, b)
+    for pid in (pa, pb):
+        _consented_offer(engine, pid, ids.BRAHIM)
+    assert sorted(_ids(client, a)) == sorted([str(pa), str(pb)])
+
+
+def test_an_unknown_location_matches_nothing(client, engine, ids):
+    _listed_world(engine, ids)
+    assert _get(client, location_id=uuid.uuid4()) == []
 
 
 @pytest.mark.parametrize("query", [

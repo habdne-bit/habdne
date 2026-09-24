@@ -39,7 +39,9 @@ one fact. An absence on an empty list would prove nothing.
 | 3. binding not revoked | `b.revoked_at IS NULL` | `test_a_revoked_binding_does_not_list` | P5 |
 | 3. binding started | `b.bound_at <= now()` | `test_a_binding_that_starts_in_the_future_does_not_list_yet` | P6 |
 | 3. grant scope | `g.scope = 'PUBLIC_LISTING_ALLOWED'` | `test_a_grant_whose_scope_changed_after_binding_does_not_list` | P7 |
-| 3. grant live | `g.status = 'GRANTED'` | `test_revoking_the_grant_delists_although_the_binding_row_survives` (ADR-04) | P8 |
+| 3. grant status | `g.status = 'GRANTED'` | `test_a_revoked_status_alone_delists_although_no_date_is_recorded` | P8 |
+| 3. grant revocation date (review of 3a53b0a) | `g.revoked_at IS NULL` | `test_a_revocation_date_alone_delists_although_the_status_says_granted` | P8b |
+| 3. both, end to end | the two above | `test_revoking_the_grant_delists_although_the_binding_row_survives` (through `revoke_consent`, which sets both; it isolates neither) | — |
 | 3. grant started | `g.granted_at <= now()` | `test_a_grant_that_starts_in_the_future_does_not_list_yet` | P9 |
 | 3. the offer's own party | `g.party_id = o.party_id` | `test_a_consent_from_a_party_other_than_the_offers_does_not_list` | P10 |
 
@@ -51,11 +53,23 @@ offer changed afterwards. The P7 and P10 tests model such later changes with
 direct SQL, since no API path makes them. Each of those clauses is the only
 thing that refuses its case.
 
-**Removed during the work because no test could prove it.** A clause
-`g.revoked_at IS NULL` sat beside `g.status = 'GRANTED'`. `revoke_consent`
-sets both, so each masked the other, and a mutation of either alone would
-survive. The kept clause is the schema's own test of a live grant, the one
-the trigger applies.
+**Correction after the review of 3a53b0a: the revocation date.** At
+3a53b0a the read checked `g.status = 'GRANTED'` and not `g.revoked_at`.
+- **The error in our reasoning.** We had removed `g.revoked_at IS NULL` as
+  "unprovable", because `revoke_consent` sets both columns and so each
+  masked the other. That confused one writer with the data. The frozen schema
+  allows a `GRANTED` row with `revoked_at` filled (its only constraint is
+  `CHECK (revoked_at IS NULL OR revoked_at >= granted_at)`).
+- **What ADR-04 requires.** The permission service validates the "current
+  grant/revocation state", i.e. both.
+- **The fix.** Both clauses are now present. Each is proved by a test that
+  changes ONLY its own column, on a grant whose offer was listed:
+  - the date alone, status still `GRANTED` (P8b);
+  - the status alone, date still NULL (P8).
+- **A future-dated `revoked_at` also delists.** The read does not presume a
+  revocation to be not yet effective.
+- **Reproduction on the 3a53b0a service code, with the new tests kept:**
+  exactly 1 failed, `test_a_revocation_date_alone_delists_although_the_status_says_granted`.
 
 ## 2. The projection
 
@@ -73,7 +87,7 @@ code, first rendered over HTTP by this step):
 | Defect | Evidence | Now | Test · mutation |
 |---|---|---|---|
 | `availability` passed any value, including `TEMPORARILY_UNAVAILABLE` and `UNAVAILABLE`, which the contract's enum does not declare | the contract's `PublicPropertySummary.availability` enum | a value outside the enum is omitted, never rendered | `test_the_dto_never_renders_an_availability_the_contract_does_not_declare` · P20 |
-| the areas were `Decimal` | Pydantic 2.13.5 serializes `Decimal("220.00")` as `"220.00"`, a JSON **string** (measured); the contract declares `number` | typed `float`. `numeric(12,2)` has at most 12 significant digits, a double carries 15 (`DBL_DIG`), so the value is exact | `test_areas_are_json_numbers_equal_to_the_column` · P21 |
+| the areas were `Decimal` | Pydantic 2.13.5 serializes `Decimal("220.00")` as `"220.00"`, a JSON **string** (measured); the contract declares `number` | typed `float`, so they serialize as JSON numbers. What the tests establish is that the JSON number written equals the value shown (`220.0`, `9999999999.99`, `0.01`). **No claim is made about binary representation** (corrected in the review of 3a53b0a) | `test_areas_are_json_numbers_equal_to_the_column` · P21 |
 | `local_location_detail` copied unconditionally | Developer Spec §23 invariant 11 | withheld pending G3-12 (§4) | `test_the_local_location_detail_is_withheld_pending_g3_12` · P19 |
 
 **The floor, redaction and schema conformance.**
@@ -99,10 +113,18 @@ code, first rendered over HTTP by this step):
    PENDING_INFO and PAUSED are not active either.
 2. **The consent must bind to the offer** (plan §4.4). A property-scoped
    PUBLIC_LISTING_ALLOWED binding does not list.
-3. **A property whose availability the public schema cannot carry is not
-   listed** (`TEMPORARILY_UNAVAILABLE`, `UNAVAILABLE`). Listing it would mean
-   omitting or misstating its availability. `current_availability` is
-   `NOT NULL DEFAULT 'UNKNOWN'` (schema line 422), so there is no null case.
+3. **Publication rule R6-P1 (precautionary, OURS):** a property whose
+   availability is `TEMPORARILY_UNAVAILABLE` or `UNAVAILABLE` is not
+   published.
+   - **Corrected in the review of 3a53b0a:** this is not something the
+     response schema forces. `availability` is OPTIONAL in
+     `PublicPropertySummary`, so such a property could be listed without the
+     field.
+   - It is a publication rule we chose, accepted for now as a precaution.
+   - Its code and test name it: `LISTABLE_AVAILABILITY` and
+     `test_rule_r6_p1_…`.
+   - `current_availability` is `NOT NULL DEFAULT 'UNKNOWN'` (schema line 422),
+     so there is no null case.
    - **A correction during the work:** the first draft handled a NULL
      availability, and its DTO note named a "None" rendering defect. The
      schema makes both impossible, so both were withdrawn before commit.
@@ -166,20 +188,40 @@ Folding would move a party's consented offer onto a record it did not name.
 Step 7 (Identity Lite) creates aliases through the API. The choice matters
 from then on.
 
-### G3-14 · what `location_id` matches
+### G3-14 · what `location_id` matches — implemented as subtree, for review
 
-`locations` is a hierarchy (`parent_id`). The contract does not say whether
-`location_id` matches exactly or includes the locations beneath it.
+`locations` is a hierarchy (`parent_id`). The seed has four levels: 1 WILAYA,
+16 COMMUNE, 5 AREA, 8 KSAR. Properties are recorded at the lower levels; the
+fixture villa sits on a KSAR. The contract does not say whether `location_id`
+matches exactly or also matches what lies beneath it.
 
-**Delivered: exact match**, the literal reading. It is pinned by
-`test_the_location_filter_is_an_exact_match_pending_g3_14`, so a change of
-rule will be a visible change. The consequence: a search by a WILAYA returns
-nothing that is recorded at KSAR level.
+**History.**
+- At 3a53b0a an exact match was delivered and raised as an open question.
+- The review of 3a53b0a asked for G3-14 to be treated.
+- The explicit choice put to the reviewer was declined.
+- So the recommended option is **implemented**, and remains subject to review.
 
-**Options.**
-- (a) Exact match.
-- (b) Subtree match, as a recursive CTE over `parent_id`.
-- (c) (b), plus location aliases.
+**Delivered: the location AND every location beneath it.**
+- The mechanism is a recursive CTE over `parent_id`, inside the listing's
+  single statement.
+- It uses `UNION`, not `UNION ALL`. `UNION` discards rows already produced, so
+  the recursion ends even on a cycle, which the schema does not forbid
+  (PostgreSQL 16 documentation, §7.8.2).
+- An unknown `location_id` matches nothing.
+
+| Test | Asserts | Mutation |
+|---|---|---|
+| `test_the_location_filter_matches_the_location_and_everything_beneath_it` | a wilaya returns its own property, the commune's and the ksar's (depth 3), and a sibling branch's; a commune returns only its branch; a ksar only itself | P14b (exact only): 2 fail |
+| `test_the_location_filter_ends_on_a_cycle_in_the_hierarchy` | two locations made each other's parent: the answer is both, each once, and the request ends | P14b |
+| `test_an_unknown_location_matches_nothing` | `[]` | — |
+
+**A correction to our own option list at 3a53b0a.** It offered "(c) subtree
+plus location aliases". `location_aliases` maps **text** to a `location_id`,
+and the filter takes a UUID, so aliases play no part in it. That option was
+withdrawn.
+
+**If exact match is preferred:** P14b is exactly that change, and its two
+failing tests are what would be rewritten.
 
 ## 5. Observed outside this step, recorded and not changed
 
@@ -194,11 +236,13 @@ not started.
 
 ## 6. Tests and mutations
 
-`tests/test_slice3_public.py`: 66 cases, over HTTP on PostgreSQL. Each test
+`tests/test_slice3_public.py`: 70 cases, over HTTP on PostgreSQL. There
+were 66 at 3a53b0a. The review of 3a53b0a added the two revocation-isolation
+tests, and G3-14 replaced the exact-match test with three. Each test
 builds its rows under its own location, because the database is shared across
 the run.
 
-Twenty-four mutations are run by `db/dev/mutate_public_list.py`, through the
+Twenty-six mutations (P8b and P14b added in the review of 3a53b0a) are run by `db/dev/mutate_public_list.py`, through the
 shared `db/dev/mutation_runner.py`. The output is bound to its commit and
 source fingerprint in `docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt`.
 **Every one fails at least one test.**

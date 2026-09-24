@@ -16,8 +16,11 @@ D04; `docs/gate/SLICE_3_PLAN.md` §4.4 (the consent binds to the OFFER);
 3. THAT SAME offer carries a CURRENTLY VALID `PUBLIC_LISTING_ALLOWED`
    binding. "Currently valid" means all of the following:
    - the binding is not revoked;
-   - its grant is `GRANTED` (the schema's own test of a live grant, the one
-     `enforce_consent_binding()` applies);
+   - its grant is `GRANTED` AND carries no revocation date. ADR-04 asks the
+     permission service for the "current grant/revocation state", and the
+     frozen schema allows a `GRANTED` row with `revoked_at` filled. Either
+     marker alone delists. A revocation date in the future also delists: the
+     read does not guess that it is not yet effective;
    - both the binding and the grant have already started;
    - the binding's purpose AND the grant's scope are `PUBLIC_LISTING_ALLOWED`;
    - the grant is the offer's own party's.
@@ -31,10 +34,14 @@ An offer that fails 2 or 3 is not projected, even when its property is listed
 through another offer: a party that did not consent to public listing is not
 listed.
 
-**Two exclusions the contract's schema implies, stated for review** (the step-6
-note, §3):
-- a property whose `current_availability` the public schema cannot carry
-  (`TEMPORARILY_UNAVAILABLE`, `UNAVAILABLE`);
+**Two exclusions, stated for review** (the step-6 note, §3). Neither is
+required by the contract; both are OUR publication rules:
+- **precautionary rule R6-P1:** a property whose `current_availability` is
+  `TEMPORARILY_UNAVAILABLE` or `UNAVAILABLE` is not published. The response
+  schema does not force this: `availability` is optional in
+  `PublicPropertySummary`, so such a property could be listed without the
+  field. The rule is chosen, not derived. Accepted for now in the review of
+  3a53b0a;
 - a property recorded as an identity alias of another. Its offers are not
   folded into the canonical record (G3-13).
 
@@ -52,10 +59,11 @@ from sqlalchemy.orm import Session
 
 from ..auth.policy import ALLOW, Decision, DenyReason, PolicyTable, deny
 
-#: `PublicPropertySummary.availability` in the effective contract. A property
-#: whose availability is outside this set cannot be projected truthfully, so
-#: it is not listed. `tests/test_slice3_public.py` pins this set to the
-#: contract.
+#: Rule R6-P1: only a property whose availability is one of these is
+#: published. The set equals the values `PublicPropertySummary.availability`
+#: declares, and `tests/test_slice3_public.py` pins that equality. The
+#: EXCLUSION of the other two is our precautionary rule: the field is optional
+#: in the schema, so the schema does not require it.
 LISTABLE_AVAILABILITY = ("AVAILABLE", "POTENTIALLY_AVAILABLE", "UNDER_DISCUSSION",
                          "NEEDS_CONFIRMATION", "UNKNOWN")
 
@@ -77,6 +85,7 @@ _LISTABLE_OFFERS = """
                 AND b.bound_at <= now()
                 AND g.scope = 'PUBLIC_LISTING_ALLOWED'
                 AND g.status = 'GRANTED'
+                AND g.revoked_at IS NULL
                 AND g.granted_at <= now()
                 AND g.party_id = o.party_id)
 """
@@ -87,7 +96,16 @@ _LISTABLE_OFFERS = """
 #: consented offer, breaking condition 3. `now()` is also one instant for the
 #: whole statement.
 _PAGE = f"""
-    WITH listable AS ({_LISTABLE_OFFERS}),
+    WITH RECURSIVE listable AS ({_LISTABLE_OFFERS}),
+    -- G3-14: the requested location and every location beneath it. UNION
+    -- (not UNION ALL) discards rows already produced, so the recursion ends
+    -- even if `parent_id` ever formed a cycle, which the schema does not
+    -- forbid (PostgreSQL 16 documentation, §7.8.2).
+    region(location_id) AS (
+        SELECT CAST(:location_id AS uuid) WHERE CAST(:location_id AS uuid) IS NOT NULL
+        UNION
+        SELECT l.location_id FROM turab.locations l
+          JOIN region r ON l.parent_id = r.location_id),
     page AS (
         SELECT p.property_id, p.property_type::text AS property_type,
                p.canonical_location_id, p.local_location_detail,
@@ -101,7 +119,7 @@ _PAGE = f"""
            AND NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases a
                             WHERE a.alias_property_id = p.property_id)
            AND (CAST(:location_id AS uuid) IS NULL
-                OR p.canonical_location_id = CAST(:location_id AS uuid))
+                OR p.canonical_location_id IN (SELECT location_id FROM region))
            AND (CAST(:property_type AS text) IS NULL
                 OR p.property_type::text = CAST(:property_type AS text))
          ORDER BY p.created_at DESC, p.property_id
@@ -137,9 +155,12 @@ def list_public_properties(
     returns an empty page. Casting it to the enum would have turned any
     unknown value into a database error.
 
-    `location_id` is an exact match on `canonical_location_id`: the literal
-    reading. Whether it should also match the locations beneath it (G3-14) is
-    not decided here.
+    `location_id` matches the location AND every location beneath it
+    (G3-14). `locations` is a hierarchy (WILAYA > COMMUNE > AREA > KSAR in the
+    seed), and properties are recorded at its lower levels, so an exact match
+    would return nothing for a wilaya or a commune. This was implemented after
+    the question put to the reviewer was declined, and remains subject to
+    their review.
     """
     rows = session.execute(text(_PAGE), {
         "listable_availability": list(LISTABLE_AVAILABILITY),

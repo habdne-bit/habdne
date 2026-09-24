@@ -26,7 +26,9 @@ MUTATIONS = [
  ("P5 binding revocation ignored", SVC, "AND b.revoked_at IS NULL", ""),
  ("P6 binding start ignored", SVC, "AND b.bound_at <= now()", ""),
  ("P7 grant scope dropped", SVC, "AND g.scope = 'PUBLIC_LISTING_ALLOWED'", ""),
- ("P8 grant status dropped", SVC, "AND g.status = 'GRANTED'", ""),
+ ("P8 grant status dropped", SVC, "AND g.status = 'GRANTED'\n", "\n"),
+ ("P8b grant revocation date ignored (review of 3a53b0a)", SVC,
+  "AND g.revoked_at IS NULL", ""),
  ("P9 grant start ignored", SVC, "AND g.granted_at <= now()", ""),
  ("P10 grant party not the offer's", SVC, "AND g.party_id = o.party_id)", ")"),
  # the page
@@ -39,7 +41,11 @@ MUTATIONS = [
   "AND NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases a\n"
   "                            WHERE a.alias_property_id = p.property_id)", ""),
  ("P14 location filter ignored", SVC,
-  "OR p.canonical_location_id = CAST(:location_id AS uuid))", "OR TRUE)"),
+  "OR p.canonical_location_id IN (SELECT location_id FROM region))", "OR TRUE)"),
+ ("P14b location filter exact only (G3-14)", SVC,
+  "        UNION\n        SELECT l.location_id FROM turab.locations l\n"
+  "          JOIN region r ON l.parent_id = r.location_id),",
+  "        ),"),
  ("P15 property_type filter ignored", SVC,
   "OR p.property_type::text = CAST(:property_type AS text))", "OR TRUE)"),
  ("P16 page taken oldest first", SVC,
