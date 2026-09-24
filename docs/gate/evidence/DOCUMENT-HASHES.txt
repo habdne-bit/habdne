@@ -232,3 +232,23 @@ db/dev/mutation_runner.py                                      new  e04038766af7
 db/dev/mutate_public_list.py                                   new  3e785f7564cba9754f6091531816a7c9324784377f6ed7c0ecc3b83df442cb89
 tests/test_slice3_public.py                                    new  92df6e3685c79f2d30afb85ddc756035e0c0463bba43fa42f4fec35d9c742bc2
 No decision document changed revision. Findings G3-12, G3-13 and G3-14 are raised in the step-6 note.
+
+--- round 3a53b0a -> step 6 corrections (review of 3a53b0a) and step 7 (Identity Lite) ---
+docs/gate/SLICE_3_STEP6_DELIVERY.md                            --   debb1ea4d53f14f88a6608e222387c9a0d3e6c511e356a9fb3643c3dddd59d98
+docs/gate/SLICE_3_STEP7_DELIVERY.md                            new  3934c42d83a0dd5a6558e6698427992e6af40083139f4ed9fc89a9279b89ed3d
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   4b3e16c973147ca3a939628f71c87ec863ba40aed020505fab3ce928893213c9
+docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt             --   7cb1e783c60187421db830befc053cedd84043030251b65eb2d82b6f1f37fe94
+docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt                new  414001a4e909c7f28a7ec6c9ce0b8657c7f1a09eb5b5f24a89578361975063c7
+src/turab/services/public_listing.py                           --   b0d4c3ec4b7c6e9b30e10296486fa3a643a252f5a98e38a791f88e14cf7e51e1
+src/turab/dto/boundaries.py                                    --   3a2995af2ef5af9d3e3f5278f8008451066b13ea082dd7d7163db900b82a2861
+src/turab/services/identity.py                                 new  7b1c86ceed35a975ee7a33539fda5c61bad69c0cdcd9f588ab09b118f13fc8c3
+src/turab/api/routes/identity.py                               new  353e8e70504bad7e93bf69effd21dcfc3df33ea1a183da399d33c895af68f2e2
+src/turab/services/access.py                                   --   f0c6c620aad61cda045beece8d26e43e2e218081c0ed6fd23db40c39288eea47
+src/turab/services/audit_rows.py                               --   5a99a64dc3e379cd68a82ea03aed57dc9e5fe63bffe1a5cc6c4bac86fcfbc3a0
+src/turab/api/problems.py                                      --   51d5915cbfcb4630b7fb03d3c0e86ec1d110e1888b4edd1b778973fc926f86ae
+src/turab/app.py                                               --   eda36c538927d9399da64c5dcdceb18fa2a5608ec105cda28cc2086956e586e2
+db/dev/mutate_public_list.py                                   --   87cb5942c5c727b4cb7fcf300e5d4d48a883e4b8a9a9de571eb3a92dcfa0b384
+db/dev/mutate_identity.py                                      new  03872f6f05ab143493b9d6a7a89d5b6cd1fc74aeac65f503b42cacbc9bddd766
+tests/test_slice3_public.py                                    --   5b753cac9e1691a94457512c112dfd0ac2c4cc9211b797a01d3dbc86bfaa4e95
+tests/test_slice3_identity.py                                  new  cc5c0bf0bfff9b42bcff746e32c2e16b0095017151316cb027ceeaeb81d0db69
+No decision document changed revision. G3-14 is implemented as subtree after the question was declined; G3-12 and G3-13 stay open.
