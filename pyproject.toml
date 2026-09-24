@@ -26,3 +26,8 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 filterwarnings = ["error::DeprecationWarning:turab.*"]
+# xunit1: per-testcase <properties> are part of the format. The step-4
+# attribution experiment records waited / wrote / final per case with
+# `record_property`, which the default xunit2 family does not define (pytest
+# warns and writes them outside the schema).
+junit_family = "xunit1"
