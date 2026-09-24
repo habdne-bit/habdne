@@ -35,7 +35,7 @@ from typing import Any, Mapping
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from . import provenance
+from . import audit_rows, provenance
 from .provenance import UpdateChannel
 
 #: The frozen schema's CHECK list, exactly seven (Delta §2, fact 1).
@@ -125,35 +125,14 @@ def _row(session: Session, relation_id: uuid.UUID) -> Mapping[str, Any]:
 
 
 def _json_of(session: Session, relation_id: uuid.UUID) -> str:
-    return session.execute(
-        text("SELECT to_jsonb(r)::text FROM turab.party_property_relations r "
-             "WHERE party_property_relation_id = :r"),
-        {"r": relation_id},
-    ).scalar_one()
+    return audit_rows.row_json(session, "party_property_relations", relation_id)
 
 
 def _audit(session: Session, relation_id: uuid.UUID, action: str,
            old: str | None, new: str | None) -> None:
-    """The row `audit_row_change()` would write, had the table a trigger.
-
-    Actor and context come from `app.account_id` / `app.audit_context`, which
-    `audited_transaction` set for this command — the same source the trigger
-    reads — so the record is indistinguishable in shape from every other
-    audited table's.
-    """
-    session.execute(
-        text(
-            """INSERT INTO turab.audit_log
-                      (entity_table, entity_id, action, old_row, new_row,
-                       actor_account_id, context)
-               VALUES ('party_property_relations', :id, :action,
-                       CAST(:old AS jsonb), CAST(:new AS jsonb),
-                       NULLIF(current_setting('app.account_id', true), '')::uuid,
-                       COALESCE(NULLIF(current_setting('app.audit_context', true),
-                                       '')::jsonb, '{}'::jsonb))"""
-        ),
-        {"id": relation_id, "action": action, "old": old, "new": new},
-    )
+    """The row `audit_row_change()` would write, had the table a trigger."""
+    audit_rows.write(session, "party_property_relations", relation_id, action,
+                     old, new)
 
 
 def _require_property(session: Session, property_id: uuid.UUID) -> None:

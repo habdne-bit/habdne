@@ -64,6 +64,10 @@ class ProblemCode(StrEnum):
     #: G3-6 §3.3: ending a relation that already has an end is a conflict,
     #: never a silent success.
     RELATION_ALREADY_ENDED = "RELATION_ALREADY_ENDED"
+    #: G3-10: lead conversion is refused until its gates are decided. 409, a
+    #: status the operation declares, as `CLAIM_NOT_ELIGIBLE` is for the
+    #: undecided PROPERTY claim: the body is valid; the rule is not yet there.
+    EXTERNAL_LEAD_CONVERSION_UNDECIDED = "EXTERNAL_LEAD_CONVERSION_UNDECIDED"
     #: The contract's declared condition on `postRecordsClaim` is not met.
     #: 403, not 404: the caller already named a record they may not claim,
     #: and concealing it would leave them unable to tell a wrong id from a
@@ -102,6 +106,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.PRIMARY_SOURCE_CONFLICT: (409, "Primary source conflict"),
     ProblemCode.RELATION_OVERLAP: (409, "Overlapping relation"),
     ProblemCode.RELATION_ALREADY_ENDED: (409, "Relation already ended"),
+    ProblemCode.EXTERNAL_LEAD_CONVERSION_UNDECIDED: (409, "Conversion undecided"),
     ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),

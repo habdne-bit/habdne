@@ -13,7 +13,7 @@ from sqlalchemy import text as sa_text
 
 from .api import handlers
 from .api.routes import (
-    auth, consents, internal, me, parties,
+    auth, consents, external_leads as lead_routes, internal, me, parties,
     offers as offer_routes, properties as property_routes, records,
     relations as relation_routes,
     requests as request_routes,
@@ -98,4 +98,5 @@ def create_app(
     app.include_router(property_routes.router)
     app.include_router(offer_routes.router)
     app.include_router(relation_routes.router)
+    app.include_router(lead_routes.router)
     return app

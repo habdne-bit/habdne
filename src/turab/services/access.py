@@ -237,6 +237,18 @@ class AccessService:
         )
         return items, total
 
+    def external_lead_queue(self, *, operation_id: str):
+        """The external-leads queue, on the READ session, audited once."""
+        from . import external_leads as lead_service
+
+        rows = lead_service.queue(self._session)
+        self.record_list_access(
+            operation_id=operation_id, resource_kind="EXTERNAL_LEAD",
+            result_count=len(rows),
+            query_shape={"excluded_statuses": sorted(lead_service.CLOSED_STATUSES)},
+        )
+        return rows
+
     def evaluate_request_freshness(self, last_confirmed_at):
         """Freshness as a DERIVED value, computed on the read session.
 
