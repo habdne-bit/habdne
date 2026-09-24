@@ -252,3 +252,18 @@ db/dev/mutate_identity.py                                      new  03872f6f05ab
 tests/test_slice3_public.py                                    --   5b753cac9e1691a94457512c112dfd0ac2c4cc9211b797a01d3dbc86bfaa4e95
 tests/test_slice3_identity.py                                  new  cc5c0bf0bfff9b42bcff746e32c2e16b0095017151316cb027ceeaeb81d0db69
 No decision document changed revision. G3-14 is implemented as subtree after the question was declined; G3-12 and G3-13 stay open.
+
+--- round c3aac8a -> step 7 blocker and generation window (review of c3aac8a) ---
+docs/gate/SLICE_3_STEP6_DELIVERY.md                            --   cee1455324133a8a1ae3662da41bb6dcc9dbd6180093f34a8b00347fca245fa6
+docs/gate/SLICE_3_STEP7_DELIVERY.md                            --   492052958cae0d2f07310cc4eb7400ec39e61a40e6e8d9640eda25c080459e2f
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   36a1142a4891de09b7a2f395f124c6d7a80c758b013d445d895e634f6ff18673
+docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt             --   305ac536ced37846e1371cee8e2abdb71010cc52ea88cfd54955a383e2f78a1a
+docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt                --   434c718b80d3f80597f2c8611f7a153ae2e28ff6ef56c7a33d265fc97f329532
+docs/gate/evidence/STEP7-GENERATION-RACE-BEFORE-FIX.txt        new  c10ac2bbaf213233441450994779bfc8db16ec4779402a800a64a9dd67a083b0
+src/turab/services/identity.py                                 --   baab88d17b756c7e3811ab99d9fdcb5f9c48e5bba9c6a2a8d6780b48d62d1a2d
+src/turab/services/public_listing.py                           --   e5e6e81e4a9c074663b38872f8319b6e8a02d993c24c399a6c36f4d69cdd32e5
+src/turab/dto/boundaries.py                                    --   9462e3c774dfa5477a5b031d82845b8330f8bd3f1af559d49bec5ff176cbc557
+db/dev/mutate_identity.py                                      --   06acdae182bfd0393ca5b9efcca8dedbac4c67c47aa834499fa4750c9ae4498f
+tests/test_slice3_identity.py                                  --   246cb19b9ea0eb88abc4033a64b9524844cb8f2890f4ebf2a36c6f5d163587b3
+tests/test_slice3_public.py                                    --   4bc474fcffe4e867b8ebb97a63f1e6aef6f2577ca830213dd16289b2db540f17
+Correction to the previous round's closing line: G3-12, G3-13 and G3-14 were decided in the review of 3a53b0a; they are recorded as APPROVED in the step-6 note, section 4. No decision document changed revision.
