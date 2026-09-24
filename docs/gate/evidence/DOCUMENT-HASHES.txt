@@ -140,3 +140,18 @@ instructed with the re-confirmation. The addendum's delta_sha256 equals the
 3a digest above; contract.load_addenda refuses to start if they diverge.
 The plan (rev 6), MIGRATION_POLICY (rev 5) and the Alembic pack (rev 2)
 carry their previous digests; no new revision is claimed for them.
+
+--- round 0a66f8e -> review response (blockers 1 and 2; G3-10 decided) ---
+docs/gate/REVIEW_RESPONSE_0a66f8e.md                           new  eeb22630989ae046f602838dc0b09f591de42e0b31b30dde509dd4eb947223c3
+docs/gate/G3-10_external_lead_conversion.md                    --   0f8f78b5caf6dd832487efcb671ad2614a028a6f3d5ffc072a3e4ebc88551576
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   c2d644fb48e0f752878e0e24a18e7d882096c6c276abf91bdb58fe1e3ce06ec3
+docs/api/openapi_effective_v0.2.3.yaml                         --   b9a5071d4818c56bad7cfb7f032c45ecd8f056432cc085994f2b45c95d6d5687
+docs/api/API_INVENTORY_GENERATED.md                            --   b4c558e0e18e5acbd8ce92df073a7203d9733639324365098df740112a211f52
+src/turab/auth/loaders.py                                      --   52facc57d4624d5b639f5b89a1b1572651a5b01be03ca8ddd5f0fb24f5039b4d
+db/gate/generate_effective_contract.py                         --   da61172ce7846f2c6ff567d0db345a67e7eb4ead4bcdea725ec3208745130bfd
+db/gate/verify_policy_parity.py                                new  a2f7f797ab893b0351f6e8d7db738526902cfabca7b2d3fc0a460852a0afb4b7
+db/gate/run_gate.sh                                            --   7f92365fcf822c47efe0eff0f6ac7ca054ea9afa3f88526d83301cd78b3a9ded
+db/gate/record_gate_run.sh                                     --   8d3eab70483cde92a0472f7a31a8e7b38e326749fa5469f9b2d9d1963abfc29b
+tests/test_loader_shape.py                                     new  bdda7ff74d585f75124e3e970c673d9fb948f1fe56b8d1c7bb1bd75d1949d80a
+No decision document changed revision this round. The G3-6 Delta stays at
+3a (e2550c09...), and the addendum's binding is unchanged.
