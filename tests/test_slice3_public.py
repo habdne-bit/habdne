@@ -547,10 +547,10 @@ def test_the_price_is_shown_when_its_visibility_is_public(client, engine, ids):
     assert _get(client, location_id=loc)[0]["offers"][0]["asking_price_dzd"] == 3_300_000
 
 
-def test_the_local_location_detail_is_withheld_pending_g3_12(client, engine, ids):
-    """Developer Spec §23 invariant 11: public visibility does not make every
-    detail shareable; sharing_scope governs detail. No field-to-scope mapping
-    is decided (G3-12), so the free-text detail is withheld, at every scope."""
+def test_the_local_location_detail_is_withheld_by_decision_g3_12(client, engine, ids):
+    """Approved decision G3-12 (Developer Spec §23 invariant 11): the
+    free-text detail is withheld from the public list, at every scope; the
+    numeric areas are kept (test_areas_are_json_numbers_equal_to_the_column)."""
     loc = _location(engine)
     pid = _property(engine, loc, detail="خلف مسجد الحي، الباب الأزرق")
     offer, *_ = _consented_offer(engine, pid, ids.BRAHIM)

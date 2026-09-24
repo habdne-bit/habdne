@@ -44,7 +44,9 @@ No table, column, migration or reason code was added. The ops count stays at
 | **alias FIRST**, then the status (ADR-03) | the order of writes | `test_confirmed_same_writes_the_alias_before_the_status`; `test_the_trigger_refuses_a_same_status_without_its_alias` (a **schema** guarantee, labelled as such) | I22 |
 | a final decision is not reviewed again | a check after `FOR UPDATE` on the candidate | `test_a_final_decision_is_not_reviewed_again` (three pairs of decisions); `test_unsure_may_be_reviewed_again` | I20 |
 | **two concurrent reviews of one candidate** | the candidate row lock and the rule above | `test_two_concurrent_reviews_of_one_candidate_leave_one_final_decision`: `waited=True`; the second raises `AlreadyDecided` | I20, I21 |
-| no alias chains (ADR-03): three typed 409s instead of three P0001s | pre-checks under the property row locks | `test_the_chosen_canonical_may_not_itself_be_an_alias`, `test_an_alias_may_not_become_an_alias_again`, `test_a_canonical_record_may_not_become_an_alias` | I24, I25, I26 |
+| no alias chains (ADR-03): typed 409s instead of P0001s | pre-checks under the property row locks, for EVERY decision (§6) | `test_the_chosen_canonical_may_not_itself_be_an_alias`, `test_an_alias_may_not_become_an_alias_again`, `test_a_canonical_record_may_not_become_an_alias` | I24, I25, I26 |
+| **a candidate whose property has since become an alias is not decided** (review of c3aac8a) | the same check, for all four decisions | `test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided` (DISTINCT, UNSURE, SAME with either canonical) | I25, I35 |
+| **generation's window** (review of c3aac8a) | lock (`FOR KEY SHARE`) and re-check after reading the pairs | `test_generation_rechecks_aliases_after_its_lock`; `test_generation_for_a_property_that_became_an_alias_in_the_window_is_409`; `test_a_review_waits_for_a_generation_between_its_lock_and_its_insert` | I36, I37, I38, I23 |
 | **no chain by concurrency** | both properties locked in id order before the checks | `test_two_concurrent_reviews_cannot_build_an_alias_chain`: `waited=True`; the second raises `NotCanonical`; zero chains | I23 |
 | E01: nothing deleted or rewritten | no DELETE or UPDATE of any source, offer or claim | `test_e01_confirming_same_deletes_and_rewrites_nothing` | — |
 | E03: DISTINCT for similar units | no alias row | `test_e03_similar_units_confirmed_distinct_create_no_alias` | — |
@@ -56,7 +58,8 @@ No table, column, migration or reason code was added. The ops count stays at
 | every identity write audited | `audit_rows`, for candidates, aliases and tasks | `test_every_identity_write_is_audited` (exact sequence) | I33 |
 | the list | status as text; `PageMeta`; audited once (R6.3c); CUSTOMER refused | `test_the_list_filters_by_status_and_pages`; `test_a_customer_cannot_list_candidates` | I34 |
 
-`tests/test_slice3_identity.py` has 57 cases. Thirty-four mutations are run
+`tests/test_slice3_identity.py` has 64 cases: 57 at c3aac8a, and 7 added in
+the review of c3aac8a (§6). Thirty-eight mutations are run
 by `db/dev/mutate_identity.py`, through the shared runner, and **every one
 fails at least one test**. The output, bound to its commit and fingerprint, is
 `docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt`.
@@ -152,3 +155,86 @@ with an alias made by this step's API, not by fixture SQL:
   evidence ("canonical or alias?"), are step 8's.
 - No matching exists to consume the resolver: mandatory test 7 stays narrowed
   (plan §6.4).
+
+## 6. The review of c3aac8a — a blocker, and a race measured then closed
+
+### 6.1 The review blocker: deciding a pair after one of its properties became an alias
+
+**The reviewer's finding** (from reading the code). The alias-structure
+checks ran only in the CONFIRMED_SAME branch. So given A–B and B–C, with B
+then confirmed an alias of A, a CONFIRMED_DISTINCT or UNSURE decision on B–C
+was accepted.
+
+**Reproduced over HTTP on PostgreSQL** on the c3aac8a `identity.py`, with the
+new test kept:
+- DISTINCT and UNSURE were **accepted (200)**;
+- the two SAME variants were already refused, by the SAME-only pre-checks.
+
+**Fixed.** `_lock_pair_and_check` now runs for EVERY decision:
+1. it locks both properties in id order;
+2. it refuses (409 `IDENTITY_ALIAS_NOT_CANONICAL`) if either is an alias;
+3. for SAME it also refuses when the property to become the alias already
+   acts as canonical.
+
+**The test** (`test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided`,
+4 cases):
+- the candidates exist BEFORE the alias;
+- each refusal is a typed 409;
+- the candidate row, its audit rows and the alias table are unchanged;
+- no idempotency record is stored under the key;
+- the SAME key then serves a valid review of the canonical pair A–C.
+
+**What happens to such a candidate.** It stays PENDING and cannot be
+decided. The question is re-posed by generating on the canonical record,
+which now proposes A–C.
+
+### 6.2 Generation's window: measured before the fix
+
+**The reviewer's question.** Between reading `_BLOCKED_PAIRS` and inserting,
+generation neither locked the properties nor re-checked aliases. Can a review
+that commits an alias inside that window lead to a candidate that pairs the
+alias?
+
+**Measured, on the c3aac8a code: yes.** The generator was paused after
+reading its pairs, and a review then made B an alias of A and committed.
+Resumed, the generator inserted C–B and returned it as a new candidate. The
+harness and its output are in
+`docs/gate/evidence/STEP7-GENERATION-RACE-BEFORE-FIX.txt`.
+
+**Fixed: `_lock_and_recheck`**, in the same transaction, after reading the
+pairs:
+- every involved property is locked in ONE statement, in id order, with
+  `FOR KEY SHARE`. That mode conflicts with the review's `FOR UPDATE` and not
+  with an ordinary property UPDATE (PostgreSQL 16 documentation, §13.3.2).
+  One ordered acquisition does not deadlock with a review, which also locks
+  in id order;
+- aliases are then read AGAIN. A pair with an alias is dropped, and a focus
+  property that became an alias is the typed 409.
+
+**Two windows, two tests.**
+
+| Window | Test | What it shows | On the c3aac8a code |
+|---|---|---|---|
+| (a) BEFORE the lock | `test_generation_rechecks_aliases_after_its_lock`; `…became_an_alias_in_the_window_is_409` | the review commits the alias inside the window; the re-check drops every pair with B, or refuses a focus B | fails (structurally: the function did not exist); the behavioral evidence is the measurement above |
+| (b) AFTER the lock, BEFORE the INSERT | `test_a_review_waits_for_a_generation_between_its_lock_and_its_insert` | the review WAITS on generation (witnessed by `pg_blocking_pids`), so C–B is written while B is still canonical, before the alias | **fails**: `waited=False`, the review committed inside the window |
+
+**A test of ours that proved nothing, found and rewritten.** The first
+version of the window-(b) test paused AFTER the generator's INSERT. It passed
+on the unfixed code, because an INSERT's foreign keys already take
+`FOR KEY SHARE` on the referenced property rows (PostgreSQL 16
+documentation, §13.3.2). The pause was moved inside `_candidate_for_pair`,
+which runs after the lock and before the INSERT. Since then the test fails on
+the unfixed code, and I36 (the lock removed) fails it.
+
+**Mutations added:**
+
+| Mutation | Change | Test that fails |
+|---|---|---|
+| I35 | the check only for SAME (the reported defect) | the DISTINCT and UNSURE cases |
+| I36 | generation's lock removed | window (b) |
+| I37 | the re-check removed | window (a) |
+| I38 | the focus re-check removed | the focus test |
+
+**The lesson carried forward.** Passing generation mutations do not measure a
+window that no test enters. The reviewer said so, and it was true of our
+first window-(b) test as well.

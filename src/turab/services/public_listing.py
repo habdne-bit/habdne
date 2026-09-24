@@ -158,9 +158,8 @@ def list_public_properties(
     `location_id` matches the location AND every location beneath it
     (G3-14). `locations` is a hierarchy (WILAYA > COMMUNE > AREA > KSAR in the
     seed), and properties are recorded at its lower levels, so an exact match
-    would return nothing for a wilaya or a commune. This was implemented after
-    the question put to the reviewer was declined, and remains subject to
-    their review.
+    would return nothing for a wilaya or a commune. This is approved decision
+    G3-14 (step-6 note, §4).
     """
     rows = session.execute(text(_PAGE), {
         "listable_availability": list(LISTABLE_AVAILABILITY),

@@ -233,6 +233,7 @@ def generate(session: Session, *, property_id: uuid.UUID | None,
                                "candidates for its canonical property")
 
     pairs = session.execute(text(_BLOCKED_PAIRS), {"focus": property_id}).all()
+    pairs = _lock_and_recheck(session, pairs, property_id)
     facts = {r["property_id"]: r for r in session.execute(
         text(_FACTS), {"ids": list({x for pair in pairs for x in pair})}).mappings()}
 
@@ -270,6 +271,39 @@ def generate(session: Session, *, property_id: uuid.UUID | None,
         if existing["review_status"] == "PENDING_REVIEW":
             out.append(existing)
     return out
+
+
+def _lock_and_recheck(session: Session, pairs, focus: uuid.UUID | None):
+    """Close the window between reading the pairs and inserting (review of
+    c3aac8a, measured before this fix: a review that made B an alias inside
+    that window let generation insert a candidate pairing B).
+
+    - Every property involved is locked in ONE statement, in id order, with
+      `FOR KEY SHARE`. That mode conflicts with the review's `FOR UPDATE` and
+      not with an ordinary property UPDATE (PostgreSQL 16 documentation,
+      §13.3.2, the row-lock conflict table). A review already holding a pair
+      is waited for. A review that comes later waits for this transaction,
+      and then meets an existing candidate, which it refuses to decide once a
+      member is an alias.
+    - One ordered acquisition cannot deadlock with a review, which also locks
+      in id order.
+    - After the lock, aliases are read AGAIN: a pair with an alias is
+      dropped, and a focus property that became an alias is the typed 409.
+    """
+    involved = sorted({x for pair in pairs for x in pair} | ({focus} if focus else set()))
+    if not involved:
+        return pairs
+    session.execute(text("""
+        SELECT property_id FROM turab.properties
+         WHERE property_id = ANY(:ids) ORDER BY property_id FOR KEY SHARE"""),
+        {"ids": involved})
+    aliased = set(session.execute(text("""
+        SELECT alias_property_id FROM turab.property_identity_aliases
+         WHERE alias_property_id = ANY(:ids)"""), {"ids": involved}).scalars())
+    if focus is not None and focus in aliased:
+        raise NotCanonical("this property is an identity alias; generate "
+                           "candidates for its canonical property")
+    return [(a, b) for a, b in pairs if a not in aliased and b not in aliased]
 
 
 # --- review ------------------------------------------------------------------
@@ -312,11 +346,15 @@ def review(session: Session, *, candidate_id: uuid.UUID, decision: str,
                       "omit it or send null")
     _reason(session, reason_code)
 
+    # EVERY decision, not only CONFIRMED_SAME (review of c3aac8a): a pair
+    # one of whose members has since become an alias is no longer a question
+    # about two canonical records, and is not decided.
+    _lock_pair_and_check(session, pair=pair, decision=decision,
+                         canonical=canonical_property_id)
     before = audit_rows.row_json(session, "property_identity_candidates", candidate_id)
     tasks: list[uuid.UUID] = []
     if decision == "CONFIRMED_SAME":
         alias = pair[1] if canonical_property_id == pair[0] else pair[0]
-        _lock_and_check_structure(session, alias=alias, canonical=canonical_property_id)
         # 1. The alias FIRST (trg_identity_same_requires_alias).
         session.execute(text("""
             INSERT INTO turab.property_identity_aliases
@@ -357,34 +395,40 @@ def review(session: Session, *, candidate_id: uuid.UUID, decision: str,
     return {**row, "review_tasks": tasks}
 
 
-def _lock_and_check_structure(session: Session, *, alias: uuid.UUID,
-                              canonical: uuid.UUID) -> None:
-    """Row locks on BOTH properties, in id order (no deadlock between two
-    reviews touching the same pair), then the checks `enforce_identity_alias`
-    would make. They are made after the locks, so two concurrent reviews
-    cannot both pass them and build a chain."""
+def _lock_pair_and_check(session: Session, *, pair, decision: str,
+                         canonical: uuid.UUID | None) -> None:
+    """Row locks on BOTH properties of the pair, in id order (no deadlock
+    between two reviews, or with generation), then the checks, made AFTER the
+    locks so that a concurrent review or generation cannot slip between them.
+
+    For every decision: neither property may be an alias. For CONFIRMED_SAME
+    also: the property that becomes the alias may not already be a canonical
+    record (`enforce_identity_alias`, ADR-03: no chains).
+    """
     session.execute(text("""
         SELECT property_id FROM turab.properties
          WHERE property_id IN (:x, :y) ORDER BY property_id FOR UPDATE"""),
-        {"x": alias, "y": canonical})
-    facts = session.execute(text("""
-        SELECT EXISTS (SELECT 1 FROM turab.property_identity_aliases
-                        WHERE alias_property_id = :alias)      AS alias_is_alias,
-               EXISTS (SELECT 1 FROM turab.property_identity_aliases
-                        WHERE alias_property_id = :canon)      AS canon_is_alias,
-               EXISTS (SELECT 1 FROM turab.property_identity_aliases
-                        WHERE canonical_property_id = :alias)  AS alias_is_canonical"""),
-        {"alias": alias, "canon": canonical}).mappings().one()
-    if facts["canon_is_alias"]:
-        raise NotCanonical("the chosen canonical property is itself an identity "
-                           "alias; choose its canonical record")
-    if facts["alias_is_alias"]:
-        raise NotCanonical("the other property of the pair is already an alias "
-                           "of a canonical record")
-    if facts["alias_is_canonical"]:
-        raise NotCanonical("the other property of the pair already acts as a "
-                           "canonical record; it cannot become an alias without "
-                           "consolidating its aliases explicitly")
+        {"x": pair[0], "y": pair[1]})
+    aliased = set(session.execute(text("""
+        SELECT alias_property_id FROM turab.property_identity_aliases
+         WHERE alias_property_id IN (:x, :y)"""), {"x": pair[0], "y": pair[1]}).scalars())
+    if aliased:
+        if decision == "CONFIRMED_SAME" and canonical in aliased:
+            raise NotCanonical("the chosen canonical property is itself an identity "
+                               "alias; choose its canonical record")
+        raise NotCanonical("a property of this pair has become an identity alias; "
+                           "the candidate is no longer decided; generate candidates "
+                           "for its canonical record")
+    if decision == "CONFIRMED_SAME":
+        alias = pair[1] if canonical == pair[0] else pair[0]
+        acts_as_canonical = session.execute(text("""
+            SELECT EXISTS (SELECT 1 FROM turab.property_identity_aliases
+                            WHERE canonical_property_id = :alias)"""),
+            {"alias": alias}).scalar_one()
+        if acts_as_canonical:
+            raise NotCanonical("the other property of the pair already acts as a "
+                               "canonical record; it cannot become an alias without "
+                               "consolidating its aliases explicitly")
 
 
 #: Open work pointing at the new alias.

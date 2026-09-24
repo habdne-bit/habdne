@@ -219,9 +219,10 @@ class PublicPropertySummary(_Strict):
       about binary representation.
     - `local_location_detail` was copied unconditionally. Developer Spec §23,
       invariant 11: "Public visibility does not mean every detail may be
-      shared; sharing_scope governs the detail." No field-to-scope mapping is
-      decided (G3-12), so this free text is withheld. The field stays declared,
-      because the contract declares it.
+      shared; sharing_scope governs the detail." Approved decision G3-12:
+      this free text is withheld, and the numeric areas are kept, in the
+      public list. The field stays declared, because the contract declares it.
+      The opportunity display policy is a separate, open matter.
     """
 
     property_id: uuid.UUID
@@ -245,7 +246,7 @@ class PublicPropertySummary(_Strict):
             property_id=row["property_id"],
             property_type=str(row["property_type"]),
             canonical_location_id=row.get("canonical_location_id"),
-            # G3-12: withheld until a sharing_scope mapping is decided.
+            # Approved decision G3-12: withheld from the public projection.
             local_location_detail=None,
             # `float` fields: Pydantic converts the column's Decimal.
             land_area_m2=row.get("land_area_m2"),

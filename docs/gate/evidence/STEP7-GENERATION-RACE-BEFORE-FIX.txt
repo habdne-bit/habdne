@@ -1,0 +1,63 @@
+TURAB — step 7: generation's window, MEASURED BEFORE THE FIX (review of c3aac8a)
+======================================================================
+Code measured : src/turab/services/identity.py as committed at
+                c3aac8a1785cbb9b316f4bd45fe539e60fe6528c (the working tree was that commit,
+                clean, PLUS the temporary measuring test file below; tests/ is inside the
+                source fingerprint, so the fingerprint during the run was not c3aac8a's
+                647607b9..., and none is claimed for it)
+Server        : PostgreSQL 16.13
+Question      : a review commits B as an alias of A while generation (focus C) is paused
+                after reading _BLOCKED_PAIRS and before inserting. Is C-B inserted?
+Answer        : YES. T1 returned C-B as a new candidate; has_alias=True.
+
+--- output ---
+MEASURE t1_returned=[('00250167-addc-4581-ae44-1c74b4274136', '2fd52fe9-ef72-4185-9cb1-a5293b2dcd75'), ('00250167-addc-4581-ae44-1c74b4274136', 'f363aaef-ad77-4aad-9bee-bd1936ef894d')]
+MEASURE B=2fd52fe9-ef72-4185-9cb1-a5293b2dcd75 is now alias of A=f363aaef-ad77-4aad-9bee-bd1936ef894d
+MEASURE candidates on B inserted by T1 after B became an alias: [{'a': '00250167-addc-4581-ae44-1c74b4274136', 'b': '2fd52fe9-ef72-4185-9cb1-a5293b2dcd75', 'has_alias': True}]
+1 passed, 2 warnings in 4.33s
+
+--- the measuring test, verbatim (run as tests/test_zz_measure_gen_race.py, then removed) ---
+"""TEMPORARY measurement (review of c3aac8a): can generation insert a candidate
+for a property that became an alias between reading the pairs and inserting?"""
+import threading, uuid
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from tests.test_slice3_identity import (client, sink, _location, _property, _pending,  # noqa: F401
+                                        _one, _all)
+from turab.db.session import audited_transaction
+from turab.services import identity
+
+
+def test_measure(client, ids, engine, monkeypatch):
+    loc = _location(engine)
+    a, b, c = (uuid.UUID(_property(client, ids, loc)) for _ in range(3))
+    ab = uuid.UUID(_pending(engine, a, b))          # A-B exists; B-C does not yet
+    in_window, go_on = threading.Event(), threading.Event()
+    original = identity._candidate_for_pair
+    def paused(session, x, y):
+        if not in_window.is_set():
+            in_window.set(); go_on.wait(30)
+        return original(session, x, y)
+    monkeypatch.setattr(identity, "_candidate_for_pair", paused)
+    out = {}
+    def t1():
+        try:
+            with Session(bind=engine, future=True) as s, audited_transaction(s, ids.ACC_OPERATOR):
+                rows = identity.generate(s, property_id=c, algorithm_version=None)
+            out["t1"] = [(str(r["property_a_id"]), str(r["property_b_id"])) for r in rows]
+        except Exception as exc:
+            out["t1"] = f"raised {type(exc).__name__}: {exc}"
+    th = threading.Thread(target=t1); th.start()
+    assert in_window.wait(30)
+    with Session(bind=engine, future=True) as s, audited_transaction(s, ids.ACC_REVIEWER):
+        identity.review(s, candidate_id=ab, decision="CONFIRMED_SAME", canonical_property_id=a,
+                        reason_code=None, reason_text=None, reviewer_account_id=ids.ACC_REVIEWER)
+    go_on.set(); th.join(30)
+    rows = _all(engine, """SELECT c.property_a_id::text AS a, c.property_b_id::text AS b,
+                                  EXISTS (SELECT 1 FROM turab.property_identity_aliases x
+                                           WHERE x.alias_property_id IN (c.property_a_id, c.property_b_id)) AS has_alias
+                             FROM turab.property_identity_candidates c
+                            WHERE :bb IN (c.property_a_id, c.property_b_id)
+                              AND c.identity_candidate_id <> :ab""", bb=b, ab=ab)
+    print(f"\nMEASURE t1_returned={out['t1']}\nMEASURE B={b} is now alias of A={a}\n"
+          f"MEASURE candidates on B inserted by T1 after B became an alias: {rows}")

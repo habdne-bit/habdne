@@ -434,6 +434,7 @@ def test_the_chosen_canonical_may_not_itself_be_an_alias(client, ids, engine):
     cid = _pending(engine, alias, third)
     r = _review(client, ids, cid, decision="CONFIRMED_SAME", canonical_property_id=alias)
     assert r.status_code == 409 and r.json()["code"] == "IDENTITY_ALIAS_NOT_CANONICAL", r.text
+    assert "itself an identity alias" in r.json()["detail"], r.text
 
 
 def test_an_alias_may_not_become_an_alias_again(client, ids, engine):
@@ -456,6 +457,240 @@ def test_a_canonical_record_may_not_become_an_alias(client, ids, engine):
     assert r.status_code == 409 and r.json()["code"] == "IDENTITY_ALIAS_NOT_CANONICAL", r.text
     assert _one(engine, "SELECT review_status::text FROM turab.property_identity_candidates "
                         "WHERE identity_candidate_id = :c", c=cid) == "PENDING_REVIEW"
+
+
+# --- review of c3aac8a: a candidate that existed BEFORE one of its properties
+# became an alias ---------------------------------------------------------------
+
+def _idempotency_rows(engine, key):
+    return _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                        "WHERE idempotency_key = :k", k=key)
+
+
+@pytest.mark.parametrize("decision,canonical", [
+    ("CONFIRMED_DISTINCT", None), ("UNSURE", None),
+    ("CONFIRMED_SAME", "b"), ("CONFIRMED_SAME", "c")])
+def test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided(
+        client, ids, engine, decision, canonical):
+    """A–B and B–C are generated while all three are canonical. Then B is
+    confirmed an alias of A. Deciding B–C, by ANY decision, is a typed 409:
+    nothing is written, and the Idempotency-Key is not consumed (the same key
+    then serves another, valid, review)."""
+    loc = _location(engine)
+    a, b, c = (_property(client, ids, loc) for _ in range(3))
+    pending = {frozenset((x["property_a_id"], x["property_b_id"])): x["identity_candidate_id"]
+               for x in _generate(client, ids, b)}
+    ab, bc = pending[frozenset((a, b))], pending[frozenset((b, c))]
+    assert _review(client, ids, ab, decision="CONFIRMED_SAME",
+                   canonical_property_id=a).status_code == 200
+    before = _all(engine, """SELECT review_status::text AS s, reviewer_account_id,
+                                    reviewed_at, review_reason_code
+                               FROM turab.property_identity_candidates
+                              WHERE identity_candidate_id = :c""", c=bc)
+    audits = _one(engine, "SELECT count(*) FROM turab.audit_log WHERE entity_id = :c", c=bc)
+    h = _h(ids.ACC_REVIEWER)
+    body = {"decision": decision}
+    if canonical:
+        body["canonical_property_id"] = {"b": b, "c": c}[canonical]
+    r = client.post(f"/identity/candidates/{bc}/review", headers=h, json=body)
+    assert r.status_code == 409 and r.json()["code"] == "IDENTITY_ALIAS_NOT_CANONICAL", r.text
+    assert _all(engine, """SELECT review_status::text AS s, reviewer_account_id,
+                                  reviewed_at, review_reason_code
+                             FROM turab.property_identity_candidates
+                            WHERE identity_candidate_id = :c""", c=bc) == before
+    assert _one(engine, "SELECT count(*) FROM turab.audit_log WHERE entity_id = :c",
+                c=bc) == audits
+    assert _one(engine, "SELECT count(*) FROM turab.property_identity_aliases "
+                        "WHERE source_identity_candidate_id = :c", c=bc) == 0
+    assert _idempotency_rows(engine, h["Idempotency-Key"]) == 0
+    # The same key, on a valid review of the canonical pair A–C.
+    ac = _generate(client, ids, c)[0]
+    assert {ac["property_a_id"], ac["property_b_id"]} == {a, c}
+    ok = client.post(f"/identity/candidates/{ac['identity_candidate_id']}/review",
+                     headers=h, json={"decision": "UNSURE"})
+    assert ok.status_code == 200, ok.text
+
+
+def test_generation_rechecks_aliases_after_its_lock(client, ids, engine, monkeypatch):
+    """Window (a), BEFORE the lock (review of c3aac8a). Generation has read its
+    pairs; a review then makes B an alias and COMMITS. The re-check after the
+    lock drops every pair with B. Measured before the fix: a candidate C–B
+    was inserted (docs/gate/evidence/STEP7-GENERATION-RACE-BEFORE-FIX.txt)."""
+    from turab.db.session import audited_transaction
+    from turab.services import identity
+
+    loc = _location(engine)
+    a, b, c = (uuid.UUID(_property(client, ids, loc)) for _ in range(3))
+    ab = uuid.UUID(_pending(engine, a, b))
+    in_window, go_on = threading.Event(), threading.Event()
+    original = identity._lock_and_recheck
+
+    def paused(session, pairs, focus):
+        in_window.set()
+        assert go_on.wait(30)
+        return original(session, pairs, focus)
+
+    monkeypatch.setattr(identity, "_lock_and_recheck", paused)
+    out = {}
+
+    def generator():
+        try:
+            with Session(bind=engine, future=True) as s:
+                with audited_transaction(s, ids.ACC_OPERATOR):
+                    rows = identity.generate(s, property_id=c, algorithm_version=None)
+            out["generated"] = [{str(r["property_a_id"]), str(r["property_b_id"])}
+                                for r in rows]
+        except Exception as exc:
+            out["generated"] = exc
+
+    t = threading.Thread(target=generator)
+    t.start()
+    assert in_window.wait(30)
+    with Session(bind=engine, future=True) as s:
+        with audited_transaction(s, ids.ACC_REVIEWER):
+            identity.review(s, candidate_id=ab, decision="CONFIRMED_SAME",
+                            canonical_property_id=a, reason_code=None, reason_text=None,
+                            reviewer_account_id=ids.ACC_REVIEWER)
+    go_on.set()
+    t.join(60)
+    assert not t.is_alive()
+    assert out["generated"] == [{str(a), str(c)}], out
+    assert _one(engine, """SELECT count(*) FROM turab.property_identity_candidates
+                            WHERE :b IN (property_a_id, property_b_id)
+                              AND identity_candidate_id <> :ab""", b=b, ab=ab) == 0
+
+
+def test_generation_for_a_property_that_became_an_alias_in_the_window_is_409(
+        client, ids, engine, monkeypatch):
+    """Window (a) again, where the FOCUS property is the one aliased: the
+    re-check after the lock refuses it with the typed 409, as the check at
+    entry does."""
+    from turab.db.session import audited_transaction
+    from turab.services import identity
+
+    loc = _location(engine)
+    a, b = (uuid.UUID(_property(client, ids, loc)) for _ in range(2))
+    ab = uuid.UUID(_pending(engine, a, b))
+    in_window, go_on = threading.Event(), threading.Event()
+    original = identity._lock_and_recheck
+
+    def paused(session, pairs, focus):
+        in_window.set()
+        assert go_on.wait(30)
+        return original(session, pairs, focus)
+
+    monkeypatch.setattr(identity, "_lock_and_recheck", paused)
+    out = {}
+
+    def generator():
+        try:
+            with Session(bind=engine, future=True) as s:
+                with audited_transaction(s, ids.ACC_OPERATOR):
+                    out["generated"] = identity.generate(s, property_id=b,
+                                                         algorithm_version=None)
+        except Exception as exc:
+            out["generated"] = exc
+
+    t = threading.Thread(target=generator)
+    t.start()
+    assert in_window.wait(30)
+    with Session(bind=engine, future=True) as s:
+        with audited_transaction(s, ids.ACC_REVIEWER):
+            identity.review(s, candidate_id=ab, decision="CONFIRMED_SAME",
+                            canonical_property_id=a, reason_code=None, reason_text=None,
+                            reviewer_account_id=ids.ACC_REVIEWER)
+    go_on.set()
+    t.join(60)
+    assert isinstance(out["generated"], identity.NotCanonical), out
+
+
+def test_a_review_waits_for_a_generation_between_its_lock_and_its_insert(
+        client, ids, engine, monkeypatch):
+    """Window (b): AFTER generation's lock and BEFORE its INSERT.
+
+    The pause is inside `_candidate_for_pair`, which runs after
+    `_lock_and_recheck` and before the INSERT. A pause AFTER the INSERT
+    would prove nothing about the explicit lock: the INSERT's foreign keys
+    already take `FOR KEY SHARE` on B and C. A first version of this test
+    paused there, and passed on the unfixed code.
+
+    A review making B an alias must WAIT on generation's lock (witnessed by
+    `pg_blocking_pids`), so the candidate B–C is written while B is still
+    canonical. Without the lock, the review commits inside the window and
+    the candidate is written after the alias."""
+    from turab.db.session import audited_transaction
+    from turab.services import identity
+
+    loc = _location(engine)
+    a, b, c = (uuid.UUID(_property(client, ids, loc)) for _ in range(3))
+    ab = uuid.UUID(_pending(engine, a, b))
+    original = identity._candidate_for_pair
+    in_window, finished, release = threading.Event(), threading.Event(), threading.Event()
+    pids, out = {}, {}
+
+    def paused(session, x, y):
+        if not in_window.is_set():
+            in_window.set()
+            release.wait(30)
+        return original(session, x, y)
+
+    monkeypatch.setattr(identity, "_candidate_for_pair", paused)
+
+    def generator():
+        try:
+            with Session(bind=engine, future=True) as s:
+                with audited_transaction(s, ids.ACC_OPERATOR):
+                    pids["generator"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                    identity.generate(s, property_id=c, algorithm_version=None)
+            out["generator"] = "committed"
+        except Exception as exc:
+            out["generator"] = exc
+
+    def reviewer():
+        assert in_window.wait(30)
+        try:
+            with Session(bind=engine, future=True) as s:
+                with audited_transaction(s, ids.ACC_REVIEWER):
+                    pids["review"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                    identity.review(s, candidate_id=ab, decision="CONFIRMED_SAME",
+                                    canonical_property_id=a, reason_code=None,
+                                    reason_text=None, reviewer_account_id=ids.ACC_REVIEWER)
+            out["review"] = "committed"
+        except Exception as exc:
+            out["review"] = exc
+        finally:
+            finished.set()
+
+    def witness():
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and not finished.is_set():
+            if "review" in pids and "generator" in pids:
+                with Session(bind=engine, future=True) as s:
+                    blockers = s.execute(text("SELECT pg_blocking_pids(:p)"),
+                                         {"p": pids["review"]}).scalar_one()
+                if pids["generator"] in blockers:
+                    out["waited"] = True
+                    break
+            time.sleep(0.005)
+        out.setdefault("waited", False)
+        release.set()
+
+    threads = [threading.Thread(target=f) for f in (generator, reviewer, witness)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(60)
+    assert not any(t.is_alive() for t in threads)
+    assert out["waited"] is True, f"the review did not wait for the generation: {_said(out)}"
+    assert out["generator"] == "committed" and out["review"] == "committed", _said(out)
+    order = _all(engine, """SELECT c.generated_at < x.resolved_at AS before_alias
+                              FROM turab.property_identity_candidates c,
+                                   turab.property_identity_aliases x
+                             WHERE x.alias_property_id = :b
+                               AND LEAST(c.property_a_id, c.property_b_id) = LEAST(:b, :c)
+                               AND GREATEST(c.property_a_id, c.property_b_id)
+                                   = GREATEST(:b, :c)""", b=b, c=c)
+    assert order == [{"before_alias": True}], order
 
 
 # --- the corrective effect (ADR-03, E04) -------------------------------------------

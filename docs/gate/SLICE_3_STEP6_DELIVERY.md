@@ -88,7 +88,7 @@ code, first rendered over HTTP by this step):
 |---|---|---|---|
 | `availability` passed any value, including `TEMPORARILY_UNAVAILABLE` and `UNAVAILABLE`, which the contract's enum does not declare | the contract's `PublicPropertySummary.availability` enum | a value outside the enum is omitted, never rendered | `test_the_dto_never_renders_an_availability_the_contract_does_not_declare` · P20 |
 | the areas were `Decimal` | Pydantic 2.13.5 serializes `Decimal("220.00")` as `"220.00"`, a JSON **string** (measured); the contract declares `number` | typed `float`, so they serialize as JSON numbers. What the tests establish is that the JSON number written equals the value shown (`220.0`, `9999999999.99`, `0.01`). **No claim is made about binary representation** (corrected in the review of 3a53b0a) | `test_areas_are_json_numbers_equal_to_the_column` · P21 |
-| `local_location_detail` copied unconditionally | Developer Spec §23 invariant 11 | withheld pending G3-12 (§4) | `test_the_local_location_detail_is_withheld_pending_g3_12` · P19 |
+| `local_location_detail` copied unconditionally | Developer Spec §23 invariant 11 | withheld, by approved decision G3-12 (§4) | `test_the_local_location_detail_is_withheld_by_decision_g3_12` · P19 |
 
 **The floor, redaction and schema conformance.**
 - **Mandatory test 2, public half, over HTTP:**
@@ -148,66 +148,57 @@ code, first rendered over HTTP by this step):
    - It does not call `PolicyTable.check_role` with no subject, which for a
      non-public policy would be an `AttributeError`, i.e. a 500.
 
-## 4. Findings for decision
+## 4. Decisions G3-12, G3-13 and G3-14 — APPROVED
 
-### G3-12 · `sharing_scope` and the public projection
+**A correction to our own record** (review of c3aac8a). The note at c3aac8a
+said two things that were wrong:
+- that the G3-14 question "was declined" and the option was implemented
+  "subject to review";
+- that G3-12 and G3-13 still awaited a decision.
 
-Developer Spec §23, invariant 11: "Public visibility لا تعني أن كل التفاصيل
-قابلة للمشاركة؛ sharing_scope يحكم التفصيل." The rule is stated, but no
-field-to-scope mapping exists.
-- `permission_scope` is set **per offer**, while `local_location_detail` and
-  the areas belong to the **property**.
-- The order of the three scopes is not declared.
+The reviewer's reply to 3a53b0a had decided all three. The subtree option it
+approved is the one implemented. The three are recorded here as approved
+decisions.
 
-**Delivered (the conservative reading):**
-- the free-text `local_location_detail` is withheld at every scope, since it is
-  the field most likely to locate a home exactly;
-- the areas are shown exactly, as `PublicPropertySummary` declares them.
+### G3-12 · `sharing_scope` and the public projection — APPROVED
 
-**Options.**
-- (a) Keep withholding `local_location_detail`.
-- (b) Show it only when every projected offer carries a scope that permits
-  details. This needs the scopes' order decided.
-- (c) Treat consent to public listing as consent to every declared field.
+**Decision:**
+- `local_location_detail` is withheld from the public list;
+- the numeric areas are kept;
+- **both in the public list only.**
 
-A related observation, not decided here: the opportunity code's `SUMMARY_ONLY`
-comment speaks of "area **bands**", and no code implements bands.
+The background is Developer Spec §23, invariant 11: "Public visibility لا تعني
+أن كل التفاصيل قابلة للمشاركة؛ sharing_scope يحكم التفصيل." The rule is stated
+without a field-to-scope mapping. `permission_scope` is set per offer, while
+the detail and the areas belong to the property.
 
-### G3-13 · identity aliases in the public list
+**The opportunity display policy is a separate matter, not decided here.**
+The opportunity code's `SUMMARY_ONLY` comment speaks of "area **bands**", and
+no code implements bands. It remains open for the Matching and opportunity
+slices.
 
-A property recorded as an alias of another is **not listed**, and its offers
-are **not folded** into the canonical record
-(`test_an_alias_is_not_listed_and_its_offers_are_not_folded_in`, P13).
-Folding would move a party's consented offer onto a record it did not name.
+### G3-13 · identity aliases in the public list — APPROVED
 
-**Options.**
-- (a) As delivered.
-- (b) Fold an alias's listable offers into its canonical record.
-- (c) List both records.
+**Decision:** a property recorded as an alias of another is **not listed**,
+and its offers are **not moved** to the canonical record. Moving them would
+put a party's consented offer on a record it did not name.
 
-Step 7 (Identity Lite) creates aliases through the API. The integration
-test the review of 3a53b0a asked for is there, with an alias made by that API:
-`test_an_alias_made_through_the_api_leaves_the_public_list` (step-7 note, §4).
+- `test_an_alias_is_not_listed_and_its_offers_are_not_folded_in`, P13, with
+  a fixture alias;
+- `test_an_alias_made_through_the_api_leaves_the_public_list` (step-7 note,
+  §4), with an alias made through the step-7 API.
 
-### G3-14 · what `location_id` matches — implemented as subtree, for review
+### G3-14 · what `location_id` matches — APPROVED: the location and its subtree
 
 `locations` is a hierarchy (`parent_id`). The seed has four levels: 1 WILAYA,
-16 COMMUNE, 5 AREA, 8 KSAR. Properties are recorded at the lower levels; the
-fixture villa sits on a KSAR. The contract does not say whether `location_id`
-matches exactly or also matches what lies beneath it.
+16 COMMUNE, 5 AREA, 8 KSAR. Properties are recorded at the lower levels.
 
-**History.**
-- At 3a53b0a an exact match was delivered and raised as an open question.
-- The review of 3a53b0a asked for G3-14 to be treated.
-- The explicit choice put to the reviewer was declined.
-- So the recommended option is **implemented**, and remains subject to review.
-
-**Delivered: the location AND every location beneath it.**
+**Decision:** `location_id` matches the location and every location beneath
+it.
 - The mechanism is a recursive CTE over `parent_id`, inside the listing's
   single statement.
-- It uses `UNION`, not `UNION ALL`. `UNION` discards rows already produced, so
-  the recursion ends even on a cycle, which the schema does not forbid
-  (PostgreSQL 16 documentation, §7.8.2).
+- It uses `UNION`, not `UNION ALL`, so the recursion ends even on a cycle,
+  which the schema does not forbid (PostgreSQL 16 documentation, §7.8.2).
 - An unknown `location_id` matches nothing.
 
 | Test | Asserts | Mutation |
@@ -220,9 +211,6 @@ matches exactly or also matches what lies beneath it.
 plus location aliases". `location_aliases` maps **text** to a `location_id`,
 and the filter takes a UUID, so aliases play no part in it. That option was
 withdrawn.
-
-**If exact match is preferred:** P14b is exactly that change, and its two
-failing tests are what would be rewritten.
 
 ## 5. Observed outside this step, recorded and not changed
 
@@ -265,7 +253,7 @@ back to `Decimal`: 3 tests fail on `'220.00' == 220.0`.
 | Item | Where |
 |---|---|
 | the grant revocation date (`g.revoked_at IS NULL`), with a test changing only that column | §1 (correction note), P8b; reproduction on 3a53b0a: exactly that test fails |
-| G3-14 | §4: subtree match implemented after the question was declined; P14b |
+| G3-14 | §4: subtree match, the approved option; P14b |
 | the alias integration test with step 7 | step-7 note §4: `test_an_alias_made_through_the_api_leaves_the_public_list` |
 
 The two wordings were also corrected:
