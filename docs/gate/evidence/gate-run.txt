@@ -1,39 +1,27 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-09-24 06:53:26 UTC
-Commit      : 6b886c578d96a89d0cb57ff1a1ea4331ff584908
-Working tree: 3 uncommitted path(s) when this run started.
-              This log therefore describes the WORKING TREE, not the
-              commit above. Labels:
-                [gate-input] the gate READS it — a change here can
-                             change the result below
-                [source]     the source fingerprint covers it
-                [other]      NOT FOUND by the textual scan of the
-                             gate's call chain. This is not a proof
-                             that the gate does not read it: a path
-                             assembled at run time is invisible to
-                             the scan (gate_inputs.py, 'Limits')
-                [other] docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md
-                [other] docs/gate/evidence/TEST-RUN-PROVENANCE.txt
-                [other] docs/gate/evidence/junit-run.xml
-              (the output file this run writes, docs/gate/evidence/gate-run.txt, is not in
-              the snapshot: it is created after it was taken)
+Recorded    : 2026-09-24 07:20:53 UTC
+Commit      : 985bb78947d23f55c574e4d6537b0761c22f6fbc
+Working tree: clean when this run started
 Source fingerprint (db/dev/source_fingerprint.py):
-              36d83ca054f30902e83bfbc775042cfecadbf6e00b55928cef62f4497ae7bb34
+              66cec3b3930697f2838a3db85a88281c58a6db2d8722d2e14f4f9756231652f4
 Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 
 The gate output below is deterministic, but not of the frozen package
 alone: it is a function of every file the gate reads — the frozen
-package AND the effective contract and its corrections under
-docs/contract, which step 7 checks. Those inputs unchanged, the body is
-identical. The header is what binds this run to a tree; compare the
-fingerprint and the labels above, not the body.
+package, the corrections and approved addenda under docs/contract, the
+Contract Deltas under docs/gate each addendum is bound to by sha256, and
+the policy code under src/turab/auth that step 7 compares against. Those
+inputs unchanged, the body is identical. The header is what binds this
+run to a tree; compare the fingerprint and the labels above, not the body.
 
 Gate inputs, as derived by db/gate/gate_inputs.py from the call chain:
                 db/gate
                 docs/api
                 docs/contract
+                docs/gate
                 docs/handoff
+                src/turab
 -------------------------------------------------------
 
 
@@ -560,9 +548,10 @@ psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:561: NOTICE:  P
   "errors": []
 }
 
-[1m==> 7/8  Effective contract (frozen package + approved corrections)[0m
-PASS: docs/api/openapi_effective_v0.2.3.yaml is current (2 correction(s) applied)
+[1m==> 7/8  Effective contract (frozen package + approved corrections + approved additions)[0m
+PASS: docs/api/openapi_effective_v0.2.3.yaml is current (5 correction(s), adoption(s) and addition(s))
 PASS: docs/api/API_INVENTORY_GENERATED.md matches /home/user/habdne/docs/api/openapi_effective_v0.2.3.yaml
+PASS: effective contract, inventory and policy table hold the same 67 operations, with the same roles
 
 [1m==> 8/8  Baseline version consistency[0m
     schema filename                      0.2.3
