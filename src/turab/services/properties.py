@@ -358,3 +358,164 @@ def provenance_for(session: Session, property_id: uuid.UUID) -> list[Mapping[str
     return provenance.read(
         session, subject=provenance.Subject.PROPERTY, subject_id=property_id
     )
+
+
+# --- availability: reconfirmation and the staleness pass (plan §3.3, G3-3) --
+
+#: The seven values of the frozen `availability_status` enum.
+AVAILABILITY_VALUES = (
+    "AVAILABLE", "POTENTIALLY_AVAILABLE", "UNDER_DISCUSSION",
+    "TEMPORARILY_UNAVAILABLE", "UNAVAILABLE", "NEEDS_CONFIRMATION", "UNKNOWN",
+)
+
+#: Ratified rule 4: the ONLY values the staleness pass converts. `UNKNOWN`,
+#: `NEEDS_CONFIRMATION` and `UNAVAILABLE` are never touched — each has its own
+#: test, because a single "the others are untouched" assertion would pass on a
+#: predicate that excluded only one of them.
+STALE_CONVERTIBLE = ("AVAILABLE", "POTENTIALLY_AVAILABLE", "UNDER_DISCUSSION",
+                     "TEMPORARILY_UNAVAILABLE")
+
+
+class ConfirmationInTheFuture(PropertyError):
+    """Same rule as a REQUEST confirmation: a confirmation records something
+    that has already happened."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "VALIDATION_FAILED",
+            "confirmed_at cannot be in the future; a confirmation records "
+            "something that has already happened",
+        )
+
+
+def reconfirm_availability(
+    session: Session,
+    *,
+    property_id: uuid.UUID,
+    availability: str,
+    confirmed_at=None,
+    notes: str | None = None,
+    recorded_by_account_id: uuid.UUID | None,
+    channel: UpdateChannel,
+) -> Mapping[str, Any]:
+    """Record the availability that was confirmed, and when (ratified G3-3).
+
+    Rule 1: ANY value may follow ANY value — this records a fact, it does not
+    traverse an edge, so there is no transition table to consult.
+    Rule 2: the value is the one the caller STATES; nothing is restored from
+    memory. Rule 3: time, actor and channel are stamped, and the provenance
+    trail is written with the previous value.
+
+    Locked: the provenance records `before`, so the row must not change
+    between reading it and writing (R-S2-02). A write to an identity alias is
+    refused (decision F-2).
+    """
+    if availability not in AVAILABILITY_VALUES:
+        raise PropertyError("VALIDATION_FAILED",
+                            f"availability must be one of {list(AVAILABILITY_VALUES)}")
+    if confirmed_at is not None:
+        now = session.execute(text("SELECT clock_timestamp()")).scalar_one()
+        if confirmed_at > now:
+            raise ConfirmationInTheFuture()
+
+    before = _row(session, property_id, for_update=True)
+    refuse_alias(session, property_id)
+    session.execute(
+        text(
+            """UPDATE turab.properties
+                  SET current_availability = CAST(:a AS turab.availability_status),
+                      availability_last_confirmed_at = COALESCE(:at, clock_timestamp())
+                WHERE property_id = :p"""
+        ),
+        {"a": availability, "at": confirmed_at, "p": property_id},
+    )
+    after = _row(session, property_id)
+    provenance.record(
+        session,
+        subject=provenance.Subject.PROPERTY,
+        subject_id=property_id,
+        party_id=None,
+        changes={
+            "current_availability": availability,
+            "availability_last_confirmed_at":
+                after["availability_last_confirmed_at"].isoformat(),
+        },
+        previous=before,
+        recorded_by_account_id=recorded_by_account_id,
+        channel=channel,
+        note=notes,
+    )
+    return after
+
+
+def stale_available_properties(
+    session: Session, *, now=None, limit: int = 500
+) -> list[uuid.UUID]:
+    """Which properties the staleness pass WOULD convert. Reads only."""
+    from . import freshness
+
+    days, _ = freshness.property_threshold_days(session)
+    return list(session.execute(
+        text(
+            """SELECT property_id FROM turab.properties
+                WHERE current_availability::text = ANY(:convertible)
+                  AND availability_last_confirmed_at IS NOT NULL
+                  AND availability_last_confirmed_at
+                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
+                ORDER BY availability_last_confirmed_at, property_id
+                LIMIT :limit"""
+        ),
+        {"convertible": list(STALE_CONVERTIBLE), "now": now, "days": days,
+         "limit": limit},
+    ).scalars().all())
+
+
+def mark_stale_availability(
+    session: Session, *, now=None, limit: int = 500
+) -> list[uuid.UUID]:
+    """Stale availability becomes `NEEDS_CONFIRMATION` — for the four named
+    values only (ratified rule 4).
+
+    Staleness is measured on `availability_last_confirmed_at` against the
+    active policy's `freshness_threshold_days.property`, never a constant. A
+    property whose availability was NEVER confirmed (`NULL`) is not stale: it
+    has not gone out of date, it has not been put in date — the rule the
+    REQUEST pass already applies.
+
+    Same shape as the REQUEST pass, and for the same reason (R-S2-02): the
+    subquery SELECTS candidates with `FOR UPDATE SKIP LOCKED`, and the outer
+    `UPDATE` RE-ASSERTS every condition — the four-value set included — on
+    the row as it stands at the moment of writing. A property reconfirmed or
+    marked `UNAVAILABLE` between the sample and the write is therefore left
+    alone.
+
+    Not scheduled: like the request pass, this runs when someone runs
+    `db/dev/run_freshness_pass.py`. Nothing in this version schedules it.
+    """
+    from . import freshness
+
+    days, _ = freshness.property_threshold_days(session)
+    return list(session.execute(
+        text(
+            """UPDATE turab.properties p
+                  SET current_availability = 'NEEDS_CONFIRMATION'
+                 FROM (
+                      SELECT property_id FROM turab.properties
+                       WHERE current_availability::text = ANY(:convertible)
+                         AND availability_last_confirmed_at IS NOT NULL
+                         AND availability_last_confirmed_at
+                             < COALESCE(:now, clock_timestamp())
+                               - make_interval(days => :days)
+                       ORDER BY availability_last_confirmed_at, property_id
+                       LIMIT :limit
+                       FOR UPDATE SKIP LOCKED) AS candidate
+                WHERE p.property_id = candidate.property_id
+                  AND p.current_availability::text = ANY(:convertible)
+                  AND p.availability_last_confirmed_at IS NOT NULL
+                  AND p.availability_last_confirmed_at
+                      < COALESCE(:now, clock_timestamp()) - make_interval(days => :days)
+            RETURNING p.property_id"""
+        ),
+        {"convertible": list(STALE_CONVERTIBLE), "now": now, "days": days,
+         "limit": limit},
+    ).scalars().all())

@@ -15,16 +15,19 @@ customer/public DTOs". A customer may still SEND it — `OfferCreate` and
 it is simply never rendered back to a CUSTOMER audience, including the
 customer who sent it.
 
-`postOffersOfferIdReconfirm` is not here: it is step 4, with the `offer_terms`
-freshness policy it feeds (plan §3.4, §8).
+`postOffersOfferIdReconfirm` (step 4) writes both confirmation columns
+together; the `offer_terms` freshness policy reads only the commercial-terms
+one (plan §3.4).
 """
 from __future__ import annotations
 
 import uuid
 from typing import Annotated, Any
 
+from datetime import datetime
+
 from fastapi import APIRouter, Header, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...dto.boundaries import Audience, assert_no_forbidden_fields
 from ...services import offers as offer_service
@@ -86,6 +89,24 @@ class OfferPatch(_Body):
 class OfferStateCommand(_Body):
     status: str = Field(pattern=STATUS_PATTERN)
     reason_code: str | None = None
+
+
+class StateReconfirm(_Body):
+    """`StateReconfirm` — the body the request reconfirm also takes. The
+    R-S2-05b refusal of an offset-less `confirmed_at` is applied HERE and
+    tested on this endpoint, not assumed to carry over (plan §3.4)."""
+
+    confirmed_at: datetime = None  # type: ignore[assignment]
+    notes: str = None  # type: ignore[assignment]
+
+    @field_validator("confirmed_at")
+    @classmethod
+    def _an_instant(cls, value: datetime):
+        if value.tzinfo is None:
+            raise ValueError(
+                "must carry a timezone offset (for example 2026-01-01T12:00:00Z); "
+                "a local time with no offset does not identify a moment")
+        return value
 
 
 class OfferSourceLink(_Body):
@@ -280,6 +301,33 @@ def change_offer_state(request: Request, offer_id: uuid.UUID,
 
     return _run(request, command, "postOffersOfferIdState",
                 f"POST /offers/{offer_id}/state",
+                body.model_dump(mode="json", exclude_unset=True), handler, 200,
+                extra_errors=offer_service.OfferError)
+
+
+@router.post("/offers/{offer_id}/reconfirm", operation_id="postOffersOfferIdReconfirm")
+def reconfirm_offer(request: Request, offer_id: uuid.UUID, body: StateReconfirm,
+                    command: Command):
+    decision = command.authorize("postOffersOfferIdReconfirm")
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    scope = command.authorize_offer_scope(offer_id)
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=not command.is_staff,
+                          detail=scope.detail)
+
+    def handler(session):
+        row = offer_service.reconfirm(
+            session, offer_id=offer_id, confirmed_at=body.confirmed_at,
+            notes=body.notes, recorded_by_account_id=command.subject.account_id,
+            channel=_channel(command),
+        )
+        return 200, _view(row, _audience(command))
+
+    return _run(request, command, "postOffersOfferIdReconfirm",
+                f"POST /offers/{offer_id}/reconfirm",
                 body.model_dump(mode="json", exclude_unset=True), handler, 200,
                 extra_errors=offer_service.OfferError)
 

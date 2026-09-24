@@ -24,7 +24,9 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Header, Request
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...auth.loaders import ResourceKind
 from ...dto.boundaries import Audience, assert_no_forbidden_fields
@@ -96,6 +98,28 @@ class PropertyPatch(_Body):
     local_location_detail: str | None = None
     land_area_m2: JsonNumber | None = Field(default=None, gt=0)
     built_area_m2: JsonNumber | None = Field(default=None, gt=0)
+
+
+class PropertyReconfirm(_Body):
+    """The inline body of `postPropertiesPropertyIdReconfirm`.
+
+    `availability` is REQUIRED (ratified rule 2: the sender states the value;
+    nothing is restored from memory). `confirmed_at` and `notes` are
+    omissible and never null. `confirmed_at` must carry an offset (R-S2-05b).
+    """
+
+    availability: str = Field(pattern=AVAILABILITY_PATTERN)
+    confirmed_at: datetime = None  # type: ignore[assignment]
+    notes: str = None  # type: ignore[assignment]
+
+    @field_validator("confirmed_at")
+    @classmethod
+    def _an_instant(cls, value: datetime):
+        if value.tzinfo is None:
+            raise ValueError(
+                "must carry a timezone offset (for example 2026-01-01T12:00:00Z); "
+                "a local time with no offset does not identify a moment")
+        return value
 
 
 def _channel(command) -> UpdateChannel:
@@ -306,3 +330,33 @@ def read_property(request: Request, property_id: uuid.UUID, access: Access):
     # the database; exposing them through this operation is a contract
     # addition that has not been made.
     return _view(result.row)
+
+
+@router.post("/properties/{property_id}/reconfirm",
+             operation_id="postPropertiesPropertyIdReconfirm")
+def reconfirm_property(request: Request, property_id: uuid.UUID,
+                       body: PropertyReconfirm, command: Command):
+    """The ONLY path that changes availability (plan §3.3, ratified G3-3)."""
+    decision = command.authorize("postPropertiesPropertyIdReconfirm")
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    scope = command.authorize_property_scope(property_id)
+    if not scope.allowed:
+        return for_denial(scope.reason, trace_id_of(request),
+                          customer_scoped=not command.is_staff,
+                          detail=scope.detail)
+
+    def handler(session):
+        row = property_service.reconfirm_availability(
+            session, property_id=property_id, availability=body.availability,
+            confirmed_at=body.confirmed_at, notes=body.notes,
+            recorded_by_account_id=command.subject.account_id,
+            channel=_channel(command),
+        )
+        return 200, _command_view(row, command, "postPropertiesPropertyIdReconfirm")
+
+    return _run(request, command, "postPropertiesPropertyIdReconfirm",
+                f"POST /properties/{property_id}/reconfirm",
+                body.model_dump(mode="json", exclude_unset=True), handler, 200,
+                extra_errors=property_service.PropertyError)

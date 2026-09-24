@@ -559,3 +559,71 @@ def sources_of(session: Session, offer_id: uuid.UUID) -> list[Mapping[str, Any]]
                  WHERE offer_id = :o ORDER BY linked_at, source_id"""),
         {"o": offer_id},
     ).mappings().all()
+
+
+class ConfirmationInTheFuture(OfferError):
+    def __init__(self) -> None:
+        super().__init__(
+            "VALIDATION_FAILED",
+            "confirmed_at cannot be in the future; a confirmation records "
+            "something that has already happened",
+        )
+
+
+def reconfirm(
+    session: Session,
+    *,
+    offer_id: uuid.UUID,
+    confirmed_at=None,
+    notes: str | None = None,
+    recorded_by_account_id: uuid.UUID | None,
+    channel: UpdateChannel,
+) -> Mapping[str, Any]:
+    """Record that the offer's terms were confirmed (plan §3.4, ratified).
+
+    Writes `last_confirmed_at` AND `commercial_terms_last_confirmed_at`, to
+    the SAME instant, in one statement: v0.1 confirms them together. The
+    freshness policy (`offer_terms`) reads only the second.
+
+    It changes nothing else — not the terms, not the state. The offer state
+    machine (§3.5) has no edge that a confirmation takes; that is what
+    distinguishes this from the REQUEST reconfirm, whose §5.2 defines one.
+    """
+    if confirmed_at is not None:
+        now = session.execute(text("SELECT clock_timestamp()")).scalar_one()
+        if confirmed_at > now:
+            raise ConfirmationInTheFuture()
+
+    locked = session.execute(
+        text("SELECT offer_id FROM turab.property_offers "
+             "WHERE offer_id = :o FOR UPDATE"),
+        {"o": offer_id},
+    ).first()
+    if locked is None:
+        raise OfferNotFound()
+    before = _row(session, offer_id)
+    session.execute(
+        text(
+            """UPDATE turab.property_offers
+                  SET last_confirmed_at = s.at,
+                      commercial_terms_last_confirmed_at = s.at
+                 FROM (SELECT COALESCE(CAST(:at AS timestamptz), clock_timestamp()) AS at) s
+                WHERE offer_id = :o"""
+        ),
+        {"at": confirmed_at, "o": offer_id},
+    )
+    after = _row(session, offer_id)
+    stamp = after["commercial_terms_last_confirmed_at"].isoformat()
+    provenance.record(
+        session,
+        subject=provenance.Subject.OFFER,
+        subject_id=offer_id,
+        party_id=before["party_id"],
+        changes={"last_confirmed_at": stamp,
+                 "commercial_terms_last_confirmed_at": stamp},
+        previous=before,
+        recorded_by_account_id=recorded_by_account_id,
+        channel=channel,
+        note=notes,
+    )
+    return after

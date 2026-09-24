@@ -1,4 +1,5 @@
-"""Request freshness — read from the active policy, never hard-coded.
+"""Freshness — request, property availability and offer terms — read from
+the active policy, never hard-coded.
 
 Ref: Developer Reference Spec §15.1; `IMPLEMENTATION_SLICES_v0.2.md` Slice 2
 ("reconfirmation/freshness"); §5.2 REQUEST state machine.
@@ -82,24 +83,53 @@ def active_policy(session: Session) -> Mapping[str, Any]:
     return row
 
 
-def request_threshold_days(session: Session) -> tuple[int, str]:
-    """The configured request freshness window, and the policy it came from."""
+#: The keys of `rules.freshness_threshold_days` this code reads. Each is a
+#: separate policy, EXCEPT that an offer has one: `offer_terms`, evaluated on
+#: `commercial_terms_last_confirmed_at` (plan §3.4, ratified).
+THRESHOLD_KEYS = ("request", "property", "offer_terms")
+
+
+def threshold_days(session: Session, key: str) -> tuple[int, str]:
+    """The configured freshness window for `key`, and the policy it came from.
+
+    Refuses, rather than assuming a number, when the active policy carries no
+    usable value — the same rule `request_threshold_days` always had.
+    """
+    if key not in THRESHOLD_KEYS:
+        raise ValueError(f"no freshness policy is defined for {key!r}")
     policy = active_policy(session)
     rules = policy["rules"] or {}
     thresholds = rules.get("freshness_threshold_days") or {}
-    days = thresholds.get("request")
-    if not isinstance(days, int) or days <= 0:
+    days = thresholds.get(key)
+    if isinstance(days, bool) or not isinstance(days, int) or days <= 0:
         raise NoActiveFreshnessPolicy(
             f"policy {policy['version']} carries no usable "
-            "rules.freshness_threshold_days.request; refusing to assume one"
+            f"rules.freshness_threshold_days.{key}; refusing to assume one"
         )
     return days, policy["version"]
 
 
+def request_threshold_days(session: Session) -> tuple[int, str]:
+    """The configured request freshness window, and the policy it came from."""
+    return threshold_days(session, "request")
+
+
+def property_threshold_days(session: Session) -> tuple[int, str]:
+    """The availability freshness window (`freshness_threshold_days.property`)."""
+    return threshold_days(session, "property")
+
+
+def offer_terms_threshold_days(session: Session) -> tuple[int, str]:
+    """The ONE offer freshness window (`offer_terms`), plan §3.4."""
+    return threshold_days(session, "offer_terms")
+
+
 def evaluate(
-    session: Session, *, last_confirmed_at: datetime | None, now: datetime | None = None
+    session: Session, *, last_confirmed_at: datetime | None,
+    now: datetime | None = None, key: str = "request",
 ) -> RequestFreshness:
-    days, version = request_threshold_days(session)
+    """FRESH / STALE / NEVER_CONFIRMED against the policy for `key`."""
+    days, version = threshold_days(session, key)
     if last_confirmed_at is None:
         return RequestFreshness(
             FreshnessState.NEVER_CONFIRMED, days, None, version
@@ -111,6 +141,37 @@ def evaluate(
         else FreshnessState.FRESH
     )
     return RequestFreshness(state, days, last_confirmed_at, version)
+
+
+def evaluate_offer(
+    session: Session, offer_id: uuid.UUID, *, now: datetime | None = None
+) -> RequestFreshness:
+    """Offer freshness: `offer_terms`, measured on
+    `commercial_terms_last_confirmed_at` — NOT on `last_confirmed_at` (§3.4).
+
+    The two columns are written together by `/reconfirm` in v0.1, but they
+    are different facts, and the policy is declared on the commercial terms.
+    A row where they differ (imported, or written by something else) is
+    judged by the commercial-terms clock.
+    """
+    last = session.execute(
+        text("""SELECT commercial_terms_last_confirmed_at
+                  FROM turab.property_offers WHERE offer_id = :o"""),
+        {"o": offer_id},
+    ).scalar_one()
+    return evaluate(session, last_confirmed_at=last, now=now, key="offer_terms")
+
+
+def evaluate_property(
+    session: Session, property_id: uuid.UUID, *, now: datetime | None = None
+) -> RequestFreshness:
+    """Availability freshness: `property`, on `availability_last_confirmed_at`."""
+    last = session.execute(
+        text("""SELECT availability_last_confirmed_at
+                  FROM turab.properties WHERE property_id = :p"""),
+        {"p": property_id},
+    ).scalar_one()
+    return evaluate(session, last_confirmed_at=last, now=now, key="property")
 
 
 def evaluate_request(
