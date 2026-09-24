@@ -17,8 +17,8 @@ What that means for each operation:
 
   * **capture** is fully determined: a discovery record, never inventory
     (§4.3 "It is not an active REQUEST or PROPERTY");
-  * **convert** is REFUSED with a typed error naming what is undecided
-    (plan §7 condition 1). See `ConversionUndecided`;
+  * **convert** is REFUSED by decision G3-10 until its preconditions
+    exist. See `ConversionNotAvailable`;
   * **the queue** lists leads with the choices recorded in G3-10 §3, each of
     which is reversible and none of which writes anything.
 """
@@ -56,28 +56,30 @@ class LeadNotFound(LeadError):
         super().__init__("NOT_FOUND", "no such external lead")
 
 
-class ConversionUndecided(LeadError):
-    """Conversion is refused until the rules in G3-10 are decided.
+class ConversionNotAvailable(LeadError):
+    """Conversion is refused BY DECISION (G3-10, answered), until its
+    preconditions exist. Each clause below is a decision, not a gap:
 
-    The contract permits it "only after contact/consent/data gates", but:
-
-      * no operation records contact, so the contact gate has no input;
-      * a PROPERTY conversion would need a property-scoped consent binding,
-        which the database refuses without an active party–property relation
-        — and inferring a relation from a conversion is forbidden;
-      * `payload` is an open object whose mapping onto `RequestCreate` /
-        `PropertyCreate` is not declared.
-
-    Choosing answers to those here would be deciding a workflow in code.
+      * Q-1 (b): a consent is not evidence of a contact attempt. Conversion
+        stays refused until a path that records contact exists (Slice 8).
+      * Q-2 (b): a PROPERTY conversion is refused until an explicit path for
+        the party–property relation and the consent binding is defined; no
+        relation is inferred from a conversion.
+      * Q-3 (b): the conversion payload needs a schema declared by an approved
+        contract change before anything is implemented.
+      * Q-4 (c), for when it IS implemented: the lead records the produced
+        resource id, and the produced resource's provenance carries the lead's
+        `source_id`, both inside the conversion's transaction.
     """
 
     def __init__(self) -> None:
         super().__init__(
-            "EXTERNAL_LEAD_CONVERSION_UNDECIDED",
-            "converting an external lead is not available in this version: its "
-            "contact gate, its consent binding (for a PROPERTY, a binding the "
-            "database refuses without a party-property relation) and its "
-            "payload mapping are undecided (G3-10)",
+            "EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE",
+            "converting an external lead is not available (decision G3-10): it "
+            "needs a recorded contact path (Slice 8) and a conversion payload "
+            "schema declared by an approved contract change; a PROPERTY "
+            "conversion also needs an explicit relation and consent-binding "
+            "path",
         )
 
 
@@ -146,9 +148,9 @@ def read(session: Session, lead_id: uuid.UUID) -> Mapping[str, Any]:
 
 
 def refuse_conversion(session: Session, lead_id: uuid.UUID) -> None:
-    """404 for an unknown lead; otherwise the typed undecided refusal."""
+    """404 for an unknown lead; otherwise the refusal decided in G3-10."""
     read(session, lead_id)
-    raise ConversionUndecided()
+    raise ConversionNotAvailable()
 
 
 def queue(session: Session) -> list[Mapping[str, Any]]:

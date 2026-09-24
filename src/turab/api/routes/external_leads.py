@@ -118,7 +118,7 @@ def capture_lead(request: Request, body: ExternalLeadCreate, command: Command):
              operation_id="postExternalLeadsLeadIdConvert", status_code=201)
 def convert_lead(request: Request, lead_id: uuid.UUID, body: ExternalLeadConvert,
                  command: Command):
-    """Refused with `409 EXTERNAL_LEAD_CONVERSION_UNDECIDED` (G3-10).
+    """Refused with `409 EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE` (decision G3-10).
 
     Raised inside the command's transaction, so the refusal writes nothing and
     consumes no idempotency key; an unknown lead is still a 404.

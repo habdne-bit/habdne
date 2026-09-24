@@ -1,9 +1,10 @@
 # G3-10 · external-lead conversion and the leads queue — decisions requested
 
-**Status:** OPEN. `postExternalLeadsLeadIdConvert` refuses with
-`409 EXTERNAL_LEAD_CONVERSION_UNDECIDED` until §2 is decided. The refusal
-writes nothing and consumes no idempotency key. The queue is live, with the
-provisional choices in §3.
+**Status:** DECIDED (review of `0a66f8e`). Conversion stays refused, now
+**by decision**: `409 EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE`, renamed from
+`…_UNDECIDED`, with a message citing the decision. The refusal writes nothing
+and consumes no idempotency key. The queue choices are accepted **for this
+slice only**. §4 records the decisions verbatim in substance.
 
 ## 1. What was delivered in step 3, and why only that
 
@@ -80,3 +81,18 @@ answers are.
 | Q-8 | Oldest first by `discovered_at`, ties broken by id. `next_cursor` is always `null`, and the list is not capped. | The operation declares no cursor or page parameter, so a cursor could not be passed back. A cap without one would hide leads silently. |
 
 Items carry no floor field: no raw text, URL, metadata or source id.
+
+## 4. Decisions (received with the review of `0a66f8e`)
+
+| Question | Decision | Effect in code |
+|---|---|---|
+| Q-1 | **(b)** Proof of consent is not proof of a contact attempt. Conversion stays refused until a path records contact (Slice 8). | Refused. |
+| Q-2 | **(b)** PROPERTY conversion is refused until an explicit path for the relation and the consent binding is defined. No relation is inferred from a conversion. | Refused. |
+| Q-3 | **(b)** A conversion schema must be declared by an approved contract change before implementation. | Nothing implemented. |
+| Q-4 | **(c)** When conversion exists: the lead records the produced resource id, and the produced resource's provenance carries `source_id`, in the same transaction. | Recorded as a requirement in `ConversionNotAvailable`'s docstring. Not implemented. |
+| Q-5 to Q-8 | Accepted **for Slice 3 only**, exactly as documented in §3. | Unchanged. |
+
+**Condition attached to Q-8.** Before the queue is used at operational
+volume, a contract that allows paging is required. The absence of a page
+parameter must never become a silent drop of items. Today nothing is dropped:
+there is no cap, and `next_cursor` is always null.

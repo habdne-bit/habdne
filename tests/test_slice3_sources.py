@@ -179,7 +179,7 @@ def test_a_customer_cannot_capture(client, ids):
     assert r.status_code == 403, r.text
 
 
-# --- convert: refused, typed, naming what is undecided -------------------------
+# --- convert: refused by decision G3-10 --------------------------------------
 
 def _convert(client, ids, lead_id, who=None, headers=None):
     return client.post(
@@ -198,7 +198,7 @@ def test_conversion_is_refused_with_a_typed_409_and_changes_nothing(client, ids,
     k = {**as_(ids.ACC_OPERATOR), **key()}
     r = _convert(client, ids, lead["external_lead_id"], headers=k)
     assert r.status_code == 409, r.text
-    assert r.json()["code"] == "EXTERNAL_LEAD_CONVERSION_UNDECIDED"
+    assert r.json()["code"] == "EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE"
     assert "G3-10" in r.json()["detail"]
     assert _db(engine, counts)[0] == before
     status = _db(engine, "SELECT status::text AS s FROM turab.external_leads "
