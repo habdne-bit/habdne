@@ -50,7 +50,9 @@ step "7/8  Effective contract (frozen package + approved corrections + approved 
 python3 "$GATE_DIR/generate_effective_contract.py" --check
 python3 "$GATE_DIR/generate_api_inventory.py" \
   "$REPO_ROOT/docs/api/openapi_effective_v0.2.3.yaml" --check
-# Documented == listed == enforced, in BOTH directions, roles included. The
+# Documented == listed == enforced as operation SETS, in both directions;
+# documented roles == enforced roles. (The inventory's text, roles included,
+# is held to the effective contract by the --check just above.) The
 # one-directional check this replaces let 3 enforced operations go undocumented.
 python3 "$GATE_DIR/verify_policy_parity.py"
 

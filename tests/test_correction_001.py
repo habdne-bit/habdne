@@ -361,7 +361,9 @@ def test_the_effective_contract_matches_the_policy_table():
     in the policy table — one direction only — so the three G3-6 operations,
     enforced by the table and absent from the document, passed it (review of
     0a66f8e). It now runs the gate's own parity check: documented, listed and
-    enforced must be one set, with the same roles.
+    enforced must be one set; the effective contract's roles must equal
+    the policy table's. (The inventory's own text, roles included, is held to
+    the effective contract by `generate_api_inventory.py --check`.)
     """
     sys.path.insert(0, str(ROOT / "db" / "gate"))
     import verify_policy_parity

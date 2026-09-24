@@ -234,8 +234,10 @@ def load_property(session: Session, subject: Subject, property_id: uuid.UUID) ->
 #:              claim on it AND it is the ONLY claimant — INV-1);
 #:   CONTESTED  not the creator, party match, and the canonical parent has more
 #:              than one claimant. It carries the contested canonical property
-#:              and its claimant accounts — what the INV-1 audit record needs —
-#:              and NO offer data (every offer column is NULL), so the caller can audit the
+#:              and its claimant accounts — what the INV-1 audit record needs.
+#:              Of the offer it returns only `offer_id`, which the caller
+#:              supplied in the path; every other offer column is NULL. So the
+#:              caller can audit the
 #:              conflict and apply the disclosure rule without an unauthorized
 #:              row ever reaching Python.
 #:
@@ -315,7 +317,9 @@ def load_offer(session: Session, subject: Subject, offer_id: uuid.UUID) -> LoadR
     if row["outcome"] == "CONTESTED":
         # The parent is ambiguous: authority goes to nobody through a claim
         # (INV-1). Raised so the caller audits it and decides disclosure.
-        # The row carries no offer data by construction.
+        # The row carries no offer detail by construction: only the
+        # `offer_id` the caller supplied, the contested property and its
+        # claimants.
         raise ClaimAuthorityConflict(ResourceKind.PROPERTY, row["conflict_property_id"],
                                      frozenset(row["conflict_accounts"]))
     granted = {k: v for k, v in row.items()

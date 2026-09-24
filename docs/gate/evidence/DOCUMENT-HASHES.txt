@@ -155,3 +155,10 @@ db/gate/record_gate_run.sh                                     --   8d3eab70483c
 tests/test_loader_shape.py                                     new  bdda7ff74d585f75124e3e970c673d9fb948f1fe56b8d1c7bb1bd75d1949d80a
 No decision document changed revision this round. The G3-6 Delta stays at
 3a (e2550c09...), and the addendum's binding is unchanged.
+
+--- round 532af2d -> descriptive corrections (review of 532af2d) ---
+docs/gate/REVIEW_RESPONSE_0a66f8e.md                           --   0252f610f80d764721bef85079960fc0dc9915ed4d853f70223301cd7f0d8695
+db/gate/verify_policy_parity.py                                --   ae3801640b94e4999d764c2f455acb7fd62dd72e2943f6db68098678fc0ced0e
+db/gate/run_gate.sh                                            --   cfe8aebbe7ba66be418a63d908798ccf3591be23c89f9237018b4ec6932376a1
+src/turab/auth/loaders.py                                      --   daea24d1077d66b94ea1c07ac827d56cc55009b1efd3b4513da11dee2144b506
+Comments, docstrings and one PASS message only; no behaviour changed.

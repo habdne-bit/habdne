@@ -89,6 +89,7 @@ def test_a_contested_parent_is_decided_in_the_same_single_statement(session, ids
                                                                    subject_of):
     """INV-1 is part of the predicate, not a follow-up query: the conflict is
     raised from the one statement's CONTESTED arm, which carries no offer
+    detail beyond the `offer_id` the caller supplied
     data."""
     prop = session.execute(text(
         """INSERT INTO turab.properties (property_type, supply_mode,

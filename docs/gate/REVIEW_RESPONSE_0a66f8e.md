@@ -22,7 +22,7 @@ authority predicate:
 | Arm | Predicate | What it returns |
 |---|---|---|
 | `GRANTED` | the actor created the offer, **or** (party match AND canonical parent `CLAIMED` AND the actor is its **only** claimant) | the offer |
-| `CONTESTED` | not the creator AND party match AND the canonical parent has more than one claimant | the contested property and its claimants; **every offer column is NULL** |
+| `CONTESTED` | not the creator AND party match AND the canonical parent has more than one claimant | the contested property and its claimants, plus the `offer_id` the caller supplied in the path; **every other offer column is NULL** |
 
 - INV-1 is inside the predicate.
 - The canonical parent is resolved in the same statement (R4.9).
@@ -65,8 +65,11 @@ The F-4 behaviour tests from `d3c016e` still pass unchanged, one per branch:
 - The inventory, regenerated, lists 67 operations.
 
 **The gate check** is `db/gate/verify_policy_parity.py`, in step 7:
-- documented, listed and enforced are compared as **one set, in both
-  directions**, roles included;
+- documented, listed and enforced are compared as **one set of operations,
+  in both directions**; roles are compared between the effective contract and
+  the policy table. The inventory's text, roles included, is held to the
+  effective contract by the separate `generate_api_inventory.py --check` in
+  the same gate step;
 - against the documents that shipped in `0a66f8e` it fails and names exactly
   the three G3-6 operations;
 - `test_the_parity_check_fails_on_the_documents_that_shipped_in_0a66f8e`
@@ -95,3 +98,20 @@ header shows no uncommitted path at all.
   to an offer.
 - **Awaiting the reviewer on this evidence:** F-4 and G3-6.
 - **Not closed:** Slice 3.
+
+## Corrections after the review of `532af2d`
+
+The reviewer accepted both blockers, and pointed out two descriptions that
+claimed more than the mechanism guarantees. Both are corrected here and in the
+code comments:
+
+1. **CONTESTED arm.** It returns the `offer_id`, which the caller supplied in
+   the path, plus the contested property and its claimants. "Every offer
+   column is NULL" was inaccurate; *every other* offer column is NULL, so no
+   offer detail is returned.
+2. **Parity check.** `verify_policy_parity.py` compares operation **sets**
+   across the effective contract, the inventory and the policy table, and
+   compares **roles** only between the effective contract and the policy
+   table. The inventory's text, roles included, is guaranteed by the separate
+   `generate_api_inventory.py --check` in the same gate step. "Roles
+   included", said of all three, overclaimed.

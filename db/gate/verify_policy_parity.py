@@ -10,15 +10,21 @@ and looked each operation up in the policy table — one direction only — so
 operations present in the table and missing from the document passed
 unnoticed.
 
-This compares all three, in both directions, and fails on any difference:
+What this compares, precisely:
 
-  * `docs/api/openapi_effective_v0.2.3.yaml` — what is documented;
-  * `docs/api/API_INVENTORY_GENERATED.md`    — what is listed;
-  * `build_policy_table()` in `src/turab/auth/contract.py` — what is enforced
-    (frozen + corrections + approved addenda).
+  * OPERATION SETS, in both directions, across all three —
+    `docs/api/openapi_effective_v0.2.3.yaml` (what is documented),
+    `docs/api/API_INVENTORY_GENERATED.md` (what is listed) and
+    `build_policy_table()` in `src/turab/auth/contract.py` (what is enforced:
+    frozen + corrections + approved addenda);
+  * ROLES between the effective contract and the policy table only: an
+    operation present everywhere but authorized differently is the same lie
+    told more quietly.
 
-Roles are compared too: an operation present everywhere but authorized
-differently is the same lie told more quietly.
+What it does NOT compare: the inventory's text, including the roles it
+prints. That is held to the effective contract by
+`generate_api_inventory.py --check`, run just before this in the same gate
+step, which fails on any difference from a fresh rendering.
 
 Usage:
   db/gate/verify_policy_parity.py
@@ -101,7 +107,8 @@ def main() -> int:
         return 1
     count = len(effective_operations())
     print(f"PASS: effective contract, inventory and policy table hold the same "
-          f"{count} operations, with the same roles")
+          f"{count} operations; the effective contract's roles equal the "
+          f"policy table's")
     return 0
 
 
