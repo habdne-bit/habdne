@@ -179,3 +179,12 @@ docs/gate/evidence/STEP4-CONCURRENCY-ATTRIBUTION.txt           new  edd847cb0a6c
 tests/test_slice3_step4.py                                     --   e1d46a8c6b6d48e867e20edfb392dd36c0eebc560e15b067da139b037d538cd0
 src/turab/services/properties.py                               --   245408848af2212728559b470aaed274d251a261b9b1313bfca982621f417ca8
 properties.py: the pass SQL moved into _STALE_AVAILABILITY_SQL with its text unchanged.
+
+--- round 4f27741 -> step 5 (truth layer) ---
+docs/gate/SLICE_3_STEP5_DELIVERY.md                            new  172773523897eddde5fe4dcf89818e1e09df23aa6c8056e15d2513d7c661d904
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   e8447e771c2f6707755173ac42ba2f247ebce5afc80866b0ffd5b1553f2f6543
+src/turab/services/truth.py                                    new  347f0f0cd5b8b7826ad89db0118aadc0f51fb93901946b58d3be3b818fc88da4
+src/turab/api/routes/truth.py                                  new  fdd117182cf35df46d7b63da8a248b3eb7313891ebc7280f14b576f1492608bb
+src/turab/services/audit_rows.py                               --   9e638ecb4190c6012c579467c2def1d6c778b0bba2e9119a34a43259a86c3489
+tests/test_slice3_truth.py                                     new  bee8616915686a4779c6a358f41c081d06677e323f1f7f0eafeb1c4883b0af6b
+No decision document changed revision. Finding G3-11 is raised in the step-5 note.
