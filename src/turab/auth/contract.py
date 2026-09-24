@@ -41,8 +41,83 @@ CORRECTIONS_PATH = (
 )
 
 
+#: Approved contract ADDITIONS — operations the frozen contract does not have.
+#: Distinct from the corrections overlay, which may only narrow.
+ADDENDA_DIR = (
+    pathlib.Path(__file__).resolve().parents[3] / "docs" / "contract" / "addenda"
+)
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+
+
 class ContractError(RuntimeError):
     """The contract and the policy layer disagree. Fails at startup."""
+
+
+@functools.cache
+def load_addenda(directory: pathlib.Path | None = None) -> tuple[dict, ...]:
+    """Every approved addendum, validated. Refuses to return a partial set.
+
+    An addendum can only ADD. Each rule below exists so that this directory
+    cannot become a quieter way to change the frozen contract than the
+    decision process allows:
+
+      * it names its decision and the Delta text it implements, and the
+        Delta's sha256 must match — an edit to the approved wording without
+        re-binding the addendum stops the service rather than drifting;
+      * none of its operations may exist in the frozen contract, by
+        operationId or by METHOD+PATH;
+      * every operation is authenticated and carries `x-roles`;
+      * no two addenda declare the same operation.
+    """
+    import hashlib
+
+    frozen = load_contract()
+    frozen_ids = {op["operationId"] for _, _, op in _operations(frozen)}
+    frozen_routes = {(m, r) for r, m, _ in _operations(frozen)}
+    seen: set[str] = set()
+    out: list[dict] = []
+    for path in sorted((directory or ADDENDA_DIR).glob("*.yaml")):
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        meta = doc.get("addendum") or {}
+        aid = meta.get("id") or path.name
+        if meta.get("kind") != "ADDITION":
+            raise ContractError(f"{aid}: an addendum must declare kind ADDITION")
+        if not meta.get("decision"):
+            raise ContractError(f"{aid}: names no decision")
+        delta = _REPO_ROOT / str(meta.get("delta_document", ""))
+        if not delta.is_file():
+            raise ContractError(f"{aid}: its Delta document {delta} does not exist")
+        actual = hashlib.sha256(delta.read_bytes()).hexdigest()
+        if actual != meta.get("delta_sha256"):
+            raise ContractError(
+                f"{aid}: bound to Delta sha256 {meta.get('delta_sha256')}, but "
+                f"the document is now {actual}. The approved text changed; the "
+                "addendum must be re-bound to it deliberately."
+            )
+        for route, method, op in _operations(doc):
+            oid = op.get("operationId")
+            if not oid:
+                raise ContractError(f"{aid}: {method.upper()} {route} has no operationId")
+            if oid in frozen_ids or (method, route) in frozen_routes:
+                raise ContractError(
+                    f"{aid}: {oid} ({method.upper()} {route}) already exists in "
+                    "the frozen contract; an addendum may only add"
+                )
+            if oid in seen:
+                raise ContractError(f"{aid}: {oid} is declared twice")
+            seen.add(oid)
+            if op.get("security") == [] or not op.get("x-roles"):
+                raise ContractError(
+                    f"{aid}: {oid} must be authenticated and carry x-roles")
+        out.append(doc)
+    return tuple(out)
+
+
+def _all_operations(frozen: dict[str, Any]):
+    """The frozen contract's operations, then every approved addendum's."""
+    yield from _operations(frozen)
+    for addendum in load_addenda():
+        yield from _operations(addendum)
 
 
 @functools.cache
@@ -124,7 +199,7 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
     unannotated: list[str] = []
     corrected_frozen: dict[str, frozenset[Role]] = {}
 
-    for route, method, op in _operations(doc):
+    for route, method, op in _all_operations(doc):
         operation_id = op.get("operationId")
         if not operation_id:
             raise ContractError(f"{method.upper()} {route} has no operationId")
@@ -173,8 +248,16 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
 
     # Every correction must name a real, role-annotated operation, and must
     # still describe the contract as it stands today (invariant 2).
+    addendum_ids = {op["operationId"] for a in load_addenda()
+                    for _, _, op in _operations(a)}
     for entry in _correction_entries():
         operation_id = entry["operation_id"]
+        if operation_id in addendum_ids:
+            raise ContractError(
+                f"{entry['id']}: {operation_id} is an addendum operation; it is "
+                "changed by amending its addendum under a decision, not by a "
+                "correction"
+            )
         if operation_id not in corrected_frozen:
             raise ContractError(
                 f"{entry['id']}: {operation_id} is not an operation the frozen "
@@ -220,7 +303,7 @@ def verify_policy_matches_contract(table: PolicyTable, path: pathlib.Path | None
     corrections = load_corrections()
     problems: list[str] = []
 
-    for route, method, op in _operations(doc):
+    for route, method, op in _all_operations(doc):
         operation_id = op["operationId"]
         policy = table.get(operation_id)
         if policy is None:
@@ -240,7 +323,7 @@ def verify_policy_matches_contract(table: PolicyTable, path: pathlib.Path | None
                 f"!= policy {sorted(r.value for r in policy.roles)}"
             )
 
-    contract_ops = {op["operationId"] for _, _, op in _operations(doc)}
+    contract_ops = {op["operationId"] for _, _, op in _all_operations(doc)}
     for extra in sorted(table.operations() - contract_ops):
         problems.append(f"{extra}: in the policy table, absent from the contract")
 

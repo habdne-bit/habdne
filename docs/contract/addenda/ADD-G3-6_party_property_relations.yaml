@@ -1,0 +1,163 @@
+# Approved contract ADDITION — not a correction.
+#
+# The correction overlay (../CONTRACT_CORRECTIONS.yaml) may only NARROW what the
+# frozen contract declares; it cannot introduce an operation. This file carries
+# operations the frozen openapi_v0.2.3.yaml does not have, as an approved
+# standalone addendum (Delta §"Target"). The frozen file is not modified.
+#
+# Binding: `delta_sha256` is the digest of the Delta text these operations
+# implement. src/turab/auth/contract.py refuses to start if the Delta changes
+# without this addendum being re-bound, so the code cannot silently drift from
+# the approved wording — nor the wording from the code.
+#
+# Rules enforced on every addendum (contract.load_addenda):
+#   * every operation is NEW: its operationId and its METHOD+PATH are absent
+#     from the frozen contract;
+#   * every operation is authenticated and carries x-roles;
+#   * no correction may target an addendum operation.
+addendum:
+  id: ADD-G3-6
+  kind: ADDITION
+  decision: >-
+    G3-6 option A. Contract Delta revision 3 re-confirmed (three operations,
+    staff-only, DECLARED only, omitted valid_from = server clock, null
+    refused), with two textual corrections applied as revision 3a.
+  delta_document: docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
+  delta_sha256: e2550c095d6cba9a152e89ec0e73b015fb61f8089c7b3ad5c6445cd720abdbf8
+
+paths:
+  /properties/{property_id}/relations:
+    post:
+      operationId: postPropertiesPropertyIdRelations
+      summary: Record a party-property relation (grants no authority)
+      tags: [Properties]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR]
+      x-authorization: >-
+        Staff-only. The server validates that the party and the property both
+        exist. Creating a relation grants the party's accounts no authority
+        over the property or its offers, and the server must not treat it as
+        an authorization input (RFC-001 R4.5, R4.12).
+      parameters:
+        - {name: property_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PartyPropertyRelationInput'}
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PartyPropertyRelation'}
+        '400': {$ref: '#/components/responses/AddendumProblem'}
+        '401': {$ref: '#/components/responses/AddendumProblem'}
+        '403': {$ref: '#/components/responses/AddendumProblem'}
+        '404': {$ref: '#/components/responses/AddendumProblem'}
+        '409': {$ref: '#/components/responses/AddendumProblem'}
+        '422': {$ref: '#/components/responses/AddendumProblem'}
+    get:
+      operationId: getPropertiesPropertyIdRelations
+      summary: List a property's party relations
+      tags: [Properties]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR, REVIEWER]
+      parameters:
+        - {name: property_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: include_ended, in: query, required: false, schema: {type: boolean, default: false}}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Relations, current only unless include_ended
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PartyPropertyRelationPage'}
+        '401': {$ref: '#/components/responses/AddendumProblem'}
+        '403': {$ref: '#/components/responses/AddendumProblem'}
+        '404': {$ref: '#/components/responses/AddendumProblem'}
+  /properties/{property_id}/relations/{relation_id}/end:
+    post:
+      operationId: postPropertyRelationEnd
+      summary: End a relation's validity (never a delete)
+      tags: [Properties]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR]
+      parameters:
+        - {name: property_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: relation_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PartyPropertyRelationEnd'}
+      responses:
+        '200':
+          description: Ended
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PartyPropertyRelation'}
+        '400': {$ref: '#/components/responses/AddendumProblem'}
+        '401': {$ref: '#/components/responses/AddendumProblem'}
+        '403': {$ref: '#/components/responses/AddendumProblem'}
+        '404': {$ref: '#/components/responses/AddendumProblem'}
+        '409': {$ref: '#/components/responses/AddendumProblem'}
+        '422': {$ref: '#/components/responses/AddendumProblem'}
+
+components:
+  responses:
+    AddendumProblem:
+      description: Request rejected
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+  schemas:
+    PartyPropertyRelationInput:
+      type: object
+      additionalProperties: false
+      required: [party_id, relation_code]
+      properties:
+        party_id: {type: string, format: uuid}
+        relation_code:
+          type: string
+          enum: [OWNER_DECLARED, BROKER, AGENCY, DEVELOPER, OCCUPANT, CONTACT_PERSON, OTHER]
+        valid_from: {type: string, format: date-time}
+        note: {type: [string, 'null']}
+    PartyPropertyRelationEnd:
+      type: object
+      additionalProperties: false
+      properties:
+        valid_to: {type: string, format: date-time}
+        reason_code: {type: string}
+    PartyPropertyRelation:
+      type: object
+      additionalProperties: false
+      required: [party_property_relation_id, property_id, party_id, relation_code,
+                 verification_level, created_at]
+      properties:
+        party_property_relation_id: {type: string, format: uuid}
+        property_id: {type: string, format: uuid}
+        party_id: {type: string, format: uuid}
+        relation_code:
+          type: string
+          enum: [OWNER_DECLARED, BROKER, AGENCY, DEVELOPER, OCCUPANT, CONTACT_PERSON, OTHER]
+        verification_level:
+          type: string
+          enum: [DECLARED, DOCUMENT_SEEN, DETAILS_MATCHED, PROFESSIONAL_CHECK]
+        valid_from: {type: [string, 'null'], format: date-time}
+        valid_to: {type: [string, 'null'], format: date-time}
+        created_at: {type: string, format: date-time}
+    PartyPropertyRelationPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, page_size, total]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PartyPropertyRelation'}
+        page: {type: integer, minimum: 1}
+        page_size: {type: integer, minimum: 1}
+        total: {type: integer, minimum: 0}

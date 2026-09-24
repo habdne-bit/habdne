@@ -1,11 +1,20 @@
 # Contract Delta · G3-6 — party–property relations
 
-**Status:** **revision 3 — the implementation basis**, incorporating the
-decisions taken since revision 1. **No code exists for this path**, and none
-will be written until this revision is re-confirmed. What changed:
-option A ratified (§1); rule **6a adopted**, no longer "proposed" (§6); the
-database backstop now EXISTS as revision `0004`, so §6's declared weakness is
-gone; `include_ended` corrected to the ratified currency predicate (§3.2); and
+**Status:** **revision 3 — RE-CONFIRMED; the implementation basis.** The
+three operations, their staff-only roles, `DECLARED`-only relations, and
+§5.1 (omitted `valid_from` → server clock; `null` refused) were re-confirmed.
+The confirmation carried **two corrections to this text**, applied here as
+**revision 3a** — corrections of wording, not a new decision round:
+
+- §10 said the API "never creates a relation that is not current". False: an
+  explicit FUTURE `valid_from` is permitted and creates a relation that is not
+  current until it starts (§5.1 already said so). Corrected.
+- §7 said "all three mutating operations". Retrieve is a read; only **create**
+  and **end** mutate. Corrected.
+
+Revision 3 incorporated the decisions taken since revision 1: option A
+ratified (§1); rule **6a adopted** (§6); the database backstop exists as
+revision `0004`; `include_ended` uses the ratified currency predicate (§3.2);
 the meaning of an omitted or null `valid_from` settled (§5.1).
 **Kind:** a contract **ADDITION**, not a narrowing correction.
 **Baseline:** Handoff v1.0.3 / pack v0.2.3, frozen. `openapi_v0.2.3.yaml` is
@@ -402,9 +411,11 @@ two-connection contention test in which the loser fails with SQLSTATE `23P01`.
 
 ## 7. Idempotency and audit
 
-- All three mutating operations take `Idempotency-Key`, on the existing
-  machinery. A **refused** command consumes no key — the R-S2-04 rule, and a
-  test asserts it for each.
+- The two mutating operations — **create** (§3.1) and **end** (§3.3) — take
+  `Idempotency-Key`, on the existing machinery. Retrieve (§3.2) is a read and
+  takes none. A **refused** command consumes no key — the R-S2-04 rule, and a
+  test asserts it for each of the two. *(Revision 3a: this read "all three
+  mutating operations"; retrieve does not mutate.)*
 - `party_property_relations` carries **no** `audit_*` trigger in the frozen
   schema — unlike `properties`, `property_offers`, `claims` and
   `resolved_values`. Auditing is therefore the **command layer's**
@@ -458,8 +469,12 @@ the authorization tests.
 1. Re-confirmation of the three operations as specified in this revision, for
    the next contract package.
 2. Confirmation of **§5.1** — an omitted `valid_from` is set to the server
-   clock and `null` is refused, so this API never creates a relation that is
-   not current.
+   clock and `null` is refused, so this API never creates a relation whose
+   start is unrecorded. An explicit **future** `valid_from` is permitted and
+   creates a relation that is **not current until it starts** — in the list
+   (§3.2) and at the consent gate alike. *(Revision 3a: this read "never
+   creates a relation that is not current", which the future-start case
+   contradicts.)*
 3. Confirmation of **§5**: relations remain `DECLARED`, and a verification
    mechanism for them is a separate, later decision.
 
@@ -468,3 +483,6 @@ the authorization tests.
 Until all three are answered, no code is written for this path, no relation row
 is created, and neither `claims` nor `observations` is repurposed to create one
 implicitly.
+
+**Answered.** All three were re-confirmed, with the two corrections above.
+The path is implemented against revision 3a.

@@ -133,17 +133,31 @@ def test_list_endpoint_audits_once(client, ids, sink):
 
 def test_generated_paths_exist_in_the_frozen_contract(client):
     """R14.1-R14.2. The generated document is checked against the contract,
-    never the other way round."""
-    from turab.auth.contract import load_contract
+    never the other way round.
+
+    "The contract" is the frozen file PLUS the approved addenda under
+    docs/contract/addenda — additions the correction overlay cannot carry
+    (G3-6). An addendum route must be ABSENT from the frozen file: it may only
+    add, never shadow.
+    """
+    from turab.auth.contract import load_addenda, load_contract
 
     frozen = load_contract()
+    added: dict[str, dict] = {}
+    for addendum in load_addenda():
+        for path, item in addendum["paths"].items():
+            assert path not in frozen["paths"] or not (
+                set(item) & set(frozen["paths"][path])), (
+                f"{path}: an addendum may not redeclare a frozen operation")
+            added.setdefault(path, {}).update(item)
     generated = client.get("/openapi.json").json()
     for path, item in generated["paths"].items():
-        assert path in frozen["paths"], f"{path} is not in the frozen contract"
+        source = frozen["paths"] if path in frozen["paths"] else added
+        assert path in source, f"{path} is in neither the contract nor an addendum"
         for method, op in item.items():
-            frozen_op = frozen["paths"][path].get(method)
-            assert frozen_op is not None, f"{method.upper()} {path} not in contract"
-            assert op["operationId"] == frozen_op["operationId"]
+            declared = source[path].get(method)
+            assert declared is not None, f"{method.upper()} {path} not in contract"
+            assert op["operationId"] == declared["operationId"]
 
 
 def test_health_and_ready_are_outside_the_contract(client):
@@ -152,4 +166,5 @@ def test_health_and_ready_are_outside_the_contract(client):
     generated = client.get("/openapi.json").json()
     assert "/health" not in generated["paths"]
     assert client.get("/health").status_code == 200
-    assert client.get("/ready").json()["policy_operations"] == 64
+    # 64 frozen operations + 3 from the approved G3-6 addendum.
+    assert client.get("/ready").json()["policy_operations"] == 67

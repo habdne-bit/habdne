@@ -98,7 +98,8 @@ def test_readiness_checks_the_database(client):
     body = r.json()
     assert body["status"] == "ready"
     assert body["database"] == "ok"
-    assert body["policy_operations"] == 64
+    # 64 frozen operations + 3 from the approved G3-6 addendum.
+    assert body["policy_operations"] == 67
 
 
 def test_readiness_reports_503_when_the_database_is_unreachable(ids):

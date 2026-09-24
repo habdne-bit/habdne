@@ -211,6 +211,32 @@ class AccessService:
         )
         return page_result
 
+    def list_property_relations(
+        self, property_id: uuid.UUID, *, include_ended: bool, page: int,
+        page_size: int, operation_id: str,
+    ):
+        """G3-6 retrieve, on the READ session, audited once for the page.
+
+        Staff-only by role (ADMIN, OPERATOR, REVIEWER); a relation is not a
+        customer resource and has no loader. Raises the relations service's
+        `PropertyNotFound` for an unknown property, which the route maps.
+        """
+        from . import relations as relation_service
+
+        items, total = relation_service.list_relations(
+            self._session, property_id=property_id, include_ended=include_ended,
+            page=page, page_size=page_size,
+        )
+        self.record_list_access(
+            operation_id=operation_id,
+            resource_kind="PARTY_PROPERTY_RELATION",
+            result_count=len(items),
+            query_shape={"property_id": str(property_id),
+                         "include_ended": include_ended,
+                         "page": page, "page_size": page_size},
+        )
+        return items, total
+
     def evaluate_request_freshness(self, last_confirmed_at):
         """Freshness as a DERIVED value, computed on the read session.
 

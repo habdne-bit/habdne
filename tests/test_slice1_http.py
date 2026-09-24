@@ -343,11 +343,17 @@ def test_customer_cannot_revoke_another_partys_consent(client, ids, engine):
 
 def test_all_slice1_operations_match_the_frozen_contract(client):
     """Definition of Done: OpenAPI stays synchronized with implementation."""
-    from turab.auth.contract import load_contract
+    from turab.auth.contract import load_addenda, load_contract
 
     frozen = load_contract()
+    # Approved ADDITIONS (G3-6) are declared in docs/contract/addenda, not in
+    # the frozen file; `load_addenda` refuses any that would shadow it.
+    declared = {path: dict(item) for path, item in frozen["paths"].items()}
+    for addendum in load_addenda():
+        for path, item in addendum["paths"].items():
+            declared.setdefault(path, {}).update(item)
     generated = client.get("/openapi.json").json()
     for path, item in generated["paths"].items():
-        assert path in frozen["paths"], path
+        assert path in declared, path
         for method, op in item.items():
-            assert op["operationId"] == frozen["paths"][path][method]["operationId"]
+            assert op["operationId"] == declared[path][method]["operationId"]
