@@ -1,7 +1,7 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-09-24 10:51:07 UTC
-Commit      : 5cdd851ccbfc60434f8e9779e6268972e04ef22b
+Recorded    : 2026-09-24 10:53:25 UTC
+Commit      : 6f3fb65f63e0d5ae97b4d7162fb36f0788d33245
 Working tree: clean when this run started
 Source fingerprint (db/dev/source_fingerprint.py):
               f301de35e89c397a94e873eaf6e559da291269829ef48222f87224fafda2f412
