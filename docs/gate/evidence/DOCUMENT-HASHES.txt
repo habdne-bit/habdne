@@ -162,3 +162,13 @@ db/gate/verify_policy_parity.py                                --   ae3801640b94
 db/gate/run_gate.sh                                            --   cfe8aebbe7ba66be418a63d908798ccf3591be23c89f9237018b4ec6932376a1
 src/turab/auth/loaders.py                                      --   daea24d1077d66b94ea1c07ac827d56cc55009b1efd3b4513da11dee2144b506
 Comments, docstrings and one PASS message only; no behaviour changed.
+
+--- round cb43863 -> step 4 (availability, staleness pass, offer freshness) ---
+docs/gate/SLICE_3_STEP4_DELIVERY.md                            new  31f7666ac52eba70d4d5dd07658722f9bae71bfab62f32963384940ef7734364
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   cafe2b212391bc64beb81364e0d440d9a9fa48c9224114ad8600e753bdb67bd5
+src/turab/services/freshness.py                                --   7f7c6e2d5268e5d4fc1cc14be9fda66815d0766308e8636812a7c3a5a2a1a4f8
+src/turab/services/properties.py                               --   fb59cac0e604179efffbf784bf1d5897d0df92dfa5883d33d10847123da64fc2
+src/turab/services/offers.py                                   --   07116cd06f41303bcba19727a5a0b2434e40b5ce46414f7166b034f4badcb8de
+db/dev/run_freshness_pass.py                                   --   129d26e25e1fb0fbad7849142bfed4ff96a787a13ee5e991420923adeda0767d
+tests/test_slice3_step4.py                                     new  b719442f8da5f4a1d96b741bb595a66a62a1579510df4d018da57faf96a0b834
+No decision document changed revision. The plan stays at rev 6 and the G3-6 Delta at 3a.
