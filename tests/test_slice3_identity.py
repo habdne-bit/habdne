@@ -683,14 +683,147 @@ def test_a_review_waits_for_a_generation_between_its_lock_and_its_insert(
     assert not any(t.is_alive() for t in threads)
     assert out["waited"] is True, f"the review did not wait for the generation: {_said(out)}"
     assert out["generator"] == "committed" and out["review"] == "committed", _said(out)
-    order = _all(engine, """SELECT c.generated_at < x.resolved_at AS before_alias
-                              FROM turab.property_identity_candidates c,
-                                   turab.property_identity_aliases x
-                             WHERE x.alias_property_id = :b
-                               AND LEAST(c.property_a_id, c.property_b_id) = LEAST(:b, :c)
-                               AND GREATEST(c.property_a_id, c.property_b_id)
-                                   = GREATEST(:b, :c)""", b=b, c=c)
-    assert order == [{"before_alias": True}], order
+    # The witnessed wait is the proof of order. A timestamp comparison, used
+    # here until the review of 1935dc1, proved nothing: `generated_at` and
+    # `resolved_at` are `now()`, each transaction's START time.
+    assert _one(engine, """SELECT count(*) FROM turab.property_identity_candidates
+                            WHERE LEAST(property_a_id, property_b_id) = LEAST(:b, :c)
+                              AND GREATEST(property_a_id, property_b_id)
+                                  = GREATEST(:b, :c)""", b=b, c=c) == 1
+
+
+# --- review of 1935dc1: the blocking facts themselves may change in the window --
+
+@pytest.mark.parametrize("change", ["property_type", "canonical_location_id"])
+def test_a_patch_in_generations_window_leaves_no_stale_candidate(client, ids, engine,
+                                                                monkeypatch, change):
+    """Window (a), BEFORE the lock. Generation has read its pairs (B–C, D–C: same
+    type, same location). A PATCH then changes B's type or location and
+    COMMITS. After the lock, blocking is re-checked on the locked rows: B–C is
+    not created; D–C, whose facts did not change, is.
+    Measured before the fix: B–C was created with signals claiming
+    `same_property_type` and `same_canonical_location`
+    (docs/gate/evidence/STEP7-PATCH-RACE-BEFORE-FIX.txt)."""
+    from turab.db.session import audited_transaction
+    from turab.services import identity
+
+    loc = _location(engine)
+    b, c, d = (_property(client, ids, loc) for _ in range(3))
+    in_window, go_on = threading.Event(), threading.Event()
+    original = identity._lock_and_recheck
+
+    def paused(session, pairs, focus):
+        in_window.set()
+        assert go_on.wait(30)
+        return original(session, pairs, focus)
+
+    monkeypatch.setattr(identity, "_lock_and_recheck", paused)
+    out = {}
+
+    def generator():
+        try:
+            with Session(bind=engine, future=True) as s:
+                with audited_transaction(s, ids.ACC_OPERATOR):
+                    rows = identity.generate(s, property_id=uuid.UUID(c),
+                                             algorithm_version=None)
+            out["generated"] = sorted(sorted([str(r["property_a_id"]), str(r["property_b_id"])])
+                                      for r in rows)
+        except Exception as exc:
+            out["generated"] = exc
+
+    t = threading.Thread(target=generator)
+    t.start()
+    assert in_window.wait(30)
+    body = ({"property_type": "APARTMENT"} if change == "property_type"
+            else {"canonical_location_id": str(_location(engine))})
+    r = client.patch(f"/properties/{b}",
+                     headers={**_h(ids.ACC_OPERATOR), "If-Match-Version": "1"}, json=body)
+    assert r.status_code == 200, r.text
+    go_on.set()
+    t.join(60)
+    assert not t.is_alive()
+    assert out["generated"] == [sorted([c, d])], out
+    assert _one(engine, """SELECT count(*) FROM turab.property_identity_candidates
+                            WHERE :b IN (property_a_id, property_b_id)""", b=b) == 0
+
+
+def test_generations_lock_holds_the_blocking_facts_against_any_writer(
+        client, ids, engine, monkeypatch):
+    """Window (b), AFTER the lock and BEFORE the INSERT.
+
+    The writer is a PLAIN `UPDATE` of `property_type`, not the HTTP PATCH. The
+    PATCH path's version guard takes `SELECT … FOR UPDATE` itself, and that
+    alone would make it wait; that is why the measurement before the fix saw
+    no defect in this window through PATCH. The plain UPDATE takes only
+    `FOR NO KEY UPDATE`, which conflicts with `FOR SHARE` and NOT with
+    `FOR KEY SHARE` (PostgreSQL 16 documentation, §13.3.2). So this proves the
+    lock mode of generation itself: the UPDATE must wait until the candidate
+    is written."""
+    from turab.db.session import audited_transaction
+    from turab.services import identity
+
+    loc = _location(engine)
+    b, c = (uuid.UUID(_property(client, ids, loc)) for _ in range(2))
+    original = identity._candidate_for_pair
+    in_window, release, finished = threading.Event(), threading.Event(), threading.Event()
+    out, pids = {}, {}
+
+    def paused(session, x, y):
+        if not in_window.is_set():
+            in_window.set()
+            release.wait(30)
+        return original(session, x, y)
+
+    monkeypatch.setattr(identity, "_candidate_for_pair", paused)
+
+    def generator():
+        try:
+            with Session(bind=engine, future=True) as s:
+                with audited_transaction(s, ids.ACC_OPERATOR):
+                    pids["generator"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                    out["generated"] = len(identity.generate(s, property_id=c,
+                                                             algorithm_version=None))
+        except Exception as exc:
+            out["generated"] = exc
+
+    def writer():
+        assert in_window.wait(30)
+        try:
+            with engine.begin() as conn:
+                pids["writer"] = conn.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                conn.execute(text("UPDATE turab.properties SET property_type = 'APARTMENT' "
+                                  "WHERE property_id = :b"), {"b": b})
+            out["writer"] = "committed"
+        except Exception as exc:
+            out["writer"] = exc
+        finally:
+            finished.set()
+
+    def witness():
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and not finished.is_set():
+            if "writer" in pids and "generator" in pids:
+                with Session(bind=engine, future=True) as s:
+                    blockers = s.execute(text("SELECT pg_blocking_pids(:p)"),
+                                         {"p": pids["writer"]}).scalar_one()
+                if pids["generator"] in blockers:
+                    out["waited"] = True
+                    break
+            time.sleep(0.005)
+        out.setdefault("waited", False)
+        release.set()
+
+    threads = [threading.Thread(target=f) for f in (generator, writer, witness)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(60)
+    assert not any(t.is_alive() for t in threads)
+    assert out["waited"] is True, f"the UPDATE did not wait for generation: {_said(out)}"
+    # The candidate was written while the UPDATE waited; the witnessed wait is
+    # the proof of order. (Timestamps cannot show it: `generated_at` and
+    # `updated_at` are `now()`, each transaction's START time.)
+    assert out["generated"] == 1 and out["writer"] == "committed", _said(out)
 
 
 # --- the corrective effect (ADR-03, E04) -------------------------------------------

@@ -271,36 +271,57 @@ def generate(session: Session, *, property_id: uuid.UUID | None,
 
 
 def _lock_and_recheck(session: Session, pairs, focus: uuid.UUID | None):
-    """Close the window between reading the pairs and inserting (review of
-    c3aac8a, measured before this fix: a review that made B an alias inside
-    that window let generation insert a candidate pairing B).
+    """Close the window between reading the pairs and inserting.
 
-    - Every property involved is locked in ONE statement, in id order, with
-      `FOR KEY SHARE`. That mode conflicts with the review's `FOR UPDATE` and
-      not with an ordinary property UPDATE (PostgreSQL 16 documentation,
-      §13.3.2, the row-lock conflict table). A review already holding a pair
-      is waited for. A review that comes later waits for this transaction,
-      and then meets an existing candidate, which it refuses to decide once a
-      member is an alias.
-    - One ordered acquisition cannot deadlock with a review, which also locks
-      in id order.
-    - After the lock, aliases are read AGAIN: a pair with an alias is
-      dropped, and a focus property that became an alias is the typed 409.
+    Measured before each fix:
+    - review of c3aac8a: a review committing B as an alias inside the window
+      let generation insert a candidate pairing B;
+    - review of 1935dc1: a PATCH committing a new `property_type` or
+      `canonical_location_id` inside the window left a candidate whose signals
+      claim a type and location that no longer matched.
+
+    Under Read Committed the first read and a later lock may see two states,
+    and a lock does not re-evaluate the earlier query's condition.
+
+    So, in ONE statement, every involved property is locked in id order with
+    `FOR SHARE`, and its blocking facts are read. A locking read that waited
+    returns the row's newest committed version (PostgreSQL 16 documentation,
+    §13.2.1), so the facts read are post-lock facts.
+    - `FOR SHARE`, not `FOR KEY SHARE`: `FOR SHARE` conflicts with the
+      `FOR NO KEY UPDATE` that any UPDATE of these non-key columns takes, and
+      with the review's `FOR UPDATE` (§13.3.2). Until this transaction ends, no
+      writer can change the type, location or alias status of a property it
+      has proposed.
+    - One ordered acquisition does not deadlock with a review, which also
+      locks in id order.
+
+    Then each pair is kept only if its blocking still holds on those facts
+    (same type, same known location), and neither side is an alias. A focus
+    that became an alias is the typed 409.
     """
     involved = sorted({x for pair in pairs for x in pair} | ({focus} if focus else set()))
     if not involved:
         return pairs
-    session.execute(text("""
-        SELECT property_id FROM turab.properties
-         WHERE property_id = ANY(:ids) ORDER BY property_id FOR KEY SHARE"""),
-        {"ids": involved})
+    facts = {r["property_id"]: r for r in session.execute(text("""
+        SELECT property_id, property_type::text AS property_type, canonical_location_id
+          FROM turab.properties
+         WHERE property_id = ANY(:ids) ORDER BY property_id FOR SHARE"""),
+        {"ids": involved}).mappings()}
     aliased = set(session.execute(text("""
         SELECT alias_property_id FROM turab.property_identity_aliases
          WHERE alias_property_id = ANY(:ids)"""), {"ids": involved}).scalars())
     if focus is not None and focus in aliased:
         raise NotCanonical("this property is an identity alias; generate "
                            "candidates for its canonical property")
-    return [(a, b) for a, b in pairs if a not in aliased and b not in aliased]
+
+    def still_blocked(a, b):
+        fa, fb = facts[a], facts[b]
+        return (fa["property_type"] == fb["property_type"]
+                and fa["canonical_location_id"] is not None
+                and fa["canonical_location_id"] == fb["canonical_location_id"])
+
+    return [(a, b) for a, b in pairs
+            if a not in aliased and b not in aliased and still_blocked(a, b)]
 
 
 # --- review ------------------------------------------------------------------

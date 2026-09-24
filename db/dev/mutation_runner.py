@@ -61,12 +61,14 @@ def run(title, test_file, mutations, only=()):
         if only and name.split()[0] not in only:
             continue
         path = ROOT / rel
+        source = path.read_text()
+        sites = source.count(old)
+        # Checked BEFORE the backup is made: a missing anchor must not leave a
+        # stray .orig behind (it did, once, during the review of 1935dc1).
+        assert sites >= 1, (name, "anchor not found")
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         backup = path.with_suffix(path.suffix + ".orig")
         shutil.copy2(path, backup)
-        source = path.read_text()
-        sites = source.count(old)
-        assert sites >= 1, (name, "anchor not found")
         path.write_text(source.replace(old, new))
         try:
             out = _pytest(test_file)

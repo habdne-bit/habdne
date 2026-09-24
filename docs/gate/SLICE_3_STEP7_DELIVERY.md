@@ -46,7 +46,7 @@ No table, column, migration or reason code was added. The ops count stays at
 | **two concurrent reviews of one candidate** | the candidate row lock and the rule above | `test_two_concurrent_reviews_of_one_candidate_leave_one_final_decision`: `waited=True`; the second raises `AlreadyDecided` | I20, I21 |
 | no alias chains (ADR-03): typed 409s instead of P0001s | pre-checks under the property row locks, for EVERY decision (§6) | `test_the_chosen_canonical_may_not_itself_be_an_alias`, `test_an_alias_may_not_become_an_alias_again`, `test_a_canonical_record_may_not_become_an_alias` | I24, I25, I26 |
 | **a candidate whose property has since become an alias is not decided** (review of c3aac8a) | the same check, for all four decisions | `test_a_candidate_whose_property_has_since_become_an_alias_is_not_decided` (DISTINCT, UNSURE, SAME with either canonical) | I25, I35 |
-| **generation's window** (review of c3aac8a) | lock (`FOR KEY SHARE`) and re-check after reading the pairs | `test_generation_rechecks_aliases_after_its_lock`; `test_generation_for_a_property_that_became_an_alias_in_the_window_is_409`; `test_a_review_waits_for_a_generation_between_its_lock_and_its_insert` | I36, I37, I38, I23 |
+| **generation's window** (reviews of c3aac8a and 1935dc1) | lock (`FOR SHARE`, §6.4) and re-check, after the lock, of aliases AND blocking facts | `test_generation_rechecks_aliases_after_its_lock`; `test_generation_for_a_property_that_became_an_alias_in_the_window_is_409`; `test_a_review_waits_for_a_generation_between_its_lock_and_its_insert` | I36, I37, I38, I23; blocking facts: I39, I40 (§6.4) |
 | **no chain by concurrency** | both properties locked in id order before the checks | `test_two_concurrent_reviews_cannot_build_an_alias_chain`: `waited=True`; the second raises `NotCanonical`; zero chains | I23 |
 | E01: nothing deleted or rewritten | no DELETE or UPDATE of any source, offer or claim | `test_e01_confirming_same_deletes_and_rewrites_nothing` | — |
 | E03: DISTINCT for similar units | no alias row | `test_e03_similar_units_confirmed_distinct_create_no_alias` | — |
@@ -58,9 +58,9 @@ No table, column, migration or reason code was added. The ops count stays at
 | every identity write audited | `audit_rows`, for candidates, aliases and tasks | `test_every_identity_write_is_audited` (exact sequence) | I33 |
 | the list | status as text; `PageMeta`; audited once (R6.3c); CUSTOMER refused | `test_the_list_filters_by_status_and_pages`; `test_a_customer_cannot_list_candidates` | I34 |
 
-`tests/test_slice3_identity.py` has 64 cases: 57 at c3aac8a, and 7 added in
-the review of c3aac8a (§6). Thirty-six mutations are active (I10 and I11 are
-retired, §6.3), and are run
+`tests/test_slice3_identity.py` has 67 cases: 57 at c3aac8a, 7 added in the
+review of c3aac8a, and 3 in the review of 1935dc1 (§6). Thirty-eight mutations
+are active (I10 and I11 are retired, §6.3), and are run
 by `db/dev/mutate_identity.py`, through the shared runner, and **every one
 fails at least one test**. The output, bound to its commit and fingerprint, is
 `docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt`.
@@ -203,7 +203,8 @@ harness and its output are in
 `docs/gate/evidence/STEP7-GENERATION-RACE-BEFORE-FIX.txt`.
 
 **Fixed: `_lock_and_recheck`**, in the same transaction, after reading the
-pairs:
+pairs. (Its lock mode was changed from `FOR KEY SHARE` to `FOR SHARE` in the
+review of 1935dc1, §6.4; the text below describes the c3aac8a round.)
 - every involved property is locked in ONE statement, in id order, with
   `FOR KEY SHARE`. That mode conflicts with the review's `FOR UPDATE` and not
   with an ordinary property UPDATE (PostgreSQL 16 documentation, §13.3.2).
@@ -253,3 +254,55 @@ later. That differs from step 6's revocation date, where two columns could
 disagree. The two checks were removed. Their numbers are retired, not reused,
 so the evidence files stay comparable across rounds. The behavior they
 provided is proven by I37 and I38.
+
+### 6.4 The review of 1935dc1: the blocking facts change inside the window
+
+**The reviewer's finding** (from reading the code and the PostgreSQL
+rules). Generation re-checked only aliases after its lock. A PATCH may change
+`property_type` or `canonical_location_id`. Under Read Committed, the pair
+read and the lock can see two different states, and a lock does not
+re-evaluate the earlier query's condition. Also, `FOR KEY SHARE` does not
+conflict with an UPDATE of non-key columns, while `FOR SHARE` does.
+
+**Measured before the fix**, on the 1935dc1 code
+(`docs/gate/evidence/STEP7-PATCH-RACE-BEFORE-FIX.txt`):
+- **Window (a), before the lock: defect confirmed, for both fields.** An
+  HTTP PATCH committed inside the window, and B–C was created with signals
+  claiming the same type and location, although the facts had already
+  changed.
+- **Window (b), after the lock: the HTTP PATCH waited.** The reason was not
+  generation's lock mode. The PATCH path's own version guard takes
+  `SELECT … FOR UPDATE` (`services/concurrency.py`), which does conflict with
+  `FOR KEY SHARE`. So window (b) was protected only **incidentally**, by a
+  lock chosen elsewhere. Any writer that updates the columns without that
+  guard would pass: a plain UPDATE takes `FOR NO KEY UPDATE` (PostgreSQL 16
+  documentation, §13.3.2).
+
+**Fixed: one statement locks every involved property `FOR SHARE` and reads
+its blocking facts.**
+- A locking read that waited returns the newest committed version
+  (§13.2.1), so these are post-lock facts.
+- A pair is kept only if its type and known location still match and neither
+  side is an alias.
+- Until the generating transaction ends, no writer of any kind can change
+  those facts on a proposed property.
+- The facts used for the signals (`_FACTS`) are read after the lock too.
+
+**Tests.**
+
+| Window | Test | On the 1935dc1 code | Mutation |
+|---|---|---|---|
+| (a) before the lock | `test_a_patch_in_generations_window_leaves_no_stale_candidate` (the type; the location), over HTTP: B–C is not created, D–C (unchanged facts) is | **fails**: B–C created | I39 |
+| (b) after the lock | `test_generations_lock_holds_the_blocking_facts_against_any_writer`: a PLAIN `UPDATE` of `property_type` must wait on generation (witnessed) | **fails**: `waited=False` | I40 (`FOR KEY SHARE` restored), I36 |
+
+**Two further corrections, ours.**
+- **Timestamps cannot order commits.** Two concurrency tests compared
+  `generated_at` with `resolved_at` or `updated_at`. Each column is `now()`,
+  i.e. its transaction's START time, so the comparison held whether or not
+  the second writer had waited. Both comparisons were removed. The witnessed
+  wait is the proof of order.
+- **A defect in the mutation runner.** It made its backup copy before
+  checking the anchor. A missing anchor therefore aborted the run and left a
+  stray `.orig` file. The working file was verified byte-identical to that
+  backup, which shows it was never mutated. The runner now checks the anchor
+  first.

@@ -1,0 +1,96 @@
+TURAB — step 7: a PATCH in generation's window, MEASURED BEFORE THE FIX (review of 1935dc1)
+======================================================================================
+Code measured : src/turab/services/identity.py as committed at
+                1935dc1c68c7887efb6f02ece542f91c40b53b9d (the working tree was that commit,
+                clean, PLUS the temporary measuring test file below; no fingerprint is claimed)
+Server        : PostgreSQL 16.13
+
+Findings
+  window (a), BEFORE generation's lock: the PATCH committed inside the window, and the
+    candidate B-C was then created with signals claiming same_property_type and
+    same_canonical_location although the facts had ALREADY changed. DEFECT, both fields.
+  window (b), AFTER the lock (FOR KEY SHARE at the time): the HTTP PATCH WAITED. The reason
+    was the PATCH path's own version guard (SELECT ... FOR UPDATE, services/concurrency.py),
+    not generation's lock mode: a plain UPDATE takes FOR NO KEY UPDATE, which FOR KEY SHARE
+    does not block. The permanent test uses such a plain UPDATE, and on this code it did not
+    wait (waited=False).
+  'candidate_now' in window (b) reflects facts changed AFTER the candidate was written.
+
+--- output ---
+MEASURE window=a_before_lock change=property_type patch_waited_on_generation=False patch_committed_inside_window=True patch_status=200 generated=[('d9a39f7e-069b-47ef-b598-2e12ab889d7c', 'e80815c9-7411-47d2-a0d7-8637584ae110')] candidate_now=[{'b_type': 'APARTMENT', 'same_loc': True, 'same_type': False, 'claimed': {'same_property_type': True, 'same_canonical_location': True}}]
+MEASURE window=b_after_lock change=property_type patch_waited_on_generation=True patch_committed_inside_window=False patch_status=200 generated=[('329ecf3a-983c-4b14-b9fd-132dbb097b91', 'fb0505a1-5765-473c-86d8-08288008bb12')] candidate_now=[{'b_type': 'APARTMENT', 'same_loc': True, 'same_type': False, 'claimed': {'same_property_type': True, 'same_canonical_location': True}}]
+MEASURE window=a_before_lock change=canonical_location_id patch_waited_on_generation=False patch_committed_inside_window=True patch_status=200 generated=[('43a6a3b0-595e-4e7e-8a42-09389591d409', '475e2afa-97e5-4759-bd59-2f6cd84c86c8')] candidate_now=[{'b_type': 'LAND', 'same_loc': False, 'same_type': True, 'claimed': {'same_property_type': True, 'same_canonical_location': True}}]
+MEASURE window=b_after_lock change=canonical_location_id patch_waited_on_generation=True patch_committed_inside_window=False patch_status=200 generated=[('375dcd0c-eb40-448f-8455-6459fa4854b9', 'd28aa550-9c31-44cb-b42b-a89280930348')] candidate_now=[{'b_type': 'LAND', 'same_loc': False, 'same_type': True, 'claimed': {'same_property_type': True, 'same_canonical_location': True}}]
+4 passed, 2 warnings in 4.38s
+
+--- the measuring test (run as tests/test_zz_measure_patch_race.py, then removed; the
+    source below is reproduced verbatim from the command that wrote that file) ---
+"""TEMPORARY measurement (review of 1935dc1): does a PATCH committed in
+generation's window leave a candidate whose blocking facts no longer hold?"""
+import threading, time, uuid
+import pytest
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from tests.test_slice3_identity import client, sink, _location, _property, _h, _all  # noqa: F401
+from turab.db.session import audited_transaction
+from turab.services import identity
+
+
+def _generate_paused_at(engine, ids, monkeypatch, name, focus):
+    in_window, go_on, out = threading.Event(), threading.Event(), {}
+    original = getattr(identity, name)
+    def paused(*a, **k):
+        if not in_window.is_set():
+            in_window.set(); go_on.wait(30)
+        return original(*a, **k)
+    monkeypatch.setattr(identity, name, paused)
+    def run():
+        try:
+            with Session(bind=engine, future=True) as s, audited_transaction(s, ids.ACC_OPERATOR):
+                out["pid"] = s.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                rows = identity.generate(s, property_id=focus, algorithm_version=None)
+            out["rows"] = [(str(r["property_a_id"]), str(r["property_b_id"])) for r in rows]
+        except Exception as exc:
+            out["rows"] = f"raised {type(exc).__name__}: {exc}"
+    t = threading.Thread(target=run); t.start()
+    return t, in_window, go_on, out
+
+
+@pytest.mark.parametrize("window", ["a_before_lock", "b_after_lock"])
+@pytest.mark.parametrize("change", ["property_type", "canonical_location_id"])
+def test_measure(client, ids, engine, monkeypatch, window, change):
+    loc = _location(engine)
+    b, c = _property(client, ids, loc), _property(client, ids, loc)
+    name = "_lock_and_recheck" if window == "a_before_lock" else "_candidate_for_pair"
+    t, in_window, go_on, out = _generate_paused_at(engine, ids, monkeypatch, name, uuid.UUID(c))
+    assert in_window.wait(30)
+    body = {"property_type": "APARTMENT"} if change == "property_type" \
+        else {"canonical_location_id": str(_location(engine))}
+    patch = {}
+    def do_patch():
+        r = client.patch(f"/properties/{b}", headers={**_h(ids.ACC_OPERATOR), "If-Match-Version": "1"},
+                         json=body)
+        patch["status"] = r.status_code; patch["at"] = time.monotonic()
+    pt = threading.Thread(target=do_patch); pt.start()
+    waited = False
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and pt.is_alive():
+        with Session(bind=engine, future=True) as s:
+            blocked = s.execute(text("SELECT count(*) FROM pg_stat_activity "
+                                     "WHERE :g = ANY(pg_blocking_pids(pid))"), {"g": out["pid"]}).scalar_one()
+        if blocked:
+            waited = True; break
+        time.sleep(0.01)
+    patch_done_before_release = not pt.is_alive()
+    go_on.set(); t.join(30); pt.join(30)
+    rows = _all(engine, """SELECT p.property_type::text AS b_type, p.canonical_location_id = q.canonical_location_id AS same_loc,
+                                  p.property_type = q.property_type AS same_type, c.signals->'blocking' AS claimed
+                             FROM turab.property_identity_candidates c
+                             JOIN turab.properties p ON p.property_id = :b
+                             JOIN turab.properties q ON q.property_id = :c
+                            WHERE LEAST(c.property_a_id, c.property_b_id) = LEAST(:b, :c)
+                              AND GREATEST(c.property_a_id, c.property_b_id) = GREATEST(:b, :c)""",
+                b=b, c=c)
+    print(f"\nMEASURE window={window} change={change} patch_waited_on_generation={waited} "
+          f"patch_committed_inside_window={patch_done_before_release} patch_status={patch.get('status')} "
+          f"generated={out['rows']} candidate_now={rows}")
