@@ -15,14 +15,13 @@ API path creates a property claim. The claim rows here are
 `record_claim_events` inserted as fixture: legitimate for proving what a
 claim GRANTS, not evidence that a claim flow exists.
 
-**S16i / S16j: finding G3-15.** RFC-001's scenario table expects **404**.
-The implementation refuses a non-ACTIVATED account at AUTHENTICATION, with
-**401**, as it has since Slice 1: `resolve_subject` admits only ACTIVATED
-accounts (R4.11a), and RFC-001's pipeline, stage 1, answers 401 for an
-invalid token. These tests assert the behavior that exists (a denial, 401).
-They also assert that the 401 does not depend on the resource, so it is not
-an existence oracle. The 401-or-404 choice is raised for decision in the
-step-8 note.
+**S16i / S16j: G3-15, decided in the review of d0d58c3.** The expected
+answer is **401**. The implementation refuses a non-ACTIVATED account at
+AUTHENTICATION, as it has since Slice 1: `resolve_subject` admits only
+ACTIVATED accounts (R4.11a), and RFC-001's pipeline, stage 1, answers 401 for
+an invalid token. RFC-001's scenario table said 404; it is corrected with the
+decision. These tests also assert that the 401 does not depend on the
+resource, so it reveals nothing about existence.
 """
 from __future__ import annotations
 
@@ -128,7 +127,7 @@ def test_s16b_a_second_account_of_the_same_party_is_denied(client, ids, engine):
 
 def test_s16i_an_owner_whose_account_is_later_disabled_is_denied(client, ids, engine):
     """S16i / R4.11a: claim authority ends with the account. Denied with 401
-    at authentication (finding G3-15; RFC-001's table says 404)."""
+    at authentication (G3-15)."""
     account, pid = _claimed_by_new_account(engine, ids)
     assert _get(client, account, pid).status_code == 200
     _run(engine, "UPDATE turab.user_accounts SET status = 'DISABLED' "

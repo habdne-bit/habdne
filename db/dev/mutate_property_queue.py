@@ -15,13 +15,13 @@ MUTATIONS = [
   "WHERE c.property_id = p.property_id AND v.outcome = 'CONFLICT_FOUND')",
   "WHERE c.property_id = p.property_id AND FALSE)"),
  ("Q2 a pending identity candidate is not a reason", SVC,
-  "                  AND i.review_status IN ('PENDING_REVIEW', 'UNSURE'))",
-  "                  AND FALSE)"),
+  "                  AND i.review_status IN ('PENDING_REVIEW', 'UNSURE')\n",
+  "                  AND FALSE\n"),
  ("Q3 UNSURE is not a reason", SVC,
-  "i.review_status IN ('PENDING_REVIEW', 'UNSURE'))", "i.review_status IN ('PENDING_REVIEW'))"),
+  "i.review_status IN ('PENDING_REVIEW', 'UNSURE')\n", "i.review_status IN ('PENDING_REVIEW')\n"),
  ("Q4 a decided candidate is a reason", SVC,
-  "i.review_status IN ('PENDING_REVIEW', 'UNSURE'))",
-  "i.review_status IN ('PENDING_REVIEW', 'UNSURE', 'CONFIRMED_DISTINCT'))"),
+  "i.review_status IN ('PENDING_REVIEW', 'UNSURE')\n",
+  "i.review_status IN ('PENDING_REVIEW', 'UNSURE', 'CONFIRMED_DISTINCT')\n"),
  ("Q5 stale availability is not a reason", SVC,
   "CASE WHEN p.current_availability = 'NEEDS_CONFIRMATION'", "CASE WHEN FALSE"),
  ("Q6 aliases are queued", SVC,
@@ -31,6 +31,11 @@ MUTATIONS = [
   "ORDER BY q.created_at, q.property_id", "ORDER BY q.created_at DESC, q.property_id"),
  ("Q8 properties with no reason are queued", SVC,
   "WHERE cardinality(q.reasons) > 0", "WHERE TRUE"),
+ ("Q9 a candidate with an alias member still queues its other member", SVC,
+  "                  AND NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases x\n"
+  "                                   WHERE x.alias_property_id\n"
+  "                                         IN (i.property_a_id, i.property_b_id)))\n",
+  "                  )\n"),
 ]
 
 if __name__ == "__main__":

@@ -547,7 +547,10 @@ _REVIEW_QUEUE = """
              CASE WHEN EXISTS (
                SELECT 1 FROM turab.property_identity_candidates i
                 WHERE p.property_id IN (i.property_a_id, i.property_b_id)
-                  AND i.review_status IN ('PENDING_REVIEW', 'UNSURE'))
+                  AND i.review_status IN ('PENDING_REVIEW', 'UNSURE')
+                  AND NOT EXISTS (SELECT 1 FROM turab.property_identity_aliases x
+                                   WHERE x.alias_property_id
+                                         IN (i.property_a_id, i.property_b_id)))
              THEN 'IDENTITY_CANDIDATE_PENDING' END,
              CASE WHEN p.current_availability = 'NEEDS_CONFIRMATION'
              THEN 'AVAILABILITY_NEEDS_CONFIRMATION' END
@@ -562,7 +565,11 @@ def review_queue(session: Session) -> list[Mapping[str, Any]]:
     """Properties needing a staff decision, oldest first, id as the tie-break.
 
     An identity ALIAS is not queued: writes to it are refused (F-2), so its
-    work belongs to its canonical record. No paging: the contract declares no
+    work belongs to its canonical record. For the same reason, a candidate
+    with an alias member is not a reason to queue its OTHER member. Review
+    refuses every decision on such a candidate (`identity._lock_pair_and_check`),
+    so it is not work anyone can do. The candidate row itself is kept, as
+    history. No paging: the contract declares no
     parameter for this operation. This was accepted for this slice's queues
     (review of 0a66f8e, Q-5 to Q-8), and a paging contract is needed before
     operational volume.
@@ -579,8 +586,8 @@ def review_queue_item(row: Mapping[str, Any]) -> dict[str, Any]:
     - `reason` is the first reason in `REVIEW_REASONS` order;
     - `reasons` lists all of them;
     - `priority` is `NORMAL`: no priority rule exists (step 3, Q-4);
-    - `created_at` is the property's own creation time. Whether it should be
-      the moment the item entered the queue is noted in the step-8 note.
+    - `created_at` is the property's own creation time (decided in the review
+      of d0d58c3).
     """
     reasons = list(row["reasons"])
     return {"id": str(row["property_id"]), "kind": "PROPERTY", "priority": "NORMAL",

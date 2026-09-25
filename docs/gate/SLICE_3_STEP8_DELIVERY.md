@@ -1,5 +1,76 @@
 # Slice 3 · step 8 — the authorization matrix, and STOP GATE C
 
+## 0. The review of d0d58c3: two blockers, and the decisions
+
+Both blockers were measured on the delivered code, a `git archive` copy of
+d0d58c3, before either fix. The harness and its output are in
+`evidence/STEP8-REVIEW-BEFORE-FIX.txt`.
+
+**Blocker 1: the queue listed work nobody can do.** A chain A–B, B–C. Once
+A–B is confirmed SAME, B is an alias, and review refuses every decision on
+B–C (`identity._lock_pair_and_check`). The queue still listed C, because B–C
+was pending. It excluded the alias B, but not a candidate containing B.
+- Measured: C is queued (`IDENTITY_CANDIDATE_PENDING`) on d0d58c3.
+- **Fix.** A candidate is a reason only if it is `PENDING_REVIEW` or
+  `UNSURE` **and neither member is an alias**. That is the same condition
+  under which review can decide it. The B–C row is not changed: it stays as
+  history.
+- **Test**, over HTTP:
+  `test_a_candidate_that_can_no_longer_be_reviewed_does_not_queue_its_other_member`.
+  1. C is queued while B–C is reviewable.
+  2. After A–B is confirmed, both `CONFIRMED_DISTINCT` and `UNSURE` on B–C
+     are refused with a typed 409.
+  3. A, B and C are then out of the queue, and B–C is still `PENDING_REVIEW`.
+  4. Generating for C creates A–C, and A–C brings A and C back. So only the
+     unreviewable candidate is excluded.
+- Mutation **Q9** removes the condition.
+
+**Blocker 2: `--check` accepted evidence that had lost its binding.** Your
+two experiments, repeated on d0d58c3, both exit 0:
+- a failing case appended to the saved report: the document still said
+  "1280 test cases, 0 failures", copied from the provenance record;
+- `FOR SHARE` changed to `FOR KEY SHARE`: the source fingerprint changed.
+
+**Fix.**
+- The provenance record now has ONE writer, `db/gate/record_test_run.py`.
+  Until now we wrote it by hand after the run. The writer:
+  - refuses a dirty tree;
+  - refuses to write if the tree changed during the run;
+  - records the report's **sha256** and its **counted** cases, one per
+    `<testcase>`, failing ones included.
+- It has ONE checker, `db/gate/run_binding.check`. The generator calls it
+  before it claims any provenance. It refuses when:
+  - a recorded field is missing;
+  - the report's sha256 differs;
+  - the counted cases differ from the recorded counts;
+  - the report's `<testsuite>` totals disagree with its own cases;
+  - any case failed or errored;
+  - **the current tree's source fingerprint** differs from the run's.
+- The generator also compares `gate-run.txt`'s fingerprint with the current
+  tree's. This goes one step beyond what you asked, for the same reason.
+- The document's totals are now counted from the report itself, never
+  copied from the record.
+
+**Tests**, in `tests/test_evidence_binding.py`. Each runs on a COPY of the
+tree, with the generator as a subprocess, as a reviewer runs it. `--check`
+must first pass on a bound baseline.
+- `test_a_failing_case_appended_to_the_saved_report_is_refused` (your
+  experiment 1);
+- `test_a_source_change_after_the_run_is_refused` (your experiment 2);
+- `test_a_report_whose_totals_disagree_with_its_cases_is_refused`.
+
+**Decisions recorded** (plan revision 7):
+- **G3-15 = 401.** S16i and S16j expect 401 at authentication. The scenario
+  tables are corrected in the plan (§5.1) and in RFC-001 (§11, with a
+  correction note; not a new revision).
+- **G3-16** is an exception for this slice only (plan §6).
+- **The queue's `created_at`** is the property's creation time.
+- **Condition 11**, in the approved wording: a winner and loser must be
+  backed by a declared compare-and-set, **or** by a declared conflict rule
+  that is re-checked under a lock before the write. §4 below is assessed
+  against it.
+
+
 **Basis.**
 - `docs/gate/SLICE_3_PLAN.md`: §5.1 (the RFC-001 scenarios, "each is a
   test, named for its scenario"); §6 (STOP GATE C: six questions, each with
@@ -36,7 +107,7 @@ rule:
 | Reason | Rule |
 |---|---|
 | `CLAIM_CONFLICT_FOUND` (تعارض) | a claim about the property has a verification event with outcome `CONFLICT_FOUND` |
-| `IDENTITY_CANDIDATE_PENDING` (Identity candidate) | the property is in a candidate that is `PENDING_REVIEW` or `UNSURE` |
+| `IDENTITY_CANDIDATE_PENDING` (Identity candidate) | the property is in a candidate that is `PENDING_REVIEW` or `UNSURE`, and neither member of that candidate is an alias, so review can still decide it (§0, blocker 1) |
 | `AVAILABILITY_NEEDS_CONFIRMATION` (إتاحة قديمة) | `current_availability = 'NEEDS_CONFIRMATION'`, the value the step-4 pass sets |
 
 **Choices, stated for review.**
@@ -47,8 +118,8 @@ rule:
   `additionalProperties: true`).
 - **`priority` is `NORMAL`**, since no priority rule exists (the step-3
   precedent, Q-4).
-- **`created_at` is the property's creation time.** Whether it should be the
-  moment the item entered the queue is an open question.
+- **`created_at` is the property's creation time** (decided in the review of
+  d0d58c3).
 - **An identity alias is not queued.** Writes to it are refused (F-2), so
   its work belongs to its canonical record.
 - **No paging**, since the contract declares no parameters. This is the
@@ -56,14 +127,15 @@ rule:
   `next_cursor` is `null`.
 - Staff only by `x-roles`, and audited once for the list (R6.3c).
 
-**Tests:** `tests/test_slice3_property_queue.py`, 9 cases. Each criterion
+**Tests:** `tests/test_slice3_property_queue.py`, 10 cases. Each criterion
 ENTERS a property that was not queued before. The mutation script is
-`db/dev/mutate_property_queue.py`: 8 mutations, each failing at least one
-test (`STEP8-PROPERTY-QUEUE-MUTATIONS.txt`, clean tree at a558e4c).
+`db/dev/mutate_property_queue.py`: 9 mutations (Q9 added in §0), each
+failing at least one test (`STEP8-PROPERTY-QUEUE-MUTATIONS.txt`, on the clean
+tree of this round).
 
 **Q8 is killed by a crash, not by an assertion.** The mutation admits
 properties with no reason. `review_queue_item` then indexes an empty
-`reasons` list, and all 9 tests fail with `IndexError`. Four tests do assert
+`reasons` list, and all the tests fail with `IndexError`. Four tests do assert
 that a property is absent before it is given a reason
 (`assert pid not in _queue(...)`). Those assertions are never reached under
 Q8, so this run does not show that they would catch it.
@@ -109,8 +181,7 @@ exists:
 - (b) resolve non-ACTIVATED accounts to a subject with no authority, and
   answer 404 per resource.
 
-**Recommendation: (a).** It follows the RFC's pipeline, and leaks nothing.
-Not changed without a decision.
+**Decided: (a)**, in the review of d0d58c3. The tables are corrected (§0).
 
 ## 3. STOP GATE C (§6)
 
@@ -150,7 +221,7 @@ The three STOP GATE C tests that could be written and did not exist are in
 | 7 | PROPERTY claim eligibility undecided; no side-effect authority link | `test_property_claiming_fails_closed`; only `services/claims.py` inserts `record_claim_events` |
 | 8, 10 | relations | amended by the approved G3-6 Delta: relations are delivered through their own operations |
 | 9 | relations never read as an authorization source | `test_authorization_sql_never_reads_party_property_relations` |
-| 11 | no winner-and-loser outcome without a **declared compare-and-set** | **stated for review, below** |
+| 11 | no winner-and-loser outcome without a declared compare-and-set **or** a declared conflict rule re-checked under a lock before the write (approved wording) | below |
 | 12 | run provenance and document digests | `TEST-RUN-PROVENANCE.txt`, `gate-run.txt`, `DOCUMENT-HASHES.txt` |
 
 **Condition 11, stated precisely.** Three concurrency tests assert a winner
@@ -163,10 +234,17 @@ and a loser:
 | two reviews building an alias chain (step 7) | the ADR-03 structure check, made after `FOR UPDATE` on both properties |
 
 The second and third have no CAS predicate in the UPDATE. Step 7 removed one
-as redundant: a locking read that waited returns the newest committed row, so
-the rule is checked against the winner's result. The loser is backed by a
-declared rule under a serialising lock, not by a predicate. Whether that
-satisfies condition 11 as written is for review.
+as redundant: a locking read that waited returns the newest committed row
+(PostgreSQL 16 documentation, §13.2.1), so the rule is checked against the
+winner's result. Under the approved wording, each is backed by a **declared
+conflict rule, re-checked under a lock before the write**:
+
+| Test | Declared rule | Lock taken before the re-check | Write only after the check |
+|---|---|---|---|
+| two reviews of one candidate | a final decision is not reviewed again (`AlreadyDecided`, 409) | `FOR UPDATE` on the candidate | yes: the alias insert and the status update follow it |
+| two reviews building a chain | ADR-03: no alias of an alias, and no alias of a canonical record (`NotCanonical`, 409) | `FOR UPDATE` on both properties, in id order | yes. The frozen schema backs both halves of the rule with the trigger `enforce_identity_alias` (`schema_v0.2.3.sql`:1235–1239) |
+
+The offer transitions keep their declared compare-and-set.
 
 ## 5. Also corrected in this step (review of e72432b)
 
@@ -177,7 +255,5 @@ it may pair, `FOR SHARE`. Those locks are compatible between two generators
 
 ## 6. What remains for Slice 3 to close
 
-- A review of this evidence.
-- Decisions on **G3-15** (401 or 404) and **G3-16** (a staff list of a
-  property's offers, as a Delta or not).
-- Whether condition 11 is met as stated in §4.
+- A review of this evidence: the two fixes of §0, and the STOP GATE C
+  document regenerated under the new binding.

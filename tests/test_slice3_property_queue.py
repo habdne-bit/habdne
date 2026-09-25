@@ -145,6 +145,48 @@ def test_an_alias_is_not_queued(client, ids, engine):
     assert a in queue and b not in queue
 
 
+def test_a_candidate_that_can_no_longer_be_reviewed_does_not_queue_its_other_member(
+        client, ids, engine):
+    """A chain A–B, B–C. Once A–B is confirmed SAME and B is an alias, review
+    refuses every decision on B–C. B–C is then no reason to queue C: C leaves
+    the queue, while the B–C row stays as history. A reviewable candidate
+    (A–C) brings C back, so the rule excludes only the unreviewable one."""
+    loc = _location(engine)
+    a, b, c = (_property(client, ids, loc) for _ in range(3))
+    made = client.post("/identity/candidates/generate", headers=_h(ids.ACC_OPERATOR),
+                       json={"property_id": b})
+    assert made.status_code == 201, made.text
+    by_pair = {frozenset((x["property_a_id"], x["property_b_id"])): x["identity_candidate_id"]
+               for x in made.json()}
+    ab, bc = by_pair[frozenset((a, b))], by_pair[frozenset((b, c))]
+    assert frozenset((a, c)) not in by_pair
+    assert c in _queue(client, ids)
+
+    assert client.post(f"/identity/candidates/{ab}/review", headers=_h(ids.ACC_REVIEWER),
+                       json={"decision": "CONFIRMED_SAME",
+                             "canonical_property_id": a}).status_code == 200
+    for decision in ("CONFIRMED_DISTINCT", "UNSURE"):
+        r = client.post(f"/identity/candidates/{bc}/review", headers=_h(ids.ACC_REVIEWER),
+                        json={"decision": decision})
+        assert r.status_code == 409 and r.json()["code"] == "IDENTITY_ALIAS_NOT_CANONICAL", r.text
+    queue = _queue(client, ids)
+    assert b not in queue, "B is an alias"
+    assert a not in queue, "A's only candidate is decided"
+    assert c not in queue, f"C is queued by the unreviewable B–C candidate: {queue.get(c)}"
+    with engine.connect() as conn:
+        assert conn.execute(text("""SELECT review_status::text FROM turab.property_identity_candidates
+                                     WHERE identity_candidate_id = :i"""),
+                            {"i": bc}).scalar_one() == "PENDING_REVIEW"
+
+    again = client.post("/identity/candidates/generate", headers=_h(ids.ACC_OPERATOR),
+                        json={"property_id": c})
+    assert again.status_code == 201, again.text
+    assert [{x["property_a_id"], x["property_b_id"]} for x in again.json()] == [{a, c}]
+    queue = _queue(client, ids)
+    assert queue[a]["reasons"] == queue[c]["reasons"] == ["IDENTITY_CANDIDATE_PENDING"]
+    assert b not in queue
+
+
 def test_the_queue_is_oldest_first_and_conforms_to_the_contract(client, ids, engine):
     from turab.auth.contract import load_contract
 

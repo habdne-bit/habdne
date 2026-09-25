@@ -1,5 +1,5 @@
 # Slice 3 — PROPERTY / OFFER / SOURCE / Truth Layer / Identity Lite
-## Implementation plan — **revision 6**
+## Implementation plan — **revision 7**
 
 **Status:** steps 1–8 authorised. Step 1 (PROPERTY) implemented and under
 review. Migrations `0003` (G3-7) and `0004` (relation overlap) implemented.
@@ -16,7 +16,8 @@ agree, and the way to keep them agreeing is to keep the history here:
 | 3 | `37b7eb6` | steps 1–8 authorised; G3-6 decided (option A); contention claim corrected in four places |
 | 4 | `0ea6999` | G3-7 recorded; G3-6 reachability wording made precise |
 | 5 | `ca807c3` | `0003` and `0004` implemented, so G3-7 is RESOLVED and G3-6 §6 has its database backstop; step 1 findings R-S3-P01/P02 corrected |
-| 6 | this commit | the empty-string regression on CREATE fixed; the `0004` contention witness bound to the contending backend; gate evidence bound to its commit; document revisions and commit attribution made consistent |
+| 6 | `dc9f752` | the empty-string regression on CREATE fixed; the `0004` contention witness bound to the contending backend; gate evidence bound to its commit; document revisions and commit attribution made consistent |
+| 7 | the commit that records the review of d0d58c3 | three decisions from that review, recorded where they apply: condition 11 (§7) reworded as approved; S16i and S16j expect 401 (G3-15, §5.1); G3-16 recorded as an exception for this slice (§6) |
 
 **On labels and commits.** A file delivered as `rev4` once said "revision 3"
 inside, and this plan's own hash record attributed this round's documents to
@@ -714,8 +715,14 @@ this slice introduces. Each is a test, named for its scenario.
 | S16f | broker reads the offer **they created**, no claim on the parent | **allow** 200 (§4.6 cond. 1) |
 | S16g | party match on the offer, no parent claim, not creator | **deny** 404 (R4.12) |
 | S16h | customer holding only a relations row reads an offer | **deny** 404 (R4.12) |
-| S16i | authorized owner whose account is later `DISABLED` | **deny** 404 (R4.11a) |
-| S16j | account in `INVITED` or `SUSPENDED` | **deny** 404 (R4.11a) |
+| S16i | authorized owner whose account is later `DISABLED` | **deny** 401 at authentication (R4.11a; G3-15) |
+| S16j | account in `INVITED` or `SUSPENDED` | **deny** 401 at authentication (R4.11a; G3-15) |
+
+**G3-15, decided in the review of d0d58c3:** S16i and S16j expect **401**. The
+account is refused at authentication, before any resource is looked up, and
+the 401 is identical for a claimed property and a missing one. Revisions 1–6
+of this table said 404, copied from RFC-001's table, which is corrected with
+the same decision.
 
 S12, S16g and S16h are the three that a plausible-looking implementation would
 get wrong, and S16e is the one a "the owner owns the property, so they own its
@@ -743,6 +750,18 @@ defect it names.
 | what is current vs historical? | `test_only_one_resolved_value_is_current_per_attribute`, `test_superseding_closes_the_previous_row_in_the_same_transaction`, `test_a_stale_offer_is_reported_stale_on_its_commercial_terms_clock` |
 | declared vs checked? | `test_a_claim_is_born_declared`, `test_only_a_confirmed_verification_event_raises_the_level`, `test_a_non_confirmed_outcome_records_the_event_and_changes_nothing` |
 | canonical or alias? | `test_confirmed_same_writes_the_alias_before_the_status`, `test_the_canonical_resolver_returns_the_canonical_for_an_alias`, `test_confirming_same_raises_review_work_for_affected_open_records` |
+
+**Two planned tests are exceptions** (review of d0d58c3). The STOP GATE C
+generator lists each one and requires the tests named in its place to pass.
+- `test_listing_a_property_returns_all_of_its_offers`: **G3-16, an exception
+  for this slice only.** The frozen contract declares no operation that lists
+  a property's offers. The question is answered by the coexistence test, and
+  by `test_only_active_consented_offers_are_projected` for the public subset.
+  A staff list of a property's offers, if needed later, is a contract
+  addition, not part of this slice.
+- `test_converting_a_lead_records_its_party_and_consent`: **G3-10.**
+  Conversion is refused until its schema is decided. The refusal is proven by
+  `test_conversion_is_refused_with_a_typed_409_and_changes_nothing`.
 
 ### 6.1 The seven mandatory tests
 
@@ -874,7 +893,10 @@ and the trail, and fails if no interleaving was observed.
 10. **Slice 3 is not declared closed** until G3-6 is delivered or its deferral
     is explicitly approved.
 11. No concurrency test asserts a winner-and-loser outcome that is not backed
-    by a **declared** compare-and-set (§6.3).
+    by **either** a declared compare-and-set **or** a declared conflict rule
+    that is re-checked under a lock before the write (§6.3). *Wording approved
+    in the review of d0d58c3. Revisions 1–6 said "a declared compare-and-set"
+    only.*
 12. Run provenance recorded at run time, with the committed fingerprint
     recipe, and every delivered document accompanied by its sha256 (§9).
 

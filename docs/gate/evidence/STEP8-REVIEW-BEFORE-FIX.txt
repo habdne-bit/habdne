@@ -1,0 +1,72 @@
+TURAB — review of d0d58c3: the two blockers, measured on the d0d58c3 code
+==========================================================================
+Recorded : 2026-09-25 09:21:05 UTC
+Measured : a copy of commit d0d58c3 (git archive), source fingerprint
+           e24f79583c79bbf86e86b481d3dfb0f7793ed1dccee8a77c36fa2501b766385a,
+           i.e. the delivered tree, not the working tree.
+Server   : PostgreSQL 16.13
+
+A. The reviewer's two experiments, repeated on the d0d58c3 generator.
+   --check exited 0 after each one: a failing case was appended to the saved
+   report, and the document still read "1280 test cases, 0 failures"; the
+   source fingerprint changed, and --check still passed. Both are CONFIRMED.
+B. The new chain test (A–B confirmed SAME, then B–C) run against the
+   d0d58c3 queue. C is queued by the B–C candidate, which review refuses to
+   decide. CONFIRMED. The test is the one committed with the fix, in
+   tests/test_slice3_property_queue.py.
+
+The harness, verbatim (run as: measure.sh <repo> <scratch-dir>):
+----------------------------------------------------------------------
+#!/usr/bin/env bash
+# Measure, on the d0d58c3 code, the two defects found in the review of d0d58c3.
+# Usage: measure.sh <repo> <scratch-dir>; PG* variables as for the suite.
+set -u
+REPO=$1; W=$2/d0d58c3
+mkdir -p "$W" && git -C "$REPO" archive d0d58c3 | tar -x -C "$W"
+ln -s "$REPO/.venv" "$W/.venv"   # the suite's fixture runs alembic from the tree's .venv
+PY=$REPO/.venv/bin/python
+echo "tree: git archive d0d58c3 -> fingerprint $($PY "$W/db/dev/source_fingerprint.py" "$W")"
+echo
+echo "=== A. --check on the d0d58c3 generator, reviewer's experiments ==="
+cd "$W"
+$PY db/gate/stop_gate_c_evidence.py --check; echo "baseline --check exit=$?"
+cp docs/gate/evidence/junit-run.xml "$2/junit.orig"
+$PY - <<'PY'
+p="docs/gate/evidence/junit-run.xml"; t=open(p).read()
+t=t.replace('failures="0" skipped="0" tests="1280"','failures="1" skipped="0" tests="1281"',1)
+t=t.replace("</testsuite>",'<testcase classname="tests.x" name="test_unlisted" time="0.01"><failure message="boom">boom</failure></testcase></testsuite>',1)
+open(p,"w").write(t)
+PY
+grep -o '<testsuite [^>]*>' docs/gate/evidence/junit-run.xml
+$PY db/gate/stop_gate_c_evidence.py --check; echo "experiment 1 (failing case appended) --check exit=$?"
+$PY db/gate/stop_gate_c_evidence.py >/dev/null 2>&1; grep -m1 "That run" docs/gate/SLICE_3_STOP_GATE_C.md
+git -C "$REPO" show d0d58c3:docs/gate/SLICE_3_STOP_GATE_C.md > docs/gate/SLICE_3_STOP_GATE_C.md
+cp "$2/junit.orig" docs/gate/evidence/junit-run.xml
+sed -i 's/ORDER BY property_id FOR SHARE"""/ORDER BY property_id FOR KEY SHARE"""/' src/turab/services/identity.py
+grep -c 'FOR KEY SHARE"""' src/turab/services/identity.py
+echo "fingerprint now $($PY db/dev/source_fingerprint.py .)"
+$PY db/gate/stop_gate_c_evidence.py --check; echo "experiment 2 (FOR KEY SHARE) --check exit=$?"
+sed -i 's/ORDER BY property_id FOR KEY SHARE"""/ORDER BY property_id FOR SHARE"""/' src/turab/services/identity.py
+echo
+echo "=== B. the chain test on the d0d58c3 queue ==="
+cp "$REPO/tests/test_slice3_property_queue.py" tests/
+$PY -m pytest -q -p no:cacheprovider tests/test_slice3_property_queue.py -k no_longer_be_reviewed 2>&1 \
+  | grep -E "^E  +AssertionError|^E  +assert|passed|failed" | cut -c1-240
+----------------------------------------------------------------------
+
+Output:
+tree: git archive d0d58c3 -> fingerprint e24f79583c79bbf86e86b481d3dfb0f7793ed1dccee8a77c36fa2501b766385a
+
+=== A. --check on the d0d58c3 generator, reviewer's experiments ===
+baseline --check exit=0
+<testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1281" time="100.328" timestamp="2026-09-24T23:51:44.384414+00:00" hostname="vm">
+experiment 1 (failing case appended) --check exit=0
+- That run: 1280 test cases, 0 failures, 0 errors.
+1
+fingerprint now 3aaca2767fcd284d6222649fd690b5e6faad9bca57b311482e90323b8db85fb0
+experiment 2 (FOR KEY SHARE) --check exit=0
+
+=== B. the chain test on the d0d58c3 queue ===
+E       AssertionError: C is queued by the unreviewable B–C candidate: {'id': '43b29dbf-2268-44da-bbd7-0e7d26fada0d', 'kind': 'PROPERTY', 'priority': 'NORMAL', 'created_at': '2026-09-25T09:20:49.016255+00:00', 'reason': 'IDENTITY_CANDIDAT
+E       assert '43b29dbf-2268-44da-bbd7-0e7d26fada0d' not in {'43b29dbf-2268-44da-bbd7-0e7d26fada0d': {'id': '43b29dbf-2268-44da-bbd7-0e7d26fada0d', 'kind': 'PROPERTY', 'priority': 'NORMAL', 'created_at': '2026-09-25T09:20:49.016255+00:00',
+1 failed, 9 deselected, 2 warnings in 3.66s

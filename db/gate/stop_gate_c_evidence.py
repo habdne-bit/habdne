@@ -2,9 +2,16 @@
 """Generate the Slice 3 STOP GATE C evidence from a real test run.
 
 The source of every status is a JUnit report: by default the one committed
-with the clean-tree run, `docs/gate/evidence/junit-run.xml`, whose tree
-`docs/gate/evidence/TEST-RUN-PROVENANCE.txt` binds (commit, fingerprint).
-Nothing in the output is written by hand.
+with the clean-tree run, `docs/gate/evidence/junit-run.xml`. Its record,
+`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`, is written by
+`record_test_run.py`. Before any provenance is claimed, `run_binding.check`
+must find all of the following:
+- the report's sha256 and counted cases are the recorded ones;
+- no case failed or errored;
+- the current tree's source fingerprint is the run's, and also the one in
+  `gate-run.txt`.
+Any failure is a problem, and `--check` exits non-zero. Nothing in the
+output is written by hand.
 
 Mapped, each to named tests:
 - the six STOP GATE C questions (plan §6);
@@ -34,9 +41,11 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
+import run_binding
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DEFAULT_JUNIT = ROOT / "docs" / "gate" / "evidence" / "junit-run.xml"
-PROVENANCE = ROOT / "docs" / "gate" / "evidence" / "TEST-RUN-PROVENANCE.txt"
+GATE_RUN = ROOT / "docs" / "gate" / "evidence" / "gate-run.txt"
 OUT = ROOT / "docs" / "gate" / "SLICE_3_STOP_GATE_C.md"
 
 #: (question, planned tests, documented exceptions:
@@ -131,9 +140,9 @@ SCENARIOS = (
      "test_s16h_a_relation_row_grants_nothing"),
     ("S16h e2e", "a relation made through the G3-6 API opens no offer",
      "test_s16h_end_to_end_a_relation_opens_no_offer"),
-    ("S16i", "owner account later DISABLED — deny (401; RFC says 404: G3-15)",
+    ("S16i", "owner account later DISABLED — deny 401 at authentication (G3-15)",
      "test_s16i_an_owner_whose_account_is_later_disabled_is_denied"),
-    ("S16j", "INVITED or SUSPENDED — deny (401; RFC says 404: G3-15)",
+    ("S16j", "INVITED or SUSPENDED — deny 401 at authentication (G3-15)",
      "test_s16j_an_invited_or_suspended_account_is_denied"),
 )
 
@@ -150,6 +159,25 @@ CONCURRENCY = (
      "winner and loser (declared compare-and-set)",
      "test_two_concurrent_offer_transitions_from_one_state_do_not_both_apply"),
 )
+
+
+#: Named directly in the computed acceptance conditions (§5 of the document).
+CONDITION_TESTS = ("test_property_claiming_fails_closed",
+                   "test_authorization_sql_never_reads_party_property_relations")
+
+
+def mapped_names() -> set[str]:
+    """Every test the document requires to pass."""
+    names = set(CONDITION_TESTS)
+    for _, tests, exceptions in QUESTIONS:
+        names.update(tests)
+        for _, _, instead in exceptions:
+            names.update(instead)
+    for _, _, tests in MANDATORY:
+        names.update(tests)
+    names.update(name for *_, name in SCENARIOS)
+    names.update(name for *_, name in CONCURRENCY)
+    return names
 
 
 def parse(junit: pathlib.Path) -> dict[str, str]:
@@ -200,21 +228,25 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
            "**Generated** by `db/gate/stop_gate_c_evidence.py` from "
            f"`{shown}`. **Do not edit.**", ""]
     if bound:
-        # Provenance is claimed ONLY for the committed report, which
-        # TEST-RUN-PROVENANCE.txt describes. Any other report is unbound.
-        prov = PROVENANCE.read_text()
-        commit = re.search(r"Commit      : (\S+)", prov)
-        finger = re.search(r"Source fingerprint \(db/dev/source_fingerprint.py\):\n\s+(\S+)",
-                           prov)
-        totals = re.search(r"tests=(\d+) failures=(\d+) errors=(\d+)", prov)
-        if not (commit and finger and totals):
-            problems.append("TEST-RUN-PROVENANCE.txt lacks commit, fingerprint or totals")
-        else:
-            out += [f"- The JUnit run is bound to commit `{commit.group(1)}`, source "
-                    f"fingerprint `{finger.group(1)}` "
-                    "(`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).",
-                    f"- That run: {totals.group(1)} test cases, {totals.group(2)} failures, "
-                    f"{totals.group(3)} errors."]
+        # Provenance is claimed ONLY for the committed report, and only after
+        # run_binding.check: the report's digest and counted cases must be
+        # the recorded ones, no case may have failed, and the current tree
+        # must be the one the run was on. The totals shown are counted from
+        # the report itself, never copied from the record.
+        recorded, binding = run_binding.check(ROOT)
+        binding += run_binding.recorded_fingerprint_problems(GATE_RUN, ROOT)
+        problems += binding
+        cases = run_binding.counted(junit)
+        out += [f"- The JUnit run is recorded at commit `{recorded.get('commit')}`, source "
+                f"fingerprint `{recorded.get('fingerprint')}`, report sha256 "
+                f"`{recorded.get('report_sha256')}` "
+                "(`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).",
+                f"- Counted in the report: {cases.tests} test cases, {cases.failures} "
+                f"failures, {cases.errors} errors, {cases.skipped} skipped.",
+                "- Binding (`db/gate/run_binding.py`): "
+                + ("the report's digest and counts are the recorded ones, and the current "
+                   "tree's source fingerprint is the run's and the gate run's."
+                   if not binding else "**FAILED**: " + "; ".join(binding) + ".")]
     else:
         out += ["- **UNBOUND RUN**: this report is not the committed clean-tree run, and "
                 "no commit or fingerprint is claimed for it."]
@@ -269,10 +301,10 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
         f"{mc if mc else 'none'}.",
         f"- **Condition 7.** Files inserting into `record_claim_events`: {rce}. PROPERTY "
         f"claims fail closed: `test_property_claiming_fails_closed` "
-        f"{_status(results, 'test_property_claiming_fails_closed', problems, 'condition 7')}.",
+        f"{_status(results, CONDITION_TESTS[0], problems, 'condition 7')}.",
         f"- **Condition 4.** Migrations present: {', '.join(migrations)}.",
         f"- **Condition 9.** `test_authorization_sql_never_reads_party_property_relations` "
-        f"{_status(results, 'test_authorization_sql_never_reads_party_property_relations', problems, 'condition 9')}.",
+        f"{_status(results, CONDITION_TESTS[1], problems, 'condition 9')}.",
         "",
         "The remaining conditions are argued in `docs/gate/SLICE_3_STEP8_DELIVERY.md`, which "
         "this document does not replace.",

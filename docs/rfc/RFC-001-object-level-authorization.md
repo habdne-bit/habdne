@@ -602,8 +602,18 @@ Each becomes an executable test. **A** = allow, **D** = deny.
 | S16f | Broker reads the offer they created, with no claim on the parent property | **A** 200 — §4.6 condition 1 |
 | S16g | Customer whose `party_id` matches an offer, with no parent claim and not the creator | **D** 404 — `offer.party_id` alone never grants (R4.12) |
 | S16h | Customer holding only a `party_property_relations` row reads an offer | **D** 404 — relations never grant (R4.12) |
-| S16i | Authorized owner whose account is later `DISABLED` | **D** 404 — claim authority ends with the account (R4.11a) |
-| S16j | Account in `INVITED` or `SUSPENDED` status | **D** 404 (R4.11a) |
+| S16i | Authorized owner whose account is later `DISABLED` | **D** 401 at authentication — claim authority ends with the account (R4.11a; corrected, G3-15) |
+| S16j | Account in `INVITED` or `SUSPENDED` status | **D** 401 at authentication (R4.11a; corrected, G3-15) |
+
+**Correction G3-15** (decided in the review of Slice 3, commit d0d58c3; not a
+new revision). S16i and S16j said **404**. That contradicted this RFC's own
+pipeline (§10, stage 1: 401 when the bearer token is absent or invalid).
+Since Slice 1, `resolve_subject` admits only `ACTIVATED` accounts (R4.11a),
+so such an account is refused at authentication, before any resource is
+looked up. The 401 is identical for a claimed property and a missing one,
+so it reveals nothing about existence. Proven by
+`test_s16i_an_owner_whose_account_is_later_disabled_is_denied` and
+`test_s16j_an_invited_or_suspended_account_is_denied`.
 
 ### Staff and separation of duties
 

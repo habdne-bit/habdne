@@ -47,7 +47,7 @@ RULES: tuple[Rule, ...] = (
     Rule("R4.11a", "Only ACTIVATED accounts carry authority",
          ("test_non_activated_account_resolves_to_no_authority",
           # §5.1 S16i / S16j over HTTP: denied at authentication, 401
-          # (finding G3-15: RFC-001's scenario table says 404)
+          # (G3-15, decided: 401; RFC-001's scenario table corrected)
           "test_s16i_an_owner_whose_account_is_later_disabled_is_denied",
           "test_s16j_an_invited_or_suspended_account_is_denied")),
     # --- roles -------------------------------------------------------------
