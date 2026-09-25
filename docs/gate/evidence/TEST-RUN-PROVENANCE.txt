@@ -1,27 +1,36 @@
 TURAB — test run provenance
 ===========================
-This file exists because a saved JUnit report says when IT was produced, not
-which tree produced it — and a reviewer rightly declined to read the previous
-one as a run at the commit it shipped with. The accurate description of that
-artefact was "a saved run on an identical source tree", not "a re-run at this
-commit". This binds the two.
+Written by db/gate/record_test_run.py, which runs the suite. Checked by
+db/gate/run_binding.py, through `db/gate/stop_gate_c_evidence.py --check`.
+A saved JUnit report says when IT was produced, not which tree produced it.
+This record binds the report to that tree, and to its own digest and counts.
 
-Recorded    : 2026-09-24 23:51:44 UTC
-Commit      : 62b020d3b5a4d5f5939b2554f0245f922832d49f
-Working tree: clean at the moment the suite started
+Recorded    : 2026-09-25 09:49:21 UTC
+Commit      : 0c97a6b30f07f94d24afc039debce9cb4d589bff
+Working tree: clean when the suite started; unchanged when it ended
 Source fingerprint (db/dev/source_fingerprint.py):
-              e24f79583c79bbf86e86b481d3dfb0f7793ed1dccee8a77c36fa2501b766385a
+              4aa193ccde1d416b0e8a9bc946ae8a64ea73b02996a29507c3d65ce9dca34e50
 Report      : docs/gate/evidence/junit-run.xml
-JUnit timestamp / totals:
-              timestamp=2026-09-24T23:51:44.384414+00:00
-              tests=1280 failures=0 errors=0 skipped=0 time=100.328s
+Report sha256:
+              6abeee1242268ece07b738b4f25bb324eec7f65de0f26949da743b987662f33a
+Cases counted in the report, one per <testcase>:
+              tests=1284 failures=0 errors=0 skipped=0
+JUnit timestamp / time:
+              timestamp=2026-09-25T09:49:21.912457+00:00 time=137.207s
 
 WHAT THIS DOES AND DOES NOT SAY
   * It says: these tests were run, at this time, against a tree whose source
-    fingerprint is the value above, with nothing uncommitted.
+    fingerprint is the value above, with nothing uncommitted when the suite
+    started and nothing changed when it ended.
+  * The check refuses the report in any of these cases:
+      - its sha256 differs from the value above;
+      - its counted cases differ from the counts above;
+      - its own totals disagree with its cases;
+      - any case failed or errored;
+      - the CURRENT tree's source fingerprint differs from the value above.
   * It does not say the reviewer's environment would produce the same result.
     Nobody but us has re-run this suite; every result we report is ours.
-  * The fingerprint covers src/, tests/, db/ and alembic.ini — not docs/. A
+  * The fingerprint covers src/, tests/, db/ and alembic.ini, not docs/. A
     later commit that touches only documentation leaves it unchanged, which is
     why the fingerprint, not the commit id, is what binds a report to the code
     it exercised.

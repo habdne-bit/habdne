@@ -2,8 +2,9 @@
 
 **Generated** by `db/gate/stop_gate_c_evidence.py` from `docs/gate/evidence/junit-run.xml`. **Do not edit.**
 
-- The JUnit run is bound to commit `62b020d3b5a4d5f5939b2554f0245f922832d49f`, source fingerprint `e24f79583c79bbf86e86b481d3dfb0f7793ed1dccee8a77c36fa2501b766385a` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
-- That run: 1280 test cases, 0 failures, 0 errors.
+- The JUnit run is recorded at commit `0c97a6b30f07f94d24afc039debce9cb4d589bff`, source fingerprint `4aa193ccde1d416b0e8a9bc946ae8a64ea73b02996a29507c3d65ce9dca34e50`, report sha256 `6abeee1242268ece07b738b4f25bb324eec7f65de0f26949da743b987662f33a` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
+- Counted in the report: 1284 test cases, 0 failures, 0 errors, 0 skipped.
+- Binding (`db/gate/run_binding.py`): the report's digest and counts are the recorded ones, and the current tree's source fingerprint is the run's and the gate run's.
 - These are our runs; nobody else has re-run them.
 
 ## 1. The six questions (plan §6)
@@ -69,8 +70,8 @@
 | S16g | party match, no parent claim, not creator — deny 404 | `test_s16g_a_party_match_alone_grants_nothing` | PASS |
 | S16h | relations row only — deny 404 | `test_s16h_a_relation_row_grants_nothing` | PASS |
 | S16h e2e | a relation made through the G3-6 API opens no offer | `test_s16h_end_to_end_a_relation_opens_no_offer` | PASS |
-| S16i | owner account later DISABLED — deny (401; RFC says 404: G3-15) | `test_s16i_an_owner_whose_account_is_later_disabled_is_denied` | PASS |
-| S16j | INVITED or SUSPENDED — deny (401; RFC says 404: G3-15) | `test_s16j_an_invited_or_suspended_account_is_denied` | PASS |
+| S16i | owner account later DISABLED — deny 401 at authentication (G3-15) | `test_s16i_an_owner_whose_account_is_later_disabled_is_denied` | PASS |
+| S16j | INVITED or SUSPENDED — deny 401 at authentication (G3-15) | `test_s16j_an_invited_or_suspended_account_is_denied` | PASS |
 
 ## 4. Concurrency (plan §6.3)
 
