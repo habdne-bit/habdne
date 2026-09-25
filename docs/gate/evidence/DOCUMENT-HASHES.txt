@@ -322,3 +322,7 @@ SLICE_3_PLAN.md changed revision: 6 -> 7 (decisions of the review of d0d58c3). R
 --- closure of Slice 3 at 96e36e6 (review of 96e36e6) ---
 docs/gate/SLICE_3_CLOSURE.md                                   new  240633854312adf69e41ef7b9529e2a1fa2308de9724c5320f24b624b444132b
 No decision document changed revision. The closure record states the reviewer's decision and its limits.
+
+--- Slice 4 plan, revision 1 (submitted for review) ---
+docs/gate/SLICE_4_PLAN.md                                      new  e3b439da7f7fd135e5619b46806cd43794ef1869b3563a339b5b8c5ce595696f
+No decision document changed revision.
