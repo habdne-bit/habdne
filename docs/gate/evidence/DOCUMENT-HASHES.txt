@@ -326,3 +326,8 @@ No decision document changed revision. The closure record states the reviewer's 
 --- Slice 4 plan, revision 1 (submitted for review) ---
 docs/gate/SLICE_4_PLAN.md                                      new  e3b439da7f7fd135e5619b46806cd43794ef1869b3563a339b5b8c5ce595696f
 No decision document changed revision.
+
+--- Slice 4 plan, revision 2 (measured facts folded in; no decision taken) ---
+docs/gate/SLICE_4_PLAN.md                                      rev2 167d16e573d40e46d574b92e057234248782f123e8d3bb36344ded1742a851c1
+docs/gate/evidence/SLICE4-PLAN-MEASUREMENTS.txt                new  359ee4ebed0562e3ebfce7626bb9f3e6da4d9a24655f25e9881e167b51be1379
+SLICE_4_PLAN.md changed revision: 1 -> 2.

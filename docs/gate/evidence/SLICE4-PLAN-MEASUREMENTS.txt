@@ -1,0 +1,366 @@
+TURAB — Slice 4 plan: the facts its decisions rest on, measured before any code
+===============================================================================
+Recorded : 2026-09-25 17:28:13 UTC
+Tree     : commit 75c7660729387dd4ef078421b1b82782cd5e676e; working tree CLEAN before the run, CLEAN after it
+Source fingerprint: 4aa193ccde1d416b0e8a9bc946ae8a64ea73b02996a29507c3d65ce9dca34e50
+Database : a SCRATCH database, turab_s4_probe, rebuilt just before the run by
+           `db/dev/reset_db.sh --fixtures` (frozen schema v0.2.3, master seed,
+           migrations 0002-0004, dev fixtures).
+Server   : PostgreSQL 16.13
+
+What this is. There is no matching code. The harness writes fixture rows
+straight into the match tables to observe what the SCHEMA permits, and uses
+the delivered Slice 2 HTTP route for section E. Sections A-E gave the same
+results on two earlier runs on the same tree. D7 and D8 were added before
+this run. These results are ours; nobody else has re-run them.
+
+Findings, per section:
+  A  G4-1   CONFIRMED. The contract default is '0.1.0'; the only policy is
+            '0.2.0'; no row exists for the default.
+  B  G4-14  CONFIRMED. A match row cannot change. But its criterion result
+            was turned from FAIL to PASS, and deleted. A diagnostic run was
+            updated, and deleted.
+  C  G4-14  CONFIRMED, and WIDER than the plan stated. A policy marked
+            immutable accepted a change to its rules AND to its version.
+            Both were rolled back.
+  D  §3.3   MEASURED.
+            D1-D5, inside REPEATABLE READ:
+            - a plain INSERT that collides with a rival committed after the
+              snapshot fails 23505;
+            - INSERT ... ON CONFLICT DO NOTHING fails 40001
+              (serialization failure);
+            - both wait while the rival is uncommitted;
+            - after the conflict, the winner's row is NOT visible in the same
+              transaction. It is visible in a new one.
+            D6: under READ COMMITTED, ON CONFLICT DO NOTHING returns no row,
+            and the next statement sees the winner's row.
+            D7: inside REPEATABLE READ, the offer's version is bumped and
+            committed after the snapshot. The insert with the snapshot's
+            version SUCCEEDS: trg_match_commercial_context reads the
+            transaction's snapshot.
+            D8: the evaluation read a version, the offer was bumped, and a
+            later READ COMMITTED insert FAILS P0001 ("offer_version must
+            snapshot evaluated offer version").
+  E  G4-3/7 MEASURED. On a request whose columns say HOUSE_VILLA, a location
+            and a budget of 25,000,000, Slice 2 accepted four REQUIRED
+            criterion rows:
+            - PROPERTY_TYPE EQ "APARTMENT", which contradicts the column;
+            - BUDGET_MAX LTE 20000000;
+            - LOCATION EQ <a random uuid that is no location>;
+            - BUDGET_MAX IN ["a","b"], an operator and value that do not
+              suit the code.
+
+The harness, verbatim (run: s4_probe.py <repo root>, with PG* variables and
+PGDATABASE=turab_s4_probe):
+----------------------------------------------------------------------
+"""Slice 4 plan, revision 1: measure the facts its decisions rest on, before
+any matching code exists.
+
+Runs against a SCRATCH database built by `db/dev/reset_db.sh --fixtures`
+(frozen schema + seed + migrations 0002-0004 + dev fixtures). It is not a
+test of TURAB code: it writes fixture rows straight into the match tables,
+as the Slice 3 corrective-effect tests did, to observe what the SCHEMA
+permits.
+
+Usage: s4_probe.py <repo root>   (PG* variables; PGDATABASE=turab_s4_probe)
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+import threading
+import time
+import uuid
+
+import psycopg
+import yaml
+
+REPO = sys.argv[1]
+DSN = (f"host={os.environ['PGHOST']} user={os.environ['PGUSER']} "
+       f"password={os.environ['PGPASSWORD']} dbname={os.environ['PGDATABASE']}")
+BRAHIM = "f1000000-0000-4000-8000-000000000002"
+REQ_AMINA = "f7000000-0000-4000-8000-000000000001"
+ACC_OPERATOR = "f3000000-0000-4000-8000-000000000002"
+
+
+def conn(isolation=None, autocommit=False):
+    c = psycopg.connect(DSN, autocommit=autocommit)
+    if isolation:
+        c.isolation_level = isolation
+    c.execute("SET search_path = turab, public")
+    if not autocommit:
+        c.commit()
+    return c
+
+
+def outcome(fn):
+    try:
+        return f"OK: {fn()}"
+    except psycopg.Error as e:
+        return f"ERROR {e.sqlstate}: {str(e).splitlines()[0]}"
+
+
+def section(title):
+    print(f"\n=== {title} ===")
+
+
+admin = conn(autocommit=True)
+q = lambda sql, *a: admin.execute(sql, a)  # noqa: E731
+
+# --- fixtures -------------------------------------------------------------------
+req = q("""INSERT INTO requests (party_id, transaction_intent, management_mode, claim_status)
+           VALUES (%s, 'BUY', 'ASSISTED', 'UNCLAIMED') RETURNING request_id""", BRAHIM).fetchone()[0]
+prop = q("""INSERT INTO properties (property_type, supply_mode, management_mode, claim_status)
+            VALUES ('APARTMENT', 'PUBLIC', 'ASSISTED', 'UNCLAIMED') RETURNING property_id""").fetchone()[0]
+offer = q("""INSERT INTO property_offers (property_id, party_id, transaction_type, status)
+             VALUES (%s, %s, 'SALE', 'ACTIVE') RETURNING offer_id""", prop, BRAHIM).fetchone()[0]
+pol_id, pol_version = q("SELECT matching_policy_id, version FROM matching_policies WHERE active").fetchone()
+
+MATCH = """INSERT INTO match_candidates
+  (request_id, property_id, evaluated_offer_id, matching_policy_id, matching_policy_version,
+   request_version, property_version, offer_version, eligibility, hard_gate_status,
+   information_gate_status, request_freshness, property_freshness, freshness_gate_status,
+   permission_gate_status, request_snapshot, property_snapshot, input_hash)
+  VALUES (%s, %s, %s, %s, %s, 1, 1, 1, 'REJECTED', 'FAIL', 'PASS', 'FRESH', 'FRESH',
+          'PASS', 'PASS', '{}', '{}', %s)"""
+
+
+def insert_match(c, h, suffix=""):
+    return c.execute(MATCH + suffix + " RETURNING match_id",
+                     (req, prop, offer, pol_id, pol_version, h)).fetchone()
+
+
+# --- A. G4-1 -----------------------------------------------------------------------
+section("A. G4-1: the contract default policy version, and the policies that exist")
+spec = yaml.safe_load(open(f"{REPO}/docs/handoff/05_API/openapi_v0.2.3.yaml"))
+body = spec["paths"]["/requests/{request_id}/matching/run"]["post"]["requestBody"]
+default = body["content"]["application/json"]["schema"]["properties"]["matching_policy_version"]["default"]
+print(f"contract default matching_policy_version = {default!r}")
+print("matching_policies rows (version, active, immutable):",
+      q("SELECT version, active, immutable FROM matching_policies ORDER BY version").fetchall())
+print(f"a row for the default exists: "
+      f"{q('SELECT count(*) FROM matching_policies WHERE version = %s', str(default)).fetchone()[0]}")
+
+# --- B. G4-14: what the schema lets change under an immutable match -----------------
+section("B. G4-14: immutability of a match, its criterion results, its diagnostic run")
+m = insert_match(admin, "probe-B")[0]
+q("""INSERT INTO match_criterion_results (match_id, criterion_code, importance, compatibility,
+        blocking, rule_id, rule_version) VALUES (%s, 'PROPERTY_TYPE', 'REQUIRED', 'FAIL', true,
+        'probe', '1')""", m)
+print("UPDATE match_candidates SET eligibility = 'ELIGIBLE':",
+      outcome(lambda: q("UPDATE match_candidates SET eligibility = 'ELIGIBLE' WHERE match_id = %s",
+                        m).rowcount))
+print("UPDATE match_criterion_results FAIL -> PASS, blocking -> false:",
+      outcome(lambda: q("""UPDATE match_criterion_results SET compatibility = 'PASS', blocking = false
+                           WHERE match_id = %s""", m).rowcount))
+print("  compatibility now:",
+      q("SELECT compatibility FROM match_criterion_results WHERE match_id = %s", m).fetchone()[0])
+print("DELETE FROM match_criterion_results:",
+      outcome(lambda: q("DELETE FROM match_criterion_results WHERE match_id = %s", m).rowcount))
+d = q("""INSERT INTO match_diagnostic_runs (request_id, request_version, matching_policy_id,
+          matching_policy_version, request_snapshot, input_hash, ready_opportunity_count)
+          VALUES (%s, 1, %s, %s, '{}', 'probe-B', 0) RETURNING diagnostic_run_id""",
+      req, pol_id, pol_version).fetchone()[0]
+print("UPDATE match_diagnostic_runs ready_opportunity_count 0 -> 5:",
+      outcome(lambda: q("""UPDATE match_diagnostic_runs SET ready_opportunity_count = 5
+                           WHERE diagnostic_run_id = %s""", d).rowcount))
+print("DELETE FROM match_diagnostic_runs:",
+      outcome(lambda: q("DELETE FROM match_diagnostic_runs WHERE diagnostic_run_id = %s", d).rowcount))
+
+# --- C. G4-14: an immutable policy's rules ---------------------------------------------
+section("C. G4-14: editing the rules of a policy marked immutable (rolled back)")
+c = conn()
+print("UPDATE matching_policies SET rules = rules || '{\"probe\": true}' WHERE immutable:",
+      outcome(lambda: c.execute("""UPDATE matching_policies SET rules = rules || '{"probe": true}'
+                                   WHERE version = %s AND immutable""", (pol_version,)).rowcount))
+c.rollback()
+print("UPDATE matching_policies SET version = '9.9.9' WHERE immutable:",
+      outcome(lambda: c.execute("""UPDATE matching_policies SET version = '9.9.9'
+                                   WHERE version = %s AND immutable""", (pol_version,)).rowcount))
+c.rollback()
+c.close()
+
+# --- D. §3.3: a unique conflict inside REPEATABLE READ -----------------------------------
+section("D. plan §3.3: two runs, same (request, property, policy, input_hash)")
+
+
+def rr_case(label, statement_suffix, commit_first):
+    h = f"probe-D-{uuid.uuid4().hex[:8]}"
+    t1 = conn(psycopg.IsolationLevel.REPEATABLE_READ)
+    t1.execute("SELECT 1")  # the snapshot is taken here
+    t2 = conn()
+    insert_match(t2, h)
+    if commit_first:
+        t2.commit()
+        result = outcome(lambda: insert_match(t1, h, statement_suffix))
+    else:
+        box = {}
+
+        def contend():
+            box["r"] = outcome(lambda: insert_match(t1, h, statement_suffix))
+        th = threading.Thread(target=contend)
+        th.start()
+        pid1 = t1.info.backend_pid
+        waited = False
+        for _ in range(100):
+            blockers = admin.execute("SELECT pg_blocking_pids(%s)", (pid1,)).fetchone()[0]
+            if blockers:
+                waited = True
+                break
+            time.sleep(0.05)
+        t2.commit()
+        th.join()
+        result = f"(waited on the uncommitted row: {waited}) {box['r']}"
+    t1.rollback()
+    t1.execute("SELECT 1")
+    print(f"{label}: {result}")
+    t1.close()
+    t2.close()
+    return h
+
+
+rr_case("D1 RR, plain INSERT, rival committed after the snapshot", "", True)
+rr_case("D2 RR, INSERT ... ON CONFLICT DO NOTHING, rival committed after the snapshot",
+        " ON CONFLICT DO NOTHING", True)
+rr_case("D3 RR, plain INSERT, rival still uncommitted", "", False)
+rr_case("D4 RR, ON CONFLICT DO NOTHING, rival still uncommitted", " ON CONFLICT DO NOTHING", False)
+
+# D5: after a unique violation inside RR, can the winner's row be read in that transaction?
+h = f"probe-D5-{uuid.uuid4().hex[:8]}"
+t1 = conn(psycopg.IsolationLevel.REPEATABLE_READ)
+t1.execute("SELECT 1")
+t2 = conn()
+insert_match(t2, h)
+t2.commit()
+t1.execute("SAVEPOINT s")
+print("D5 RR: INSERT:", outcome(lambda: insert_match(t1, h)))
+t1.execute("ROLLBACK TO SAVEPOINT s")
+print("D5 RR: after ROLLBACK TO SAVEPOINT, the winner's row visible in the same transaction:",
+      t1.execute("SELECT count(*) FROM match_candidates WHERE input_hash = %s", (h,)).fetchone()[0])
+t1.rollback()
+print("D5 RR: in a NEW transaction, visible:",
+      t1.execute("SELECT count(*) FROM match_candidates WHERE input_hash = %s", (h,)).fetchone()[0])
+t1.rollback()
+t1.close()
+t2.close()
+
+# D6: Read Committed, ON CONFLICT DO NOTHING, then a new statement.
+h = f"probe-D6-{uuid.uuid4().hex[:8]}"
+t1 = conn()
+t1.execute("SELECT 1")
+t2 = conn()
+insert_match(t2, h)
+t2.commit()
+print("D6 RC: INSERT ... ON CONFLICT DO NOTHING RETURNING:",
+      outcome(lambda: insert_match(t1, h, " ON CONFLICT DO NOTHING")))
+print("D6 RC: the next statement sees the winner's row:",
+      t1.execute("SELECT count(*) FROM match_candidates WHERE input_hash = %s", (h,)).fetchone()[0])
+t1.rollback()
+t1.close()
+t2.close()
+
+# D7/D8: the offer changes between the snapshot and the insert. The trigger
+# trg_match_commercial_context compares NEW.offer_version with the offer row.
+def bump_offer():
+    b = conn()
+    b.execute("UPDATE property_offers SET version = version + 1 WHERE offer_id = %s", (offer,))
+    b.commit()
+    b.close()
+
+
+v_before = q("SELECT version FROM property_offers WHERE offer_id = %s", offer).fetchone()[0]
+t1 = conn(psycopg.IsolationLevel.REPEATABLE_READ)
+seen = t1.execute("SELECT version FROM property_offers WHERE offer_id = %s", (offer,)).fetchone()[0]
+bump_offer()
+MATCH_V = MATCH.replace("1, 1, 1, 'REJECTED'", "1, 1, %s, 'REJECTED'")
+print(f"D7 RR: offer version read in the snapshot = {seen}; committed now = "
+      f"{q('SELECT version FROM property_offers WHERE offer_id = %s', offer).fetchone()[0]}")
+print("D7 RR: INSERT with the snapshot's offer_version:",
+      outcome(lambda: t1.execute(MATCH_V + " RETURNING match_id",
+                                 (req, prop, offer, pol_id, pol_version, seen,
+                                  f"probe-D7-{uuid.uuid4().hex[:8]}")).fetchone()))
+t1.rollback()
+t1.close()
+
+t1 = conn()
+seen = t1.execute("SELECT version FROM property_offers WHERE offer_id = %s", (offer,)).fetchone()[0]
+t1.commit()
+bump_offer()
+print(f"D8 RC: offer version read by the evaluation = {seen}; committed before the insert = "
+      f"{q('SELECT version FROM property_offers WHERE offer_id = %s', offer).fetchone()[0]}")
+print("D8 RC: INSERT with the evaluated offer_version:",
+      outcome(lambda: t1.execute(MATCH_V + " RETURNING match_id",
+                                 (req, prop, offer, pol_id, pol_version, seen,
+                                  f"probe-D8-{uuid.uuid4().hex[:8]}")).fetchone()))
+t1.rollback()
+t1.close()
+
+# --- E. G4-3: a criterion row duplicating a request column ---------------------------------
+section("E. G4-3: POST /requests/{id}/criteria with a code the request also holds as a column")
+os.environ["TURAB_DATABASE_URL"] = (
+    f"postgresql+psycopg://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}@"
+    f"{os.environ['PGHOST']}/{os.environ['PGDATABASE']}")
+sys.path.insert(0, f"{REPO}/src")
+from fastapi.testclient import TestClient  # noqa: E402
+
+from turab.app import create_app  # noqa: E402
+from turab.db.session import create_app_engine as make_engine  # noqa: E402
+
+with TestClient(create_app(engine=make_engine())) as client:
+    for code, op, value in (("PROPERTY_TYPE", "EQ", "APARTMENT"),
+                            ("BUDGET_MAX", "LTE", 20000000),
+                            ("LOCATION", "EQ", str(uuid.uuid4())),
+                            ("BUDGET_MAX", "IN", ["a", "b"])):
+        r = client.post(f"/requests/{REQ_AMINA}/criteria",
+                        headers={"Authorization": f"Bearer {ACC_OPERATOR}",
+                                 "Idempotency-Key": str(uuid.uuid4())},
+                        json={"criterion_code": code, "importance": "REQUIRED",
+                              "operator": op, "value": value, "sort_order": 900 + len(code)
+                              + (1 if op == "IN" else 0)})
+        print(f"{code} {op} {json.dumps(value)} -> {r.status_code}")
+print("REQ_AMINA columns: desired_property_type, primary_location_id, budget_max_dzd =",
+      q("""SELECT desired_property_type, primary_location_id, budget_max_dzd FROM requests
+           WHERE request_id = %s""", REQ_AMINA).fetchone())
+----------------------------------------------------------------------
+
+Output (starlette deprecation warning lines removed):
+
+=== A. G4-1: the contract default policy version, and the policies that exist ===
+contract default matching_policy_version = '0.1.0'
+matching_policies rows (version, active, immutable): [('0.2.0', True, True)]
+a row for the default exists: 0
+
+=== B. G4-14: immutability of a match, its criterion results, its diagnostic run ===
+UPDATE match_candidates SET eligibility = 'ELIGIBLE': ERROR P0001: Historical TURAB record is immutable; append a new decision/event instead
+UPDATE match_criterion_results FAIL -> PASS, blocking -> false: OK: 1
+  compatibility now: PASS
+DELETE FROM match_criterion_results: OK: 1
+UPDATE match_diagnostic_runs ready_opportunity_count 0 -> 5: OK: 1
+DELETE FROM match_diagnostic_runs: OK: 1
+
+=== C. G4-14: editing the rules of a policy marked immutable (rolled back) ===
+UPDATE matching_policies SET rules = rules || '{"probe": true}' WHERE immutable: OK: 1
+UPDATE matching_policies SET version = '9.9.9' WHERE immutable: OK: 1
+
+=== D. plan §3.3: two runs, same (request, property, policy, input_hash) ===
+D1 RR, plain INSERT, rival committed after the snapshot: ERROR 23505: duplicate key value violates unique constraint "match_candidates_request_id_property_id_matching_policy_id__key"
+D2 RR, INSERT ... ON CONFLICT DO NOTHING, rival committed after the snapshot: ERROR 40001: could not serialize access due to concurrent update
+D3 RR, plain INSERT, rival still uncommitted: (waited on the uncommitted row: True) ERROR 23505: duplicate key value violates unique constraint "match_candidates_request_id_property_id_matching_policy_id__key"
+D4 RR, ON CONFLICT DO NOTHING, rival still uncommitted: (waited on the uncommitted row: True) ERROR 40001: could not serialize access due to concurrent update
+D5 RR: INSERT: ERROR 23505: duplicate key value violates unique constraint "match_candidates_request_id_property_id_matching_policy_id__key"
+D5 RR: after ROLLBACK TO SAVEPOINT, the winner's row visible in the same transaction: 0
+D5 RR: in a NEW transaction, visible: 1
+D6 RC: INSERT ... ON CONFLICT DO NOTHING RETURNING: OK: None
+D6 RC: the next statement sees the winner's row: 1
+D7 RR: offer version read in the snapshot = 1; committed now = 2
+D7 RR: INSERT with the snapshot's offer_version: OK: (UUID('72656d73-c307-4eb4-a4ba-7f3ac094981c'),)
+D8 RC: offer version read by the evaluation = 2; committed before the insert = 3
+D8 RC: INSERT with the evaluated offer_version: ERROR P0001: offer_version must snapshot evaluated offer version
+
+=== E. G4-3: POST /requests/{id}/criteria with a code the request also holds as a column ===
+PROPERTY_TYPE EQ "APARTMENT" -> 201
+BUDGET_MAX LTE 20000000 -> 201
+LOCATION EQ "b594698b-ed6c-4f87-b3aa-dde55aa0db28" -> 201
+BUDGET_MAX IN ["a", "b"] -> 201
+REQ_AMINA columns: desired_property_type, primary_location_id, budget_max_dzd = ('HOUSE_VILLA', UUID('84c1c447-037f-4e2b-aca4-0e712111c0cc'), 25000000)

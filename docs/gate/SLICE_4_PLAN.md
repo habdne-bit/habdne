@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 1**
+## Implementation plan — **revision 2**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -10,7 +10,8 @@ for.
 
 | rev | commit | what changed |
 |---|---|---|
-| 1 | the commit that adds this file | first plan |
+| 1 | `75c7660` | first plan |
+| 2 | the commit that adds `evidence/SLICE4-PLAN-MEASUREMENTS.txt` | the plan's facts measured on PostgreSQL before any code (§0a). §3.3 is settled by measurement. G4-3, G4-7 and G4-14 are corrected by what was measured. G4-16 is added. **No decision is taken** |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -71,6 +72,27 @@ in §7:
 - no path writes an opportunity or a match review;
 - AI takes no part. `generated_by` is always `RULE_ENGINE` and `ai_trace_ref`
   is always null (ADR-12).
+
+---
+
+## 0a. What was measured before any code (revision 2)
+
+`docs/gate/evidence/SLICE4-PLAN-MEASUREMENTS.txt` records the measurements:
+- a scratch database built by `db/dev/reset_db.sh --fixtures`;
+- tree `75c7660`, clean before and after the run;
+- PostgreSQL 16.13;
+- the harness, reproduced verbatim.
+
+No matching code exists. The harness writes fixture rows into the match
+tables to observe what the schema permits.
+
+| § | Plan statement | Measured |
+|---|---|---|
+| A | G4-1: the contract default names no policy | **Confirmed:** default `0.1.0`; only `0.2.0` exists |
+| B | G4-14: criterion results and diagnostic runs are unguarded | **Confirmed:** a FAIL became PASS; both rows were updated and deleted; the match row itself refused |
+| C | G4-14: an immutable policy's `rules` can be edited | **Confirmed and wider:** its `version` could be changed too |
+| D | §3.3: a unique conflict under Repeatable Read | **Measured:** 23505 for a plain INSERT, 40001 for `ON CONFLICT DO NOTHING`, and the winner's row is invisible in the same transaction. Under Repeatable Read, the commercial-context trigger checks the snapshot's offer version (D7). Across two transactions it fails when the offer changed between them (D8) |
+| E | G4-3 / G4-7: Slice 2 accepts duplicate and unevaluable criteria | **Confirmed and wider:** a REQUIRED row contradicting the request's own column was accepted, and so was a LOCATION naming no location |
 
 ---
 
@@ -188,15 +210,28 @@ Committed, each statement sees its own snapshot (PostgreSQL 16 documentation,
 transaction, whose statements all see the snapshot taken at its first
 statement (§13.2.2).
 
-**One consequence is to MEASURE before choosing** (step 7):
-- In a Repeatable Read transaction, a unique violation against a concurrent
-  run that committed later cannot be resolved by reading the winner's row,
-  because that row is not in the snapshot.
-- The two candidate designs are:
-  - (i) insert in a second, Read Committed transaction after the evaluation;
-  - (ii) return the existing match id from a follow-up read after the
-    conflict.
-- The choice is made on a two-transaction measurement, as in Slice 3.
+**Measured (revision 2; evidence §D).** Two designs were compared.
+
+- **(i) Evaluate under Repeatable Read, then insert in a second, Read
+  Committed transaction. REJECTED by measurement.**
+  - Case D8: when the offer changed between the two transactions, the
+    insert fails P0001 in `trg_match_commercial_context`.
+  - Under that design, every change racing a run becomes a failed run.
+- **(ii) Everything in ONE Repeatable Read transaction. RECOMMENDED.**
+  - Case D7: the trigger reads the transaction's snapshot, so the insert
+    matches what was evaluated, even when the offer changed after the
+    snapshot. That is ADR-02's point: the match records what the engine
+    read.
+  - Each match is inserted with a plain `INSERT` under its own SAVEPOINT.
+  - A 23505 means an identical-input match already exists (G4-13). The
+    savepoint is rolled back and the run continues.
+  - Once the run commits, the existing row is read in a NEW transaction,
+    because it is invisible in the run's snapshot (case D5).
+  - `ON CONFLICT DO NOTHING` is **not** used inside Repeatable Read: it
+    fails 40001 (cases D2 and D4), which would need a retry loop.
+
+The concurrency test (§6.3) asserts exactly these outcomes, with the witness
+pattern of Slice 3.
 
 ### 3.4 Evidence on each criterion
 - For an attribute criterion (DOCUMENT_TYPE, RIGHT_TYPE, ROOMS, BEDROOMS),
@@ -229,6 +264,28 @@ statement (§13.2.2).
 ---
 
 ## 4. Decisions needed — none is taken by this plan
+
+**Summary.** Each line below is detailed in its subsection. A reply may
+accept a recommendation by number.
+
+| # | Question | Recommendation | Blocks |
+|---|---|---|---|
+| G4-1 | The policy version, when the contract default names no policy | CORRECTION-004: required, and equal to the active policy | step 1 |
+| G4-2 | Where rules live | A code registry, digest-pinned, recorded against `0.2.0` | step 2 |
+| G4-3 | Criterion rows duplicating the request's columns | Evaluate both; refuse the run when they are provably disjoint | step 4 |
+| G4-4 | When an UNKNOWN blocks | REQUIRED always; `blocking_if_unknown` widens the rule to others | step 4 |
+| G4-5 | Price | The table in G4-5; negotiability UNKNOWN over max gives UNKNOWN | step 4 |
+| G4-6 | Location | Subtree, as G3-14 | step 4 |
+| G4-7 | Criteria that cannot be evaluated | Refuse the run if REQUIRED or malformed; otherwise UNKNOWN, not blocking | step 4 |
+| G4-8 | The candidate set | ACTIVE or NEEDS_CONFIRMATION requests; ACTIVE offers of the right type; one match per (property, offer) | step 3 |
+| G4-9 | POTENTIAL without an offer | Not evaluated; mandatory test 6 narrowed | step 3 |
+| G4-10 | Permission | The binding rule in G4-10; the buyer side is Slice 5's | step 5 |
+| G4-11 | Freshness mapping and eligibility precedence | As proposed | step 5 |
+| G4-12 | Soft score | Weighted share of passing soft criteria | step 6 |
+| G4-13 | Input hash; an identical re-run | Canonical JSON with sha256; return the existing match | step 2 |
+| G4-14 | Migration `0005` (immutability) | Approve | step 1 |
+| G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
+| G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
 
 Each item has options and a recommendation. **Blocks** names the step in §8
 that cannot start without it.
@@ -290,11 +347,23 @@ version is `1`):
 - **The duplication.** A request carries type, location and budget as
   COLUMNS. Slice 2 also accepts criterion ROWS with the same codes:
   `requests.add_criterion` admits every ACTIVE code in
-  `criterion_definitions`, and these codes are active. We read this from
-  the code; no existing test adds such a row.
-- **Recommendation:** evaluate both, and record both (`ordinal` tells them
-  apart). The stricter one prevails, because a FAIL from either blocks.
-  This fails closed and invents no precedence.
+  `criterion_definitions`, and these codes are active. **Measured (evidence
+  §E):** on a request whose column says `HOUSE_VILLA`, a REQUIRED row
+  `PROPERTY_TYPE EQ "APARTMENT"` was accepted (201).
+- **The consequence measurement exposed.** Under "evaluate both", that
+  request rejects every candidate, because no property is both types. The
+  diagnostic would read "no match", which hides a data-entry contradiction.
+- **Options:**
+  - (a) Evaluate both. The diagnostic's `blocker_summary` names the
+    criterion row behind each FAIL, so the contradiction is visible.
+  - (b) Refuse the run with a typed 422 when a REQUIRED row and a REQUIRED
+    column on the same code are DISJOINT (EQ or IN sets that do not
+    intersect).
+  - (c) Adopt one as authoritative. That invents a precedence.
+- **Recommendation: (b)**, with (a) for every case that is not provably
+  disjoint. A numeric row stricter than the column, such as
+  `BUDGET_MAX LTE 20000000` against a column of 25,000,000, is not a
+  contradiction. It is evaluated, and the stricter bound prevails.
 - **Blocks:** step 4.
 
 ### G4-4 · When is an UNKNOWN blocking?
@@ -349,7 +418,9 @@ only (CHECK constraint).
   - `TEXT_SEMANTIC` and `CUSTOM_ATTRIBUTE` have no deterministic rule
     (§12.3: semantics may discover, never decide).
   - Slice 2 validates a criterion's code, not whether its operator suits
-    that code. So `BUDGET_MAX` with `IN` can exist.
+    that code, nor whether its value names something that exists.
+    **Measured (evidence §E):** `BUDGET_MAX IN ["a","b"]` and a `LOCATION`
+    naming a random uuid were both accepted (201).
 - **Options:**
   - (a) The run is refused with a typed 422 naming the unsupported
     (code, operator) pair.
@@ -357,8 +428,9 @@ only (CHECK constraint).
     NEED_MORE_INFORMATION for good.
   - (c) Skipped. This is a silent PASS, and it is excluded by §3.2.
 - **Recommendation:**
-  - (a) for any REQUIRED criterion, and for an operator that does not suit
-    its code;
+  - (a) for any REQUIRED criterion, for an operator that does not suit its
+    code, and for a value no rule can read (a location id that is no
+    location, a non-numeric bound);
   - for a PREFERRED or FLEXIBLE `TEXT_SEMANTIC` or `CUSTOM_ATTRIBUTE`:
     UNKNOWN, not blocking, with no soft-score weight, recorded so a
     reviewer sees it.
@@ -485,6 +557,15 @@ write no new row.
 - **`matching_policies` has an `immutable` column that no trigger reads.**
   Its `rules` could be edited under matches that cite its version.
 
+**Measured (evidence §B, §C):**
+- A criterion result was turned from FAIL to PASS, then deleted, under a
+  match row that itself refused every change.
+- A diagnostic run was updated and deleted.
+- The policy marked `immutable` accepted a change to its `rules` **and to
+  its `version`**. This is wider than revision 1 said. Renaming the version
+  would silently break the pairing that `trg_match_commercial_context`
+  checked, when they were inserted, for every match that cites it.
+
 **Proposal:** migration `0005`, structural only, with no table, column or
 reason code:
 - `prevent_immutable_history_change` on UPDATE and DELETE of
@@ -511,6 +592,21 @@ the criterion instead.
   exactly one REQUIRED FAIL. It is counted only, and nothing is suggested
   from it in this slice.
 - **Blocks:** step 7.
+
+### G4-16 · Should Slice 2 refuse these criteria at entry? (new in revision 2)
+- **Fact:** the defects measured in §E enter through Slice 2's
+  `POST /requests/{id}/criteria`, which is closed.
+- **Options:**
+  - (a) Leave Slice 2 unchanged. Slice 4 refuses the RUN (G4-3 (b),
+    G4-7 (a)) and names the criterion, so staff correct it.
+  - (b) A separate, approved correction to Slice 2. Criteria are checked at
+    entry: operator against code, value shape, location existence, and
+    disjointness with the request's columns. It is delivered with its own
+    tests and evidence.
+- **Recommendation: (a) now.** Nothing that cannot be evaluated can reach a
+  match. (b) is proposed as a separate item, because it changes a closed
+  slice's behaviour, and that needs its own approval.
+- **Blocks:** nothing in Slice 4 if (a) is chosen.
 
 ---
 
@@ -573,8 +669,8 @@ belongs to Slice 6.
 
 | Race | Serialises on | Expected |
 |---|---|---|
-| two identical runs for one request | the UNIQUE `(request, property, policy, input_hash)` | both succeed, and one row per identical input (G4-13). **Measured first** (§3.3) |
-| a run while the offer's price changes | nothing: the run reads one snapshot | the match reflects exactly one consistent state, and its hash is that state's |
+| two identical runs for one request | the UNIQUE `(request, property, policy, input_hash)` | both succeed, and one row per identical input (G4-13). The loser's 23505 is absorbed by its savepoint, and the existing row is returned after commit (§3.3, measured D1, D3, D5) |
+| a run while the offer's price changes | nothing: the run reads one snapshot | the match reflects exactly one consistent state, and its hash is that state's. The insert succeeds against the snapshot (measured D7) |
 
 No winner-and-loser outcome is planned. If one appears, condition 11 of
 Slice 3 applies, in its approved wording.
@@ -617,7 +713,7 @@ Slice 3 applies, in its approved wording.
 | 4 | Hard gate: every criterion rule, unknown classification, the information gate | G4-3 to G4-7 |
 | 5 | Freshness and permission gates; eligibility precedence | G4-10, G4-11 |
 | 6 | Soft score | G4-12 |
-| 7 | The run operation: persistence, audit, the diagnostic row, and concurrency (measured first) | G4-15 |
+| 7 | The run operation: persistence, audit, the diagnostic row, and concurrency (design measured, §3.3) | G4-15 |
 | 8 | GET match, GET diagnostic, the ten mandatory tests, STOP GATE D, the matrix | — |
 
 Steps 2 and 3 may begin when their decisions are taken, in parallel with
