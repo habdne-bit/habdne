@@ -298,3 +298,23 @@ tests/test_slice3_stop_gate_c.py                               new  e2ec91536cdb
 tests/test_slice3_property_queue.py                            new  14310123bcbbba611d83b104056ffa5748c818c2de1886af7fa218fdcdd7de32
 tests/test_slice3_identity.py                                  --   a9cb5385b96d899b8dd457e80eb2d7d1b0a87b5d1fa1d595d3c15e964cbcf452
 docs/gate/SLICE_3_STOP_GATE_C.md is generated from the clean-tree JUnit report and committed with TEST-RUN-PROVENANCE.txt; its digest is in the bundle MANIFEST. No decision document changed revision.
+
+--- round d0d58c3 -> review of d0d58c3 (queue chain; evidence binding; decisions recorded) ---
+docs/gate/SLICE_3_STEP8_DELIVERY.md                            --   a519697d81b68510b4af85220ceaf93e53df458938071c6186a78aa64120bf0c
+docs/gate/SLICE_3_PLAN.md                                      rev7 b5c5b0000aa369d46942bdb296af9dca8a45ee8afd3417a1994fa5a5c99e5718
+docs/rfc/RFC-001-object-level-authorization.md                 corr f9ea056bda031561e3553c045efd059dee34b4697ea4491b303eb561c3999270
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   645c59ca01f284e406c0b3e549663918917cc2f12694afb0e429b64b04c5b8f9
+docs/gate/evidence/STEP8-REVIEW-BEFORE-FIX.txt                 new  e374195d73ad0765969f603445f346206cbfb0316c0a2f39b8a7b6242d8c10f8
+docs/gate/evidence/STEP6-PUBLIC-LIST-MUTATIONS.txt             --   876f830dbd4311eced7a6a9e140af40c965a0b487f5a79e281ba98bf4e945dc7
+docs/gate/evidence/STEP7-IDENTITY-MUTATIONS.txt                --   0293b36d2a4dc794c483e3061ed6d6536735b863199a3adfc217819c3e037638
+docs/gate/evidence/STEP8-PROPERTY-QUEUE-MUTATIONS.txt          --   16a091485c1c65e710493ef03297876b5d0f8366b1fcca7c47e40c68c339a350
+src/turab/services/properties.py                               --   2e230d75011787cf52189188458e96cb9506f288b9139dad754b120ac6919f25
+db/gate/run_binding.py                                         new  f334f702cfbead710f394bb2a8cd892a7bb02508b28867e34a4d8aa045614ed5
+db/gate/record_test_run.py                                     new  d9e03bd8f4bbb2168f664c0183c23432197990ba461b342367211c8f0a85830c
+db/gate/stop_gate_c_evidence.py                                --   6d8dd1d39f27c76a8d05a265244f264ea6c904d9dac642b8e897c56c8081301a
+db/gate/authorization_evidence.py                              --   217442995a6f8532add94b60650a8bda0e6366fc69be031f475eaec3c5c8b515
+db/dev/mutate_property_queue.py                                --   f5c06df7e40b03191ab4d6e2a21fd486b9768a90d66d837b07e9c0427c8d0fe1
+tests/test_evidence_binding.py                                 new  f312eedcd10b1ce1ae8ac798bd30dc89f140fd9b45f0b589cbf75213d17e2c19
+tests/test_slice3_property_queue.py                            --   d36581016901be5294dfde41676e557e589f3a5944dd504e634aeb3dd9ec2c72
+tests/test_slice3_scenarios.py                                 --   f4234a716d65dbe24eca0c5aeb7307af08a7c4bf21094633aff57698e012ca1b
+SLICE_3_PLAN.md changed revision: 6 -> 7 (decisions of the review of d0d58c3). RFC-001 carries correction G3-15 in its scenario table, marked in place; it is not a new revision. docs/gate/SLICE_3_STOP_GATE_C.md is generated from the clean-tree report and committed with TEST-RUN-PROVENANCE.txt; its digest is in the bundle MANIFEST.

@@ -1,63 +1,65 @@
 TURAB — step 8: which rule puts which property in the review queue
 ============================================================
-Base commit       : a558e4cc36e86af3b3beea3f924e385ffc8ec70b
-Source fingerprint: e24f79583c79bbf86e86b481d3dfb0f7793ed1dccee8a77c36fa2501b766385a
+Base commit       : 0ff73da794035d19eff90498ca98931fc0830920
+Source fingerprint: 4aa193ccde1d416b0e8a9bc946ae8a64ea73b02996a29507c3d65ce9dca34e50
 Working tree      : CLEAN
-Recorded          : 2026-09-24 23:33:25 UTC
+Recorded          : 2026-09-25 09:26:02 UTC
 Test file         : tests/test_slice3_property_queue.py
 
 === baseline (no mutation) ===
-   9 passed, 2 warnings in 3.58s
-== Q1 a conflict is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   1 failed, 8 passed, 2 warnings in 3.43s
+   10 passed, 2 warnings in 4.55s
+== Q1 a conflict is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   1 failed, 9 passed, 2 warnings in 4.58s
    FAILED test_a_claim_verified_with_a_conflict_enters_the_queue
-   cause: E   KeyError: '12eec665-1e2f-4a80-8fba-310fe93e3fee'
-   cause: KeyError: '12eec665-1e2f-4a80-8fba-310fe93e3fee'
-== Q2 a pending identity candidate is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   3 failed, 6 passed, 2 warnings in 3.44s
+   cause: E   KeyError: '0b6749dd-4a5d-4002-8c5f-5e812f611b32'
+   cause: KeyError: '0b6749dd-4a5d-4002-8c5f-5e812f611b32'
+== Q2 a pending identity candidate is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   4 failed, 6 passed, 2 warnings in 4.61s
+   FAILED test_a_candidate_that_can_no_longer_be_reviewed_does_not_queue_its_other_member
    FAILED test_a_pending_or_unsure_identity_candidate_enters_the_queue[None-True]
    FAILED test_a_pending_or_unsure_identity_candidate_enters_the_queue[UNSURE-True]
    FAILED test_several_reasons_are_listed_in_the_declared_order
-   cause: AssertionError: assert (('1a28d978-bebb-45a7-9cbb-457fa8bdb524' in {'ef020449-7204-4910-bba7-1c097e3a6751': {'id': 'ef020449-7204-4910-bba7-1c097e3a6751', 'kind': 'PROPER
-   cause: AssertionError: assert (('54451bf3-dfb2-4314-b396-56195f2a633a' in {'ef020449-7204-4910-bba7-1c097e3a6751': {'id': 'ef020449-7204-4910-bba7-1c097e3a6751', 'kind': 'PROPER
+   cause: AssertionError: assert '834929ca-03ed-4f8d-8505-32cc8e4fa100' in {'77b12d84-f73c-4d53-9a76-2f136c783b91': {'id': '77b12d84-f73c-4d53-9a76-2f136c783b91', 'kind': 'PROPERTY
+   cause: AssertionError: assert (('55253394-dee4-4849-bdf7-74fb34d2e834' in {'77b12d84-f73c-4d53-9a76-2f136c783b91': {'id': '77b12d84-f73c-4d53-9a76-2f136c783b91', 'kind': 'PROPER
+   cause: AssertionError: assert (('c0e8fe8a-4b32-4e4c-983f-92d4059e8a41' in {'77b12d84-f73c-4d53-9a76-2f136c783b91': {'id': '77b12d84-f73c-4d53-9a76-2f136c783b91', 'kind': 'PROPER
    cause: AssertionError: assert ['AVAILABILIT...CONFIRMATION'] == ['IDENTITY_CA...CONFIRMATION']
-   cause: E   AssertionError: assert (('1a28d978-bebb-45a7-9cbb-457fa8bdb524' in {'ef020449-7204-4910-bba7-1c097e3a6751': {'id': 'ef020449-7204-4910-bba7-1c097e3a6751', 'kind': 'PR
-   cause: E   AssertionError: assert (('54451bf3-dfb2-4314-b396-56195f2a633a' in {'ef020449-7204-4910-bba7-1c097e3a6751': {'id': 'ef020449-7204-4910-bba7-1c097e3a6751', 'kind': 'PR
-   cause: E   AssertionError: assert ['AVAILABILIT...CONFIRMATION'] == ['IDENTITY_CA...CONFIRMATION']
-== Q3 UNSURE is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   1 failed, 8 passed, 2 warnings in 3.61s
+   cause: E   AssertionError: assert '834929ca-03ed-4f8d-8505-32cc8e4fa100' in {'77b12d84-f73c-4d53-9a76-2f136c783b91': {'id': '77b12d84-f73c-4d53-9a76-2f136c783b91', 'kind': 'PROP
+   cause: E   AssertionError: assert (('55253394-dee4-4849-bdf7-74fb34d2e834' in {'77b12d84-f73c-4d53-9a76-2f136c783b91': {'id': '77b12d84-f73c-4d53-9a76-2f136c783b91', 'kind': 'PR
+== Q3 UNSURE is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   1 failed, 9 passed, 2 warnings in 4.67s
    FAILED test_a_pending_or_unsure_identity_candidate_enters_the_queue[UNSURE-True]
-   cause: AssertionError: assert (('e730d880-a190-4022-87e1-b5dc398a8c5c' in {'9aeb9b46-3ccf-4afe-a197-d524f93e799c': {'id': '9aeb9b46-3ccf-4afe-a197-d524f93e799c', 'kind': 'PROPER
-   cause: E   AssertionError: assert (('e730d880-a190-4022-87e1-b5dc398a8c5c' in {'9aeb9b46-3ccf-4afe-a197-d524f93e799c': {'id': '9aeb9b46-3ccf-4afe-a197-d524f93e799c', 'kind': 'PR
-== Q4 a decided candidate is a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   1 failed, 8 passed, 2 warnings in 3.58s
+   cause: AssertionError: assert (('aef3c356-371c-4dae-b083-9279f7feb871' in {'b2eb932a-e954-4d05-b2b3-249f4ffba816': {'id': 'b2eb932a-e954-4d05-b2b3-249f4ffba816', 'kind': 'PROPER
+   cause: E   AssertionError: assert (('aef3c356-371c-4dae-b083-9279f7feb871' in {'b2eb932a-e954-4d05-b2b3-249f4ffba816': {'id': 'b2eb932a-e954-4d05-b2b3-249f4ffba816', 'kind': 'PR
+== Q4 a decided candidate is a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   1 failed, 9 passed, 2 warnings in 4.81s
    FAILED test_a_pending_or_unsure_identity_candidate_enters_the_queue[CONFIRMED_DISTINCT-False]
-   cause: AssertionError: assert (('3918a6f2-1aeb-4053-a214-d48067efc070' in {'f4000000-0000-4000-8000-000000000009': {'id': 'f4000000-0000-4000-8000-000000000009', 'kind': 'PROPER
-   cause: E   AssertionError: assert (('3918a6f2-1aeb-4053-a214-d48067efc070' in {'f4000000-0000-4000-8000-000000000009': {'id': 'f4000000-0000-4000-8000-000000000009', 'kind': 'PR
-== Q5 stale availability is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   4 failed, 5 passed, 2 warnings in 3.56s
+   cause: AssertionError: assert (('8e0e1f5c-b0c4-4ff6-b819-b3afbbe0a816' in {'f4000000-0000-4000-8000-000000000009': {'id': 'f4000000-0000-4000-8000-000000000009', 'kind': 'PROPER
+   cause: E   AssertionError: assert (('8e0e1f5c-b0c4-4ff6-b819-b3afbbe0a816' in {'f4000000-0000-4000-8000-000000000009': {'id': 'f4000000-0000-4000-8000-000000000009', 'kind': 'PR
+== Q5 stale availability is not a reason [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   4 failed, 6 passed, 2 warnings in 4.67s
    FAILED test_an_alias_is_not_queued
    FAILED test_several_reasons_are_listed_in_the_declared_order
    FAILED test_stale_availability_enters_the_queue
    FAILED test_the_queue_is_oldest_first_and_conforms_to_the_contract
-   cause: AssertionError: assert ('fdf97ca7-61a7-458d-adcc-dcf71c01a874' in {'586d3734-7154-458c-801d-d63e810fbe79': {'id': '586d3734-7154-458c-801d-d63e810fbe79', 'kind': 'PROPERT
+   cause: AssertionError: assert ('415a4a0b-2b8d-41fc-a85a-c258f05f527e' in {'f53a5b06-e74d-41c5-8b29-ef87bfe57e3b': {'id': 'f53a5b06-e74d-41c5-8b29-ef87bfe57e3b', 'kind': 'PROPERT
    cause: AssertionError: assert ['IDENTITY_CANDIDATE_PENDING'] == ['IDENTITY_CA...CONFIRMATION']
-   cause: E   AssertionError: assert ('fdf97ca7-61a7-458d-adcc-dcf71c01a874' in {'586d3734-7154-458c-801d-d63e810fbe79': {'id': '586d3734-7154-458c-801d-d63e810fbe79', 'kind': 'PRO
+   cause: E   AssertionError: assert ('415a4a0b-2b8d-41fc-a85a-c258f05f527e' in {'f53a5b06-e74d-41c5-8b29-ef87bfe57e3b': {'id': 'f53a5b06-e74d-41c5-8b29-ef87bfe57e3b', 'kind': 'PRO
    cause: E   AssertionError: assert ['IDENTITY_CANDIDATE_PENDING'] == ['IDENTITY_CA...CONFIRMATION']
-   cause: E   KeyError: '591f7c86-caa1-4a38-bdbf-2b8798e84a72'
-   cause: E   ValueError: 'a84c644a-ccd8-40c0-891e-30ab5a9d61f9' is not in list
-== Q6 aliases are queued [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   1 failed, 8 passed, 2 warnings in 3.52s
+   cause: E   KeyError: '458e25c1-b18c-4d97-8762-2ff38322bdcb'
+   cause: E   ValueError: '42b48383-5b5d-4230-9514-88826c0719ad' is not in list
+== Q6 aliases are queued [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   1 failed, 9 passed, 2 warnings in 4.78s
    FAILED test_an_alias_is_not_queued
-   cause: AssertionError: assert ('d34bc6ab-93ef-48a3-8c64-9c007632d66f' in {'17cd455d-5804-45e4-83d1-5cc59bf955e9': {'id': '17cd455d-5804-45e4-83d1-5cc59bf955e9', 'kind': 'PROPERT
-   cause: E   AssertionError: assert ('d34bc6ab-93ef-48a3-8c64-9c007632d66f' in {'17cd455d-5804-45e4-83d1-5cc59bf955e9': {'id': '17cd455d-5804-45e4-83d1-5cc59bf955e9', 'kind': 'PRO
-== Q7 newest first [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   1 failed, 8 passed, 2 warnings in 3.44s
+   cause: AssertionError: assert ('d5c39539-0e0a-4c0c-b96b-8b32bdfc137f' in {'92618830-ca43-4dc7-9cb2-1f73fd56ef09': {'id': '92618830-ca43-4dc7-9cb2-1f73fd56ef09', 'kind': 'PROPERT
+   cause: E   AssertionError: assert ('d5c39539-0e0a-4c0c-b96b-8b32bdfc137f' in {'92618830-ca43-4dc7-9cb2-1f73fd56ef09': {'id': '92618830-ca43-4dc7-9cb2-1f73fd56ef09', 'kind': 'PRO
+== Q7 newest first [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   1 failed, 9 passed, 2 warnings in 4.65s
    FAILED test_the_queue_is_oldest_first_and_conforms_to_the_contract
    cause: AssertionError: assert 1 < 0
    cause: E   AssertionError: assert 1 < 0
-== Q8 properties with no reason are queued [src/turab/services/properties.py, 1 site(s)]  restored: sha256 3e25fdc6968e0de7 identical
-   9 failed, 2 warnings in 3.60s
+== Q8 properties with no reason are queued [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   10 failed, 2 warnings in 4.36s
+   FAILED test_a_candidate_that_can_no_longer_be_reviewed_does_not_queue_its_other_member
    FAILED test_a_claim_verified_with_a_conflict_enters_the_queue
    FAILED test_a_pending_or_unsure_identity_candidate_enters_the_queue[CONFIRMED_DISTINCT-False]
    FAILED test_a_pending_or_unsure_identity_candidate_enters_the_queue[None-True]
@@ -69,5 +71,10 @@ Test file         : tests/test_slice3_property_queue.py
    FAILED test_the_queue_is_oldest_first_and_conforms_to_the_contract
    cause: E   IndexError: list index out of range
    cause: IndexError: list index out of range
+== Q9 a candidate with an alias member still queues its other member [src/turab/services/properties.py, 1 site(s)]  restored: sha256 2e230d75011787cf identical
+   1 failed, 9 passed, 2 warnings in 4.69s
+   FAILED test_a_candidate_that_can_no_longer_be_reviewed_does_not_queue_its_other_member
+   cause: AssertionError: C is queued by the unreviewable B–C candidate: {'id': '4fa87ad9-f60d-4f9a-8791-48e5febb7523', 'kind': 'PROPERTY', 'priority': 'NORMAL', 'created_at': '202
+   cause: E   AssertionError: C is queued by the unreviewable B–C candidate: {'id': '4fa87ad9-f60d-4f9a-8791-48e5febb7523', 'kind': 'PROPERTY', 'priority': 'NORMAL', 'created_at': 
 
 SURVIVING MUTATIONS: none
