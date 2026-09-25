@@ -318,3 +318,7 @@ tests/test_evidence_binding.py                                 new  f312eedcd10b
 tests/test_slice3_property_queue.py                            --   d36581016901be5294dfde41676e557e589f3a5944dd504e634aeb3dd9ec2c72
 tests/test_slice3_scenarios.py                                 --   f4234a716d65dbe24eca0c5aeb7307af08a7c4bf21094633aff57698e012ca1b
 SLICE_3_PLAN.md changed revision: 6 -> 7 (decisions of the review of d0d58c3). RFC-001 carries correction G3-15 in its scenario table, marked in place; it is not a new revision. docs/gate/SLICE_3_STOP_GATE_C.md is generated from the clean-tree report and committed with TEST-RUN-PROVENANCE.txt; its digest is in the bundle MANIFEST.
+
+--- closure of Slice 3 at 96e36e6 (review of 96e36e6) ---
+docs/gate/SLICE_3_CLOSURE.md                                   new  240633854312adf69e41ef7b9529e2a1fa2308de9724c5320f24b624b444132b
+No decision document changed revision. The closure record states the reviewer's decision and its limits.
