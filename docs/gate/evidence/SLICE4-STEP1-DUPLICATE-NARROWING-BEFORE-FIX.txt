@@ -1,0 +1,115 @@
+TURAB — review of aad9f34: two request-body narrowings for ONE operation
+=========================================================================
+Recorded : 2026-09-26 21:41:42 UTC
+Before   : a git-archive copy of aad9f34 (source fingerprint 2a97f06e…39d0),
+           the tree the review read
+After    : a git-archive copy of 811c67b (source fingerprint b15e5a26…51ff),
+           the fixed tree
+No database is involved. The harness edits the COPY's corrections file only,
+and never the repository. These results are ours.
+
+BEFORE (aad9f34): the reviewer's experiment, reproduced.
+- The loader accepted both narrowings.
+- The application started (67 operations).
+- The generator wrote a contract requiring only property_ids.
+- matching_policy_version was optional again, with default 0.1.0.
+- The marker named CORRECTION-099 alone.
+- Also found: a field listed twice in require was accepted, and produced a
+  repeated required entry.
+
+AFTER (811c67b):
+- The loader, application startup and the generator each REFUSE, naming the
+  first narrowing.
+- The effective contract keeps required [matching_policy_version], with no
+  default and marker CORRECTION-004.
+- The repeated field is refused by the loader and by the generator.
+
+The harness, verbatim (run: measure.sh <repo> <scratch-dir> <commit>):
+----------------------------------------------------------------------
+#!/usr/bin/env bash
+# Review of aad9f34: two request-body narrowings for ONE operation.
+# Usage: measure.sh <repo> <scratch-dir> <commit>
+set -u
+REPO=$1; W=$2/tree; C=$3
+mkdir -p "$W" && git -C "$REPO" archive "$C" | tar -x -C "$W"
+PY=$REPO/.venv/bin/python
+cd "$W"
+echo "tree: git archive $C -> fingerprint $($PY db/dev/source_fingerprint.py .)"
+cat >> docs/contract/CONTRACT_CORRECTIONS.yaml <<'YAML'
+  - id: CORRECTION-099
+    decision: "review experiment: a second narrowing of the same operation"
+    approved: "2026-09-26"
+    operation_id: postRequestsRequestIdMatchingRun
+    require: [property_ids]
+    frozen_defaults: {}
+    rationale: experiment
+    runtime_rule: experiment
+YAML
+echo "appended CORRECTION-099 (require: [property_ids]) for postRequestsRequestIdMatchingRun"
+PYTHONPATH=src $PY - <<'PY'
+from turab.auth.contract import ContractError, load_request_body_narrowings, build_policy_table
+def outcome(f):
+    try:
+        r = f(); return f"ACCEPTED: {r}"
+    except ContractError as e:
+        return f"REFUSED: {e}"
+print("1 load_request_body_narrowings:", outcome(lambda: [e["id"] for e in load_request_body_narrowings()]))
+print("2 build_policy_table (startup):", outcome(lambda: f"{len(build_policy_table())} operations"))
+PY
+out=$($PY db/gate/generate_effective_contract.py 2>&1); echo "3 generator exit=$? : $(echo "$out" | tail -1)"
+$PY - <<'PY'
+import yaml
+d = yaml.safe_load(open("docs/api/openapi_effective_v0.2.3.yaml"))
+op = d["paths"]["/requests/{request_id}/matching/run"]["post"]
+s = op["requestBody"]["content"]["application/json"]["schema"]
+print("4 effective required:", s.get("required"))
+print("5 matching_policy_version:", s["properties"]["matching_policy_version"])
+print("6 correction marker id:", op["x-turab-correction"]["id"])
+PY
+echo
+echo "--- same tree, one narrowing requiring the same field twice ---"
+git -C "$REPO" show "$C":docs/contract/CONTRACT_CORRECTIONS.yaml > docs/contract/CONTRACT_CORRECTIONS.yaml
+sed -i 's/    require: \[matching_policy_version\]/    require: [matching_policy_version, matching_policy_version]/' docs/contract/CONTRACT_CORRECTIONS.yaml
+grep -n "require:" docs/contract/CONTRACT_CORRECTIONS.yaml
+PYTHONPATH=src $PY - <<'PY'
+from turab.auth.contract import ContractError, load_request_body_narrowings
+try:
+    print("7 loader:", "ACCEPTED", [e["require"] for e in load_request_body_narrowings()])
+except ContractError as e:
+    print("7 loader: REFUSED", e)
+PY
+out=$($PY db/gate/generate_effective_contract.py 2>&1); echo "8 generator exit=$? : $(echo "$out" | tail -1)"
+$PY -c "import yaml;d=yaml.safe_load(open('docs/api/openapi_effective_v0.2.3.yaml'));print('9 effective required:',d['paths']['/requests/{request_id}/matching/run']['post']['requestBody']['content']['application/json']['schema']['required'])"
+----------------------------------------------------------------------
+
+=== BEFORE: aad9f34 ===
+tree: git archive aad9f34 -> fingerprint 2a97f06e8298af6788134a41a1307fb87933471f7b4df9422f0159fe21e639d0
+appended CORRECTION-099 (require: [property_ids]) for postRequestsRequestIdMatchingRun
+1 load_request_body_narrowings: ACCEPTED: ['CORRECTION-004', 'CORRECTION-099']
+2 build_policy_table (startup): ACCEPTED: 67 operations
+3 generator exit=0 :   ADD-G3-6 (postPropertyRelationEnd)
+4 effective required: ['property_ids']
+5 matching_policy_version: {'type': 'string', 'default': '0.1.0'}
+6 correction marker id: CORRECTION-099
+
+--- same tree, one narrowing requiring the same field twice ---
+83:    require: [matching_policy_version, matching_policy_version]
+7 loader: ACCEPTED [['matching_policy_version', 'matching_policy_version']]
+8 generator exit=0 :   ADD-G3-6 (postPropertyRelationEnd)
+9 effective required: ['matching_policy_version', 'matching_policy_version']
+
+=== AFTER: 811c67b ===
+tree: git archive 811c67b -> fingerprint b15e5a26fdd26d1f17c589f071addd48c471127d476c4ff524630d1ad6a751ff
+appended CORRECTION-099 (require: [property_ids]) for postRequestsRequestIdMatchingRun
+1 load_request_body_narrowings: REFUSED: CORRECTION-099: postRequestsRequestIdMatchingRun is already narrowed by CORRECTION-004; one narrowing per operation. Amend that one instead.
+2 build_policy_table (startup): REFUSED: CORRECTION-099: postRequestsRequestIdMatchingRun is already narrowed by CORRECTION-004; one narrowing per operation. Amend that one instead.
+3 generator exit=1 : REFUSED: CORRECTION-099: postRequestsRequestIdMatchingRun is already narrowed by CORRECTION-004; one narrowing per operation. Amend that one instead.
+4 effective required: ['matching_policy_version']
+5 matching_policy_version: {'type': 'string'}
+6 correction marker id: CORRECTION-004
+
+--- same tree, one narrowing requiring the same field twice ---
+83:    require: [matching_policy_version, matching_policy_version]
+7 loader: REFUSED CORRECTION-004: ['matching_policy_version'] listed more than once in require; a required array must not repeat a field
+8 generator exit=1 : REFUSED: CORRECTION-004: ['matching_policy_version'] listed more than once in require; a required array must not repeat a field
+9 effective required: ['matching_policy_version']

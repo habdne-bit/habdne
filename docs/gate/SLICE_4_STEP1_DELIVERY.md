@@ -168,6 +168,11 @@ experiment is refused at each of the three places:
 All five fail on the `aad9f34` code; the other 15 pass. Mutations C9 to C11
 are added, one per new check.
 
-**The same experiment on the fixed tree** is recorded in the evidence file,
-in its second half. Every step refuses, and the effective contract is
-unchanged.
+**The same experiment on the fixed tree** (`811c67b`) is recorded in the
+evidence file, in its second half, run with the same harness:
+- the loader, startup and the generator each refuse, naming CORRECTION-004;
+- the effective contract keeps `required: [matching_policy_version]`, with
+  no default.
+
+The generator now reports an invalid corrections file as `REFUSED: …` with
+exit 1, where it previously printed a traceback.
