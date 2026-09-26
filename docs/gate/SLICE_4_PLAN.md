@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 4**
+## Implementation plan — **revision 5**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -13,7 +13,8 @@ for.
 | 1 | `75c7660` | first plan |
 | 2 | `a1f77ea` | the plan's facts measured on PostgreSQL before any code (§0a). §3.3 is settled by measurement. G4-3, G4-7 and G4-14 are corrected by what was measured. G4-16 is added. **No decision is taken** |
 | 3 | `0d6c6cf` | decisions recorded where they apply: **G4-1 and G4-14** (approved for step 1, 2026-09-26); **G4-2 and G4-13** (approved in the review of aad9f34), each with the conditions the review attached. Step 2 starts only after step 1 is closed |
-| 4 | the commit that records the review of 4538a2d | **G4-8 and G4-9** decided (review of 4538a2d), recorded where they apply. G4-13's canonical form is corrected by the same review: numbers are JSON numbers, exact and context-free; the format tag becomes `turab.match-input/2`. Step 3 starts only after step 2 is closed |
+| 4 | `20383df` | **G4-8 and G4-9** decided (review of 4538a2d), recorded where they apply. G4-13's canonical form is corrected by the same review: numbers are JSON numbers, exact and context-free; the format tag becomes `turab.match-input/2`. Step 3 starts only after step 2 is closed |
+| 5 | the commit that delivers step 3 | **G4-17** raised (open): an ACTIVE offer on an alias cannot be evaluated. Found while building the candidate set; reported, not decided |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -288,6 +289,7 @@ accept a recommendation by number.
 | G4-14 | Migration `0005` (immutability) | **APPROVED** (2026-09-26), delivered in step 1 | step 1 |
 | G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
+| G4-17 | An ACTIVE offer on an alias (raised in step 3) | **Open.** See G4-17 | — (reported meanwhile) |
 
 Each item has options and a recommendation. **Blocks** names the step in §8
 that cannot start without it.
@@ -662,6 +664,28 @@ the criterion instead.
   match. (b) is proposed as a separate item, because it changes a closed
   slice's behaviour, and that needs its own approval.
 - **Blocks:** nothing in Slice 4 if (a) is chosen.
+
+### G4-17 · An ACTIVE offer stranded on an alias (raised in step 3, open)
+- **Facts:**
+  - G3-13 decided that an alias's offers are not moved.
+  - `trg_match_commercial_context` refuses a match on an alias.
+  - The same trigger requires the evaluated offer to belong to the matched
+    property.
+  - So an ACTIVE offer attached to an alias can be evaluated neither under
+    the alias nor under its canonical record.
+- **Meanwhile:** the candidate set reports it as `OFFER_ON_ALIAS`, with the
+  canonical id and the offer ids (`SLICE_4_STEP3_DELIVERY.md` §3).
+- **Options:**
+  - (a) keep reporting it; the offer's party re-creates the offer on the
+    canonical record;
+  - (b) an identity-review step that re-creates, or re-points, open offers
+    onto the canonical record. This changes G3-13, and the identity
+    workflow;
+  - (c) a schema change allowing a canonical match to cite an alias's
+    offer. This is a Delta.
+- **Recommendation: (a)** for this slice. It changes nothing decided. The
+  diagnostic makes the stranded offer visible.
+- **Blocks:** nothing.
 
 ---
 
