@@ -294,7 +294,14 @@ def main() -> int:
                     help="regenerate and fail if the committed file is stale")
     args = ap.parse_args()
 
-    rendered, applied = build()
+    from turab.auth.contract import ContractError
+
+    try:
+        rendered, applied = build()
+    except ContractError as refused:
+        # The corrections file is invalid; nothing is written.
+        print(f"REFUSED: {refused}", file=sys.stderr)
+        return 1
 
     if args.check:
         if not OUT.exists():
