@@ -233,8 +233,14 @@ def build() -> tuple[str, list[str]]:
     # function, so the effective contract cannot apply one it would refuse.
     from turab.auth.contract import load_request_body_narrowings
 
-    narrowings = {e["operation_id"]: e
-                  for e in load_request_body_narrowings(CORRECTIONS, doc)}
+    entries = load_request_body_narrowings(CORRECTIONS, doc)
+    narrowings = {e["operation_id"]: e for e in entries}
+    if len(narrowings) != len(entries):
+        # The validator refuses this already. Checked again here, because a
+        # dict keyed by operation would otherwise keep only the LAST entry
+        # and silently drop an approved narrowing (review of aad9f34).
+        raise SystemExit("two request-body narrowings name the same operation; "
+                         "the later one would silently replace the earlier")
     narrowed: list[str] = []
     for item in doc.get("paths", {}).values():
         for method in _METHODS:

@@ -121,5 +121,53 @@ different tree, and for no other reason.
 
 ## 5. What remains before step 2
 
-Decisions **G4-2** (the rule registry) and **G4-13** (the input hash). Steps
-3 to 8 need the decisions named in the plan's §8.
+- G4-2 and G4-13 are **decided** in the review of aad9f34, and recorded in
+  the plan's revision 3.
+- Step 2 starts once step 1 is closed.
+- Steps 3 to 8 still need the decisions named in the plan's §8.
+
+## 6. The review of aad9f34: a blocker in the CORRECTION-004 validator
+
+**The defect.** The loader refused a duplicated correction ID, but not a
+duplicated OPERATION. The generator indexes narrowings by operation, so a
+second entry with another id **replaced** the first. The reviewer's
+experiment on a temporary copy produced this:
+- the loader accepted both;
+- the application started;
+- the effective contract required only `property_ids`;
+- `matching_policy_version` was optional again, with `default: 0.1.0`;
+- the marker named the second correction alone.
+
+This silently undoes the approved narrowing, while the startup guard passes.
+
+**Reproduced first**, on a `git archive` copy of `aad9f34`
+(`evidence/SLICE4-STEP1-DUPLICATE-NARROWING-BEFORE-FIX.txt`, harness
+verbatim):
+- all five of those facts, as reported;
+- a second, related defect: a field listed twice in `require` was accepted,
+  and produced `required: [matching_policy_version, matching_policy_version]`.
+
+**The fix.**
+- `load_request_body_narrowings` refuses a second narrowing of an operation
+  already narrowed, naming the first. It also refuses a field listed twice
+  in `require`.
+- The generator checks again, on its own, that no entry would overwrite
+  another before it builds its per-operation index. So a future bypass of
+  the loader still cannot drop a narrowing silently.
+
+**Tests** (`tests/test_correction_004.py`, 5 new). The reviewer's exact
+experiment is refused at each of the three places:
+- `test_a_second_narrowing_of_the_same_operation_is_refused_by_the_loader`;
+- `test_the_application_refuses_to_start_on_a_second_narrowing`;
+- `test_the_effective_contract_is_not_generated_from_a_second_narrowing`
+  (which also asserts the committed effective contract is untouched);
+- `test_the_generator_refuses_an_overwrite_even_if_the_loader_let_it_through`
+  (the defence in depth);
+- `test_a_field_listed_twice_in_require_is_refused`.
+
+All five fail on the `aad9f34` code; the other 15 pass. Mutations C9 to C11
+are added, one per new check.
+
+**The same experiment on the fixed tree** is recorded in the evidence file,
+in its second half. Every step refuses, and the effective contract is
+unchanged.

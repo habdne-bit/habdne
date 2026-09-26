@@ -9,6 +9,7 @@ import sys
 from mutation_runner import run
 
 SRC = "src/turab/auth/contract.py"
+GEN = "db/gate/generate_effective_contract.py"
 
 MUTATIONS = [
  ("C1 unknown keys accepted", SRC, "        if unknown:\n", "        if False:\n"),
@@ -29,6 +30,12 @@ MUTATIONS = [
   "        if False:"),
  ("C8 not validated at startup", SRC,
   "    load_request_body_narrowings(contract=doc)\n", ""),
+ ("C9 a second narrowing of one operation accepted", SRC,
+  "        if operation_id in narrowed:", "        if False:"),
+ ("C10 a field repeated in require accepted", SRC,
+  "        if repeated:", "        if False:"),
+ ("C11 the generator keeps only the last narrowing", GEN,
+  "    if len(narrowings) != len(entries):", "    if False:"),
 ]
 
 if __name__ == "__main__":

@@ -41,6 +41,10 @@ refuses:
 - a key that is not a narrowing;
 - a missing or reused id;
 - a missing decision;
+- **a second narrowing of the same operation** (review of aad9f34). The
+  generator indexes narrowings by operation, so a later entry would replace
+  this one silently. The generator refuses that case on its own as well;
+- **a field listed twice in `require`** (review of aad9f34);
 - an operation that is also role-corrected, or absent from the frozen
   package;
 - a field the body does not declare, or already requires;
@@ -68,16 +72,19 @@ Its tests come with that route:
 
 ## 4. Evidence
 
-- `tests/test_correction_004.py`: 15 cases. They cover:
+- `tests/test_correction_004.py`: 20 cases (15 at `aad9f34`, and 5 added for the review of aad9f34). They cover:
   - the effective contract;
   - the frozen package and the seed;
   - roles unchanged;
-  - ten refusals of the validator;
-  - the refusal at startup.
+  - twelve refusals of the validator, the second narrowing and the
+    repeated field included;
+  - the refusal at startup, for a stale narrowing and for a second
+    narrowing;
+  - two refusals by the generator (through the validator, and on its own).
 - `tests/test_correction_001.py`: the "changes nothing else" check now
   builds the expected operation by applying exactly this narrowing to the
   frozen one, and compares the two.
-- `db/dev/mutate_correction_004.py`: eight mutations of the validator,
-  recorded in `docs/gate/evidence/SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt`.
+- `db/dev/mutate_correction_004.py`: eleven mutations of the validator and
+  the generator, recorded in `docs/gate/evidence/SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt`.
 - Gate step 7: `generate_effective_contract.py --check`, the inventory
   `--check`, and `verify_policy_parity.py`.

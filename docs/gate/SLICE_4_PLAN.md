@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 2**
+## Implementation plan — **revision 3**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -11,7 +11,8 @@ for.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `75c7660` | first plan |
-| 2 | the commit that adds `evidence/SLICE4-PLAN-MEASUREMENTS.txt` | the plan's facts measured on PostgreSQL before any code (§0a). §3.3 is settled by measurement. G4-3, G4-7 and G4-14 are corrected by what was measured. G4-16 is added. **No decision is taken** |
+| 2 | `a1f77ea` | the plan's facts measured on PostgreSQL before any code (§0a). §3.3 is settled by measurement. G4-3, G4-7 and G4-14 are corrected by what was measured. G4-16 is added. **No decision is taken** |
+| 3 | the commit that records the review of aad9f34 | decisions recorded where they apply: **G4-1 and G4-14** (approved for step 1, 2026-09-26); **G4-2 and G4-13** (approved in the review of aad9f34), each with the conditions the review attached. Step 2 starts only after step 1 is closed |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -270,8 +271,8 @@ accept a recommendation by number.
 
 | # | Question | Recommendation | Blocks |
 |---|---|---|---|
-| G4-1 | The policy version, when the contract default names no policy | CORRECTION-004: required, and equal to the active policy | step 1 |
-| G4-2 | Where rules live | A code registry, digest-pinned, recorded against `0.2.0` | step 2 |
+| G4-1 | The policy version, when the contract default names no policy | **APPROVED** (2026-09-26): CORRECTION-004 | step 1 |
+| G4-2 | Where rules live | **APPROVED, (a)** (review of aad9f34): a code registry, with old versions kept replayable | step 2 |
 | G4-3 | Criterion rows duplicating the request's columns | Evaluate both; refuse the run when they are provably disjoint | step 4 |
 | G4-4 | When an UNKNOWN blocks | REQUIRED always; `blocking_if_unknown` widens the rule to others | step 4 |
 | G4-5 | Price | The table in G4-5; negotiability UNKNOWN over max gives UNKNOWN | step 4 |
@@ -282,8 +283,8 @@ accept a recommendation by number.
 | G4-10 | Permission | The binding rule in G4-10; the buyer side is Slice 5's | step 5 |
 | G4-11 | Freshness mapping and eligibility precedence | As proposed | step 5 |
 | G4-12 | Soft score | Weighted share of passing soft criteria | step 6 |
-| G4-13 | Input hash; an identical re-run | Canonical JSON with sha256; return the existing match | step 2 |
-| G4-14 | Migration `0005` (immutability) | Approve | step 1 |
+| G4-13 | Input hash; an identical re-run | **APPROVED** (review of aad9f34): canonical JSON; the existing match is returned; `evaluated_offer_id` is named in the input | step 2 |
+| G4-14 | Migration `0005` (immutability) | **APPROVED** (2026-09-26), delivered in step 1 | step 1 |
 | G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
 
@@ -310,6 +311,8 @@ that cannot start without it.
   one active policy is the only defined one (`ux_matching_policy_one_active`).
 - **Blocks:** step 1.
 
+> **DECIDED (2026-09-26, approved for step 1), and delivered:** CORRECTION-004 (`docs/contract/CORRECTION-004-matching-policy-version.md`). The review of aad9f34 found that a second narrowing of the same operation could silently undo it; that is now refused (`docs/gate/SLICE_4_STEP1_DELIVERY.md` §6).
+
 ### G4-2 · Where criterion rules live, and how a change is versioned
 - **Facts:**
   - Every criterion result needs a `rule_id` and a `rule_version`.
@@ -327,6 +330,19 @@ that cannot start without it.
 - **Recommendation: (a)** now, recorded against policy `0.2.0`, with (b)
   when the pilot tunes thresholds.
 - **Blocks:** step 2.
+
+> **DECIDED (review of aad9f34): option (a)**, with one condition.
+> - The registry holds rules by id, version and digest.
+> - **Every version that any stored match cites stays implemented and
+>   replayable.** Raising a rule's version and deleting the previous
+>   implementation does not achieve replay.
+> - So the registry is keyed by `(rule_id, rule_version)`, and a new version
+>   is ADDED beside the old one.
+> - The digest pin covers every version. A test asserts that every
+>   `(rule_id, rule_version)` pair ever recorded in the pin still resolves
+>   to its implementation.
+> - Removing a version is refused unless no match cites it, and even then
+>   it needs a Design Ledger entry.
 
 ### G4-3 · Which data each criterion reads, and duplicate request criteria
 **The mapping proposed** (codes from the seed, lines 118–131; every rule
@@ -547,6 +563,20 @@ write no new row.
 
 **Blocks:** step 2.
 
+> **DECIDED (review of aad9f34):** canonical JSON, and an identical run
+> returns the existing match. One condition is added.
+> - **`evaluated_offer_id` is named explicitly in the hashed input**, as a
+>   top-level element and not only inside the commercial snapshot.
+> - The reason: the uniqueness is `(request, property, policy, input_hash)`.
+>   It does not contain the offer. Without the offer's identity in the
+>   hash, two offers of the same property on identical terms could collide.
+>   The second would then be treated as an "identical re-run" and never get
+>   its own match.
+> - Two tests are required:
+>   1. two offers of one property on identical terms yield **two
+>      independent matches**;
+>   2. re-running the same offer writes **no second row**.
+
 ### G4-14 · Immutability that the schema does not enforce (migration `0005`)
 **Facts:**
 - `match_candidates` and `match_reviews` are guarded against UPDATE and
@@ -581,6 +611,8 @@ code path deletes criteria today (checked). If one is added, it must supersede
 the criterion instead.
 
 **Blocks:** step 1.
+
+> **DECIDED (2026-09-26, approved for step 1), and delivered:** migration `0005_match_history_immutability`. The review of aad9f34 found no blocker in it within G4-14's scope.
 
 ### G4-15 · The boundary with Slices 5 and 6, and "near match"
 - **Recommendation:** the split in §0.

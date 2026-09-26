@@ -130,3 +130,71 @@ def test_the_application_refuses_to_start_on_a_stale_narrowing(tmp_path, monkeyp
     monkeypatch.setattr(contract_module, "CORRECTIONS_PATH", path)
     with pytest.raises(ContractError, match="stale"):
         build_policy_table()
+
+
+# --- review of aad9f34: two narrowings of ONE operation -----------------------------
+#
+# The reviewer added a second narrowing with another id that required
+# `property_ids` on the same operation. On aad9f34 the loader accepted both,
+# the application started, and the generated contract required ONLY
+# `property_ids`: `matching_policy_version` was optional again, with its
+# default `0.1.0` back, and the marker named the second correction alone.
+# Reproduced before the fix: docs/gate/evidence/SLICE4-STEP1-DUPLICATE-NARROWING-BEFORE-FIX.txt.
+
+def _second_narrowing(doc, entry):
+    doc["request_body_narrowings"].append({
+        "id": "CORRECTION-099", "decision": "review experiment",
+        "approved": "2026-09-26", "operation_id": entry["operation_id"],
+        "require": ["property_ids"], "frozen_defaults": {},
+        "rationale": "experiment", "runtime_rule": "experiment"})
+
+
+def test_a_second_narrowing_of_the_same_operation_is_refused_by_the_loader(tmp_path):
+    with pytest.raises(ContractError, match="already narrowed by CORRECTION-004"):
+        load_request_body_narrowings(_with(tmp_path, _second_narrowing))
+
+
+def test_the_application_refuses_to_start_on_a_second_narrowing(tmp_path, monkeypatch):
+    monkeypatch.setattr(contract_module, "CORRECTIONS_PATH", _with(tmp_path, _second_narrowing))
+    with pytest.raises(ContractError, match="one narrowing per operation"):
+        build_policy_table()
+
+
+def test_the_effective_contract_is_not_generated_from_a_second_narrowing(tmp_path, monkeypatch):
+    """The generator is run on the bad file. It must stop, and nothing may be
+    written in place of the effective contract."""
+    import importlib
+    import sys
+
+    sys.path.insert(0, str(ROOT / "db" / "gate"))
+    generator = importlib.import_module("generate_effective_contract")
+    monkeypatch.setattr(generator, "CORRECTIONS", _with(tmp_path, _second_narrowing))
+    before = EFFECTIVE.read_bytes()
+    with pytest.raises(ContractError, match="one narrowing per operation"):
+        generator.build()
+    assert EFFECTIVE.read_bytes() == before
+
+
+def test_the_generator_refuses_an_overwrite_even_if_the_loader_let_it_through(tmp_path,
+                                                                            monkeypatch):
+    """Defence in depth: the loader is replaced by one that returns the two
+    entries unchecked. The generator's own guard must still stop."""
+    import importlib
+    import sys
+
+    sys.path.insert(0, str(ROOT / "db" / "gate"))
+    generator = importlib.import_module("generate_effective_contract")
+    doc = yaml.safe_load(_with(tmp_path, _second_narrowing).read_text(encoding="utf-8"))
+    monkeypatch.setattr(contract_module, "load_request_body_narrowings",
+                        lambda *a, **k: tuple(doc["request_body_narrowings"]))
+    with pytest.raises(SystemExit, match="silently replace"):
+        generator.build()
+
+
+def test_a_field_listed_twice_in_require_is_refused(tmp_path):
+    """Otherwise the effective contract carries `required` with a repeated
+    field (measured on aad9f34)."""
+    path = _with(tmp_path, lambda d, e: e.update(
+        require=["matching_policy_version", "matching_policy_version"]))
+    with pytest.raises(ContractError, match="listed more than once"):
+        load_request_body_narrowings(path)

@@ -200,6 +200,9 @@ def load_request_body_narrowings(
     - an unknown key;
     - a missing id or decision;
     - an id used twice;
+    - a second narrowing of the same operation, which would replace the first
+      (review of aad9f34);
+    - a field listed twice in `require`;
     - an operation that is also role-corrected;
     - an operation absent from the frozen contract;
     - a field the body does not declare, or already requires;
@@ -216,6 +219,7 @@ def load_request_body_narrowings(
     taken = {e.get("id") for e in doc.get("corrections") or ()} | {
         e.get("id") for e in doc.get("workflow_adoptions") or ()}
     seen: set[str] = set()
+    narrowed: dict[str, str] = {}
     for entry in entries:
         cid = entry.get("id")
         unknown = set(entry) - _BODY_NARROWING_KEYS
@@ -231,6 +235,16 @@ def load_request_body_narrowings(
         if operation_id in role_corrected:
             raise ContractError(f"{cid}: {operation_id} is already role-corrected; one "
                                 "correction per operation")
+        # One narrowing per operation (review of aad9f34). The generator and
+        # any caller index narrowings by operation, so a second entry would
+        # REPLACE the first. A later narrowing could then silently undo an
+        # approved one: measured, a second entry requiring `property_ids` made
+        # `matching_policy_version` optional again, with its default back.
+        if operation_id in narrowed:
+            raise ContractError(
+                f"{cid}: {operation_id} is already narrowed by {narrowed[operation_id]}; "
+                "one narrowing per operation. Amend that one instead.")
+        narrowed[operation_id] = cid
         op = by_operation.get(operation_id)
         if op is None:
             raise ContractError(f"{cid}: {operation_id!r} is not in the frozen contract")
@@ -243,6 +257,10 @@ def load_request_body_narrowings(
         require = list(entry.get("require") or ())
         if not require:
             raise ContractError(f"{cid}: requires nothing")
+        repeated = sorted({f for f in require if require.count(f) > 1})
+        if repeated:
+            raise ContractError(f"{cid}: {repeated} listed more than once in require; "
+                                "a required array must not repeat a field")
         already = set(schema.get("required") or ())
         for field in require:
             if field not in properties:
