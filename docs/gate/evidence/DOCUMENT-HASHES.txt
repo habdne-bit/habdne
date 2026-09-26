@@ -357,3 +357,17 @@ tests/test_slice3_step4.py                                     --   2086492b4d07
 No decision document changed revision. CONTRACT_CORRECTIONS.yaml gains CORRECTION-004 (request_body_narrowings). The frozen package is unchanged.
 docs/gate/SLICE_4_STEP1_DELIVERY.md                            --   a17275ba4c3a547b2e095a9c2a7c0d6bb4f89d9ea198a8ab64a4af343aafd3d7
 (step 1 delivery §4 corrected to the measured reason the Slice 3 check fails on this tree: staleness only)
+
+--- review of aad9f34: duplicate-narrowing blocker fixed; G4-2 and G4-13 recorded ---
+src/turab/auth/contract.py                                     --   b964b4964b6435f389138f9de023dcebd214567ec1a3a11a633647cc95d54e6b
+db/gate/generate_effective_contract.py                         --   2df263d49fff43acfc33354af8da6d03045edecbe0205bdef0b26d1b76fdb5a0
+tests/test_correction_004.py                                   --   9b7f936039ee2e1d9215d55b8ee27b4cd1d3b82f08822aa41f777cd523f915ad
+db/dev/mutate_correction_004.py                                --   dec2f8a762232e81d19aa5641855c4ffb6e2b057729ab6e0e230e15606599227
+docs/contract/CORRECTION-004-matching-policy-version.md        --   aa53d2c8010f1a2b1553dda80fed3020d9614050c41b4f125becee44338fc0e5
+docs/gate/SLICE_4_STEP1_DELIVERY.md                            --   18d65ffa8d60efc42abcdc86bbac6d9f283de59acbe643fe759ce0d0d108e95e
+docs/gate/SLICE_4_PLAN.md                                      rev3 7d2970c3a95958309e79de05d48b6713a23fb5a818705371afe224c32e3e7179
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   da9697db4463025c2b9216a1dbd932337f1624d695b90b8d36664d8b61024266
+docs/gate/evidence/SLICE4-STEP1-DUPLICATE-NARROWING-BEFORE-FIX.txt new  d5978a56a7ff6d5afa4900fdda9d261a1fcaafd70ceef2f30161f6ddf2536377
+docs/gate/evidence/SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt   --   00852900694ebe2849b9dcf9d8905eea32726533ff89842f19ade115ee1b5e06
+docs/gate/evidence/SLICE4-STEP1-0005-MUTATIONS.txt             --   90e67b40dd1308e78da991d96841417082daa8a677429e35104f06bdc3006776
+SLICE_4_PLAN.md changed revision: 2 -> 3 (G4-1 and G4-14 approved for step 1; G4-2 and G4-13 approved with their conditions).

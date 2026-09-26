@@ -79,12 +79,14 @@ policy lacking the threshold is refused, not defaulted.
 
 ## 3. Mutation evidence
 
-Both runs are on a clean tree at `896b8c7`, source fingerprint
-`2a97f06e…39d0`:
+Re-run for the review of aad9f34. Both runs are on a clean tree at
+`4f29708`, source fingerprint `b15e5a26…51ff`:
 - `db/dev/mutate_0005.py`: **11 of 11 fail**, none survive
   (`SLICE4-STEP1-0005-MUTATIONS.txt`);
-- `db/dev/mutate_correction_004.py`: **8 of 8 fail**, none survive
-  (`SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt`).
+- `db/dev/mutate_correction_004.py`: **11 of 11 fail**, none survive
+  (`SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt`). C9 to C11 are new, one per
+  new check. The runs at `896b8c7` (11/11 and 8/8) are in the repository
+  history.
 
 Every mutated file was restored and verified by sha256.
 
