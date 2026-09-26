@@ -153,10 +153,13 @@ that answers 422 is step 7.
 
 ## 5. Evidence
 
-Recorded in this round, on a clean tree:
-- `SLICE4-STEP2-MUTATIONS.txt`: 22 mutations, each failing at least one
-  test;
-- the matrix, the gate and the bound test run.
+- `SLICE4-STEP2-MUTATIONS.txt`: **22 of 22 fail**, none survive, on a
+  clean tree at `a99f568` (source fingerprint `bb275130…29ea`). Every
+  mutated file was restored and verified by sha256.
+- `SLICE4-STEP2-MUTATIONS-TRIAL.txt`: the trial run on a DIRTY tree,
+  kept because it found S13.
+- The matrix, the gate and the bound test run are recorded in the commits
+  that follow `a99f568`.
 
 ## 6. Also in this round
 

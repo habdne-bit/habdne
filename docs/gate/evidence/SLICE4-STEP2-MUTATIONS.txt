@@ -1,0 +1,167 @@
+TURAB — Slice 4 step 2: which check fails which test
+============================================================
+Base commit       : a99f568baceff4d25e68512f141fe5119a3a8355
+Source fingerprint: bb27513008efc091e5ae8428bd18e35c88f3031d35d0b2b4f9986c658ec829ea
+Working tree      : CLEAN
+Recorded          : 2026-09-26 22:10:14 UTC
+Test file         : tests/test_slice4_step2.py
+
+=== baseline (no mutation) ===
+   73 passed, 2 warnings in 3.25s
+== S1 floats accepted [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   4 failed, 69 passed, 2 warnings in 3.11s
+   FAILED test_a_float_is_refused_wherever_it_is[0.5]
+   FAILED test_a_float_is_refused_wherever_it_is[value1]
+   FAILED test_a_float_is_refused_wherever_it_is[value2]
+   FAILED test_a_float_is_refused_wherever_it_is[value3]
+   cause: E   Failed: DID NOT RAISE CanonicalError
+   cause: Failed: DID NOT RAISE CanonicalError
+== S2 decimals written as their text, not by value [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   3 failed, 70 passed, 2 warnings in 3.18s
+   FAILED test_decimals_are_written_by_value
+   FAILED test_the_canonical_form_is_pinned
+   FAILED test_the_input_hash_is_the_sha256_of_this_exact_document
+   cause: AssertionError: assert '502ea7b1db8f...68abd0da9cae4' == '65a68075d2dc...b994fc2be61f6'
+   cause: E   AssertionError: assert '502ea7b1db8f...68abd0da9cae4' == '65a68075d2dc...b994fc2be61f6'
+   cause: E   assert b'{"a":"\xd8\...3,null,true]}' == b'{"a":"\xd8\...3,null,true]}'
+   cause: E   assert {b'"268.5"', ..."268.500000"'} == {b'"268.5"'}
+   cause: assert b'{"a":"\xd8\...3,null,true]}' == b'{"a":"\xd8\...3,null,true]}'
+   cause: assert {b'"268.5"', ..."268.500000"'} == {b'"268.5"'}
+== S3 datetimes not normalised to UTC [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   2 failed, 71 passed, 2 warnings in 3.25s
+   FAILED test_one_instant_gives_one_string_whatever_its_zone
+   FAILED test_the_canonical_form_is_pinned
+   cause: E   assert b'"2026-09-26T12:00:00+00:00"' == b'"2026-09-26T13:00:00+01:00"'
+   cause: E   assert b'{"a":"\xd8\...3,null,true]}' == b'{"a":"\xd8\...3,null,true]}'
+   cause: assert b'"2026-09-26T12:00:00+00:00"' == b'"2026-09-26T13:00:00+01:00"'
+   cause: assert b'{"a":"\xd8\...3,null,true]}' == b'{"a":"\xd8\...3,null,true]}'
+== S4 naive datetimes accepted [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   1 failed, 72 passed, 2 warnings in 3.27s
+   FAILED test_a_naive_datetime_is_refused
+   cause: E   Failed: DID NOT RAISE CanonicalError
+   cause: Failed: DID NOT RAISE CanonicalError
+== S5 non-string keys stringified [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   2 failed, 71 passed, 2 warnings in 3.14s
+   FAILED test_a_non_string_key_is_refused[value0]
+   FAILED test_a_non_string_key_is_refused[value1]
+   cause: E   Failed: DID NOT RAISE CanonicalError
+   cause: Failed: DID NOT RAISE CanonicalError
+== S6 evaluated_offer_id left out of the document [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   4 failed, 69 passed, 2 warnings in 3.15s
+   FAILED test_every_input_changes_the_hash[evaluated_offer_id-None]
+   FAILED test_every_input_changes_the_hash[evaluated_offer_id-value3]
+   FAILED test_the_input_hash_is_the_sha256_of_this_exact_document
+   FAILED test_two_offers_on_identical_terms_hash_differently
+   cause: AssertionError: assert 'deb25c3a9f47...ecb31ef3cb3bb' == '65a68075d2dc...b994fc2be61f6'
+   cause: AssertionError: assert 'deb25c3a9f4709269044896fb7953446d9d245d927aa7bdce5fecb31ef3cb3bb' != 'deb25c3a9f4709269044896fb7953446d9d245d927aa7bdce5fecb31ef3cb3bb'
+   cause: AssertionError: assert 'ef7a4310ec1236add194477e312636b78cc039f8275e333d347494ed57e78047' != 'ef7a4310ec1236add194477e312636b78cc039f8275e333d347494ed57e78047'
+   cause: E   AssertionError: assert 'deb25c3a9f47...ecb31ef3cb3bb' == '65a68075d2dc...b994fc2be61f6'
+   cause: E   AssertionError: assert 'deb25c3a9f4709269044896fb7953446d9d245d927aa7bdce5fecb31ef3cb3bb' != 'deb25c3a9f4709269044896fb7953446d9d245d927aa7bdce5fecb31ef3cb3bb'
+   cause: E   AssertionError: assert 'ef7a4310ec1236add194477e312636b78cc039f8275e333d347494ed57e78047' != 'ef7a4310ec1236add194477e312636b78cc039f8275e333d347494ed57e78047'
+== S7 evaluated_at accepted as an input [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   3 failed, 70 passed, 2 warnings in 3.31s
+   FAILED test_evaluated_at_and_input_hash_are_not_inputs[snapshot0]
+   FAILED test_evaluated_at_and_input_hash_are_not_inputs[snapshot1]
+   FAILED test_evaluated_at_and_input_hash_are_not_inputs[snapshot2]
+   cause: E   Failed: DID NOT RAISE CanonicalError
+   cause: Failed: DID NOT RAISE CanonicalError
+== S8 ASCII escaping [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   2 failed, 71 passed, 2 warnings in 3.23s
+   FAILED test_arabic_is_hashed_as_written_and_a_bool_is_not_an_integer
+   FAILED test_the_canonical_form_is_pinned
+   cause: E   assert b'{"a":"\\u06...3,null,true]}' == b'{"a":"\xd8\...3,null,true]}'
+   cause: E   assert b'{"ar":"\\u0...0642\\u0639"}' == b'{"ar":"\xd8...x82\xd8\xb9"}'
+   cause: assert b'{"a":"\\u06...3,null,true]}' == b'{"a":"\xd8\...3,null,true]}'
+   cause: assert b'{"ar":"\\u0...0642\\u0639"}' == b'{"ar":"\xd8...x82\xd8\xb9"}'
+== S9 keys not sorted [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   3 failed, 70 passed, 2 warnings in 3.19s
+   FAILED test_key_order_does_not_change_the_bytes
+   FAILED test_the_canonical_form_is_pinned
+   FAILED test_the_input_hash_is_the_sha256_of_this_exact_document
+   cause: AssertionError: assert 'd09f5027b70d...cceb30e7f483f' == '65a68075d2dc...b994fc2be61f6'
+   cause: E   AssertionError: assert 'd09f5027b70d...cceb30e7f483f' == '65a68075d2dc...b994fc2be61f6'
+   cause: E   assert b'{"b":1,"a":{"y":2,"x":3}}' == b'{"a":{"x":3,"y":2},"b":1}'
+   cause: E   assert b'{"z":["1.5"...00000000001"}' == b'{"a":"\xd8\...3,null,true]}'
+   cause: assert b'{"b":1,"a":{"y":2,"x":3}}' == b'{"a":{"x":3,"y":2},"b":1}'
+   cause: assert b'{"z":["1.5"...00000000001"}' == b'{"a":"\xd8\...3,null,true]}'
+== S10 a version may be re-implemented [src/turab/matching/registry.py, 1 site(s)]  restored: sha256 0c81bbb3455c5e19 identical
+   1 failed, 72 passed, 2 warnings in 3.28s
+   FAILED test_a_second_implementation_of_one_version_is_refused
+   cause: E   Failed: DID NOT RAISE RegistryError
+   cause: Failed: DID NOT RAISE RegistryError
+== S11 a changed source goes unreported [src/turab/matching/registry.py, 1 site(s)]  restored: sha256 0c81bbb3455c5e19 identical
+   2 failed, 71 passed, 2 warnings in 3.24s
+   FAILED test_a_rule_changed_without_a_version_bump_is_reported
+   FAILED test_the_pin_tool_only_adds_and_refuses_to_move_a_pin
+   cause: AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert 0 == 1
+   cause: E   assert False
+   cause: assert False
+== S12 a vanished version goes unreported [src/turab/matching/registry.py, 1 site(s)]  restored: sha256 0c81bbb3455c5e19 identical
+   2 failed, 71 passed, 2 warnings in 3.27s
+   FAILED test_a_pinned_version_that_is_no_longer_implemented_is_reported
+   FAILED test_the_pin_tool_only_adds_and_refuses_to_move_a_pin
+   cause: AssertionError: a pinned version that vanished is refused too
+   cause: AssertionError: assert [] == ['R@1 is pinn... be replayed']
+   cause: E   AssertionError: a pinned version that vanished is refused too
+   cause: E   AssertionError: assert [] == ['R@1 is pinn... be replayed']
+== S13 the digest ignores the source [src/turab/matching/registry.py, 1 site(s)]  restored: sha256 0c81bbb3455c5e19 identical
+   1 failed, 72 passed, 2 warnings in 3.21s
+   FAILED test_the_digest_changes_when_a_rule_source_changes_under_the_same_version
+   cause: AssertionError: assert '3eccca109e155c55664a172430fe3065784043e872e8c30aa6b376eadd7b3bb1' != '3eccca109e155c55664a172430fe3065784043e872e8c30aa6b376eadd7b3bb1'
+   cause: E   AssertionError: assert '3eccca109e155c55664a172430fe3065784043e872e8c30aa6b376eadd7b3bb1' != '3eccca109e155c55664a172430fe3065784043e872e8c30aa6b376eadd7b3bb1'
+== S14 automatic relaxation tolerated [src/turab/matching/policy.py, 1 site(s)]  restored: sha256 1c8c2fba070cddab identical
+   2 failed, 71 passed, 2 warnings in 3.08s
+   FAILED test_a_policy_this_engine_does_not_implement_is_refused[jsonb_set(rules,
+   FAILED test_a_policy_this_engine_does_not_implement_is_refused[rules
+   cause: E   Failed: DID NOT RAISE PolicyNotImplemented
+   cause: Failed: DID NOT RAISE PolicyNotImplemented
+== S15 human review not required [src/turab/matching/policy.py, 1 site(s)]  restored: sha256 1c8c2fba070cddab identical
+   1 failed, 72 passed, 2 warnings in 3.45s
+   FAILED test_a_policy_this_engine_does_not_implement_is_refused[jsonb_set(rules,
+   cause: E   Failed: DID NOT RAISE PolicyNotImplemented
+   cause: Failed: DID NOT RAISE PolicyNotImplemented
+== S16 any hard-gate mapping tolerated [src/turab/matching/policy.py, 1 site(s)]  restored: sha256 1c8c2fba070cddab identical
+   1 failed, 72 passed, 2 warnings in 3.28s
+   FAILED test_a_policy_this_engine_does_not_implement_is_refused[jsonb_set(rules,
+   cause: E   Failed: DID NOT RAISE PolicyNotImplemented
+   cause: Failed: DID NOT RAISE PolicyNotImplemented
+== S17 any version string accepted [src/turab/matching/policy.py, 1 site(s)]  restored: sha256 1c8c2fba070cddab identical
+   3 failed, 70 passed, 2 warnings in 3.25s
+   FAILED test_any_other_version_is_refused_without_echoing_it[0.1.0]
+   FAILED test_any_other_version_is_refused_without_echoing_it[0.2.0
+   FAILED test_any_other_version_is_refused_without_echoing_it[inactive-9]
+   cause: E   Failed: DID NOT RAISE PolicyVersionRefused
+   cause: Failed: DID NOT RAISE PolicyVersionRefused
+== S18 criteria in no declared order [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 14c510355540242f identical
+   1 failed, 72 passed, 2 warnings in 3.25s
+   FAILED test_the_request_snapshot_is_complete_exact_and_ordered
+   cause: AssertionError: sort_order, then code
+   cause: E   AssertionError: sort_order, then code
+== S19 jsonb numbers parsed as floats [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 14c510355540242f identical
+   2 failed, 71 passed, 2 warnings in 3.30s
+   FAILED test_the_request_snapshot_is_complete_exact_and_ordered
+   FAILED test_the_same_state_gives_the_same_bytes_and_a_changed_criterion_does_not
+   cause: AssertionError: assert (3.5 == Decimal('3.50') and False)
+   cause: E   AssertionError: assert (3.5 == Decimal('3.50') and False)
+   cause: E   turab.matching.canonical.CanonicalError: $.criteria[2].value: a float has no canonical form; use Decimal
+   cause: turab.matching.canonical.CanonicalError: $.criteria[2].value: a float has no canonical form; use Decimal
+== S20 alias status not recorded [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 14c510355540242f identical
+   1 failed, 72 passed, 2 warnings in 3.22s
+   FAILED test_the_property_snapshot_records_areas_attributes_evidence_and_identity
+   cause: AssertionError: assert {'is_alias': ...f5ee4493f89')} == {'is_alias': ...f5ee4493f89')}
+   cause: E   AssertionError: assert {'is_alias': ...f5ee4493f89')} == {'is_alias': ...f5ee4493f89')}
+== S21 non-finite decimals accepted [src/turab/matching/canonical.py, 1 site(s)]  restored: sha256 ea8de2990b2fa1a0 identical
+   3 failed, 70 passed, 2 warnings in 3.07s
+   FAILED test_a_non_finite_decimal_is_refused[value0]
+   FAILED test_a_non_finite_decimal_is_refused[value1]
+   FAILED test_a_non_finite_decimal_is_refused[value2]
+   cause: E   Failed: DID NOT RAISE CanonicalError
+   cause: Failed: DID NOT RAISE CanonicalError
+== S22 the pin path bound at definition time [src/turab/matching/registry.py, 1 site(s)]  restored: sha256 0c81bbb3455c5e19 identical
+   1 failed, 72 passed, 2 warnings in 3.42s
+   FAILED test_the_pin_tool_only_adds_and_refuses_to_move_a_pin
+   cause: AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert 0 == 1
+
+SURVIVING MUTATIONS: none

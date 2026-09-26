@@ -371,3 +371,20 @@ docs/gate/evidence/SLICE4-STEP1-DUPLICATE-NARROWING-BEFORE-FIX.txt new  d5978a56
 docs/gate/evidence/SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt   --   00852900694ebe2849b9dcf9d8905eea32726533ff89842f19ade115ee1b5e06
 docs/gate/evidence/SLICE4-STEP1-0005-MUTATIONS.txt             --   90e67b40dd1308e78da991d96841417082daa8a677429e35104f06bdc3006776
 SLICE_4_PLAN.md changed revision: 2 -> 3 (G4-1 and G4-14 approved for step 1; G4-2 and G4-13 approved with their conditions).
+
+--- Slice 4 step 2 (G4-2, G4-13): canonical form, input hash, registry, policy loader, snapshots ---
+src/turab/matching/__init__.py                                 new  17805414a410d87f3101e7d23d8087515c1f6301c87ad54acc1b6d77f91f4962
+src/turab/matching/canonical.py                                new  ea8de2990b2fa1a043eebe6f484dd391293d26569b380c37eff8136e9c2c1182
+src/turab/matching/registry.py                                 new  0c81bbb3455c5e199bf5fb01d7b7c7b5cfd9d9689911e69e50309bb50f4cb684
+src/turab/matching/rule_pins.py                                new  132d5e96781792bfd2d871bb02d9a084b7a5553beffa99116537409e50fe1ac0
+src/turab/matching/policy.py                                   new  1c8c2fba070cddab0b5cee46464b46f6876c20be1587dd91c23bc9814cba3252
+src/turab/matching/snapshots.py                                new  14c510355540242f4d1d4487edc1bf29dc410404f78b9ac3012a3cc81cd944a3
+db/dev/pin_rules.py                                            new  cabfae1638496e7a4aa61c8c9d454ce4026a1d12f319b4cf8cc4899fbbf42575
+db/dev/mutate_slice4_step2.py                                  new  de66fb86c6b0cb54c702f0503de008398313eda9b61f366cf112979345da48cd
+tests/test_slice4_step2.py                                     new  7f1139f9240afcfe06decc0643467389834191aaaafc730e1c3f7d99ddd44fb8
+docs/gate/SLICE_4_STEP2_DELIVERY.md                            new  4ac3dc4f211835637cc58d36f2c0f5f18ca7bea8a3d7092b553e76f86a719dff
+docs/gate/SLICE_4_STEP1_DELIVERY.md                            --   d1ee72471dd0eacc0b06699efdb2387d66eb8307cdd3c79504df91dc54306e74
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   42cc073a42586b5a772166229e8fae797d5a533aad0dfcbc709b2ff69509441c
+docs/gate/evidence/SLICE4-STEP2-MUTATIONS.txt                  new  790cf5eade9160aa1221bec0c90b407822bdad3452b25452094b39157b13c54b
+docs/gate/evidence/SLICE4-STEP2-MUTATIONS-TRIAL.txt            new  0af49c66af0d2f648e1632a5bac4aee8e9b4676d152e337f0d7cff04ea3e1307
+No decision document changed revision.
