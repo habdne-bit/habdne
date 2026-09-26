@@ -1,9 +1,18 @@
 # Slice 4 · step 1 — CORRECTION-004 and migration `0005`
 
 **Approved scope:** G4-1 and G4-14 only, answered on 2026-09-26 ("approve
-step 1 only"). **No matching code exists.** No candidate, gate, snapshot,
-hash or run was written. Every other decision (G4-2 to G4-13, G4-15, G4-16)
-is still open, and no later step starts until it is decided.
+step 1 only"). **No matching code was written in this step.** No candidate,
+gate, snapshot, hash or run exists at `95f0732`.
+
+**Status (corrected in the step-2 round, review of 95f0732):**
+- Step 1 is **CLOSED** at `95f0732`.
+- G4-2 and G4-13 were **decided in the review of aad9f34**, as §5 and the
+  plan's revision 3 record.
+- G4-3 to G4-12, G4-15 and G4-16 are still open, and the steps that need
+  them do not start until they are decided.
+
+Earlier, this paragraph still called G4-2 and G4-13 open, contradicting §5.
+That was noted in the review of 95f0732.
 
 Basis: `docs/gate/SLICE_4_PLAN.md` revision 2, §4 (G4-1, G4-14) and §8
 (step 1). The facts behind both decisions were measured before any code
