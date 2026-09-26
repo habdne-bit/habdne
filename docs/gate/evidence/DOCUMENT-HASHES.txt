@@ -388,3 +388,14 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   42cc073a4258
 docs/gate/evidence/SLICE4-STEP2-MUTATIONS.txt                  new  790cf5eade9160aa1221bec0c90b407822bdad3452b25452094b39157b13c54b
 docs/gate/evidence/SLICE4-STEP2-MUTATIONS-TRIAL.txt            new  0af49c66af0d2f648e1632a5bac4aee8e9b4676d152e337f0d7cff04ea3e1307
 No decision document changed revision.
+
+--- review of 4538a2d: canonical form revision 2; G4-8 and G4-9 recorded ---
+src/turab/matching/canonical.py                                --   08ba10501fa3d590cc3caf46089fb84c00c2ef69d26ba334da4ca5337d5abcd7
+tests/test_slice4_step2.py                                     --   0797c89f97e31dc9a38e1b7e4dbdfb86a2820d56e0b246c51da00463cd0c7f35
+db/dev/mutate_slice4_step2.py                                  --   2d010f117dd87b8a4f845119b923f1786511836a9f9c32cd4e16d03f2b09418a
+docs/gate/SLICE_4_STEP2_DELIVERY.md                            --   d3f29d5c43d407c1226ba714684ca893f9dde37e8efd2da1a09f5b5b069844d7
+docs/gate/SLICE_4_PLAN.md                                      rev4 a886ea45a8eeb7be5d99bfe6bb2663e893f5f51a752cecc6383fdbb5c2a37ffd
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   ff9772568af56375d4b1a20f072da6f1ef7588844fd3c6f12c6b9ff36e0f6c49
+docs/gate/evidence/SLICE4-STEP2-CANONICAL-BEFORE-FIX.txt       new  b1ae40242302660676fc6822beca4f47d21f114527fddf301fd9ee585a85ebf3
+docs/gate/evidence/SLICE4-STEP2-MUTATIONS.txt                  --   5a0a42e6f11edb07baf0b5d2a67cf55c62dbe1f7a5616915cf1b61c78b863d38
+SLICE_4_PLAN.md changed revision: 3 -> 4 (G4-8 and G4-9 decided; G4-13 wording corrected).
