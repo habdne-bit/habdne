@@ -355,3 +355,5 @@ tests/test_correction_001.py                                   --   b4040d913a38
 tests/test_migrations.py                                       --   5733edff0361b4ce27a2166d965ea21cd4834d49cee79c43a9aed5f55582994e
 tests/test_slice3_step4.py                                     --   2086492b4d07f79a4e8ecd939203334f10d75173cec3295c90539b9278a6b6b6
 No decision document changed revision. CONTRACT_CORRECTIONS.yaml gains CORRECTION-004 (request_body_narrowings). The frozen package is unchanged.
+docs/gate/SLICE_4_STEP1_DELIVERY.md                            --   a17275ba4c3a547b2e095a9c2a7c0d6bb4f89d9ea198a8ab64a4af343aafd3d7
+(step 1 delivery §4 corrected to the measured reason the Slice 3 check fails on this tree: staleness only)

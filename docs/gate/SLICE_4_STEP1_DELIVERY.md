@@ -101,15 +101,23 @@ Every mutated file was restored and verified by sha256.
 
 ## 4. Slice 3's STOP GATE C evidence, after this step
 
-`docs/gate/SLICE_3_STOP_GATE_C.md` is evidence for the Slice 3 tree
-(`96e36e6`, fingerprint `4aa193cc…4e50`). This step adds a migration and
-changes the source. So `stop_gate_c_evidence.py --check` run against THIS
-tree fails, by design:
-- the migration list changes;
-- the source fingerprint no longer matches the bound run.
+`docs/gate/SLICE_3_STOP_GATE_C.md` is evidence for the Slice 3 tree (run at
+`0c97a6b`, fingerprint `4aa193cc…4e50`). It is **not regenerated**: it stays
+the record of the tree it was bound to.
 
-The Slice 3 document is not regenerated. It stays the record of the tree it
-was bound to.
+**Measured on this step's tree** (after the bound run at `1c6f3d5`):
+- `run_binding.py` reports `bound`: this step's report is bound to this
+  tree.
+- `stop_gate_c_evidence.py --check` exits 1, with one problem: the document
+  is **stale**.
+- Re-rendering differs from the committed document in exactly two places:
+  - the run it names: commit, fingerprint, report digest, and 1284 → 1314
+    cases;
+  - condition 4's migration list, which now includes `0005`.
+- No mapped test is missing or failing (`problems: []`).
+
+So the Slice 3 check fails here because the Slice 3 document describes a
+different tree, and for no other reason.
 
 ## 5. What remains before step 2
 
