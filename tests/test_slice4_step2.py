@@ -46,11 +46,72 @@ def test_a_float_is_refused_wherever_it_is(value):
         canonical.canonical_bytes(value)
 
 
-def test_decimals_are_written_by_value():
+def test_numbers_are_json_numbers_written_by_value():
     forms = [Decimal("268.50"), Decimal("268.5"), Decimal("2.685E+2"), Decimal("268.500000")]
-    assert {canonical.canonical_bytes(d) for d in forms} == {b'"268.5"'}
-    assert canonical.canonical_bytes(Decimal("-0")) == canonical.canonical_bytes(Decimal("0E-2"))
-    assert canonical.canonical_bytes(Decimal("100")) == b'"100"', "not 1E+2"
+    assert {canonical.canonical_bytes(d) for d in forms} == {b"268.5"}
+    assert canonical.canonical_bytes(Decimal("-0")) == canonical.canonical_bytes(Decimal("0E-2")) \
+        == b"0"
+    assert canonical.canonical_bytes(Decimal("1E+2")) == canonical.canonical_bytes(100) == b"100"
+    assert canonical.canonical_bytes(Decimal("0.00012")) == b"0.00012", "plain, never 1.2E-4"
+    assert canonical.canonical_bytes(Decimal("-12.340")) == b"-12.34"
+
+
+# --- review of 4538a2d: two collisions BEFORE sha256 -----------------------------------
+#
+# Revision 1 wrote every Decimal as a JSON string through Decimal.normalize().
+# Reproduced on 4538a2d: evidence/SLICE4-STEP2-CANONICAL-BEFORE-FIX.txt.
+
+def test_a_json_number_and_a_json_string_never_share_bytes():
+    """The jsonb reader turns the JSON number 1 into Decimal('1'). The JSON
+    string "1" stays a string. In revision 1 both were written "1"."""
+    number = {"value": snapshots.exact_json("1")}
+    string = {"value": snapshots.exact_json('"1"')}
+    assert canonical.canonical_bytes(number) == b'{"value":1}'
+    assert canonical.canonical_bytes(string) == b'{"value":"1"}'
+    assert canonical.input_hash(**_inputs(request_snapshot=number)) != \
+        canonical.input_hash(**_inputs(request_snapshot=string))
+
+
+TWENTY_NINE_ONE = Decimal("1.00000000000000000000000000001")
+TWENTY_NINE_TWO = Decimal("1.00000000000000000000000000002")
+
+
+@pytest.mark.parametrize("precision", [3, 28, 40, 200])
+def test_every_digit_is_kept_whatever_the_decimal_context(precision):
+    """Revision 1 used normalize(), which ROUNDS to the context precision
+    (28 by default): these two values were both written "1". The form is
+    now built from as_tuple(), so it is exact and context-free."""
+    import decimal
+
+    with decimal.localcontext() as ctx:
+        ctx.prec = precision
+        one = canonical.canonical_bytes({"value": TWENTY_NINE_ONE})
+        two = canonical.canonical_bytes({"value": TWENTY_NINE_TWO})
+        h1 = canonical.input_hash(**_inputs(request_snapshot={"value": TWENTY_NINE_ONE}))
+        h2 = canonical.input_hash(**_inputs(request_snapshot={"value": TWENTY_NINE_TWO}))
+    assert one == b'{"value":1.00000000000000000000000000001}'
+    assert two == b'{"value":1.00000000000000000000000000002}'
+    assert h1 != h2
+
+
+def test_the_hash_of_one_value_does_not_depend_on_the_decimal_context():
+    import decimal
+
+    hashes = set()
+    for precision in (3, 28, 200):
+        with decimal.localcontext() as ctx:
+            ctx.prec = precision
+            hashes.add(canonical.input_hash(**_inputs(
+                request_snapshot={"value": TWENTY_NINE_ONE, "area": Decimal("268.50")})))
+    assert len(hashes) == 1
+
+
+def test_a_number_beyond_the_size_bound_is_refused_not_truncated():
+    with pytest.raises(canonical.CanonicalError, match="1000 digits"):
+        canonical.canonical_bytes(Decimal("1E+1000"))
+    with pytest.raises(canonical.CanonicalError, match="1000 digits"):
+        canonical.canonical_bytes(10 ** 1000)
+    assert canonical.canonical_bytes(Decimal("1E+998")) == b"1" + b"0" * 998
 
 
 @pytest.mark.parametrize("value", [Decimal("NaN"), Decimal("Infinity"), Decimal("-Infinity")])
@@ -96,7 +157,7 @@ def test_the_canonical_form_is_pinned():
            "d": dt.date(2026, 1, 2), "u": uuid.UUID("F4000000-0000-4000-8000-000000000001")}
     assert canonical.canonical_bytes(doc) == (
         '{"a":"ب","d":"2026-01-02","t":"2026-01-01T00:00:00.000000Z",'
-        '"u":"f4000000-0000-4000-8000-000000000001","z":["1.5",3,null,true]}').encode("utf-8")
+        '"u":"f4000000-0000-4000-8000-000000000001","z":[1.5,3,null,true]}').encode("utf-8")
 
 
 # ======================================================================================
@@ -153,12 +214,24 @@ def test_two_offers_on_identical_terms_hash_differently():
 
 @pytest.mark.parametrize("snapshot", [
     {"evaluated_at": "2026-09-26T00:00:00Z"},
-    {"nested": {"evaluated_at": "x"}},
-    {"list": [{"input_hash": "x"}]},
+    {"input_hash": "x"},
 ])
-def test_evaluated_at_and_input_hash_are_not_inputs(snapshot):
+def test_the_engines_own_stamp_is_refused_at_a_snapshots_top_level(snapshot):
     with pytest.raises(canonical.CanonicalError, match="not a matching input"):
         canonical.input_hash(**_inputs(request_snapshot=snapshot))
+
+
+def test_the_same_names_inside_user_data_are_hashed_like_any_value():
+    """Review of 4538a2d. Revision 1 searched every depth, and refused a
+    criterion whose jsonb value was {"evaluated_at": "2012-03-04"}. That is
+    the customer's data: it is hashed, and a change to it changes the hash."""
+    def snap(day):
+        return {"criteria": [{"criterion_code": "CUSTOM_ATTRIBUTE",
+                              "value": {"evaluated_at": day, "input_hash": "their text"}}]}
+    first = canonical.input_hash(**_inputs(request_snapshot=snap("2012-03-04")))
+    again = canonical.input_hash(**_inputs(request_snapshot=snap("2012-03-04")))
+    other = canonical.input_hash(**_inputs(request_snapshot=snap("2012-03-05")))
+    assert first == again != other
 
 
 def test_no_input_can_be_left_out():
@@ -177,12 +250,12 @@ def test_the_input_hash_is_the_sha256_of_this_exact_document():
     written_out = (
         '{"commercial_context_snapshot":{"asking_price_dzd":24000000},'
         '"evaluated_offer_id":"00000000-0000-4000-8000-0000000000a1",'
-        '"format":"turab.match-input/1",'
+        '"format":"turab.match-input/2",'
         '"freshness_snapshot":{},'
         '"matching_policy_id":"00000000-0000-4000-8000-00000000aaaa",'
         '"matching_policy_version":"0.2.0",'
         '"permission_snapshot":{},'
-        '"property_snapshot":{"land_area_m2":"300"},'
+        '"property_snapshot":{"land_area_m2":300},'
         '"request_snapshot":{"budget_max_dzd":25000000},'
         f'"rule_registry_digest":"{"d" * 64}"}}').encode("utf-8")
     assert canonical.input_hash(**_inputs()) == hashlib.sha256(written_out).hexdigest()
@@ -606,3 +679,59 @@ def test_the_matching_package_never_reads_party_property_relations():
     offenders = [p.name for p in MATCHING.glob("*.py")
                  if "party_property_relations" in "".join(_sql_in(p))]
     assert offenders == []
+
+
+# ======================================================================================
+# Review of 4538a2d, over HTTP: a user's key named like an engine field
+# ======================================================================================
+
+def test_a_criterion_value_naming_evaluated_at_is_accepted_and_hashed(client, ids, engine):
+    """`request_criteria.value` is jsonb, and `RequestCriterionInput.value` is
+    FiniteJson: nothing forbids a customer's object from carrying a key named
+    `evaluated_at` or `input_hash`. The criterion is added through the Slice 2
+    route, read back by the snapshot builder, and hashed. Then the SAME
+    criterion's value is changed (the route's change half, selected by
+    `request_criterion_id`), and the hash changes.
+
+    A changed criterion also bumps the request's version
+    (`touch_request_from_criterion`), which would change the hash by
+    itself. So the second comparison holds the version at its first value:
+    the hash still differs, and that difference comes from the value alone."""
+    from sqlalchemy.orm import Session
+
+    with engine.begin() as conn:
+        rid = conn.execute(text("""
+            INSERT INTO turab.requests (party_id, transaction_intent, management_mode,
+                                        claim_status)
+            VALUES (:p, 'BUY', 'ASSISTED', 'UNCLAIMED') RETURNING request_id"""),
+            {"p": ids.BRAHIM}).scalar_one()
+
+    def put(day, criterion_id=None):
+        body = {"criterion_code": "CUSTOM_ATTRIBUTE", "importance": "PREFERRED",
+                "operator": "EQ", "sort_order": 1,
+                "value": {"evaluated_at": day, "input_hash": "the customer's own text"}}
+        if criterion_id:
+            body["request_criterion_id"] = criterion_id
+        r = client.post(f"/requests/{rid}/criteria", headers=_h(ids.ACC_OPERATOR), json=body)
+        assert r.status_code == 201, r.text
+        return r.json()["request_criterion_id"]
+
+    def hashed():
+        with Session(bind=engine, future=True) as s:
+            snap = snapshots.request_snapshot(s, rid)
+        return snap, canonical.input_hash(**_inputs(request_snapshot=snap))
+
+    criterion = put("2012-03-04")
+    first_snap, first = hashed()
+    value = first_snap["criteria"][0]["value"]
+    assert value == {"evaluated_at": "2012-03-04", "input_hash": "the customer's own text"}
+    assert hashed()[1] == first
+
+    assert put("2012-03-05", criterion) == criterion
+    changed_snap, changed = hashed()
+    assert len(changed_snap["criteria"]) == 1, "the same criterion, changed"
+    assert changed_snap["criteria"][0]["value"]["evaluated_at"] == "2012-03-05"
+    assert changed != first
+    assert changed_snap["version"] != first_snap["version"], "the trigger bumped it"
+    same_version = {**changed_snap, "version": first_snap["version"]}
+    assert canonical.input_hash(**_inputs(request_snapshot=same_version)) != first

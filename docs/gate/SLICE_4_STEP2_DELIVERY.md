@@ -26,7 +26,7 @@ decisions.
 |---|---|
 | keys sorted, no whitespace, UTF-8 without ASCII escaping | `test_key_order_does_not_change_the_bytes`; `test_arabic_is_hashed_as_written_and_a_bool_is_not_an_integer` |
 | **no float anywhere**, at any depth | `test_a_float_is_refused_wherever_it_is` (4 cases) |
-| a Decimal is written **by value** (`268.50` = `268.5` = `2.685E+2`; `-0` = `0`; `100`, not `1E+2`); non-finite refused | `test_decimals_are_written_by_value`; `test_a_non_finite_decimal_is_refused` |
+| **numbers are JSON numbers**, written exactly by value from their digits, independent of the decimal context (`268.50` = `268.5` = `2.685E+2`; `-0` = `0`; `100`, not `1E+2`); non-finite and over-long refused. *Corrected in the review of 4538a2d, §7.* | `test_numbers_are_json_numbers_written_by_value`; `test_a_json_number_and_a_json_string_never_share_bytes`; `test_every_digit_is_kept_whatever_the_decimal_context` (4); `test_a_non_finite_decimal_is_refused`; `test_a_number_beyond_the_size_bound_is_refused_not_truncated` |
 | one instant, one string: UTC with microseconds and `Z`; a naive datetime refused | `test_one_instant_gives_one_string_whatever_its_zone`; `test_a_naive_datetime_is_refused` |
 | a non-string key, or an unknown type, is refused, never stringified | two tests, 5 cases |
 | the form is pinned by a golden vector | `test_the_canonical_form_is_pinned` |
@@ -48,10 +48,14 @@ their form, not only a value the code produced.
 - **Two offers on identical terms hash differently.** The two commercial
   snapshots are made IDENTICAL on purpose, so the difference can come only
   from the top-level `evaluated_offer_id`.
-- `evaluated_at` and `input_hash` are refused as inputs, at any depth. So an
-  identical run gives an identical hash (G4-13: the existing match is
-  returned). No input can be omitted: the arguments are required and
-  keyword-only.
+- The engine's own stamp is not an input, **by construction**: the
+  document has no place for it. `evaluated_at` and `input_hash` are refused
+  only as a snapshot's TOP-level keys, the fields the engine writes. Inside
+  user data the same names are data. *Corrected in the review of 4538a2d,
+  §7; revision 1 searched every depth.*
+- So an identical run gives an identical hash (G4-13: the existing match is
+  returned).
+- No input can be omitted: the arguments are required and keyword-only.
 
 **The two tests the review required** run against the real uniqueness
 constraint, with fixture match rows hashed by the real functions from the
@@ -166,3 +170,78 @@ that answers 422 is step 7.
 The review of 95f0732 noted that the step-1 note opened by calling G4-2 and
 G4-13 open, contradicting its §5. The first paragraph is corrected
 (`SLICE_4_STEP1_DELIVERY.md`).
+
+## 7. The review of 4538a2d: the canonical form collided before sha256
+
+**Reproduced first**, on a `git archive` copy of 4538a2d
+(`evidence/SLICE4-STEP2-CANONICAL-BEFORE-FIX.txt`, harness verbatim):
+1. **Number and string shared bytes.** The JSON number `1` (read by the
+   jsonb reader as `Decimal('1')`) and the JSON string `"1"` were both
+   written `{"value":"1"}`, with the same `input_hash`.
+2. **The form rounded to the decimal context.** `1.00000000000000000000000000001`
+   and `…02` were both written `"1"` at the default precision of 28, with
+   the same hash. At precision 40 they differed. Cause: `Decimal.normalize()`.
+3. **A user key was refused.** A criterion whose value was
+   `{"evaluated_at": "2012-03-04"}` made the hash refuse, as if it were the
+   engine's stamp.
+
+**The fix: revision 2 of the form** (`canonical.py`; format tag
+`turab.match-input/2`). Nothing had been stored under `/1`, since no match
+is written before step 7.
+- The serializer is written without `json.dumps` for numbers. **Numbers
+  are JSON numbers, strings are JSON strings**, so the two cannot meet.
+- A number's text is built from `Decimal.as_tuple()` with integer and
+  string operations only:
+  - exact, keeping every digit;
+  - plain notation, with leading and trailing zeros removed, and `0` for
+    every zero;
+  - **independent of `decimal.getcontext()`**;
+  - an int and a Decimal of equal value write the same number;
+  - over 1000 digits is refused, never truncated.
+- A UUID, datetime, date or Enum is still written as a string. Each reaches
+  the hash only from a typed column, whose position always holds that one
+  type, and the jsonb reader never produces one. So none can meet a user
+  string in the same position.
+- **The engine's stamp is excluded by construction.** Only a snapshot's top
+  level is checked for `evaluated_at` and `input_hash`. Keys inside user
+  data are kept as they are.
+
+**The same harness on the fixed tree** (second half of the evidence file):
+- the number and the string give `1` and `"1"`, with different hashes;
+- the two long decimals give different bytes at precision 28 and at 40;
+- the user's key is hashed.
+
+**Tests** (in `test_slice4_step2.py`):
+- `test_a_json_number_and_a_json_string_never_share_bytes`, on
+  `canonical_bytes` and `input_hash`;
+- `test_every_digit_is_kept_whatever_the_decimal_context` (precisions 3,
+  28, 40 and 200) and
+  `test_the_hash_of_one_value_does_not_depend_on_the_decimal_context`;
+- `test_the_same_names_inside_user_data_are_hashed_like_any_value`: a
+  change of that value changes the hash;
+- `test_a_criterion_value_naming_evaluated_at_is_accepted_and_hashed`,
+  **over HTTP**, which the review could not run. The criterion is added
+  through the Slice 2 route, then CHANGED through the same route (same
+  `request_criterion_id`), and the hash changes.
+  - The change also bumps the request's version
+    (`touch_request_from_criterion`), which alone would change the hash. So
+    the test also compares with the version held at its first value: the
+    hash still differs, and that comes from the value alone.
+- The golden vector and the hand-written input document are updated to
+  `/2`, with numbers unquoted.
+
+**Mutations.** S23 to S27 are new:
+- S23: rounding to the context, revision 1's `normalize`;
+- S24: trailing zeros kept;
+- S25: engine field names searched at every depth, revision 1's behaviour;
+- S26: no size bound;
+- S27: `-0` distinct from `0`.
+
+S1, S2, S3, S8 and S9 were re-anchored on the new serializer. S2 now writes
+numbers as strings, revision 1's collision. The trial run on the dirty tree
+killed all 27.
+
+**Decisions recorded** (plan revision 4): **G4-8** as proposed, and **G4-9
+(a)**. Step 3 is not started: step 2 stays open until this review is
+answered.
+

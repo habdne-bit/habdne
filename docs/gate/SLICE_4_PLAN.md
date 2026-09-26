@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 3**
+## Implementation plan — **revision 4**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -12,7 +12,8 @@ for.
 |---|---|---|
 | 1 | `75c7660` | first plan |
 | 2 | `a1f77ea` | the plan's facts measured on PostgreSQL before any code (§0a). §3.3 is settled by measurement. G4-3, G4-7 and G4-14 are corrected by what was measured. G4-16 is added. **No decision is taken** |
-| 3 | the commit that records the review of aad9f34 | decisions recorded where they apply: **G4-1 and G4-14** (approved for step 1, 2026-09-26); **G4-2 and G4-13** (approved in the review of aad9f34), each with the conditions the review attached. Step 2 starts only after step 1 is closed |
+| 3 | `0d6c6cf` | decisions recorded where they apply: **G4-1 and G4-14** (approved for step 1, 2026-09-26); **G4-2 and G4-13** (approved in the review of aad9f34), each with the conditions the review attached. Step 2 starts only after step 1 is closed |
+| 4 | the commit that records the review of 4538a2d | **G4-8 and G4-9** decided (review of 4538a2d), recorded where they apply. G4-13's canonical form is corrected by the same review: numbers are JSON numbers, exact and context-free; the format tag becomes `turab.match-input/2`. Step 3 starts only after step 2 is closed |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -278,8 +279,8 @@ accept a recommendation by number.
 | G4-5 | Price | The table in G4-5; negotiability UNKNOWN over max gives UNKNOWN | step 4 |
 | G4-6 | Location | Subtree, as G3-14 | step 4 |
 | G4-7 | Criteria that cannot be evaluated | Refuse the run if REQUIRED or malformed; otherwise UNKNOWN, not blocking | step 4 |
-| G4-8 | The candidate set | ACTIVE or NEEDS_CONFIRMATION requests; ACTIVE offers of the right type; one match per (property, offer) | step 3 |
-| G4-9 | POTENTIAL without an offer | Not evaluated; mandatory test 6 narrowed | step 3 |
+| G4-8 | The candidate set | **APPROVED** (review of 4538a2d), as proposed: one match per qualifying offer; excluded ids reported in the diagnostic | step 3 |
+| G4-9 | POTENTIAL without an offer | **APPROVED, (a)** (review of 4538a2d): not evaluated, the reason reported; mandatory test 6 narrowed to its refusal | step 3 |
 | G4-10 | Permission | The binding rule in G4-10; the buyer side is Slice 5's | step 5 |
 | G4-11 | Freshness mapping and eligibility precedence | As proposed | step 5 |
 | G4-12 | Soft score | Weighted share of passing soft criteria | step 6 |
@@ -472,6 +473,16 @@ only (CHECK constraint).
   never evaluated silently.
 - **Blocks:** step 3.
 
+> **DECIDED (review of 4538a2d):** the candidate set as proposed above.
+> - Requests in `ACTIVE` or `NEEDS_CONFIRMATION` are run; any other status
+>   gets a typed 409.
+> - Offers are `ACTIVE` and of the matching transaction type.
+> - `UNAVAILABLE` excludes the property.
+> - **One independent match per qualifying offer** of the same property.
+> - **Excluded ids are reported in the diagnostic.**
+>
+> Recording this decision does not close step 2.
+
 ### G4-9 · A POTENTIAL property without an offer: no willingness data exists
 - **Facts:**
   - Mandatory test 6 and D05 allow evaluating it "only when structured
@@ -486,6 +497,14 @@ only (CHECK constraint).
     operation.
 - **Recommendation: (a)** in this slice.
 - **Blocks:** step 3.
+
+
+> **DECIDED (review of 4538a2d): option (a) for this slice.**
+> - A POTENTIAL property with no offer, and no structured willingness
+>   context, is **not evaluated**.
+> - The reason for its exclusion is reported in the diagnostic.
+> - The test for mandatory condition 6 proves only its narrowed, refusing
+>   half.
 
 ### G4-10 · The permission gate (ADR-04, B04)
 **The proposal.** Permission is PASS when the evaluated offer, or its
@@ -550,7 +569,11 @@ enum is FRESH, STALE, UNKNOWN or NOT_APPLICABLE. **Proposal:**
   - keys sorted;
   - separators `,` and `:`;
   - UTF-8 without ASCII escaping;
-  - decimals as strings, never floats (the F-3 precedent);
+  - ~~decimals as strings~~ **numbers as JSON numbers, written exactly by
+    value from their digits, independent of the decimal context** (corrected
+    in the review of 4538a2d: as strings, the number `1` and the string `"1"`
+    collided, and `normalize()` rounded to the context precision); never
+    floats (the F-3 precedent);
 - over the policy id and version, the registry digest (G4-2), and the five
   snapshots.
 - It excludes `evaluated_at`. It includes the DERIVED freshness states, so a

@@ -1,0 +1,94 @@
+TURAB — review of 4538a2d: the canonical form collided before sha256
+=====================================================================
+Recorded : 2026-09-26 22:41:22 UTC
+Before   : a git-archive copy of 4538a2d (source fingerprint bb27513008efc091e5ae8428bd18e35c88f3031d35d0b2b4f9986c658ec829ea)
+After    : the working tree carrying revision 2 of the form. It is committed
+           in the commit that adds this file, and its fingerprint is the one
+           recorded by the round's mutation, gate and test runs.
+No database. The harness calls the delivered functions directly. These
+results are ours.
+
+BEFORE (4538a2d), all three reproduced:
+  1. JSON number 1 and JSON string "1" -> same bytes {"value":"1"}, same input_hash.
+  2. 1.00000000000000000000000000001 and ...02 -> same bytes {"value":"1"} and same
+     hash at the default precision 28. They differ at precision 40: the form
+     depended on decimal.getcontext() (Decimal.normalize()).
+  3. A criterion value {"evaluated_at": "2012-03-04"} -> the hash REFUSED it.
+
+AFTER (revision 2, format turab.match-input/2):
+  1. {"value":1} and {"value":"1"}: different bytes, different hashes.
+  2. The two long decimals keep all their digits, at precision 28 and at 40.
+  3. The user's key is hashed.
+
+The harness, verbatim (run: PYTHONPATH=<tree>/src python measure.py):
+----------------------------------------------------------------------
+"""Review of 4538a2d: collisions in the canonical form, and a user key refused.
+Usage: PYTHONPATH=<tree>/src python measure.py"""
+import decimal
+import uuid
+from decimal import Decimal
+
+from turab.matching import canonical
+from turab.matching.snapshots import exact_json
+
+def h(request_snapshot):
+    return canonical.input_hash(
+        matching_policy_id=uuid.UUID(int=1), matching_policy_version="0.2.0",
+        rule_registry_digest="d" * 64, evaluated_offer_id=uuid.UUID(int=2),
+        request_snapshot=request_snapshot, property_snapshot={},
+        commercial_context_snapshot={}, permission_snapshot={}, freshness_snapshot={})
+
+def show(label, a, b):
+    ba, bb = canonical.canonical_bytes(a), canonical.canonical_bytes(b)
+    print(f"{label}\n  bytes A: {ba!r}\n  bytes B: {bb!r}\n  same bytes: {ba == bb}; "
+          f"same input_hash: {h(a) == h(b)}")
+
+print(f"format tag: {canonical.INPUT_FORMAT}; decimal context precision: {decimal.getcontext().prec}")
+show("1. JSON number 1 (read by exact_json) vs JSON string \"1\"",
+     {"value": exact_json("1")}, {"value": exact_json('"1"')})
+a, b = Decimal("1.00000000000000000000000000001"), Decimal("1.00000000000000000000000000002")
+show("2. two Decimals differing in the 30th significant digit, default context",
+     {"value": a}, {"value": b})
+with decimal.localcontext() as ctx:
+    ctx.prec = 40
+    show("2b. the same two Decimals, context precision 40", {"value": a}, {"value": b})
+print("3. a criterion value {\"evaluated_at\": \"2012-03-04\"} inside the request snapshot:")
+try:
+    print("  hash:", h({"criteria": [{"value": {"evaluated_at": "2012-03-04"}}]}))
+except canonical.CanonicalError as e:
+    print("  REFUSED:", e)
+----------------------------------------------------------------------
+
+=== BEFORE: 4538a2d ===
+format tag: turab.match-input/1; decimal context precision: 28
+1. JSON number 1 (read by exact_json) vs JSON string "1"
+  bytes A: b'{"value":"1"}'
+  bytes B: b'{"value":"1"}'
+  same bytes: True; same input_hash: True
+2. two Decimals differing in the 30th significant digit, default context
+  bytes A: b'{"value":"1"}'
+  bytes B: b'{"value":"1"}'
+  same bytes: True; same input_hash: True
+2b. the same two Decimals, context precision 40
+  bytes A: b'{"value":"1.00000000000000000000000000001"}'
+  bytes B: b'{"value":"1.00000000000000000000000000002"}'
+  same bytes: False; same input_hash: False
+3. a criterion value {"evaluated_at": "2012-03-04"} inside the request snapshot:
+  REFUSED: request_snapshot.criteria[0].value.evaluated_at: evaluated_at is not a matching input
+
+=== AFTER: revision 2 ===
+format tag: turab.match-input/2; decimal context precision: 28
+1. JSON number 1 (read by exact_json) vs JSON string "1"
+  bytes A: b'{"value":1}'
+  bytes B: b'{"value":"1"}'
+  same bytes: False; same input_hash: False
+2. two Decimals differing in the 30th significant digit, default context
+  bytes A: b'{"value":1.00000000000000000000000000001}'
+  bytes B: b'{"value":1.00000000000000000000000000002}'
+  same bytes: False; same input_hash: False
+2b. the same two Decimals, context precision 40
+  bytes A: b'{"value":1.00000000000000000000000000001}'
+  bytes B: b'{"value":1.00000000000000000000000000002}'
+  same bytes: False; same input_hash: False
+3. a criterion value {"evaluated_at": "2012-03-04"} inside the request snapshot:
+  hash: 6f897664c9b3801e71caa053dd042fd181bd2ee359ea648cae3c4d2956a31b69
