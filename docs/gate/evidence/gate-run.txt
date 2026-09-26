@@ -1,10 +1,10 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-09-25 09:49:12 UTC
-Commit      : 0414dca2dce57a0811a699572d74d1cd1686e38f
+Recorded    : 2026-09-26 19:26:33 UTC
+Commit      : f0a8b23440c3d1167e481164fba8623c2d509cca
 Working tree: clean when this run started
 Source fingerprint (db/dev/source_fingerprint.py):
-              4aa193ccde1d416b0e8a9bc946ae8a64ea73b02996a29507c3d65ce9dca34e50
+              2a97f06e8298af6788134a41a1307fb87933471f7b4df9422f0159fe21e639d0
 Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 
 The gate output below is deterministic, but not of the frozen package
@@ -549,7 +549,7 @@ psql:/home/user/habdne/db/gate/postgres_execution_gate_tests.sql:561: NOTICE:  P
 }
 
 [1m==> 7/8  Effective contract (frozen package + approved corrections + approved additions)[0m
-PASS: docs/api/openapi_effective_v0.2.3.yaml is current (5 correction(s), adoption(s) and addition(s))
+PASS: docs/api/openapi_effective_v0.2.3.yaml is current (6 correction(s), adoption(s) and addition(s))
 PASS: docs/api/API_INVENTORY_GENERATED.md matches /home/user/habdne/docs/api/openapi_effective_v0.2.3.yaml
 PASS: effective contract, inventory and policy table hold the same 67 operations; the effective contract's roles equal the policy table's
 
