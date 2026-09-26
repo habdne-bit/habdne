@@ -78,9 +78,13 @@ stay reported is a decision. **It is raised here, as G4-17, for review.**
 
 ## 4. Mutation evidence
 
-`db/dev/mutate_slice4_step3.py`: 16 mutations, one per rule and reported
-exclusion. The result on this round's clean tree is in
-`evidence/SLICE4-STEP3-MUTATIONS.txt`.
+`db/dev/mutate_slice4_step3.py`: **16 of 16 fail**, none survive, one per
+rule and reported exclusion.
+- Recorded on a clean tree at `6396505`, source fingerprint
+  `acbcd44c…1ef7` (`evidence/SLICE4-STEP3-MUTATIONS.txt`).
+- Every mutated file was restored and verified by sha256.
+- The trial run on the dirty tree also killed all 16, and no test changed
+  after it.
 
 **Equivalent mutations are left out.** A mutation that changes only the
 READ scope of a full scan, and not its classification, is equivalent: rows

@@ -399,3 +399,14 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   ff9772568af5
 docs/gate/evidence/SLICE4-STEP2-CANONICAL-BEFORE-FIX.txt       new  b1ae40242302660676fc6822beca4f47d21f114527fddf301fd9ee585a85ebf3
 docs/gate/evidence/SLICE4-STEP2-MUTATIONS.txt                  --   5a0a42e6f11edb07baf0b5d2a67cf55c62dbe1f7a5616915cf1b61c78b863d38
 SLICE_4_PLAN.md changed revision: 3 -> 4 (G4-8 and G4-9 decided; G4-13 wording corrected).
+
+--- Slice 4 step 3 (G4-8, G4-9 a): the candidate set; G4-17 raised ---
+src/turab/matching/candidates.py                               new  a65a87bc9e25f0bf1a77462a066266934fd0f98a4933c3d01ce6dc24f77eb197
+src/turab/matching/__init__.py                                 --   6c0997855ced6539ca4be7fbdeb470517b2257021be22d936564dcef22ff370f
+tests/test_slice4_step3.py                                     new  f1371e123b452da276de23f9b1a2da169fbe53d035eafb102c2e8c278b0a312a
+db/dev/mutate_slice4_step3.py                                  new  32d9d1b157098bbf0554fd80637da57045fda08e265b6ac6aad467778bf9f999
+docs/gate/SLICE_4_STEP3_DELIVERY.md                            new  4a7ca2a4a6b46b0dc854526e9107f0ac91dd59085ac22597f90bc646d435f365
+docs/gate/SLICE_4_PLAN.md                                      rev5 470e1d9f468fa1855316c929882d68b472793e37ee54a776e031f0b7b5461f04
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   66ad295366e0d50afb06cb710faa8d3f663b88b43b984d7d98fb41215f0f3d98
+docs/gate/evidence/SLICE4-STEP3-MUTATIONS.txt                  new  63650dbd81c3695d4fe9a79896f7aa9d9aca886c8e5390e2fc2415814486bead
+SLICE_4_PLAN.md changed revision: 4 -> 5 (G4-17 raised, open).
