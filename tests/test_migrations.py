@@ -43,7 +43,7 @@ VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
 sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
 from migration_deltas import DELTAS, for_revision, split_row  # noqa: E402
 BASELINE = "0001_frozen_baseline_v0_2_3"
-HEAD = "0004_relation_overlap_guard"
+HEAD = "0005_match_history_immutability"
 
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGUSER = os.environ.get("PGUSER", "turab")
@@ -138,9 +138,18 @@ def test_the_migrated_catalog_matches_the_static_audit(migrated, audit, metric, 
     actually built. A migration that applied a truncated or partly-failed
     file would pass "did it run" and fail here.
     """
+    # The audit counts the FROZEN file. Head differs from it by exactly the
+    # declared deltas, so the expected count is the audit's, plus each declared
+    # object this section ADDS, minus each it REMOVES. The count is derived
+    # from the ledger, never adjusted by hand. 0005 is the first revision to
+    # add functions and triggers in `turab`.
+    section = {"functions": "functions", "triggers": "triggers"}.get(metric)
+    added = sum(1 for d in DELTAS if d.section == section and d.digest_before is None)
+    removed = sum(1 for d in DELTAS if d.section == section and d.digest_after is None)
     with migrated.connect() as c:
-        assert c.execute(text(query)).scalar_one() == audit[metric], (
-            f"{metric}: the migrated database disagrees with the static audit"
+        assert c.execute(text(query)).scalar_one() == audit[metric] + added - removed, (
+            f"{metric}: the migrated database disagrees with the static audit "
+            f"plus the declared deltas (+{added} -{removed})"
         )
 
 
@@ -883,6 +892,31 @@ def test_0003_refuses_to_downgrade(migrated):
     with migrated.connect() as c:
         still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
     assert still == HEAD, "a refused downgrade must leave the version untouched"
+
+
+def test_0005_refuses_to_downgrade(migrated):
+    """Reverting 0005 re-opens match history and immutable policies to
+    silent rewriting (G4-14). The refusal is asserted so it cannot be quietly
+    replaced by a working downgrade later."""
+    result = _alembic("downgrade", "0004_relation_overlap_guard")
+    output = result.stderr + result.stdout
+    assert result.returncode != 0, output
+    assert "0005 has no downgrade" in output, output
+    with migrated.connect() as c:
+        still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+    assert still == HEAD, "a refused downgrade must leave the version untouched"
+
+
+def test_the_declared_deltas_for_0005_are_exactly_its_four_guards():
+    """Approved scope (G4-14): three triggers and one function, nothing else."""
+    got = {(d.section, d.object_name)
+           for d in for_revision("0005_match_history_immutability")}
+    assert got == {
+        ("triggers", "match_criterion_results.prevent_match_criterion_result_update"),
+        ("triggers", "match_diagnostic_runs.prevent_match_diagnostic_run_update"),
+        ("triggers", "matching_policies.trg_matching_policy_immutable"),
+        ("functions", "enforce_matching_policy_immutability()"),
+    }
 
 
 def test_the_delta_check_catches_an_undeclared_structural_change(migrated, reference):

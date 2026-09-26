@@ -143,6 +143,18 @@ real and the explanation was wrong. A state assertion cannot show that no body
 ran, which is why the no-op test now also asserts alembic's output contains no
 "Running upgrade" line.
 
+### 1c. `0005`, and the static-audit counts
+
+`0005` (G4-14) is the first revision to add functions and triggers in the
+`turab` schema: three triggers and one function, declared in
+`db/gate/migration_deltas.py`. The test that compares the migrated catalog's
+counts with the frozen static audit therefore expects the audit's count
+**plus the declared additions, minus the declared removals**, per section.
+
+The adjustment is derived from the ledger, never written by hand. An
+undeclared object still makes the count disagree, and the head-delta check
+still names it.
+
 ## 2. What is mechanically prevented
 
 | Hazard | What stops it | Test |
@@ -151,7 +163,7 @@ ran, which is why the no-op test now also asserts alembic's output contains no
 | The digest guard being compared against a stale constant | The declared digest is asserted equal to the file's | `test_the_declared_digest_is_the_frozen_one` |
 | Autogenerate proposing a migration that drops the baseline | `env.py` sets `target_metadata = None`, so Alembic refuses `--autogenerate` before writing any revision file | `test_autogenerate_is_refused`, `test_env_declares_no_metadata_to_diff_against` |
 | A second root revision nobody noticed | One head asserted | `test_there_is_exactly_one_head` |
-| A development database invisible to Alembic | `reset_db.sh` stamps the **initial** revision, so the baseline is not re-applied onto itself. The first `upgrade head` then applies `0002`–`0004`; the SECOND is the no-op — see the correction below | `test_a_stamped_database_is_at_the_baseline_not_head`, `test_the_first_upgrade_after_stamping_applies_the_later_revisions`, `test_the_dev_reset_script_stamps` |
+| A development database invisible to Alembic | `reset_db.sh` stamps the **initial** revision, so the baseline is not re-applied onto itself. The first `upgrade head` then applies `0002`–`0005`; the SECOND is the no-op — see the correction below | `test_a_stamped_database_is_at_the_baseline_not_head`, `test_the_first_upgrade_after_stamping_applies_the_later_revisions`, `test_the_dev_reset_script_stamps` |
 | A migration that "runs" but builds a partial schema | The migrated catalog is compared to the static audit's **independent parse** of the same file | `test_the_migrated_catalog_matches_the_static_audit` |
 
 The last row is the one that carries weight. The other checks ask whether the

@@ -18,6 +18,7 @@ change what the contract says is only safe while it can only ever say less.
 """
 from __future__ import annotations
 
+import copy
 import pathlib
 import subprocess
 import sys
@@ -36,6 +37,7 @@ from turab.auth.contract import (
     ContractError,
     build_policy_table,
     load_corrections,
+    load_request_body_narrowings,
     verify_policy_matches_contract,
 )
 from turab.auth.roles import Role
@@ -404,7 +406,8 @@ def test_every_corrected_operation_carries_its_correction_identity():
         op["operationId"]: op for _, _, op in _operations(_effective())
         if "x-turab-correction" in op
     }
-    assert set(corrected) == set(load_corrections())
+    narrowed = {e["operation_id"] for e in load_request_body_narrowings()}
+    assert set(corrected) == set(load_corrections()) | narrowed
     marker = corrected["postParties"]["x-turab-correction"]
     assert marker["id"] == "CORRECTION-001"
     assert marker["decision"] == "D7"
@@ -450,12 +453,24 @@ def test_the_effective_contract_changes_nothing_else():
                 f"components.{section}.{name} was altered")
 
     role_corrected = set(load_corrections())
+    narrowings = {e["operation_id"]: e for e in load_request_body_narrowings()}
     for path, method, op in _operations(frozen):
         other = {
             k: v for k, v in effective["paths"][path][method].items()
             if k not in ANNOTATIONS
         }
-        if op["operationId"] in role_corrected:
+        if op["operationId"] in narrowings:
+            # CORRECTION-004 kind: exactly the named fields become required
+            # and lose their default. The expected operation is built by that
+            # transformation of the frozen one, and nothing else may differ.
+            entry = narrowings[op["operationId"]]
+            expected = copy.deepcopy(op)
+            schema = expected["requestBody"]["content"]["application/json"]["schema"]
+            schema["required"] = list(schema.get("required") or []) + list(entry["require"])
+            for field in entry["require"]:
+                schema["properties"][field].pop("default", None)
+            assert other == expected, f"{op['operationId']} changed beyond its narrowing"
+        elif op["operationId"] in role_corrected:
             # Only x-roles may differ, and it is asserted exactly elsewhere.
             other.pop("x-roles", None)
             expected = {k: v for k, v in op.items() if k != "x-roles"}
@@ -470,6 +485,8 @@ def test_annotations_appear_only_where_a_correction_names_them():
     named = {
         "x-turab-correction": {
             e["operation_id"] for e in (corrections.get("corrections") or [])
+        } | {
+            e["operation_id"] for e in (corrections.get("request_body_narrowings") or [])
         },
         "x-turab-workflow": {
             e["operation_id"] for e in (corrections.get("workflow_adoptions") or [])

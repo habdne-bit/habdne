@@ -175,6 +175,91 @@ def _corrected_roles(
     return corrections.get(operation_id, declared)
 
 
+#: The keys a request-body narrowing may carry. Anything else is refused, so
+#: no other kind of change can travel under this heading.
+_BODY_NARROWING_KEYS = frozenset({
+    "id", "decision", "approved", "operation_id", "require", "frozen_defaults",
+    "rationale", "runtime_rule", "reference",
+})
+
+
+def load_request_body_narrowings(
+    path: pathlib.Path | None = None, contract: dict[str, Any] | None = None,
+) -> tuple[dict, ...]:
+    """Read and validate the approved request-body narrowings (CORRECTION-004).
+
+    A narrowing makes fields of an operation's JSON request body REQUIRED.
+    That accepts strictly fewer requests than the frozen contract, so it
+    narrows. It also removes each such field's `default`. A default applies
+    only when the field is omitted, and omission is now refused, so removing
+    it changes no request that is still accepted. The removed defaults are
+    recorded in `frozen_defaults`, and must equal what the frozen package
+    declares today (the staleness invariant of the role corrections).
+
+    Refused:
+    - an unknown key;
+    - a missing id or decision;
+    - an id used twice;
+    - an operation that is also role-corrected;
+    - an operation absent from the frozen contract;
+    - a field the body does not declare, or already requires;
+    - `frozen_defaults` that differ from the package.
+
+    The generator of the effective contract applies what this returns, so
+    the two cannot accept different narrowings.
+    """
+    doc = yaml.safe_load((path or CORRECTIONS_PATH).read_text(encoding="utf-8"))
+    entries = tuple(doc.get("request_body_narrowings") or ())
+    frozen = contract if contract is not None else load_contract()
+    by_operation = {op.get("operationId"): op for _, _, op in _operations(frozen)}
+    role_corrected = {e.get("operation_id") for e in doc.get("corrections") or ()}
+    taken = {e.get("id") for e in doc.get("corrections") or ()} | {
+        e.get("id") for e in doc.get("workflow_adoptions") or ()}
+    seen: set[str] = set()
+    for entry in entries:
+        cid = entry.get("id")
+        unknown = set(entry) - _BODY_NARROWING_KEYS
+        if unknown:
+            raise ContractError(f"{cid}: unknown key(s) {sorted(unknown)}; a request-body "
+                                "narrowing may only require fields")
+        if not cid or cid in seen or cid in taken:
+            raise ContractError(f"narrowing {cid!r}: missing or duplicated id")
+        seen.add(cid)
+        if not entry.get("decision"):
+            raise ContractError(f"{cid}: names no decision")
+        operation_id = entry.get("operation_id")
+        if operation_id in role_corrected:
+            raise ContractError(f"{cid}: {operation_id} is already role-corrected; one "
+                                "correction per operation")
+        op = by_operation.get(operation_id)
+        if op is None:
+            raise ContractError(f"{cid}: {operation_id!r} is not in the frozen contract")
+        try:
+            schema = op["requestBody"]["content"]["application/json"]["schema"]
+            properties = schema["properties"]
+        except (KeyError, TypeError):
+            raise ContractError(f"{cid}: {operation_id} has no inline JSON object body") \
+                from None
+        require = list(entry.get("require") or ())
+        if not require:
+            raise ContractError(f"{cid}: requires nothing")
+        already = set(schema.get("required") or ())
+        for field in require:
+            if field not in properties:
+                raise ContractError(f"{cid}: {field!r} is not a property of the body")
+            if field in already:
+                raise ContractError(f"{cid}: {field!r} is already required; nothing "
+                                    "to narrow")
+        declared = {f: properties[f]["default"] for f in require
+                    if "default" in properties[f]}
+        if dict(entry.get("frozen_defaults") or {}) != declared:
+            raise ContractError(
+                f"{cid}: frozen_defaults {entry.get('frozen_defaults')!r} but the "
+                f"package declares {declared!r}. The correction is stale and must "
+                "be re-approved against the current package.")
+    return entries
+
+
 def _operations(doc: dict[str, Any]):
     for path, item in doc.get("paths", {}).items():
         for method in _METHODS:
@@ -195,6 +280,9 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
     """
     doc = load_contract(path)
     corrections = load_corrections()
+    # Validated here too, so a stale or widening body narrowing stops the
+    # application at startup, as a bad role correction does (CORRECTION-004).
+    load_request_body_narrowings(contract=doc)
     policies: dict[str, RoutePolicy] = {}
     unannotated: list[str] = []
     corrected_frozen: dict[str, frozenset[Role]] = {}

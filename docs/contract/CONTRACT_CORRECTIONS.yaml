@@ -64,3 +64,35 @@ workflow_adoptions:
       category added by migration 0002_request_closure_reasons, and
       REQUEST_CLOSED_OTHER requires a note.
     reference: docs/gate/REQUEST_STATE_TRANSITIONS.md
+
+# ---------------------------------------------------------------------------
+# Request-body narrowings. A listed field becomes REQUIRED: strictly fewer
+# requests are accepted, so this narrows. Each such field's `default` is
+# removed, because a default applies only when the field is omitted, and
+# omission is now refused. The removed defaults are pinned in
+# `frozen_defaults` and checked against the package, exactly as `frozen`
+# roles are. Validated by `turab.auth.contract.load_request_body_narrowings`,
+# which also refuses any key that is not a narrowing.
+# ---------------------------------------------------------------------------
+
+request_body_narrowings:
+  - id: CORRECTION-004
+    decision: "G4-1, Slice 4 plan revision 2 (docs/gate/SLICE_4_PLAN.md), approved for step 1"
+    approved: "2026-09-26"
+    operation_id: postRequestsRequestIdMatchingRun
+    require: [matching_policy_version]
+    frozen_defaults:
+      matching_policy_version: "0.1.0"
+    rationale: >-
+      The frozen package defaults matching_policy_version to 0.1.0, but the
+      frozen master seed creates only policy 0.2.0, which is the active one.
+      A run that omitted the field would name a policy that does not exist
+      (measured: docs/gate/evidence/SLICE4-PLAN-MEASUREMENTS.txt, section A).
+      Requiring the field removes the default that can never apply.
+    runtime_rule: >-
+      The value must equal the version of the ACTIVE matching policy
+      (ux_matching_policy_one_active). Any other value, a version of an
+      inactive policy included, is refused with a typed 422 that does not echo
+      the value, and nothing is written. Enforced by the matching run route,
+      Slice 4 step 7; that route does not exist yet.
+    reference: docs/contract/CORRECTION-004-matching-policy-version.md

@@ -229,6 +229,38 @@ def build() -> tuple[str, list[str]]:
             }
             applied.append(f"{entry['id']} ({op['operationId']})")
 
+    # Request-body narrowings (CORRECTION-004). Validated by the runtime's
+    # function, so the effective contract cannot apply one it would refuse.
+    from turab.auth.contract import load_request_body_narrowings
+
+    narrowings = {e["operation_id"]: e
+                  for e in load_request_body_narrowings(CORRECTIONS, doc)}
+    narrowed: list[str] = []
+    for item in doc.get("paths", {}).values():
+        for method in _METHODS:
+            op = item.get(method)
+            if not isinstance(op, dict) or op.get("operationId") not in narrowings:
+                continue
+            entry = narrowings[op["operationId"]]
+            schema = op["requestBody"]["content"]["application/json"]["schema"]
+            frozen_required = list(schema.get("required") or [])
+            schema["required"] = frozen_required + list(entry["require"])
+            for field in entry["require"]:
+                schema["properties"][field] = {
+                    k: v for k, v in schema["properties"][field].items() if k != "default"}
+            op["x-turab-correction"] = {
+                "id": entry["id"],
+                "kind": "REQUEST_BODY_NARROWING",
+                "decision": entry["decision"],
+                "approved": str(entry.get("approved", "")),
+                "frozen-required": frozen_required,
+                "frozen-defaults": dict(entry["frozen_defaults"]),
+                "runtime-rule": " ".join(entry["runtime_rule"].split()),
+                "reference": entry.get("reference"),
+            }
+            narrowed.append(f"{entry['id']} ({op['operationId']})")
+    applied += narrowed
+
     unmatched = set(by_operation) - {
         a.split("(")[1].rstrip(")") for a in applied
     }

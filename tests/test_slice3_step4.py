@@ -637,8 +637,15 @@ def test_a_new_offer_is_never_confirmed_not_stale(client, ids, engine):
 
 
 def test_a_policy_without_an_offer_terms_threshold_is_refused_not_defaulted(session):
-    session.execute(text("""UPDATE turab.matching_policies
-                               SET rules = rules #- '{freshness_threshold_days,offer_terms}'
-                             WHERE active"""))
+    # The active policy is immutable (migration 0005, G4-14), so a policy
+    # without the threshold is a NEW policy, activated in its place. Before
+    # 0005 this test edited the active policy's rules, which is the very edit
+    # G4-14 forbids.
+    session.execute(text("UPDATE turab.matching_policies SET active = false WHERE active"))
+    session.execute(text("""INSERT INTO turab.matching_policies
+                                   (version, name, rules, active, activated_at)
+                            SELECT 'test-no-offer-terms', name,
+                                   rules #- '{freshness_threshold_days,offer_terms}', true, now()
+                              FROM turab.matching_policies WHERE version = '0.2.0'"""))
     with pytest.raises(freshness.NoActiveFreshnessPolicy, match="offer_terms"):
         freshness.offer_terms_threshold_days(session)

@@ -23,10 +23,10 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    fc7dc7244761a031515a71aec1bbc66e7ded998e2be5f9e0940792b2186aca2e
+#   CONTRACT_CORRECTIONS.yaml    6f0dbaadebbffc1c52bbeb9f9bc8f8e08b07594c53bb84fe53f539a7a4dca7f1
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
-# Corrections applied: CORRECTION-001 (postParties), CORRECTION-002 (postRequestsRequestIdState)
+# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-002 (postRequestsRequestIdState)
 # Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd)
 # =============================================================================
 openapi: 3.1.0
@@ -1394,10 +1394,11 @@ paths:
               properties:
                 matching_policy_version:
                   type: string
-                  default: 0.1.0
                 property_ids:
                   type: array
                   items: *id002
+              required:
+              - matching_policy_version
       responses:
         '201':
           description: Evaluation completed
@@ -1423,6 +1424,19 @@ paths:
       - OPERATOR
       - REVIEWER
       operationId: postRequestsRequestIdMatchingRun
+      x-turab-correction:
+        id: CORRECTION-004
+        kind: REQUEST_BODY_NARROWING
+        decision: G4-1, Slice 4 plan revision 2 (docs/gate/SLICE_4_PLAN.md), approved for step 1
+        approved: '2026-09-26'
+        frozen-required: []
+        frozen-defaults:
+          matching_policy_version: 0.1.0
+        runtime-rule: The value must equal the version of the ACTIVE matching policy (ux_matching_policy_one_active).
+          Any other value, a version of an inactive policy included, is refused with a typed 422 that
+          does not echo the value, and nothing is written. Enforced by the matching run route, Slice 4
+          step 7; that route does not exist yet.
+        reference: docs/contract/CORRECTION-004-matching-policy-version.md
   /matches/{match_id}:
     get:
       summary: Get explainable match candidate

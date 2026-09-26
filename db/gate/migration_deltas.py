@@ -216,6 +216,80 @@ DELTAS: tuple[Delta, ...] = (
             "test_0004_refuses_a_btree_gist_installed_outside_public",
         ),
     ),
+    Delta(
+        revision="0005_match_history_immutability",
+        section="triggers",
+        object_name="match_criterion_results.prevent_match_criterion_result_update",
+        kind="BEFORE UPDATE OR DELETE trigger, reusing prevent_immutable_history_change()",
+        digest_before=None,
+        digest_after="8b64a3152f3f224ffe524d499f50122d3110ccc4ffbe4070cf62f4a033df55e1",
+        reason=(
+            "The frozen schema guards match_candidates and match_reviews but not "
+            "match_criterion_results. A criterion result was measured turning from "
+            "FAIL to PASS, and being deleted, under a match row that refused every "
+            "change. A match IS its criterion results, so without this guard "
+            "mandatory test 8 and G04 cannot hold (G4-14)."
+        ),
+        proven_by=(
+            "test_a_criterion_result_cannot_be_turned_from_fail_to_pass",
+            "test_a_criterion_result_cannot_be_deleted",
+            "test_a_criterion_result_can_still_be_appended",
+            "test_deleting_a_request_criterion_a_result_cites_is_refused",
+        ),
+    ),
+    Delta(
+        revision="0005_match_history_immutability",
+        section="triggers",
+        object_name="match_diagnostic_runs.prevent_match_diagnostic_run_update",
+        kind="BEFORE UPDATE OR DELETE trigger, reusing prevent_immutable_history_change()",
+        digest_before=None,
+        digest_after="5e7d82fabe089a2539206951662a8c89aa90c2831a0efe0d06d76f5a56e8a4a5",
+        reason=(
+            "A diagnostic run records what a run found for one request version and "
+            "policy. It was measured being updated and deleted; a diagnostic that "
+            "can be rewritten after the fact is not a record of the run (G4-14)."
+        ),
+        proven_by=(
+            "test_a_diagnostic_run_cannot_be_updated",
+            "test_a_diagnostic_run_cannot_be_deleted",
+        ),
+    ),
+    Delta(
+        revision="0005_match_history_immutability",
+        section="functions",
+        object_name="enforce_matching_policy_immutability()",
+        kind="trigger function",
+        digest_before=None,
+        digest_after="7a91ef3bf133d9fdc15bfef1f5f942267bda12a8401db00f16873d30d5e8e54f",
+        reason=(
+            "matching_policies.immutable is read by nothing in the frozen schema: "
+            "an immutable policy was measured accepting a change to its rules and "
+            "to its version. This function refuses a change to version, name, "
+            "rules or immutable of an immutable policy, and leaves active and "
+            "activated_at writable (G4-14)."
+        ),
+        proven_by=(
+            "test_an_immutable_policy_cannot_change",
+            "test_an_immutable_policy_can_still_be_activated_and_deactivated",
+            "test_a_mutable_policy_is_editable_until_it_is_made_immutable",
+        ),
+    ),
+    Delta(
+        revision="0005_match_history_immutability",
+        section="triggers",
+        object_name="matching_policies.trg_matching_policy_immutable",
+        kind="BEFORE UPDATE trigger calling enforce_matching_policy_immutability()",
+        digest_before=None,
+        digest_after="e543a3551748ea3f225f855d7f8291df86a75875a7a1c4d4f4d057ee1c2aeb14",
+        reason=(
+            "Attaches the policy guard above to matching_policies. Declared "
+            "separately because the check compares catalog objects one by one, "
+            "and a function without its trigger would guard nothing."
+        ),
+        proven_by=(
+            "test_an_immutable_policy_cannot_change",
+        ),
+    ),
 )
 
 
