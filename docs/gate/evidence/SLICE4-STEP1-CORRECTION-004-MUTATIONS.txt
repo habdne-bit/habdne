@@ -1,0 +1,53 @@
+TURAB — Slice 4 step 1: which check of CORRECTION-004 refuses which narrowing
+============================================================
+Base commit       : 896b8c7da4db298b46f02a39c470e41f17b970f4
+Source fingerprint: 2a97f06e8298af6788134a41a1307fb87933471f7b4df9422f0159fe21e639d0
+Working tree      : CLEAN
+Recorded          : 2026-09-26 19:22:47 UTC
+Test file         : tests/test_correction_004.py
+
+=== baseline (no mutation) ===
+   15 passed in 3.21s
+== C1 unknown keys accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 3.21s
+   FAILED test_the_validator_refuses[a
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== C2 ids may repeat another correction's [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 3.20s
+   FAILED test_the_validator_refuses[an
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== C3 no decision needed [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 3.28s
+   FAILED test_the_validator_refuses[no
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== C4 a role-corrected operation may also be narrowed [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 2.92s
+   FAILED test_the_validator_refuses[an
+   cause: AssertionError: Regex pattern did not match.
+   cause: E   AssertionError: Regex pattern did not match.
+== C5 requiring nothing accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 3.15s
+   FAILED test_the_validator_refuses[requiring
+   cause: AssertionError: Regex pattern did not match.
+   cause: E   AssertionError: Regex pattern did not match.
+== C6 an already-required field accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 3.18s
+   FAILED test_a_field_the_package_already_requires_is_refused
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== C7 frozen defaults not compared [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   3 failed, 12 passed in 3.38s
+   FAILED test_the_application_refuses_to_start_on_a_stale_narrowing
+   FAILED test_the_validator_refuses[a
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== C8 not validated at startup [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 6d7c7b35aea1aee7 identical
+   1 failed, 14 passed in 3.03s
+   FAILED test_the_application_refuses_to_start_on_a_stale_narrowing
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+
+SURVIVING MUTATIONS: none

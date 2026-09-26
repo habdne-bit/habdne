@@ -1,0 +1,69 @@
+TURAB — Slice 4 step 1: which guard of migration 0005 refuses which write
+============================================================
+Base commit       : fb6aa03a3f8045719eb82674566dec214e527aaa
+Source fingerprint: ec65e4ac39cd81c8145347a3d4b2154eacc3f3625e8afea9d99e29f154040094
+Working tree      : CLEAN
+Recorded          : 2026-09-26 19:20:09 UTC
+Test file         : tests/test_migration_0005_match_history.py
+
+=== baseline (no mutation) ===
+   13 passed in 2.13s
+== Z1 criterion results unguarded [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   6 passed, 7 errors in 2.08s
+   cause: E   psycopg.errors.RaiseException: Historical TURAB record is immutable; append a new decision/event instead
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event instead
+== Z2 criterion results guarded against DELETE only [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   2 failed, 11 passed in 2.15s
+   FAILED test_a_criterion_result_cannot_be_turned_from_fail_to_pass
+   FAILED test_deleting_a_request_criterion_a_result_cites_is_refused
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z3 criterion results guarded against UPDATE only [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.12s
+   FAILED test_a_criterion_result_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z4 diagnostic runs unguarded [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   6 passed, 7 errors in 2.11s
+   cause: E   psycopg.errors.RaiseException: Historical TURAB record is immutable; append a new decision/event instead
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event instead
+== Z5 diagnostic runs guarded against UPDATE only [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.38s
+   FAILED test_a_diagnostic_run_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z6 policy rules may change [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   2 failed, 11 passed in 2.19s
+   FAILED test_a_mutable_policy_is_editable_until_it_is_made_immutable
+   FAILED test_an_immutable_policy_cannot_change[rules
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z7 policy version may change [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.18s
+   FAILED test_an_immutable_policy_cannot_change[version
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z8 policy name may change [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.21s
+   FAILED test_an_immutable_policy_cannot_change[name
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z9 policy immutability may be lifted [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.14s
+   FAILED test_an_immutable_policy_cannot_change[immutable
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z10 a mutable policy is guarded too [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.22s
+   FAILED test_a_mutable_policy_is_editable_until_it_is_made_immutable
+   cause: E   psycopg.errors.RaiseException: Matching policy draft-1 is immutable: its version, name, rules and immutability cannot change; create a new policy version
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy draft-1 is immutable: its version, name, rules and immutability cannot change; create
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy draft-1 is immutable: its version, name, rules and immutability cannot change; create a n
+== Z11 activation is guarded too [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.34s
+   FAILED test_an_immutable_policy_can_still_be_activated_and_deactivated
+   cause: E   psycopg.errors.RaiseException: Matching policy 0.2.0 is immutable: its version, name, rules and immutability cannot change; create a new policy version
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy 0.2.0 is immutable: its version, name, rules and immutability cannot change; create a
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy 0.2.0 is immutable: its version, name, rules and immutability cannot change; create a new
+
+SURVIVING MUTATIONS: Z1 criterion results unguarded, Z4 diagnostic runs unguarded

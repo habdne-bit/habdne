@@ -331,3 +331,27 @@ No decision document changed revision.
 docs/gate/SLICE_4_PLAN.md                                      rev2 167d16e573d40e46d574b92e057234248782f123e8d3bb36344ded1742a851c1
 docs/gate/evidence/SLICE4-PLAN-MEASUREMENTS.txt                new  359ee4ebed0562e3ebfce7626bb9f3e6da4d9a24655f25e9881e167b51be1379
 SLICE_4_PLAN.md changed revision: 1 -> 2.
+
+--- Slice 4 step 1 (G4-1, G4-14 approved): CORRECTION-004 and migration 0005 ---
+docs/contract/CORRECTION-004-matching-policy-version.md        new  f26a2225c256210d9f5c66a49977c88c3dc9352488a8d1c6f1fe44d31dd5db8c
+docs/contract/CONTRACT_CORRECTIONS.yaml                        --   6f0dbaadebbffc1c52bbeb9f9bc8f8e08b07594c53bb84fe53f539a7a4dca7f1
+docs/api/openapi_effective_v0.2.3.yaml                         --   3f6e981c475cec00ea24d07cd211cbe5a4aba6cd6892915865cc821d025d9299
+docs/api/API_INVENTORY_GENERATED.md                            --   34f489c210c9267a3afeac5c9c9d52eb9f96e5c9c866e90eba70794b532aeed2
+docs/gate/SLICE_4_STEP1_DELIVERY.md                            new  15c75dbb338a05235054e91b94898000491b24c9f1afbe2ec6eff17630498942
+docs/gate/MIGRATION_POLICY.md                                  --   e354abba99d205fb1ae900db73b2eaa13b9e98a36a4ba8601b5e4cf99ab2e1db
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   2ee24ba3ccdb53e8157e6bf45c312645c9961df6e730b01f488aad6200bf1536
+docs/gate/evidence/SLICE4-STEP1-0005-MUTATIONS.txt             new  dba83508f2fcc4c720999b58755c94428ade9bbddadadfcef13e0adac24f62c0
+docs/gate/evidence/SLICE4-STEP1-0005-MUTATIONS-FIRST-RUN.txt   new  ee90df4d1f7ee52b6dabbbb15aa50c6ea3296fc27dfb88405a6060be0a692487
+docs/gate/evidence/SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt   new  fbdd64fbe3f78d1096befda2149297aea24dbda1941495407bfe42f1570992b9
+db/migrations/versions/0005_match_history_immutability.py      new  36f7516843c0bc8cbfabc766df461e7aedd1200dc06c5d6260ec121646de9b83
+db/gate/migration_deltas.py                                    --   d41ae84aeec2994731cfdd4f4e1e37f6eb4df198dbba18b8b585e287df3c01be
+db/gate/generate_effective_contract.py                         --   f45608604845617f59561e4a0ce67f08c56443c48023823a3a662c4d3a942536
+src/turab/auth/contract.py                                     --   6d7c7b35aea1aee76e0c23c136d33e1f813b56f9755b041a60db28d9ecc07783
+db/dev/mutate_0005.py                                          new  1083d6f182ef0620d7c70c0caf6bda60bd3bce150de80b34b6865e7553a06a6d
+db/dev/mutate_correction_004.py                                new  1ae1e391e417f30267afc934d26731c2d449caf7b73263963f15217aac03c5ea
+tests/test_correction_004.py                                   new  0ad3ab901a62f62740dc52bd99c5f118a968011c306aecd3468268a3e8965201
+tests/test_migration_0005_match_history.py                     new  3dda3ac970aa412699429dce6a99a09a1a82d6067f523291ccaec495ebc68802
+tests/test_correction_001.py                                   --   b4040d913a38ece4c81d013bbeeec0aa9cc82ab9c72592739f5eb3f01ba8000e
+tests/test_migrations.py                                       --   5733edff0361b4ce27a2166d965ea21cd4834d49cee79c43a9aed5f55582994e
+tests/test_slice3_step4.py                                     --   2086492b4d07f79a4e8ecd939203334f10d75173cec3295c90539b9278a6b6b6
+No decision document changed revision. CONTRACT_CORRECTIONS.yaml gains CORRECTION-004 (request_body_narrowings). The frozen package is unchanged.

@@ -79,13 +79,25 @@ policy lacking the threshold is refused, not defaulted.
 
 ## 3. Mutation evidence
 
-On the clean tree of this round:
-- `db/dev/mutate_0005.py`, 11 mutations, recorded in
-  `SLICE4-STEP1-0005-MUTATIONS.txt`;
-- `db/dev/mutate_correction_004.py`, 8 mutations, recorded in
-  `SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt`.
+Both runs are on a clean tree at `896b8c7`, source fingerprint
+`2a97f06e…39d0`:
+- `db/dev/mutate_0005.py`: **11 of 11 fail**, none survive
+  (`SLICE4-STEP1-0005-MUTATIONS.txt`);
+- `db/dev/mutate_correction_004.py`: **8 of 8 fail**, none survive
+  (`SLICE4-STEP1-CORRECTION-004-MUTATIONS.txt`).
 
-Each mutation must fail at least one test.
+Every mutated file was restored and verified by sha256.
+
+**A first run, kept and not hidden**
+(`SLICE4-STEP1-0005-MUTATIONS-FIRST-RUN.txt`, at `fb6aa03`). Z1 and Z4
+"survived" there.
+- They had turned the guard into an `AFTER INSERT` trigger. That made the
+  fixture's own insert raise, so the tests ERRORED rather than testing an
+  unguarded table.
+- The runner counts only failures as kills, so it rightly reported them.
+- The defect was in the mutation, not the tests. Z1 and Z4 now remove the
+  `CREATE TRIGGER` statement, and each fails its tests on an assertion
+  ("DID NOT RAISE"): 3 tests for Z1 and 2 for Z4.
 
 ## 4. Slice 3's STOP GATE C evidence, after this step
 

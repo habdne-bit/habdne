@@ -1,0 +1,74 @@
+TURAB — Slice 4 step 1: which guard of migration 0005 refuses which write
+============================================================
+Base commit       : 896b8c7da4db298b46f02a39c470e41f17b970f4
+Source fingerprint: 2a97f06e8298af6788134a41a1307fb87933471f7b4df9422f0159fe21e639d0
+Working tree      : CLEAN
+Recorded          : 2026-09-26 19:22:06 UTC
+Test file         : tests/test_migration_0005_match_history.py
+
+=== baseline (no mutation) ===
+   13 passed in 2.25s
+== Z1 criterion results unguarded (trigger not created) [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   3 failed, 10 passed in 2.14s
+   FAILED test_a_criterion_result_cannot_be_deleted
+   FAILED test_a_criterion_result_cannot_be_turned_from_fail_to_pass
+   FAILED test_deleting_a_request_criterion_a_result_cites_is_refused
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z2 criterion results guarded against DELETE only [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   2 failed, 11 passed in 2.11s
+   FAILED test_a_criterion_result_cannot_be_turned_from_fail_to_pass
+   FAILED test_deleting_a_request_criterion_a_result_cites_is_refused
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z3 criterion results guarded against UPDATE only [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.20s
+   FAILED test_a_criterion_result_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z4 diagnostic runs unguarded (trigger not created) [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   2 failed, 11 passed in 2.13s
+   FAILED test_a_diagnostic_run_cannot_be_deleted
+   FAILED test_a_diagnostic_run_cannot_be_updated
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z5 diagnostic runs guarded against UPDATE only [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.31s
+   FAILED test_a_diagnostic_run_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z6 policy rules may change [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   2 failed, 11 passed in 2.13s
+   FAILED test_a_mutable_policy_is_editable_until_it_is_made_immutable
+   FAILED test_an_immutable_policy_cannot_change[rules
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z7 policy version may change [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.23s
+   FAILED test_an_immutable_policy_cannot_change[version
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z8 policy name may change [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.25s
+   FAILED test_an_immutable_policy_cannot_change[name
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z9 policy immutability may be lifted [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.10s
+   FAILED test_an_immutable_policy_cannot_change[immutable
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== Z10 a mutable policy is guarded too [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.36s
+   FAILED test_a_mutable_policy_is_editable_until_it_is_made_immutable
+   cause: E   psycopg.errors.RaiseException: Matching policy draft-1 is immutable: its version, name, rules and immutability cannot change; create a new policy version
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy draft-1 is immutable: its version, name, rules and immutability cannot change; create
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy draft-1 is immutable: its version, name, rules and immutability cannot change; create a n
+== Z11 activation is guarded too [db/migrations/versions/0005_match_history_immutability.py, 1 site(s)]  restored: sha256 36f7516843c0bc8c identical
+   1 failed, 12 passed in 2.50s
+   FAILED test_an_immutable_policy_can_still_be_activated_and_deactivated
+   cause: E   psycopg.errors.RaiseException: Matching policy 0.2.0 is immutable: its version, name, rules and immutability cannot change; create a new policy version
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy 0.2.0 is immutable: its version, name, rules and immutability cannot change; create a
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Matching policy 0.2.0 is immutable: its version, name, rules and immutability cannot change; create a new
+
+SURVIVING MUTATIONS: none
