@@ -2,10 +2,10 @@
 
     .venv/bin/python db/dev/mutate_slice4_step3.py [T1 T2 ...] > /outside/the/tree.txt
 
-Mutations that would only change the full scan's READ scope, and not its
-result, are not listed. They are equivalent by construction: rows outside
-that scope are classified silent anyway. So they could only be reported as
-false survivors. See `mutation_runner.py`.
+Since the review of cc3a7fe, every property in the full scan's scope ends as
+a candidate or with exactly one reason, so a change of scope changes the
+result and is not equivalent: T18 restores the revision-1 scope. See
+`mutation_runner.py`.
 """
 import sys
 
@@ -32,8 +32,9 @@ MUTATIONS = [
   '        if head["availability"] == "UNAVAILABLE":', "        if False:"),
  ("T8 one candidate per property, not per offer", M,
   'r["offer_version"]) for r in offers)', 'r["offer_version"]) for r in offers[:1])'),
- ("T9 POTENTIAL without an offer passes silently", M,
-  '        elif head["supply_mode"] == "POTENTIAL":', "        elif False:"),
+ ("T9 POTENTIAL without an offer not recognised", M,
+  '        elif head["supply_mode"] == "POTENTIAL" and head["offers_on_property"] == 0:',
+  "        elif False:"),
  ("T10 a missing listed id is not reported", M,
   "            excluded.append(Excluded(property_id, Exclusion.PROPERTY_NOT_FOUND))\n",
   "            pass\n"),
@@ -41,15 +42,28 @@ MUTATIONS = [
   "sorted(set(property_ids))", "list(property_ids)"),
  ("T12 an offer on an alias reported as a plain alias", M,
   "Exclusion.OFFER_ON_ALIAS, {", "Exclusion.IDENTITY_ALIAS, {"),
- ("T13 an unavailable property with an offer is silent in a full scan", M,
-  "            if offers or listed is not None:", "            if listed is not None:"),
- ("T14 a listed alias is not reported", M,
+ ("T13 an unavailable property without a qualifying offer is silent (review of cc3a7fe)", M,
+  "            excluded.append(Excluded(property_id, Exclusion.PROPERTY_UNAVAILABLE))\n",
+  "            if offers:\n"
+  "                excluded.append(Excluded(property_id, Exclusion.PROPERTY_UNAVAILABLE))\n"),
+ ("T14 an alias without a qualifying offer is silent", M,
   "                excluded.append(Excluded(property_id, Exclusion.IDENTITY_ALIAS, detail))",
   "                pass"),
  ("T15 no declared order", M, "     ORDER BY p.property_id, q.offer_id\n", ""),
  ("T16 a listed property without a qualifying offer is silent", M,
-  "            excluded.append(Excluded(property_id, Exclusion.NO_QUALIFYING_OFFER))",
+  "            excluded.append(Excluded(property_id, Exclusion.NO_QUALIFYING_OFFER,\n"
+  "                                     {\"offers_on_property\": head[\"offers_on_property\"]}))",
   "            pass"),
+ ("T17 a POTENTIAL property with non-qualifying offers called offerless (review of cc3a7fe)", M,
+  '        elif head["supply_mode"] == "POTENTIAL" and head["offers_on_property"] == 0:',
+  '        elif head["supply_mode"] == "POTENTIAL":'),
+ ("T18 the full scan takes every POTENTIAL property into scope (revision 1 scope)", M,
+  "(p.supply_mode = 'POTENTIAL' AND NOT EXISTS \"\n"
+  "              \"(SELECT 1 FROM turab.property_offers ao WHERE ao.property_id = p.property_id)))",
+  "p.supply_mode = 'POTENTIAL')"),
+ ("T19 only ACTIVE offers counted as offers on the property", M,
+  "             WHERE ao.property_id = p.property_id) AS offers_on_property,",
+  "             WHERE ao.property_id = p.property_id AND ao.status = 'ACTIVE') AS offers_on_property,"),
 ]
 
 if __name__ == "__main__":

@@ -1,0 +1,57 @@
+TURAB — review of cc3a7fe: two diagnostic defects in the candidate set
+======================================================================
+Recorded : 2026-09-27 07:19:40 UTC
+Method   : the new database tests in tests/test_slice4_step3.py (their final
+           text, committed with the fix), run on PostgreSQL 16.13 twice:
+           BEFORE with src/turab/matching/candidates.py exactly as at cc3a7fe
+           (restored with git show), AFTER with the fix. The test files are
+           identical in both runs; only candidates.py differs. These results
+           are ours.
+Selection: -k "not_called_offerless or no_offer_at_all or exactly_one_reason
+           or every_property_in_scope"
+
+Reading the BEFORE output. The invariant test builds all 32 combinations of
+supply (PUBLIC, POTENTIAL), availability (AVAILABLE, UNAVAILABLE), alias
+(no, yes) and offer state (none, qualifying, other transaction type, not
+ACTIVE). It lists each combination whose outcome differs from the stated
+precedence:
+  [listed]    the first 2 lines;
+  [full-scan] the next 5 lines.
+
+What the BEFORE output shows:
+- Case 1 of the review: a POTENTIAL property with a RENT offer only (BUY
+  request), or with a non-ACTIVE offer, was POTENTIAL_WITHOUT_OFFER.
+- Case 2 of the review: in a full scan, POTENTIAL + UNAVAILABLE + no offer
+  entered the scope and was dropped with no reason.
+- Found by the invariant, beyond the review: in a full scan, a POTENTIAL
+  ALIAS with no offer, available or not, was also dropped with no reason.
+  And the scope then took in POTENTIAL properties that had offers, reporting
+  them as offerless.
+
+=== BEFORE: candidates.py at cc3a7fe ===
+('POTENTIAL', 'AVAILABLE', False, 'other_type'): expected NO_QUALIFYING_OFFER, got ['POTENTIAL_WITHOUT_OFFER']
+('POTENTIAL', 'AVAILABLE', False, 'not_active'): expected NO_QUALIFYING_OFFER, got ['POTENTIAL_WITHOUT_OFFER']
+('POTENTIAL', 'AVAILABLE', False, 'other_type'): expected out of scope, yet reported, got ['POTENTIAL_WITHOUT_OFFER']
+('POTENTIAL', 'AVAILABLE', False, 'not_active'): expected out of scope, yet reported, got ['POTENTIAL_WITHOUT_OFFER']
+('POTENTIAL', 'AVAILABLE', True, 'none'): expected IDENTITY_ALIAS, got []
+('POTENTIAL', 'UNAVAILABLE', False, 'none'): expected PROPERTY_UNAVAILABLE, got []
+('POTENTIAL', 'UNAVAILABLE', True, 'none'): expected IDENTITY_ALIAS, got []
+FAILED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-ACTIVE]
+FAILED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-DRAFT]
+FAILED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-WITHDRAWN]
+FAILED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-PAUSED]
+FAILED tests/test_slice4_step3.py::test_an_unavailable_offerless_potential_property_gets_exactly_one_reason
+FAILED tests/test_slice4_step3.py::test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+FAILED tests/test_slice4_step3.py::test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+7 failed, 1 passed, 36 deselected in 2.11s
+
+=== AFTER: candidates.py with the fix ===
+PASSED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-ACTIVE]
+PASSED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-DRAFT]
+PASSED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-WITHDRAWN]
+PASSED tests/test_slice4_step3.py::test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-PAUSED]
+PASSED tests/test_slice4_step3.py::test_a_potential_property_with_no_offer_at_all_is_still_potential_without_offer
+PASSED tests/test_slice4_step3.py::test_an_unavailable_offerless_potential_property_gets_exactly_one_reason
+PASSED tests/test_slice4_step3.py::test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+PASSED tests/test_slice4_step3.py::test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+8 passed, 36 deselected in 1.98s

@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 5**
+## Implementation plan — **revision 6**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -14,7 +14,8 @@ for.
 | 2 | `a1f77ea` | the plan's facts measured on PostgreSQL before any code (§0a). §3.3 is settled by measurement. G4-3, G4-7 and G4-14 are corrected by what was measured. G4-16 is added. **No decision is taken** |
 | 3 | `0d6c6cf` | decisions recorded where they apply: **G4-1 and G4-14** (approved for step 1, 2026-09-26); **G4-2 and G4-13** (approved in the review of aad9f34), each with the conditions the review attached. Step 2 starts only after step 1 is closed |
 | 4 | `20383df` | **G4-8 and G4-9** decided (review of 4538a2d), recorded where they apply. G4-13's canonical form is corrected by the same review: numbers are JSON numbers, exact and context-free; the format tag becomes `turab.match-input/2`. Step 3 starts only after step 2 is closed |
-| 5 | the commit that delivers step 3 | **G4-17** raised (open): an ACTIVE offer on an alias cannot be evaluated. Found while building the candidate set; reported, not decided |
+| 5 | `6396505` | **G4-17** raised (open): an ACTIVE offer on an alias cannot be evaluated. Found while building the candidate set; reported, not decided |
+| 6 | the commit that records the review of cc3a7fe | decisions recorded where they apply: **G4-17 (a)**, with narrowed wording; **G4-3 (b)**, **G4-4**, **G4-6**, **G4-7**; **G4-5 for SALE**. The **RENT price comparison is NOT approved**: no rent period is defined, so it is recorded as the open question G4-5R. Step 4 starts only after step 3 is closed |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -275,11 +276,12 @@ accept a recommendation by number.
 |---|---|---|---|
 | G4-1 | The policy version, when the contract default names no policy | **APPROVED** (2026-09-26): CORRECTION-004 | step 1 |
 | G4-2 | Where rules live | **APPROVED, (a)** (review of aad9f34): a code registry, with old versions kept replayable | step 2 |
-| G4-3 | Criterion rows duplicating the request's columns | Evaluate both; refuse the run when they are provably disjoint | step 4 |
-| G4-4 | When an UNKNOWN blocks | REQUIRED always; `blocking_if_unknown` widens the rule to others | step 4 |
-| G4-5 | Price | The table in G4-5; negotiability UNKNOWN over max gives UNKNOWN | step 4 |
-| G4-6 | Location | Subtree, as G3-14 | step 4 |
-| G4-7 | Criteria that cannot be evaluated | Refuse the run if REQUIRED or malformed; otherwise UNKNOWN, not blocking | step 4 |
+| G4-3 | Criterion rows duplicating the request's columns | **APPROVED (b)** (review of cc3a7fe): typed refusal on a provable REQUIRED contradiction; otherwise both are evaluated | step 4 |
+| G4-4 | When an UNKNOWN blocks | **APPROVED** (review of cc3a7fe): REQUIRED always; `blocking_if_unknown` adds blocking to others | step 4 |
+| G4-5 | Price | **APPROVED for SALE** (review of cc3a7fe), `seller_expectation_dzd` internal. **RENT: not approved**, see G4-5R | step 4 |
+| G4-5R | RENT price: the period of `budget_max_dzd` and of a RENT `asking_price_dzd` | **Open.** No numeric PASS or FAIL for RENT until the period is defined | step 4 (RENT price only) |
+| G4-6 | Location | **APPROVED** (review of cc3a7fe): subtree, as G3-14 | step 4 |
+| G4-7 | Criteria that cannot be evaluated | **APPROVED** (review of cc3a7fe): a typed refusal if the input is invalid, or REQUIRED and unevaluable; otherwise UNKNOWN, not blocking | step 4 |
 | G4-8 | The candidate set | **APPROVED** (review of 4538a2d), as proposed: one match per qualifying offer; excluded ids reported in the diagnostic | step 3 |
 | G4-9 | POTENTIAL without an offer | **APPROVED, (a)** (review of 4538a2d): not evaluated, the reason reported; mandatory test 6 narrowed to its refusal | step 3 |
 | G4-10 | Permission | The binding rule in G4-10; the buyer side is Slice 5's | step 5 |
@@ -289,7 +291,7 @@ accept a recommendation by number.
 | G4-14 | Migration `0005` (immutability) | **APPROVED** (2026-09-26), delivered in step 1 | step 1 |
 | G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
-| G4-17 | An ACTIVE offer on an alias (raised in step 3) | **Open.** See G4-17 | — (reported meanwhile) |
+| G4-17 | An ACTIVE offer on an alias (raised in step 3) | **APPROVED (a)** (review of cc3a7fe): kept and reported; nothing moved or re-linked | — |
 
 Each item has options and a recommendation. **Blocks** names the step in §8
 that cannot start without it.
@@ -385,6 +387,12 @@ version is `1`):
   contradiction. It is evaluated, and the stricter bound prevails.
 - **Blocks:** step 4.
 
+> **DECIDED (review of cc3a7fe): (b).**
+> - A **provable contradiction** between a REQUIRED column and a REQUIRED
+>   criterion row on the same code (disjoint EQ/IN sets) refuses the run
+>   with a typed refusal.
+> - In every other case, both are evaluated, and the stricter one prevails.
+
 ### G4-4 · When is an UNKNOWN blocking?
 - **Facts:**
   - `request_criteria.blocking_if_unknown` defaults to `false`.
@@ -398,6 +406,11 @@ version is `1`):
     The alternative, a REQUIRED unknown that does not block, would
     contradict mandatory test 3.
 - **Blocks:** step 4.
+
+> **DECIDED (review of cc3a7fe):**
+> - A REQUIRED criterion that is UNKNOWN is always blocking.
+> - `blocking_if_unknown = true` ADDS blocking to a PREFERRED or FLEXIBLE
+>   criterion.
 
 ### G4-5 · Price compatibility (M-03, M-04, G02, mandatory tests 4 and 5)
 **The proposal.** `max` is the buyer's `budget_max_dzd`. `ask` is
@@ -418,12 +431,24 @@ only (CHECK constraint).
 - **The RENT budget:** is `budget_max_dzd` monthly for a RENT request? No
   source says so. **Recommendation:** treat it as the same unit as the RENT
   offer's `asking_price_dzd`, and state this in the snapshot, until a unit
-  is decided.
+  is decided. **NOT APPROVED (review of cc3a7fe)**, see the decision below.
 - **`budget_flexibility`** (STRICT … HIGH): no source gives it a numeric
   effect. **Recommendation:** it is not used by the hard gate. It is
   recorded in the request snapshot.
 
 **Blocks:** step 4.
+
+> **DECIDED (review of cc3a7fe): the SALE table is approved, with
+> `seller_expectation_dzd` kept internal.**
+>
+> **RENT is NOT approved: G4-5R, open.** The contract names both
+> `budget_max_dzd` and a RENT offer's `asking_price_dzd` in dinars, and
+> names no rental period for either. A common time unit cannot be
+> confirmed. So no numeric comparison of a RENT price may be PASS or FAIL
+> until the period is defined.
+>
+> The step-4 behaviour for a RENT price criterion is itself a choice. It is
+> proposed with step 4, and it may not be a numeric verdict.
 
 ### G4-6 · Location
 - **Recommendation:** the property's location is inside the requested
@@ -431,6 +456,8 @@ only (CHECK constraint).
   list, and uses the same recursive query with UNION.
 - A null `canonical_location_id` gives UNKNOWN.
 - **Blocks:** step 4.
+
+> **DECIDED (review of cc3a7fe):** the subtree rule, as G3-14.
 
 ### G4-7 · Criteria the deterministic engine cannot evaluate
 - **Facts:**
@@ -454,6 +481,12 @@ only (CHECK constraint).
     UNKNOWN, not blocking, with no soft-score weight, recorded so a
     reviewer sees it.
 - **Blocks:** step 4.
+
+> **DECIDED (review of cc3a7fe):** as proposed.
+> - A PREFERRED or FLEXIBLE criterion with no deterministic rule is
+>   recorded UNKNOWN, not blocking.
+> - An invalid input, or a REQUIRED criterion that cannot be evaluated, is
+>   refused with a typed refusal.
 
 ### G4-8 · The candidate set
 - **Request status.** **Recommendation:** run for `ACTIVE` and
@@ -665,7 +698,7 @@ the criterion instead.
   slice's behaviour, and that needs its own approval.
 - **Blocks:** nothing in Slice 4 if (a) is chosen.
 
-### G4-17 · An ACTIVE offer stranded on an alias (raised in step 3, open)
+### G4-17 · An ACTIVE offer stranded on an alias (raised in step 3; decided (a))
 - **Facts:**
   - G3-13 decided that an alias's offers are not moved.
   - `trg_match_commercial_context` refuses a match on an alias.
@@ -676,8 +709,8 @@ the criterion instead.
 - **Meanwhile:** the candidate set reports it as `OFFER_ON_ALIAS`, with the
   canonical id and the offer ids (`SLICE_4_STEP3_DELIVERY.md` §3).
 - **Options:**
-  - (a) keep reporting it; the offer's party re-creates the offer on the
-    canonical record;
+  - (a) keep the offer on the alias and report it. Nothing is moved or
+    re-linked automatically;
   - (b) an identity-review step that re-creates, or re-points, open offers
     onto the canonical record. This changes G3-13, and the identity
     workflow;
@@ -686,6 +719,19 @@ the criterion instead.
 - **Recommendation: (a)** for this slice. It changes nothing decided. The
   diagnostic makes the stranded offer visible.
 - **Blocks:** nothing.
+
+> **DECIDED (review of cc3a7fe): (a) for this slice.** The offer stays on
+> the alias and is reported, with no automatic move or re-link.
+>
+> **Narrowed wording:** revision 5 said the offer's party "re-creates the
+> offer on the canonical record". That assumed a capability that does not
+> exist. It is **not** assumed that the offer's party can create an offer on
+> the canonical record. Any new offer there is a new creation. It passes
+> through the property's authorization and a NEW consent, by the existing
+> paths, like any other offer.
+>
+> Why the current offer cannot be matched is proven by the frozen trigger
+> `trg_match_commercial_context` (`schema_v0.2.3.sql:1170–1207`).
 
 ---
 

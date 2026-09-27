@@ -27,10 +27,15 @@ only); `API_CONTRACTS_v0.2` §4.8; red-team C01, D05, E02; the frozen trigger
 
 ## G4-9 (a), as decided
 
-A POTENTIAL property with no qualifying offer is **not evaluated**. The
+A POTENTIAL property with **no offer at all** is **not evaluated**. The
 frozen schema holds no structured willingness context, so there is nothing
 to evaluate it against. Its exclusion is reported with that reason.
 Mandatory test 6 is proven in this refusing half only.
+
+A POTENTIAL property that HAS offers, none of which qualifies for this
+request (another transaction type, or not ACTIVE), is not "without offer".
+It is `NO_QUALIFYING_OFFER`, with the count of its offers (review of
+cc3a7fe).
 
 ## Every exclusion is reported, never silent
 
@@ -43,16 +48,25 @@ otherwise have reached, is returned with a reason:
 | `IDENTITY_ALIAS` | a listed id that is an alias; the canonical id is given |
 | `OFFER_ON_ALIAS` | a qualifying offer sits on an alias property (see below) |
 | `PROPERTY_UNAVAILABLE` | `current_availability = UNAVAILABLE` |
-| `POTENTIAL_WITHOUT_OFFER` | G4-9 (a) |
-| `NO_QUALIFYING_OFFER` | a listed property with no ACTIVE offer of the right type |
+| `POTENTIAL_WITHOUT_OFFER` | G4-9 (a): a POTENTIAL property with no offer at all |
+| `NO_QUALIFYING_OFFER` | a listed property that has offers, or none, but no ACTIVE offer of the right type |
 
-**Scope of a full scan.** A full scan (no `property_ids`) reports what
-could otherwise have been a candidate:
-- properties with a qualifying offer that were excluded;
-- POTENTIAL properties without one.
+**Precedence, one reason each:** alias (`OFFER_ON_ALIAS` if it carries a
+qualifying offer, else `IDENTITY_ALIAS`) > `PROPERTY_UNAVAILABLE` >
+candidate > `POTENTIAL_WITHOUT_OFFER` > `NO_QUALIFYING_OFFER`. Even with
+willingness data, an unavailable property would not be evaluated, so
+`PROPERTY_UNAVAILABLE` comes before `POTENTIAL_WITHOUT_OFFER`.
 
-A property simply lacking any relevant offer is not listed, or a BUY run
-would enumerate every rental in the market.
+**Scope of a full scan.** A full scan (no `property_ids`) takes into scope:
+- every property with a qualifying offer;
+- every POTENTIAL property with no offer at all.
+
+**Every property in scope ends as a candidate or with exactly one reason.**
+Before the review of cc3a7fe, a POTENTIAL property that was UNAVAILABLE, or
+an alias, could enter the scope and leave it unreported.
+
+A property outside the scope is not listed, or a BUY run would enumerate
+every rental in the market.
 
 **`OFFER_ON_ALIAS`, a finding stated here.** G3-13 decided that an alias's
 offers are not moved. The frozen trigger requires the evaluated offer to
@@ -144,6 +158,8 @@ _ROWS = """
            p.supply_mode::text AS supply_mode,
            p.current_availability::text AS availability,
            a.canonical_property_id AS alias_of,
+           (SELECT count(*) FROM turab.property_offers ao
+             WHERE ao.property_id = p.property_id) AS offers_on_property,
            q.offer_id, q.offer_version
       FROM turab.properties p
       LEFT JOIN turab.property_identity_aliases a ON a.alias_property_id = p.property_id
@@ -152,9 +168,11 @@ _ROWS = """
      ORDER BY p.property_id, q.offer_id
 """
 
-#: A full scan reads only rows that could matter: a qualifying offer, or a
-#: POTENTIAL property (G4-9 reports it).
-_FULL_SCAN = "(q.offer_id IS NOT NULL OR p.supply_mode = 'POTENTIAL')"
+#: A full scan's SCOPE: a property with a qualifying offer, or a POTENTIAL
+#: property with no offer at all (G4-9 reports it). Every property in scope
+#: ends as a candidate or with exactly one reason (review of cc3a7fe).
+_FULL_SCAN = ("(q.offer_id IS NOT NULL OR (p.supply_mode = 'POTENTIAL' AND NOT EXISTS "
+              "(SELECT 1 FROM turab.property_offers ao WHERE ao.property_id = p.property_id)))")
 _LISTED = "p.property_id = ANY(:ids)"
 
 
@@ -187,6 +205,10 @@ def candidate_set(session: Session, request_id: uuid.UUID,
         if group is None:
             excluded.append(Excluded(property_id, Exclusion.PROPERTY_NOT_FOUND))
             continue
+        # Every property reaching this point is IN SCOPE (listed, or inside
+        # the full scan's scope), so it ends as candidates or with exactly
+        # one reason. Precedence: alias > unavailable > candidate >
+        # POTENTIAL without any offer > no qualifying offer.
         head = group[0]
         offers = [r for r in group if r["offer_id"] is not None]
         if head["alias_of"] is not None:
@@ -194,20 +216,22 @@ def candidate_set(session: Session, request_id: uuid.UUID,
             if offers:
                 excluded.append(Excluded(property_id, Exclusion.OFFER_ON_ALIAS, {
                     **detail, "offer_ids": [r["offer_id"] for r in offers]}))
-            elif listed is not None:
+            else:
                 excluded.append(Excluded(property_id, Exclusion.IDENTITY_ALIAS, detail))
             continue
         if head["availability"] == "UNAVAILABLE":
-            if offers or listed is not None:
-                excluded.append(Excluded(property_id, Exclusion.PROPERTY_UNAVAILABLE))
+            excluded.append(Excluded(property_id, Exclusion.PROPERTY_UNAVAILABLE))
             continue
         if offers:
             candidates.extend(Candidate(property_id, r["property_version"], r["offer_id"],
                                         r["offer_version"]) for r in offers)
-        elif head["supply_mode"] == "POTENTIAL":
+        elif head["supply_mode"] == "POTENTIAL" and head["offers_on_property"] == 0:
             excluded.append(Excluded(property_id, Exclusion.POTENTIAL_WITHOUT_OFFER, {
                 "because": "no structured willingness context exists (G4-9 (a))"}))
-        elif listed is not None:
-            excluded.append(Excluded(property_id, Exclusion.NO_QUALIFYING_OFFER))
+        else:
+            # Offers exist, but none qualifies for THIS request (another
+            # transaction type, or not ACTIVE). That is not "without offer".
+            excluded.append(Excluded(property_id, Exclusion.NO_QUALIFYING_OFFER,
+                                     {"offers_on_property": head["offers_on_property"]}))
     return CandidateSet(request_id, request["status"], request["intent"], offer_type,
                         tuple(candidates), tuple(excluded))

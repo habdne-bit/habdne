@@ -319,3 +319,122 @@ def test_computing_the_set_writes_nothing(session, ids):
     cs.candidate_set(session, req)
     cs.candidate_set(session, req, [prop])
     assert counts() == before
+
+
+# ======================================================================================
+# Review of cc3a7fe: two diagnostic defects, and the invariant behind them
+# ======================================================================================
+#
+# 1. A POTENTIAL property WITH an offer that does not qualify (the other
+#    transaction type, or not ACTIVE) was reported POTENTIAL_WITHOUT_OFFER.
+#    The query kept qualifying offers only, and the classification read their
+#    absence as "no offer".
+# 2. In a full scan, a POTENTIAL property that is UNAVAILABLE and has no offer
+#    entered the scan's scope and was then dropped with no reason.
+# Both reproduced against the cc3a7fe code:
+# evidence/SLICE4-STEP3-DIAGNOSTIC-BEFORE-FIX.txt.
+
+@pytest.mark.parametrize("kind, status", [("RENT", "ACTIVE"), ("SALE", "DRAFT"),
+                                          ("SALE", "WITHDRAWN"), ("RENT", "PAUSED")])
+def test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless(
+        session, ids, kind, status):
+    """G4-9 (a) concerns a POTENTIAL property with NO offer at all. One that
+    has offers, none of them qualifying for THIS request, is
+    NO_QUALIFYING_OFFER, and the offers it has are counted."""
+    req = _request(session, ids, intent="BUY")
+    prop = _property(session, supply="POTENTIAL")
+    _offer(session, ids, prop, kind=kind, status=status)
+    result = cs.candidate_set(session, req, [prop])
+    assert result.candidates == ()
+    [entry] = result.excluded
+    assert entry.reason == Exclusion.NO_QUALIFYING_OFFER
+    assert entry.detail == {"offers_on_property": 1}
+
+
+def test_a_potential_property_with_no_offer_at_all_is_still_potential_without_offer(session,
+                                                                                    ids):
+    req = _request(session, ids, intent="BUY")
+    prop = _property(session, supply="POTENTIAL")
+    [entry] = cs.candidate_set(session, req, [prop]).excluded
+    assert entry.reason == Exclusion.POTENTIAL_WITHOUT_OFFER
+
+
+def test_an_unavailable_offerless_potential_property_gets_exactly_one_reason(session, ids):
+    """In a full scan it enters the scope (POTENTIAL, no offer) and must not
+    leave it unreported. PROPERTY_UNAVAILABLE takes precedence over
+    POTENTIAL_WITHOUT_OFFER: even with willingness data, an unavailable
+    property would not be evaluated."""
+    req = _request(session, ids)
+    prop = _property(session, supply="POTENTIAL", availability="UNAVAILABLE")
+    for scope in ([prop], None):
+        result = cs.candidate_set(session, req, scope)
+        mine = [e for e in result.excluded if e.property_id == prop]
+        assert [e.reason for e in mine] == [Exclusion.PROPERTY_UNAVAILABLE], scope
+        assert all(c.property_id != prop for c in result.candidates)
+
+
+# --- the invariant: every property a run brings into scope is accounted for --------------
+
+SUPPLY = ("PUBLIC", "POTENTIAL")
+AVAILABILITY = ("AVAILABLE", "UNAVAILABLE")
+OFFERS = ("none", "qualifying", "other_type", "not_active")
+
+
+def _expected(supply, availability, alias, offers, listed):
+    """The precedence, stated once, independently of the implementation:
+    alias > unavailable > candidate > POTENTIAL without any offer > no
+    qualifying offer. A full scan's scope is: a qualifying offer, or a
+    POTENTIAL property with no offer at all. Anything out of scope is silent
+    in a full scan."""
+    in_scope = listed or offers == "qualifying" or (supply == "POTENTIAL" and offers == "none")
+    if not in_scope:
+        return None
+    if alias:
+        return Exclusion.OFFER_ON_ALIAS if offers == "qualifying" else Exclusion.IDENTITY_ALIAS
+    if availability == "UNAVAILABLE":
+        return Exclusion.PROPERTY_UNAVAILABLE
+    if offers == "qualifying":
+        return "CANDIDATE"
+    if supply == "POTENTIAL" and offers == "none":
+        return Exclusion.POTENTIAL_WITHOUT_OFFER
+    return Exclusion.NO_QUALIFYING_OFFER
+
+
+@pytest.mark.parametrize("listed", [True, False], ids=["listed", "full-scan"])
+def test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason(session, ids,
+                                                                          listed):
+    """All 32 combinations of supply, availability, alias and offer state,
+    built in one world and run once each way."""
+    import itertools
+
+    req = _request(session, ids, intent="BUY")
+    cases = {}
+    for supply, availability, alias, offers in itertools.product(
+            SUPPLY, AVAILABILITY, (False, True), OFFERS):
+        prop = _property(session, supply=supply, availability=availability)
+        if offers == "qualifying":
+            _offer(session, ids, prop)
+        elif offers == "other_type":
+            _offer(session, ids, prop, kind="RENT")
+        elif offers == "not_active":
+            _offer(session, ids, prop, status="PAUSED")
+        if alias:
+            _alias(session, ids, prop, _property(session))
+        cases[prop] = (supply, availability, alias, offers)
+
+    result = cs.candidate_set(session, req, list(cases) if listed else None)
+    reasons: dict = {}
+    for entry in result.excluded:
+        reasons.setdefault(entry.property_id, []).append(entry.reason)
+    candidate_props = {c.property_id for c in result.candidates}
+    problems = []
+    for prop, case in cases.items():
+        want = _expected(*case, listed)
+        got = (["CANDIDATE"] if prop in candidate_props else []) + reasons.get(prop, [])
+        if want is None:
+            if got:
+                problems.append((case, "out of scope, yet reported", got))
+        elif got != [want]:
+            problems.append((case, want, got))
+    assert problems == [], "\n" + "\n".join(
+        f"{c}: expected {w}, got {[str(x) for x in g]}" for c, w, g in problems)
