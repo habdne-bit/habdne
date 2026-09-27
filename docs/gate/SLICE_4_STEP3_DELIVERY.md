@@ -86,13 +86,16 @@ stay reported is a decision. It was raised here as G4-17.
 
 ## 4. Mutation evidence
 
-`db/dev/mutate_slice4_step3.py`: **16 of 16 fail**, none survive, one per
+`db/dev/mutate_slice4_step3.py`: **19 of 19 fail**, none survive, one per
 rule and reported exclusion.
-- Recorded on a clean tree at `6396505`, source fingerprint
-  `acbcd44c…1ef7` (`evidence/SLICE4-STEP3-MUTATIONS.txt`).
+- Recorded on a clean tree at `5ec9a84`, source fingerprint
+  `61236271…afcfc` (`evidence/SLICE4-STEP3-MUTATIONS.txt`), baseline 44
+  passed.
 - Every mutated file was restored and verified by sha256.
-- The trial run on the dirty tree also killed all 16, and no test changed
+- The trial run on the dirty tree also killed all 19, and no test changed
   after it.
+- The first round (16 of 16 at `6396505`, fingerprint `acbcd44c…1ef7`) is
+  superseded by this one; it is in the file's git history.
 
 **Revision 1 (6396505) left out mutations of the full scan's READ scope as
 equivalent.** Since the review of cc3a7fe that no longer holds: every

@@ -1,15 +1,15 @@
 TURAB — Slice 4 step 3: which rule of the candidate set fails which test
 ============================================================
-Base commit       : 63965056f5200ea302fcebdd14672a955c963fca
-Source fingerprint: acbcd44c968f27b04174af7e136f754344bbd0862132802ef2f28d3ed9811ef7
+Base commit       : 5ec9a8476a9341d1df60722cffb8a6cc27c3b3a1
+Source fingerprint: 61236271b94c0556b5128d4899d7c2f1f89f6ef83223e8e00dca3f73131afcfc
 Working tree      : CLEAN
-Recorded          : 2026-09-26 23:21:58 UTC
+Recorded          : 2026-09-27 07:27:46 UTC
 Test file         : tests/test_slice4_step3.py
 
 === baseline (no mutation) ===
-   36 passed in 1.95s
-== T1 any request status matched [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   5 failed, 31 passed in 2.01s
+   44 passed in 2.22s
+== T1 any request status matched [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   5 failed, 39 passed in 2.33s
    FAILED test_any_other_request_status_is_refused[CLOSED]
    FAILED test_any_other_request_status_is_refused[CONTACTED]
    FAILED test_any_other_request_status_is_refused[PAUSED]
@@ -17,14 +17,15 @@ Test file         : tests/test_slice4_step3.py
    FAILED test_any_other_request_status_is_refused[RAW]
    cause: E   Failed: DID NOT RAISE RequestNotMatchable
    cause: Failed: DID NOT RAISE RequestNotMatchable
-== T2 a stale request refused [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.01s
+== T2 a stale request refused [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   1 failed, 43 passed in 2.65s
    FAILED test_an_active_or_stale_request_is_matched[NEEDS_CONFIRMATION]
    cause: E   turab.matching.candidates.RequestNotMatchable: a request in status NEEDS_CONFIRMATION is not matched; only ACTIVE are
    cause: turab.matching.candidates.RequestNotMatchable: a request in status NEEDS_CONFIRMATION is not matched; only ACTIVE are
-== T3 BUY evaluates RENT (intent mapping swapped) [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   20 failed, 16 passed in 2.00s
+== T3 BUY evaluates RENT (intent mapping swapped) [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   23 failed, 21 passed in 2.41s
    FAILED test_a_full_scan_finds_every_qualifying_offer_and_stays_silent_on_the_rest
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-ACTIVE]
    FAILED test_a_potential_property_with_a_qualifying_offer_is_evaluated_through_it
    FAILED test_a_property_with_only_the_other_type_is_reported_not_evaluated
    FAILED test_a_qualifying_offer_on_an_alias_is_reported_as_unevaluable
@@ -40,106 +41,176 @@ Test file         : tests/test_slice4_step3.py
    FAILED test_every_other_availability_is_evaluated[TEMPORARILY_UNAVAILABLE]
    FAILED test_every_other_availability_is_evaluated[UNDER_DISCUSSION]
    FAILED test_every_other_availability_is_evaluated[UNKNOWN]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
    FAILED test_every_qualifying_offer_of_a_property_is_its_own_candidate
    FAILED test_listed_ids_narrow_the_set_are_deduplicated_and_ordered
    FAILED test_public_and_private_supply_are_both_matched[PRIVATE]
    FAILED test_public_and_private_supply_are_both_matched[PUBLIC]
+   cause: AssertionError:
    cause: AssertionError: assert (Candidate(pr...r_version=1),) == ()
-   cause: AssertionError: assert (UUID('9a630905-4bde-4cca-885b-081e076af629'), UUID('1bff1645-3abe-445e-89e9-017ed6a7d014')) in {(UUID('59fdffde-4cfe-4d70-a884-f84b90552abb'), UUI
+   cause: AssertionError: assert (UUID('2960ef4e-badb-482f-8887-1984a8c0cce2'), UUID('68cd02a3-0d98-4288-b0dc-a70e4f5869f8')) in {(UUID('03feeb62-3a2c-4d97-81cf-78a131f5abe2'), UUI
    cause: AssertionError: assert <Exclusion.ID...ENTITY_ALIAS'> == <Exclusion.OF...FER_ON_ALIAS'>
-   cause: AssertionError: assert [] == [UUID('602234...3d237305611')]
-   cause: AssertionError: assert set() == {(UUID('2d77c...a5dcb89f5d'))}
-   cause: AssertionError: assert set() == {(UUID('329e2...b9b96c8c5a'))}
-== T4 offers of any status qualify [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   5 failed, 31 passed in 1.96s
+   cause: AssertionError: assert [] == [UUID('8bd5e7...736e95b2865')]
+   cause: AssertionError: assert set() == {(UUID('04308...e8dc224e24'))}
+== T4 offers of any status qualify [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   9 failed, 35 passed in 2.35s
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-DRAFT]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-WITHDRAWN]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[CLOSED]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[DRAFT]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[PAUSED]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[PENDING_INFO]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[WITHDRAWN]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
    cause: AssertionError: assert (Candidate(pr...r_version=1),) == ()
+   cause: E   AssertionError: 
    cause: E   AssertionError: assert (Candidate(pr...r_version=1),) == ()
-== T5 offers of any transaction type qualify [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   4 failed, 32 passed in 2.18s
+== T5 offers of any transaction type qualify [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   7 failed, 37 passed in 2.38s
    FAILED test_a_full_scan_finds_every_qualifying_offer_and_stays_silent_on_the_rest
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-ACTIVE]
    FAILED test_a_property_with_only_the_other_type_is_reported_not_evaluated
    FAILED test_a_request_evaluates_only_offers_of_its_transaction_type[BUY-SALE-RENT]
    FAILED test_a_request_evaluates_only_offers_of_its_transaction_type[RENT-RENT-SALE]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
    cause: AssertionError: assert (Candidate(pr...r_version=1),) == ()
-   cause: AssertionError: assert UUID('9b168bf9-c173-4217-b9d7-db66ddbea50e') not in {UUID('0ba86314-af72-49fe-aebd-a7a4a57229e3'), UUID('9b168bf9-c173-4217-b9d7-db66ddbea50e'), UU
-   cause: AssertionError: assert {(UUID('c250a...01f6ec0fdb'))} == {(UUID('c250a...01f6ec0fdb'))}
-   cause: AssertionError: assert {(UUID('f415b...533b3e3e80'))} == {(UUID('f415b...3202d16536'))}
-   cause: E   AssertionError: assert (Candidate(pr...r_version=1),) == ()
-   cause: E   AssertionError: assert UUID('9b168bf9-c173-4217-b9d7-db66ddbea50e') not in {UUID('0ba86314-af72-49fe-aebd-a7a4a57229e3'), UUID('9b168bf9-c173-4217-b9d7-db66ddbea50e')
-== T6 aliases are candidates [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   2 failed, 34 passed in 2.19s
+   cause: AssertionError: assert UUID('6ed4ca3a-479e-4077-978e-5222144807ca') not in {UUID('6ed4ca3a-479e-4077-978e-5222144807ca'), UUID('e8d12bdf-0f5c-4aa2-ae07-cac7c382b8c0'), UU
+   cause: AssertionError: assert {(UUID('1df14...bbaeaf7d66'))} == {(UUID('1df14...bbaeaf7d66'))}
+   cause: AssertionError: assert {(UUID('aa892...ca6d2b8f52'))} == {(UUID('aa892...ca6d2b8f52'))}
+   cause: E   AssertionError: 
+== T6 aliases are candidates [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   4 failed, 40 passed in 2.26s
    FAILED test_a_qualifying_offer_on_an_alias_is_reported_as_unevaluable
    FAILED test_an_alias_is_never_a_candidate_and_is_reported_with_its_canonical
-   cause: AssertionError: assert (UUID('ba2489...FYING_OFFER'>) == (UUID('ba2489...NTITY_ALIAS'>)
-   cause: E   AssertionError: assert (UUID('ba2489...FYING_OFFER'>) == (UUID('ba2489...NTITY_ALIAS'>)
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: AssertionError: assert (UUID('b36d8f...FYING_OFFER'>) == (UUID('b36d8f...NTITY_ALIAS'>)
+   cause: E   AssertionError: 
+   cause: E   AssertionError: assert (UUID('b36d8f...FYING_OFFER'>) == (UUID('b36d8f...NTITY_ALIAS'>)
    cause: E   assert False
    cause: assert False
-== T7 unavailable properties are candidates [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.08s
+== T7 unavailable properties are candidates [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   4 failed, 40 passed in 2.29s
+   FAILED test_an_unavailable_offerless_potential_property_gets_exactly_one_reason
    FAILED test_an_unavailable_property_is_excluded_and_reported
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: AssertionError: [UUID('7c3c7597-25a2-4d3d-aaa8-a17647c3f263')]
+   cause: E   AssertionError: 
+   cause: E   AssertionError: [UUID('7c3c7597-25a2-4d3d-aaa8-a17647c3f263')]
    cause: E   assert False
    cause: assert False
-== T8 one candidate per property, not per offer [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.11s
+== T8 one candidate per property, not per offer [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   1 failed, 43 passed in 2.33s
    FAILED test_every_qualifying_offer_of_a_property_is_its_own_candidate
-   cause: AssertionError: assert {(UUID('c6cd9...b9fe345837'))} == {(UUID('c6cd9...1afa6ddda1'))}
-   cause: E   AssertionError: assert {(UUID('c6cd9...b9fe345837'))} == {(UUID('c6cd9...1afa6ddda1'))}
-== T9 POTENTIAL without an offer passes silently [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.15s
+   cause: AssertionError: assert {(UUID('d09da...21a67f8947'))} == {(UUID('d09da...512ca7806d'))}
+   cause: E   AssertionError: assert {(UUID('d09da...21a67f8947'))} == {(UUID('d09da...512ca7806d'))}
+== T9 POTENTIAL without an offer not recognised [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   4 failed, 40 passed in 2.32s
+   FAILED test_a_potential_property_with_no_offer_at_all_is_still_potential_without_offer
    FAILED test_a_potential_property_without_willingness_context_is_not_evaluated
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
    cause: AssertionError: assert <Exclusion.NO...IFYING_OFFER'> == <Exclusion.PO...ITHOUT_OFFER'>
+   cause: E   AssertionError: 
    cause: E   AssertionError: assert <Exclusion.NO...IFYING_OFFER'> == <Exclusion.PO...ITHOUT_OFFER'>
-== T10 a missing listed id is not reported [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.06s
+== T10 a missing listed id is not reported [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   1 failed, 43 passed in 2.37s
    FAILED test_listed_ids_narrow_the_set_are_deduplicated_and_ordered
-   cause: AssertionError: assert {} == {UUID('6269c5...Y_NOT_FOUND'>}
-   cause: E   AssertionError: assert {} == {UUID('6269c5...Y_NOT_FOUND'>}
-== T11 listed ids not de-duplicated [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   2 failed, 34 passed in 2.10s
+   cause: AssertionError: assert {} == {UUID('03418a...Y_NOT_FOUND'>}
+   cause: E   AssertionError: assert {} == {UUID('03418a...Y_NOT_FOUND'>}
+== T11 listed ids not de-duplicated [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   2 failed, 42 passed in 2.34s
    FAILED test_listed_ids_narrow_the_set_are_deduplicated_and_ordered
    FAILED test_the_candidate_set_is_deterministic
    cause: AssertionError: assert CandidateSet(..., excluded=()) == CandidateSet(..., excluded=())
-   cause: AssertionError: assert [UUID('cd6c14...2744610ba9e')] == [UUID('48bea3...49af216c91b')]
+   cause: AssertionError: assert [UUID('61a31e...23f622c6044')] == [UUID('33596a...214418e617a')]
    cause: E   AssertionError: assert CandidateSet(..., excluded=()) == CandidateSet(..., excluded=())
-   cause: E   AssertionError: assert [UUID('cd6c14...2744610ba9e')] == [UUID('48bea3...49af216c91b')]
-== T12 an offer on an alias reported as a plain alias [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.04s
+   cause: E   AssertionError: assert [UUID('61a31e...23f622c6044')] == [UUID('33596a...214418e617a')]
+== T12 an offer on an alias reported as a plain alias [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   3 failed, 41 passed in 2.32s
    FAILED test_a_qualifying_offer_on_an_alias_is_reported_as_unevaluable
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
    cause: AssertionError: assert <Exclusion.ID...ENTITY_ALIAS'> == <Exclusion.OF...FER_ON_ALIAS'>
+   cause: E   AssertionError: 
    cause: E   AssertionError: assert <Exclusion.ID...ENTITY_ALIAS'> == <Exclusion.OF...FER_ON_ALIAS'>
-== T13 an unavailable property with an offer is silent in a full scan [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 1.95s
-   FAILED test_an_unavailable_property_is_excluded_and_reported
-   cause: E   KeyError: UUID('eced5c5f-40ec-44f7-859d-7380919ea339')
-   cause: KeyError: UUID('eced5c5f-40ec-44f7-859d-7380919ea339')
-== T14 a listed alias is not reported [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.02s
+== T13 an unavailable property without a qualifying offer is silent (review of cc3a7fe) [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   3 failed, 41 passed in 2.32s
+   FAILED test_an_unavailable_offerless_potential_property_gets_exactly_one_reason
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: AssertionError: [UUID('86852bed-1ad9-4dc9-ab1d-14f40df4527b')]
+   cause: E   AssertionError: 
+   cause: E   AssertionError: [UUID('86852bed-1ad9-4dc9-ab1d-14f40df4527b')]
+== T14 an alias without a qualifying offer is silent [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   3 failed, 41 passed in 2.32s
    FAILED test_an_alias_is_never_a_candidate_and_is_reported_with_its_canonical
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: E   AssertionError: 
    cause: E   ValueError: not enough values to unpack (expected 1, got 0)
    cause: ValueError: not enough values to unpack (expected 1, got 0)
-== T15 no declared order [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   1 failed, 35 passed in 2.02s
+== T15 no declared order [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   1 failed, 43 passed in 2.18s
    FAILED test_the_candidate_set_is_deterministic
-   cause: AssertionError: assert [(UUID('44193...00bb9')), ...] == [(UUID('44193...00bc1')), ...]
-   cause: E   AssertionError: assert [(UUID('44193...00bb9')), ...] == [(UUID('44193...00bc1')), ...]
-== T16 a listed property without a qualifying offer is silent [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 a65a87bc9e25f0bf identical
-   6 failed, 30 passed in 2.13s
+   cause: AssertionError: assert [(UUID('99943...003e9')), ...] == [(UUID('99943...003f1')), ...]
+   cause: E   AssertionError: assert [(UUID('99943...003e9')), ...] == [(UUID('99943...003f1')), ...]
+== T16 a listed property without a qualifying offer is silent [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   11 failed, 33 passed in 2.23s
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-ACTIVE]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-PAUSED]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-DRAFT]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-WITHDRAWN]
    FAILED test_a_property_with_only_the_other_type_is_reported_not_evaluated
    FAILED test_an_offer_that_is_not_active_does_not_qualify[CLOSED]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[DRAFT]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[PAUSED]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[PENDING_INFO]
    FAILED test_an_offer_that_is_not_active_does_not_qualify[WITHDRAWN]
-   cause: AssertionError: assert {} == {UUID('20c3b0...FYING_OFFER'>}
-   cause: AssertionError: assert {} == {UUID('2fc647...FYING_OFFER'>}
-   cause: AssertionError: assert {} == {UUID('6008ec...FYING_OFFER'>}
-   cause: AssertionError: assert {} == {UUID('674093...FYING_OFFER'>}
-   cause: AssertionError: assert {} == {UUID('a90c65...FYING_OFFER'>}
-   cause: AssertionError: assert {} == {UUID('d14614...FYING_OFFER'>}
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: AssertionError: assert {} == {UUID('1573e9...FYING_OFFER'>}
+   cause: AssertionError: assert {} == {UUID('162cef...FYING_OFFER'>}
+   cause: AssertionError: assert {} == {UUID('4fb7eb...FYING_OFFER'>}
+   cause: AssertionError: assert {} == {UUID('6f5d75...FYING_OFFER'>}
+   cause: AssertionError: assert {} == {UUID('c30a2a...FYING_OFFER'>}
+== T17 a POTENTIAL property with non-qualifying offers called offerless (review of cc3a7fe) [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   5 failed, 39 passed in 2.25s
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-ACTIVE]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-PAUSED]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-DRAFT]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-WITHDRAWN]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: AssertionError: assert <Exclusion.PO...ITHOUT_OFFER'> == <Exclusion.NO...IFYING_OFFER'>
+   cause: E   AssertionError: 
+   cause: E   AssertionError: assert <Exclusion.PO...ITHOUT_OFFER'> == <Exclusion.NO...IFYING_OFFER'>
+== T18 the full scan takes every POTENTIAL property into scope (revision 1 scope) [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   1 failed, 43 passed in 2.29s
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[full-scan]
+   cause: AssertionError:
+   cause: E   AssertionError: 
+== T19 only ACTIVE offers counted as offers on the property [src/turab/matching/candidates.py, 1 site(s)]  restored: sha256 2cf066ed76ae21dd identical
+   4 failed, 40 passed in 2.42s
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[RENT-PAUSED]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-DRAFT]
+   FAILED test_a_potential_property_whose_offers_do_not_qualify_is_not_called_offerless[SALE-WITHDRAWN]
+   FAILED test_every_property_in_scope_is_a_candidate_or_has_exactly_one_reason[listed]
+   cause: AssertionError:
+   cause: AssertionError: assert <Exclusion.PO...ITHOUT_OFFER'> == <Exclusion.NO...IFYING_OFFER'>
+   cause: E   AssertionError: 
+   cause: E   AssertionError: assert <Exclusion.PO...ITHOUT_OFFER'> == <Exclusion.NO...IFYING_OFFER'>
 
 SURVIVING MUTATIONS: none
