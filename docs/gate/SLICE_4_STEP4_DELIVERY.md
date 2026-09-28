@@ -237,7 +237,22 @@ None of these adds a table, a column or a reason code.
 - 10 in the gates;
 - 2 in the ancestry.
 
-The results are recorded in `evidence/SLICE4-STEP4-MUTATIONS.txt`.
+**52 of 52 fail**, and none survives.
+- Recorded on a clean tree at `3391c86`, source fingerprint
+  `02538087…c0c95` (`evidence/SLICE4-STEP4-MUTATIONS.txt`), baseline 147
+  passed.
+- Every mutated file was restored and verified by sha256.
+- The trial run on the dirty tree also killed all 52. After it:
+  - the rules were pinned;
+  - two docstrings changed, the test module's and the package's.
+
+  No test body and no rule changed.
+- For the key mutations, the recorded causes are the intended assertions,
+  for example:
+  - R7 fails the price table's "exp ≤ max" row, and mandatory test 5;
+  - R12 fails on the leaked value;
+  - C12 fails with "DID NOT RAISE CriterionRefused";
+  - H6 fails with an actionable unknown on a rejected candidate.
 
 **Left out:** removing the ancestry query's cycle guard. Its failure mode is
 non-termination, which the runner cannot observe. The guard is tested

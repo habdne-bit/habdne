@@ -421,3 +421,20 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   7d44fa15b8a7
 docs/gate/evidence/SLICE4-STEP3-DIAGNOSTIC-BEFORE-FIX.txt      new  146cdbd9398ec58fdd421c128ff9ca3ef4eaab3493dc49a89f6d4e244ba5ad9d
 docs/gate/evidence/SLICE4-STEP3-MUTATIONS.txt                  --   d525067ef94f5dd8877a46e22b2f904f44f3976e756905947cc81b8ffa1090b3
 SLICE_4_PLAN.md changed revision: 5 -> 6 (G4-17 (a) narrowed; G4-3, G4-4, G4-6, G4-7, G4-5 SALE decided; G4-5R open).
+
+--- Slice 4 step 4 (G4-3 b, G4-4, G4-5 SALE, G4-6, G4-7): criterion rules and gates; step 3 closed at 6b833fb; G4-18 raised ---
+src/turab/matching/rules.py                                    new  83e6537aa38f03ad1354eff70ebbaf5914dc7291cd5e1efe395fb257cd9db8c7
+src/turab/matching/criteria.py                                 new  db8f44aef1cb3cd9b9780cf43dbd057412563880ae2089082d6efa35e0159e02
+src/turab/matching/hard_gate.py                                new  75a19b8837b1b59c7ba2b2453dd9abb10d9f59b5d48609f4d3fe23c1f5690e01
+src/turab/matching/snapshots.py                                --   2d849f2629eedcc800c84306c7772bf324e7d8f03a1ebeac499011f651c72614
+src/turab/matching/registry.py                                 --   4558984ba7c89fc572c0c69f3d1f663166e850b2c1b3c5328e8d84759eb75ba8
+src/turab/matching/rule_pins.py                                --   cae31979bd8d6db70baea20454f544bc199d4474caa3d3c5d01e0ab07fde4c77
+src/turab/matching/__init__.py                                 --   b5e6a61d3a8701d7062835379280fd379410a8fa079acc886a14553c0f32a2f2
+tests/test_slice4_step4.py                                     new  07f9b2de81efc8a2cf2b822cc18d23eb5a2888a4e53b35adc09c4e11cd82caa0
+db/dev/mutate_slice4_step4.py                                  new  c78b0ba7446802fe66f85d60cfe9c1e86efbc2eb9d36c7362a75693254b7c57f
+docs/gate/SLICE_4_STEP4_DELIVERY.md                            new  1e59dbad6da488507326487395fed41dffcaaabd007c134c755a090e8c5003e6
+docs/gate/SLICE_4_STEP3_DELIVERY.md                            --   06af16e2750bccb571d13ff3a3958134472a40532b325e7865a359559616331d
+docs/gate/SLICE_4_PLAN.md                                      rev7 c32659650c72bc6b2f33192a408903ea7e196380f491276364c1e7f68d3f70f7
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   f052bb1b4b853ee6bfe6d00c65ba333621d1cc1cad55033b99aba48995ae7880
+docs/gate/evidence/SLICE4-STEP4-MUTATIONS.txt                  new  5b5544d4f38488a962fffacb7795f98b2df3b8dc0fdf92a4a2a7bdfb5334dd61
+SLICE_4_PLAN.md changed revision: 6 -> 7 (step 3 closed; 3.4 corrected; G4-5R step-4 behaviour stated; G4-18 raised).
