@@ -1,7 +1,7 @@
 """Slice 4 — the deterministic matching core.
 
 Built step by step, under the decisions recorded in `docs/gate/SLICE_4_PLAN.md`.
-What exists so far (steps 2 and 3):
+What exists so far (steps 2 to 4):
 
 - `canonical`: the canonical JSON form and the input hash (G4-13);
 - `registry`: the rule registry, keyed by (rule_id, rule_version), with
@@ -11,8 +11,13 @@ What exists so far (steps 2 and 3):
 - `snapshots`: the request, property and commercial-context snapshots
   (`API_CONTRACTS_v0.2` §6);
 - `candidates`: the candidate set and its reported exclusions (G4-8,
-  G4-9 (a)).
+  G4-9 (a));
+- `criteria`: the criteria a request yields, and the input a run refuses
+  (G4-3 (b), G4-5R, G4-7);
+- `rules`: the registered criterion rules (G4-4 to G4-7; G4-5 for SALE);
+- `hard_gate`: blocking (G4-4), the hard gate and the information gate.
 
-Nothing here writes. No gate is evaluated and no match row is inserted:
-those are steps 4 to 7, and each waits on its own decisions.
+Nothing here writes. No match row is inserted. Eligibility, freshness and
+permission (step 5), the soft score (step 6) and the run (step 7) each wait
+on their own decisions.
 """

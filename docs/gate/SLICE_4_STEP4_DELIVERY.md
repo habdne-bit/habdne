@@ -1,0 +1,250 @@
+# Slice 4 · step 4 — the criterion rules, the unknown classification, the hard and information gates
+
+**Authorised:** the review of 6b833fb closed step 3 and allowed step 4 on
+**G4-3, G4-4, G4-6, G4-7** and **the SALE table of G4-5 only**. G4-5R stays
+open: "no numeric comparison of a rent price with the request's budget, and
+no PASS or FAIL built on it, before the period of both sides is defined and
+approved".
+
+**Basis:**
+- `docs/gate/SLICE_4_PLAN.md` revision 7: G4-3 to G4-7 as decided, §2, §3.2,
+  §3.4 (corrected) and §8 step 4;
+- Developer Spec §11 (Compatibility + Evidence + Reason), §12.1 (hard gate:
+  REQUIRED criteria only), §13 and §13.1 (blocking and actionable unknowns);
+- red-team C01, C03, D02, G01, G02; spec M-01 to M-04;
+- the frozen seed: criterion codes (lines 118–131), reason codes (134–160),
+  attribute options (91–115);
+- RFC-001 R9.3.
+
+**Nothing is written.** Every function here is a read or a pure function.
+`test_evaluating_writes_nothing` counts eleven tables before and after, and
+the package-wide `test_the_matching_package_reads_and_never_writes` covers
+the three new modules.
+
+**Not in this step:** eligibility and its precedence (G4-11, step 5),
+freshness and permission (step 5), the soft score (step 6), and persistence
+(step 7).
+
+## 1. The modules
+
+| Module | What it does |
+|---|---|
+| `criteria.py` | the criteria a request yields (columns, then rows), each validated; the typed refusals of G4-3 (b), G4-5R and G4-7 |
+| `rules.py` | eight registered rules, version 1, each self-contained and pinned (G4-2) |
+| `hard_gate.py` | runs the rules, sets `blocking` (G4-4), derives the hard gate, the information gate and the actionable unknowns |
+| `snapshots.py` | the property snapshot gains `location_ancestry` (format 2); `stored_form` |
+
+**The rules read the stored form only.** `snapshots.stored_form` gives a
+snapshot exactly as a stored `jsonb` row returns it: canonical JSON, numbers
+as `Decimal`, uuids and timestamps as strings. A live run and a replay from
+stored rows therefore give the rules identical input.
+`test_results_from_live_snapshots_equal_results_from_jsonb_round_trips` puts
+the snapshots through PostgreSQL `jsonb` and back, and gets identical
+results.
+
+**Self-contained rules.** A rule's pin covers only its own source (G4-2). So
+no rule reads a module-level name other than `Decimal` and the builtins.
+`test_every_rule_is_self_contained` checks this on the compiled code of all
+eight rules, and `test_the_detector_sees_a_module_constant` shows that the
+check detects a violation.
+
+## 2. The rules
+
+| Code | Operators | Property side | UNKNOWN when | FAIL reason | Rule |
+|---|---|---|---|---|---|
+| TRANSACTION_INTENT | EQ NEQ IN NOT_IN | the evaluated offer's `transaction_type` | no offer | — | `transaction_intent@1` |
+| PROPERTY_TYPE | EQ NEQ IN NOT_IN | `property_type` (NOT NULL) | never | PROPERTY_TYPE_MISMATCH | `property_type@1` |
+| LOCATION | EQ IN | `location_ancestry` (G4-6: the subtree, as G3-14) | no location | LOCATION_MISMATCH | `location@1` |
+| BUDGET_MAX (SALE) | LTE | asking price, negotiability, internal expectation | §3 | BUDGET_EXCEEDED | `budget_max_sale@1` |
+| LAND_AREA_MIN / BUILT_AREA_MIN | GTE | `land_area_m2` / `built_area_m2` | null | AREA_BELOW_PREFERENCE | `area_min@1` |
+| ROOMS_MIN / BEDROOMS_MIN | GTE | attribute ROOMS / BEDROOMS, with its claim | missing or non-numeric | — | `count_min@1` |
+| DOCUMENT_TYPE / RIGHT_TYPE | EQ NEQ IN NOT_IN | attribute of the same code, with its claim | missing, `UNKNOWN`, `UNSPECIFIED_DOCUMENT` | DOCUMENT_MISMATCH / — | `attribute_option@1` |
+| TEXT_SEMANTIC, CUSTOM_ATTRIBUTE, unregistered code (soft only) | — | — | always | — | `no_deterministic_rule@1` |
+
+**Evidence (§3.4).**
+- An attribute rule records the claim behind the resolved value, and that
+  claim's level (`test_count_minimum_reads_the_resolved_attribute_and_its_evidence`).
+- A projection column records both as null, with `"evidence":
+  "NO_CLAIM_LINK"` in the explanation.
+
+**Explanations are fixed codes** (`basis`, and `evidence` or `attribute`),
+never free text. The set of texts a rule can emit is therefore its source's
+string constants.
+
+**Location replays from the snapshot.**
+`test_the_location_rule_replays_from_the_snapshot_after_the_tree_changed`
+moves a ksar to another commune after the snapshot is taken:
+- the stored snapshot still gives PASS;
+- a fresh snapshot gives FAIL.
+
+## 3. G4-5, the SALE table, row by row
+
+`test_the_sale_price_table` covers each row on PostgreSQL, plus "exp > max":
+
+| Case | Result | Reason |
+|---|---|---|
+| max is null | UNKNOWN | — |
+| ask is null | UNKNOWN | PRICE_NOT_KNOWN |
+| ask ≤ max | PASS | — |
+| ask > max, exp ≤ max | PASS | — |
+| ask > max, negotiable YES | UNKNOWN | PRICE_NEGOTIATION_UNCONFIRMED |
+| ask > max, negotiable NO | FAIL | BUDGET_EXCEEDED |
+| ask > max, negotiable UNKNOWN | UNKNOWN | PRICE_NEGOTIATION_UNCONFIRMED |
+
+**Mandatory test 4** (G02, M-04), at the criterion:
+`test_negotiable_above_max_is_unknown_not_pass`.
+
+**Mandatory test 5** (M-03, D02, R9.3), at the criterion:
+`test_seller_expectation_can_pass_price_and_is_never_in_the_criterion_result`.
+- A PASS decided by the expectation carries the same reason and explanation
+  as a PASS on the asking price.
+- The expectation's value appears in no field of the result.
+- `test_no_rule_explanation_mentions_the_expectation` reads every string a
+  rule can emit.
+- The DTO half of the test is step 8.
+
+**RENT (G4-5R, open).** The run is refused (§4). The SALE rule also raises
+if a RENT offer ever reaches it (`test_the_sale_price_rule_refuses_a_rent_offer_outright`).
+
+## 4. What the run refuses (`CriterionRefused`)
+
+A refusal names the decision, the code and the criterion id. It never
+echoes the value (`test_a_refusal_never_echoes_the_value`). Every row is
+validated before any contradiction is judged, so the refusal a request gets
+does not depend on row order.
+
+| Decision | Refused | Tests |
+|---|---|---|
+| G4-7 | an operator that does not suit its code, at any importance. Evidence §E's `BUDGET_MAX IN ["a","b"]` is one of the cases | `test_an_operator_that_does_not_suit_its_code_is_refused` (14) |
+| G4-7 | a value no rule can read (type, sign, fraction, unknown option). Evidence §E's LOCATION naming a random uuid is one of the cases | `test_a_value_no_rule_can_read_is_refused` (16); `test_a_location_naming_no_location_is_refused` |
+| G4-7 | a unit no rule reads | `test_only_a_unit_the_rule_reads_is_accepted` (6) |
+| G4-7 | a REQUIRED criterion without a deterministic rule | `test_a_required_criterion_without_a_deterministic_rule_is_refused` (3); `test_an_unregistered_code_is_treated_as_having_no_rule` |
+| G4-7 | a soft criterion without a rule that sets `blocking_if_unknown` | `test_a_soft_criterion_without_a_rule_that_asks_to_block_is_refused` |
+| G4-7 | a REQUIRED BUDGET_TARGET (soft only) | `test_budget_target_is_deferred_to_the_soft_score_and_never_required` |
+| G4-3 (b) | a REQUIRED EQ/IN row disjoint from the REQUIRED column. Evidence §E's HOUSE_VILLA / APARTMENT is one of the cases; disjoint location subtrees and a transaction intent are covered too | `test_a_required_row_disjoint_from_the_required_column_is_refused`; `test_disjoint_required_location_subtrees_are_refused_nested_ones_are_not`; `test_a_required_transaction_intent_row_against_the_request_is_refused` |
+| G4-5R | a RENT request's price criterion, with or without a budget | `test_a_rent_request_is_refused_naming_g4_5r` (3) |
+
+**Evaluated, not refused (G4-3):**
+- anything short of a provable contradiction
+  (`test_anything_short_of_a_provable_contradiction_is_evaluated_both_ways`, 4);
+- a stricter numeric row: both are evaluated, and the stricter one decides
+  (`test_a_stricter_numeric_row_is_evaluated_and_prevails`).
+
+**Soft criteria without a rule** are UNKNOWN and not blocking
+(`test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking`, 4).
+
+## 5. G4-4, the gates, and the actionable unknowns
+
+**Blocking.** `blocking` is true when the result by itself keeps the
+candidate from ELIGIBLE:
+- a REQUIRED FAIL;
+- a REQUIRED UNKNOWN, always;
+- a soft UNKNOWN with `blocking_if_unknown`.
+
+`test_blocking_is_g4_4` checks all 18 combinations against an independent
+oracle.
+
+**The gates:**
+- **Hard gate** (§12.1, REQUIRED only): FAIL, else UNKNOWN, else PASS.
+- **Information gate:** UNKNOWN if a blocking unknown exists, otherwise
+  PASS. It is never FAIL.
+
+**Actionable unknowns** (§13.1) are the blocking unknowns of a candidate
+with no REQUIRED FAIL.
+
+| Case | Test |
+|---|---|
+| C03 / mandatory test 3, at the gate: hard UNKNOWN, information UNKNOWN, actionable | `test_a_required_unknown_is_never_pass_or_fail_and_blocks` |
+| G01 / M-01: a REQUIRED FAIL dominates; the unknown beside it is not actionable | `test_a_hard_fail_dominates_and_leaves_no_actionable_unknown` |
+| soft FAIL and soft UNKNOWN decide nothing | `test_soft_criteria_never_decide_the_hard_gate` |
+| `blocking_if_unknown` adds blocking | `test_blocking_if_unknown_adds_blocking_to_a_soft_criterion` |
+| all PASS | `test_everything_passing_passes_both_gates` |
+| a rule output the table cannot hold is refused | `test_a_rule_output_the_table_cannot_hold_is_refused` |
+
+NEED_MORE_INFORMATION and REJECTED are eligibility values, and their
+precedence is G4-11 (step 5). So:
+- **Mandatory test 4** is a criterion fact, and it carries its planned
+  name here.
+- **Mandatory tests 3 and 5** are proven here at the gate and criterion
+  level only. Their planned names come with step 5 (eligibility) and step 8
+  (the DTO), which complete them.
+
+## 6. Choices made in this step, stated for review
+
+None of these adds a table, a column or a reason code.
+
+1. **Criteria from the columns.**
+   - An unset `desired_property_type` or `primary_location_id` states no
+     criterion.
+   - A null `budget_max_dzd` still yields a BUDGET_MAX criterion (G4-5: "max
+     is null" gives UNKNOWN), unless a BUDGET_MAX row gives a maximum
+     (`test_a_null_budget_column_yields_to_a_budget_row`).
+   - TRANSACTION_INTENT is recorded as a REQUIRED criterion, so that it is
+     reconstructable.
+2. **Order and ordinals.** Columns first, then rows in the snapshot's order.
+   The ordinal counts per code from 1
+   (`test_columns_come_first_then_rows_and_ordinals_count_per_code`).
+3. **`blocking` also marks a REQUIRED FAIL**, and not only unknowns, so the
+   stored rows alone say what blocks.
+4. **The hard gate can be UNKNOWN.** It is UNKNOWN when a REQUIRED criterion
+   is UNKNOWN (§3.2: "a soft score never overrides a hard FAIL or UNKNOWN").
+5. **Actionable** = blocking unknown on a candidate with no REQUIRED FAIL
+   (§13.1).
+6. **The option values `UNKNOWN` and `UNSPECIFIED_DOCUMENT` are UNKNOWN**,
+   not values to compare (§11's own example; M-02).
+7. **Reason codes.** Only seeded codes are used:
+   - AREA_BELOW_PREFERENCE for any area FAIL. It is the seed's only area
+     code, and its label says "preference".
+   - No seeded code exists for a RIGHT_TYPE or a ROOMS/BEDROOMS FAIL, so the
+     reason is null and `basis` names the outcome.
+   - ACTIONABLE_UNKNOWN is not used on a criterion row, because
+     actionability depends on the other criteria.
+8. **Units.** Accepted units:
+   - BUDGET_MAX: none or `DZD`;
+   - areas: none, `m2` or `m²`;
+   - counts: none.
+
+   Anything else is refused.
+9. **LOCATION** accepts EQ and IN, with values normalised to canonical uuid
+   strings.
+10. **G4-3 (b) literally.** Only a REQUIRED EQ/IN row against the REQUIRED
+    column is refused. Two contradicting rows, or a NEQ/NOT_IN row, are
+    evaluated, and every candidate then fails visibly.
+11. **G4-5R: a RENT request is refused**, with or without a budget. This is
+    the fail-closed default of acceptance condition 1. The alternative, the
+    RENT price always UNKNOWN, is not a numeric verdict either. It is the
+    reviewer's to choose (plan revision 7, G4-5).
+12. **The property snapshot format becomes 2** (`location_ancestry`). This
+    changes a step-2 artifact. No match row exists yet, so no stored hash is
+    affected.
+
+## 7. Raised
+
+- **G4-18 (open):** a REQUIRED `ROOMS_MIN` on a LAND property is a blocking
+  unknown that can never be resolved, because the attribute cannot apply.
+  The plan recommends a new rule version that FAILs. Version 1's UNKNOWN
+  holds until the decision.
+- **§3.4 corrected:** `match_criterion_results` has no `explanation`
+  column. Where the explanation is stored is proposed with step 7.
+- **A source fact for G4-5R:** red-team D01 writes "RENT 70k/month" for one
+  offer. That is not a period for the budget.
+
+## 8. Mutation evidence
+
+`db/dev/mutate_slice4_step4.py`: **52 mutations**:
+- 25 in the rules;
+- 15 in the refusals;
+- 10 in the gates;
+- 2 in the ancestry.
+
+The results are recorded in `evidence/SLICE4-STEP4-MUTATIONS.txt`.
+
+**Left out:** removing the ancestry query's cycle guard. Its failure mode is
+non-termination, which the runner cannot observe. The guard is tested
+directly by `test_location_ancestry_is_nearest_first_and_survives_a_cycle`.
+
+## 9. What remains
+
+- **Step 5** (freshness, permission, eligibility) waits on **G4-10** and
+  **G4-11**.
+- **G4-5R** and **G4-18** are open.

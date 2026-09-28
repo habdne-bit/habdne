@@ -48,8 +48,10 @@ there.
 input of the match hash (G4-13), so a run under a different rule set is a
 different input.
 
-The production registry, `REGISTRY`, is EMPTY in step 2. The criterion rules
-are step 4, and wait on G4-3 to G4-7.
+The production registry, `REGISTRY`, was empty in step 2. Step 4 registers
+the criterion rules in `rules.py`, which this module imports last, so that
+any user of `REGISTRY` sees every rule, and the pins are checked against all
+of them.
 """
 from __future__ import annotations
 
@@ -171,5 +173,8 @@ def render_pins(pins: dict[str, str]) -> str:
             + body + "}\n")
 
 
-#: The production registry. Empty in step 2: the criterion rules are step 4.
+#: The production registry. The criterion rules register themselves on import.
 REGISTRY = RuleRegistry()
+
+# Last, after REGISTRY exists: `rules` registers into it (step 4).
+from turab.matching import rules as _rules  # noqa: E402,F401

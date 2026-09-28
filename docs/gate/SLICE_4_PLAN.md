@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 6**
+## Implementation plan — **revision 7**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -15,7 +15,8 @@ for.
 | 3 | `0d6c6cf` | decisions recorded where they apply: **G4-1 and G4-14** (approved for step 1, 2026-09-26); **G4-2 and G4-13** (approved in the review of aad9f34), each with the conditions the review attached. Step 2 starts only after step 1 is closed |
 | 4 | `20383df` | **G4-8 and G4-9** decided (review of 4538a2d), recorded where they apply. G4-13's canonical form is corrected by the same review: numbers are JSON numbers, exact and context-free; the format tag becomes `turab.match-input/2`. Step 3 starts only after step 2 is closed |
 | 5 | `6396505` | **G4-17** raised (open): an ACTIVE offer on an alias cannot be evaluated. Found while building the candidate set; reported, not decided |
-| 6 | the commit that records the review of cc3a7fe | decisions recorded where they apply: **G4-17 (a)**, with narrowed wording; **G4-3 (b)**, **G4-4**, **G4-6**, **G4-7**; **G4-5 for SALE**. The **RENT price comparison is NOT approved**: no rent period is defined, so it is recorded as the open question G4-5R. Step 4 starts only after step 3 is closed |
+| 6 | `5ec9a84` | decisions recorded where they apply: **G4-17 (a)**, with narrowed wording; **G4-3 (b)**, **G4-4**, **G4-6**, **G4-7**; **G4-5 for SALE**. The **RENT price comparison is NOT approved**: no rent period is defined, so it is recorded as the open question G4-5R. Step 4 starts only after step 3 is closed |
+| 7 | the commit that delivers step 4 | **Step 3 CLOSED at `6b833fb`** (review of 6b833fb); step 4 authorised on G4-3, G4-4, G4-6, G4-7 and the SALE table of G4-5 only. §3.4 corrected: `match_criterion_results` has no `explanation` column. The property snapshot gains `location_ancestry` (format 2), so that G4-6 replays. G4-5R: the step-4 behaviour, a typed refusal, is stated for review. **G4-18** raised (open) |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -244,9 +245,15 @@ pattern of Slice 3.
     (`property_attributes.resolved_claim_id`);
   - `evidence_level`: that claim's `effective_verification_level`.
 - For a projection column (type, location, areas, price), there is no
-  claim link, so both fields are `null`. The criterion row states this in
-  `explanation`, so a `null` is never ambiguous (§30, "no ambiguous null
-  semantics").
+  claim link, so both fields are `null`. The result's explanation states
+  this (`"evidence": "NO_CLAIM_LINK"`), so a `null` is never ambiguous (§30,
+  "no ambiguous null semantics").
+- **Corrected in revision 7.** Revisions 1–6 said "the criterion row states
+  this in `explanation`". `match_criterion_results` has **no** `explanation`
+  column (`schema_v0.2.3.sql:687–706`); only `match_candidates` has one
+  (line 677). Step 4 carries each result's explanation beside the row's
+  fields. Where it is stored, `match_candidates.explanation` keyed by
+  (code, ordinal), is proposed with step 7. No column is added.
 
 ### 3.5 Staff DTO only
 - `getMatchesMatchId` returns `MatchCandidate` with its snapshots and is
@@ -292,6 +299,7 @@ accept a recommendation by number.
 | G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
 | G4-17 | An ACTIVE offer on an alias (raised in step 3) | **APPROVED (a)** (review of cc3a7fe): kept and reported; nothing moved or re-linked | — |
+| G4-18 | A count criterion on a type the attribute cannot apply to (raised in step 4) | (b) FAIL, as a new rule version; (a) UNKNOWN holds until decided | — |
 
 Each item has options and a recommendation. **Blocks** names the step in §8
 that cannot start without it.
@@ -449,6 +457,18 @@ only (CHECK constraint).
 >
 > The step-4 behaviour for a RENT price criterion is itself a choice. It is
 > proposed with step 4, and it may not be a numeric verdict.
+>
+> **Step 4 (revision 7), stated for review:** a RENT request is REFUSED
+> with a typed refusal naming G4-5R, with or without a budget (acceptance
+> condition 1: anything undecided refuses, naming the rule). No RENT match
+> can therefore be produced until G4-5R is decided. The alternative, "RENT
+> price always UNKNOWN", is not a numeric verdict either. It would let RENT
+> requests run, and every REQUIRED budget would then block. Choosing it is
+> the reviewer's.
+>
+> **A source fact for G4-5R, not a decision:** red-team D01 describes "RENT
+> 70k/month" for an offer. It states a period for that example offer only.
+> It says nothing about `budget_max_dzd`.
 
 ### G4-6 · Location
 - **Recommendation:** the property's location is inside the requested
@@ -732,6 +752,28 @@ the criterion instead.
 >
 > Why the current offer cannot be matched is proven by the frozen trigger
 > `trg_match_commercial_context` (`schema_v0.2.3.sql:1170–1207`).
+
+### G4-18 · A count criterion on a property type the attribute does not apply to (raised in step 4)
+- **Facts:**
+  - `ROOMS` and `BEDROOMS` apply to HOUSE_VILLA and APARTMENT only
+    (`seed_master_data_v0.2.3.sql:80–81`, `applies_to`).
+  - `validate_attribute` refuses them on any other type
+    (`services/truth.py:166–169`), so a LAND property can never carry
+    either.
+- **Step 4, as built:** a missing attribute is UNKNOWN (§11: UNKNOWN is not
+  FAIL). A REQUIRED `ROOMS_MIN` therefore makes every LAND candidate a
+  blocking unknown, and the missing fact can never be supplied.
+- **Options:**
+  - (a) keep UNKNOWN: conservative, and a human sees it;
+  - (b) FAIL when the attribute cannot apply to the property's type: a
+    confirmed incompatibility, not a missing fact. The rule would then read
+    `applies_to`, which must enter the property snapshot for replay;
+  - (c) refuse the run when a REQUIRED count criterion cannot apply to the
+    request's own REQUIRED property type.
+- **Recommendation: (b)**, with the `applies_to` recorded in the snapshot. It
+  would be a NEW rule version (`criterion.count_min@2`), registered beside
+  version 1 (G4-2).
+- **Blocks:** nothing now. Until decided, (a) holds.
 
 ---
 

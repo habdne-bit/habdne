@@ -47,8 +47,12 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from turab.matching import canonical
+
 REQUEST_FORMAT = "turab.request-snapshot/1"
-PROPERTY_FORMAT = "turab.property-snapshot/1"
+#: Revision 2 (step 4): adds `location_ancestry`, the chain that G4-6's
+#: subtree rule reads, so that the rule replays from the snapshot alone.
+PROPERTY_FORMAT = "turab.property-snapshot/2"
 COMMERCIAL_FORMAT = "turab.commercial-context-snapshot/1"
 
 
@@ -61,6 +65,17 @@ def exact_json(value: str | None) -> Any:
     if value is None:
         return None
     return json.loads(value, parse_float=Decimal, parse_int=Decimal)
+
+
+def stored_form(snapshot: Any) -> Any:
+    """`snapshot` exactly as a stored row gives it back: its canonical JSON
+    (G4-13), parsed with every number as Decimal. UUIDs and timestamps become
+    their canonical strings. The rules read only this form (step 4), so a live
+    run and a replay from stored rows give them identical input. Applying it
+    twice changes nothing."""
+    if snapshot is None:
+        return None
+    return exact_json(canonical.canonical_bytes(snapshot).decode("utf-8"))
 
 
 def request_snapshot(session: Session, request_id: uuid.UUID) -> dict:
@@ -93,10 +108,39 @@ def request_snapshot(session: Session, request_id: uuid.UUID) -> dict:
     return {"format": REQUEST_FORMAT, **dict(row), "criteria": criteria}
 
 
+#: A location and its ancestors, nearest first. The `path` guard ends the
+#: recursion even if `parent_id` ever formed a cycle, which the schema does not
+#: forbid (the same concern as G3-14's UNION; PostgreSQL 16 documentation,
+#: §7.8.2.2).
+_ANCESTRY = """
+    WITH RECURSIVE up(location_id, parent_id, depth, path) AS (
+        SELECT l.location_id, l.parent_id, 0, ARRAY[l.location_id]
+          FROM turab.locations l WHERE l.location_id = :loc
+        UNION ALL
+        SELECT l.location_id, l.parent_id, u.depth + 1, u.path || l.location_id
+          FROM turab.locations l JOIN up u ON l.location_id = u.parent_id
+         WHERE NOT l.location_id = ANY(u.path))
+    SELECT location_id FROM up ORDER BY depth"""
+
+
+def location_ancestry(session: Session, location_id: uuid.UUID | None) -> list[uuid.UUID]:
+    """`location_id` first, then each parent up to the root. Empty for None or
+    for an id that names no location."""
+    if location_id is None:
+        return []
+    return list(session.execute(text(_ANCESTRY), {"loc": location_id}).scalars())
+
+
 def property_snapshot(session: Session, property_id: uuid.UUID) -> dict:
     """§6 "Property snapshot": id and version, type, location and areas,
     availability and its confirmation time, identity status, and the current
     resolved attributes.
+
+    `location_ancestry` (format 2) is the property's location and every
+    location above it. G4-6 passes a LOCATION criterion when the requested
+    location is in this chain, which is the same set as G3-14's subtree seen
+    from below. Recording it lets the rule replay from the snapshot alone,
+    after the location tree has changed.
 
     **All** current attributes are recorded, with the claim and verification
     level behind each (plan §3.4). Which of them a rule reads is step 4's
@@ -130,6 +174,8 @@ def property_snapshot(session: Session, property_id: uuid.UUID) -> dict:
     alias_of = snapshot.pop("alias_of")
     snapshot["identity"] = {"is_alias": alias_of is not None, "canonical_property_id":
                             alias_of if alias_of is not None else snapshot["property_id"]}
+    snapshot["location_ancestry"] = location_ancestry(session,
+                                                      snapshot["canonical_location_id"])
     return {"format": PROPERTY_FORMAT, **snapshot, "attributes": attributes}
 
 

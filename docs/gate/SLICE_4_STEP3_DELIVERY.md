@@ -1,5 +1,12 @@
 # Slice 4 · step 3 — the candidate set
 
+**Status: CLOSED at `6b833fb`** (review of 6b833fb). The review ran the
+three classification branches directly, and checked the archive digest, the
+286 manifest entries and `run_binding.py` (`bound`). The PostgreSQL results
+are the implementation team's, bound to the tree; the reviewer did not
+re-run PostgreSQL or the full suite. Step 4 was authorised by the same
+review.
+
 **Authorised:** the review of 431e896 closed step 2, and allowed step 3 on
 decisions **G4-8** and **G4-9 (a)**. Matching stays without row writes
 until its own step. Step 4 (the criterion rules) waits on G4-3 to G4-7.
