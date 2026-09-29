@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 7**
+## Implementation plan — **revision 8**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -16,7 +16,8 @@ for.
 | 4 | `20383df` | **G4-8 and G4-9** decided (review of 4538a2d), recorded where they apply. G4-13's canonical form is corrected by the same review: numbers are JSON numbers, exact and context-free; the format tag becomes `turab.match-input/2`. Step 3 starts only after step 2 is closed |
 | 5 | `6396505` | **G4-17** raised (open): an ACTIVE offer on an alias cannot be evaluated. Found while building the candidate set; reported, not decided |
 | 6 | `5ec9a84` | decisions recorded where they apply: **G4-17 (a)**, with narrowed wording; **G4-3 (b)**, **G4-4**, **G4-6**, **G4-7**; **G4-5 for SALE**. The **RENT price comparison is NOT approved**: no rent period is defined, so it is recorded as the open question G4-5R. Step 4 starts only after step 3 is closed |
-| 7 | the commit that delivers step 4 | **Step 3 CLOSED at `6b833fb`** (review of 6b833fb); step 4 authorised on G4-3, G4-4, G4-6, G4-7 and the SALE table of G4-5 only. §3.4 corrected: `match_criterion_results` has no `explanation` column. The property snapshot gains `location_ancestry` (format 2), so that G4-6 replays. G4-5R: the step-4 behaviour, a typed refusal, is stated for review. **G4-18** raised (open) |
+| 7 | `3391c86` | **Step 3 CLOSED at `6b833fb`** (review of 6b833fb); step 4 authorised on G4-3, G4-4, G4-6, G4-7 and the SALE table of G4-5 only. §3.4 corrected: `match_criterion_results` has no `explanation` column. The property snapshot gains `location_ancestry` (format 2), so that G4-6 replays. G4-5R: the step-4 behaviour, a typed refusal, is stated for review. **G4-18** raised (open) |
+| 8 | the commit that answers the review of f789a59 | Step 4 **not closed**: three defects fixed (a value no property can pass; a deferred row not validated; reason codes naming another importance). **Decided:** the G4-5R interim refusal (the period stays open); **G4-18 (b)**; **G4-10** as proposed, with PUBLIC_LISTING_ALLOWED; **G4-11** as proposed, with the permission reason kept visible. Step 4's §6 choices recorded. Step 5 starts only after step 4 is closed |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -286,20 +287,20 @@ accept a recommendation by number.
 | G4-3 | Criterion rows duplicating the request's columns | **APPROVED (b)** (review of cc3a7fe): typed refusal on a provable REQUIRED contradiction; otherwise both are evaluated | step 4 |
 | G4-4 | When an UNKNOWN blocks | **APPROVED** (review of cc3a7fe): REQUIRED always; `blocking_if_unknown` adds blocking to others | step 4 |
 | G4-5 | Price | **APPROVED for SALE** (review of cc3a7fe), `seller_expectation_dzd` internal. **RENT: not approved**, see G4-5R | step 4 |
-| G4-5R | RENT price: the period of `budget_max_dzd` and of a RENT `asking_price_dzd` | **Open.** No numeric PASS or FAIL for RENT until the period is defined | step 4 (RENT price only) |
+| G4-5R | RENT price: the period of `budget_max_dzd` and of a RENT `asking_price_dzd` | **Period open.** No numeric PASS or FAIL for RENT until it is defined. **Interim behaviour APPROVED** (review of f789a59): a RENT run is refused, naming G4-5R, with or without a budget | step 4 (RENT price only) |
 | G4-6 | Location | **APPROVED** (review of cc3a7fe): subtree, as G3-14 | step 4 |
 | G4-7 | Criteria that cannot be evaluated | **APPROVED** (review of cc3a7fe): a typed refusal if the input is invalid, or REQUIRED and unevaluable; otherwise UNKNOWN, not blocking | step 4 |
 | G4-8 | The candidate set | **APPROVED** (review of 4538a2d), as proposed: one match per qualifying offer; excluded ids reported in the diagnostic | step 3 |
 | G4-9 | POTENTIAL without an offer | **APPROVED, (a)** (review of 4538a2d): not evaluated, the reason reported; mandatory test 6 narrowed to its refusal | step 3 |
-| G4-10 | Permission | The binding rule in G4-10; the buyer side is Slice 5's | step 5 |
-| G4-11 | Freshness mapping and eligibility precedence | As proposed | step 5 |
+| G4-10 | Permission | **APPROVED as proposed** (review of f789a59); a valid PUBLIC_LISTING_ALLOWED binding counts for internal matching of the same bound resource, and grants no new sharing | step 5 |
+| G4-11 | Freshness mapping and eligibility precedence | **APPROVED as proposed** (review of f789a59); a missing or revoked permission stays visible in the diagnostic, even under NEEDS_CONFIRMATION | step 5 |
 | G4-12 | Soft score | Weighted share of passing soft criteria | step 6 |
 | G4-13 | Input hash; an identical re-run | **APPROVED** (review of aad9f34): canonical JSON; the existing match is returned; `evaluated_offer_id` is named in the input | step 2 |
 | G4-14 | Migration `0005` (immutability) | **APPROVED** (2026-09-26), delivered in step 1 | step 1 |
 | G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
 | G4-17 | An ACTIVE offer on an alias (raised in step 3) | **APPROVED (a)** (review of cc3a7fe): kept and reported; nothing moved or re-linked | — |
-| G4-18 | A count criterion on a type the attribute cannot apply to (raised in step 4) | (b) FAIL, as a new rule version; (a) UNKNOWN holds until decided | — |
+| G4-18 | A count criterion on a type the attribute cannot apply to (raised in step 4) | **APPROVED (b)** (review of f789a59): FAIL when the attribute cannot apply; UNKNOWN when it applies and is not recorded; `count_min@2` beside version 1 | step 4 |
 
 Each item has options and a recommendation. **Blocks** names the step in §8
 that cannot start without it.
@@ -469,6 +470,11 @@ only (CHECK constraint).
 > **A source fact for G4-5R, not a decision:** red-team D01 describes "RENT
 > 70k/month" for an offer. It states a period for that example offer only.
 > It says nothing about `budget_max_dzd`.
+>
+> **DECIDED (review of f789a59): the interim refusal is accepted.** A RENT
+> run is refused, naming G4-5R, whether a budget is given or not. This is a
+> decision on interim behaviour only. The price period itself is still
+> undecided, so no RENT match is produced before it is.
 
 ### G4-6 · Location
 - **Recommendation:** the property's location is inside the requested
@@ -581,6 +587,12 @@ These are the step-6 currency conditions.
   private matching?
 - **Blocks:** step 5.
 
+> **DECIDED (review of f789a59): as proposed.**
+> - A valid `PUBLIC_LISTING_ALLOWED` binding is accepted for INTERNAL
+>   matching of the same bound resource.
+> - It grants no new sharing permission. Sharing with the requester stays
+>   Slice 5's check at share time.
+
 ### G4-11 · Freshness states, and the precedence of eligibility
 **Freshness.** Slice 2 returns FRESH, STALE or NEVER_CONFIRMED. The match
 enum is FRESH, STALE, UNKNOWN or NOT_APPLICABLE. **Proposal:**
@@ -604,6 +616,11 @@ enum is FRESH, STALE, UNKNOWN or NOT_APPLICABLE. **Proposal:**
 - never FAIL, because a confirmed failure belongs to the hard gate.
 
 **Blocks:** step 5.
+
+> **DECIDED (review of f789a59): the freshness mapping and the eligibility
+> precedence, as proposed.** The reason for a missing or revoked permission
+> stays visible in the diagnostic, even when the eligibility value is
+> NEEDS_CONFIRMATION.
 
 ### G4-12 · The soft score
 - **Facts:** the policy says `"method": "deterministic_explainable"` and
@@ -774,6 +791,13 @@ the criterion instead.
   would be a NEW rule version (`criterion.count_min@2`), registered beside
   version 1 (G4-2).
 - **Blocks:** nothing now. Until decided, (a) holds.
+
+> **DECIDED (review of f789a59): (b).**
+> - An attribute that cannot apply to the property's type gives FAIL.
+> - An attribute that applies but is not recorded stays UNKNOWN.
+> - Implemented as `count_min@2`, beside version 1. `applies_to` is
+>   recorded in the property snapshot (format 3), and replay from it is
+>   tested.
 
 ---
 

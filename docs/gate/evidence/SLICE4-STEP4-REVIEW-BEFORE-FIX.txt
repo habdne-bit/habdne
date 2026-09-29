@@ -1,0 +1,124 @@
+TURAB — Slice 4 step 4, review of f789a59: the new tests run on the f789a59 code, BEFORE the fix
+============================================================
+Base commit       : f789a59b7dabb9cbbb75078733791fcc5d72e43c
+Production code   : exactly as committed at f789a59 (git diff --stat below shows the test file only)
+Recorded          : 2026-09-29 07:03:24 UTC
+PostgreSQL        : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+--- git diff --stat (the only change on the tree) ---
+ tests/test_slice4_step4.py | 177 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 177 insertions(+)
+
+--- pytest tests/test_slice4_step4.py -k <the review's tests> ---
+FFFFFFFFFFFFF...FFFFFF.F...FF.FFFF.F                                     [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   Failed: DID NOT RAISE CriterionRefused
+/home/user/habdne/tests/test_slice4_step4.py:120: Failed: DID NOT RAISE CriterionRefused
+E   AssertionError: assert ('FAIL', 'ARE...AREA_MINIMUM') == ('FAIL', None, 'AREA_MINIMUM')
+      
+      At index 1 diff: 'AREA_BELOW_PREFERENCE' != None
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:981: AssertionError: assert ('FAIL', 'ARE...AREA_MINIMUM') == ('FAIL', None, 'AREA_MINIMUM')
+E   AssertionError: assert ('FAIL', 'LOC...TION_SUBTREE') == ('FAIL', None...TION_SUBTREE')
+      
+      At index 1 diff: 'LOCATION_MISMATCH' != None
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:993: AssertionError: assert ('FAIL', 'LOC...TION_SUBTREE') == ('FAIL', None...TION_SUBTREE')
+E   AssertionError: assert ('FAIL', 'LOC...TION_SUBTREE') == ('FAIL', None...TION_SUBTREE')
+      
+      At index 1 diff: 'LOCATION_MISMATCH' != None
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:993: AssertionError: assert ('FAIL', 'LOC...TION_SUBTREE') == ('FAIL', None...TION_SUBTREE')
+E   AssertionError: assert ('FAIL', 'DOC...IBUTE_OPTION') == ('FAIL', None...IBUTE_OPTION')
+      
+      At index 1 diff: 'DOCUMENT_MISMATCH' != None
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:1006: AssertionError: assert ('FAIL', 'DOC...IBUTE_OPTION') == ('FAIL', None...IBUTE_OPTION')
+E   AssertionError: assert ('FAIL', 'DOC...IBUTE_OPTION') == ('FAIL', None...IBUTE_OPTION')
+      
+      At index 1 diff: 'DOCUMENT_MISMATCH' != None
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:1006: AssertionError: assert ('FAIL', 'DOC...IBUTE_OPTION') == ('FAIL', None...IBUTE_OPTION')
+E   AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+      
+      At index 0 diff: 'UNKNOWN' != 'FAIL'
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:1023: AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+E   AssertionError: assert ('UNKNOWN', N...: 'BEDROOMS'}) == ('FAIL', None...: 'BEDROOMS'})
+      
+      At index 0 diff: 'UNKNOWN' != 'FAIL'
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step4.py:1023: AssertionError: assert ('UNKNOWN', N...: 'BEDROOMS'}) == ('FAIL', None...: 'BEDROOMS'})
+E   KeyError: 'attribute_applies_to'
+/home/user/habdne/tests/test_slice4_step4.py:1049: KeyError: 'attribute_applies_to'
+=========================== short test summary info ============================
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-EQ-UNKNOWN]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-EQ-UNSPECIFIED_DOCUMENT]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-RIGHT_TYPE-EQ-UNKNOWN]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-IN-value3]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-PROPERTY_TYPE-NOT_IN-value4]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-TRANSACTION_INTENT-NOT_IN-value5]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-EQ-UNKNOWN]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-EQ-UNSPECIFIED_DOCUMENT]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-RIGHT_TYPE-EQ-UNKNOWN]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-IN-value3]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-PROPERTY_TYPE-NOT_IN-value4]
+FAILED tests/test_slice4_step4.py::test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-TRANSACTION_INTENT-NOT_IN-value5]
+FAILED tests/test_slice4_step4.py::test_not_in_every_known_document_type_is_refused
+FAILED tests/test_slice4_step4.py::test_a_deferred_budget_target_is_validated_before_it_is_deferred[IN-value0-None-False-does not suit]
+FAILED tests/test_slice4_step4.py::test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-value1-None-False-a value its rule cannot read]
+FAILED tests/test_slice4_step4.py::test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-24000000-HOURS-False-a unit its rule cannot read]
+FAILED tests/test_slice4_step4.py::test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ--5-None-False-a value its rule cannot read]
+FAILED tests/test_slice4_step4.py::test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-24000000-None-True-blocking_if_unknown]
+FAILED tests/test_slice4_step4.py::test_a_deferred_budget_target_is_validated_before_it_is_deferred[TEXT_SEMANTIC-around 24M-None-False-does not suit]
+FAILED tests/test_slice4_step4.py::test_an_area_fail_carries_the_preference_code_only_when_soft[REQUIRED-None]
+FAILED tests/test_slice4_step4.py::test_a_location_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+FAILED tests/test_slice4_step4.py::test_a_location_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+FAILED tests/test_slice4_step4.py::test_a_document_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+FAILED tests/test_slice4_step4.py::test_a_document_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+FAILED tests/test_slice4_step4.py::test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[ROOMS_MIN-ROOMS]
+FAILED tests/test_slice4_step4.py::test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[BEDROOMS_MIN-BEDROOMS]
+FAILED tests/test_slice4_step4.py::test_applicability_replays_from_the_snapshot_after_the_definition_changed
+27 failed, 9 passed, 147 deselected in 8.28s
+
+Reading:
+- 27 FAILED: the three defects of the review and G4-18 (b), each on PostgreSQL.
+- 9 passed: the cases whose old behaviour was already right (a passable set; a valid
+  target deferred; a reason code at the importance its label names; an applicable count
+  not recorded, UNKNOWN).

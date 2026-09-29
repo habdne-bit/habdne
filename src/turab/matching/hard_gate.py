@@ -52,6 +52,14 @@ MATCH_REASON_CODES = frozenset({
     "LOCATION_MISMATCH", "PROPERTY_TYPE_MISMATCH", "BUDGET_EXCEEDED", "PRICE_NOT_KNOWN",
     "PRICE_NEGOTIATION_UNCONFIRMED", "DOCUMENT_NOT_KNOWN", "DOCUMENT_MISMATCH",
     "AREA_BELOW_PREFERENCE", "ACTIONABLE_UNKNOWN"})
+#: A seeded code whose label names an importance, and the importances it may
+#: therefore describe (review of f789a59). Seed lines 135, 141, 142:
+#: "Required location mismatch", "Required document mismatch", "Area below
+#: preference". `test_the_importance_of_each_reason_code_is_its_seeded_label`
+#: derives this table from the labels in the database.
+REASON_IMPORTANCE = {"LOCATION_MISMATCH": frozenset({"REQUIRED"}),
+                     "DOCUMENT_MISMATCH": frozenset({"REQUIRED"}),
+                     "AREA_BELOW_PREFERENCE": frozenset({"PREFERRED", "FLEXIBLE"})}
 COMPATIBILITY = ("PASS", "FAIL", "UNKNOWN")
 RESULT_KEYS = frozenset({"compatibility", "property_value", "delta", "evidence_level",
                          "evidence_claim_id", "reason_code", "explanation"})
@@ -99,13 +107,16 @@ def blocking(importance: str, compatibility: str, blocking_if_unknown: bool) -> 
     return compatibility == "UNKNOWN" and blocking_if_unknown
 
 
-def _checked(rule_key: str, output: Any) -> Mapping[str, Any]:
+def _checked(rule_key: str, output: Any, importance: str) -> Mapping[str, Any]:
     if not isinstance(output, Mapping) or set(output) != RESULT_KEYS:
         raise RuleOutputInvalid(f"{rule_key} returned keys other than {sorted(RESULT_KEYS)}")
     if output["compatibility"] not in COMPATIBILITY:
         raise RuleOutputInvalid(f"{rule_key}: compatibility must be PASS, FAIL or UNKNOWN")
     if output["reason_code"] is not None and output["reason_code"] not in MATCH_REASON_CODES:
         raise RuleOutputInvalid(f"{rule_key}: reason code not in the frozen seed")
+    if importance not in REASON_IMPORTANCE.get(output["reason_code"], {importance}):
+        raise RuleOutputInvalid(f"{rule_key}: {output['reason_code']} describes another "
+                                f"importance than {importance}")
     if not isinstance(output["explanation"], Mapping):
         raise RuleOutputInvalid(f"{rule_key}: the explanation must be an object")
     return output
@@ -123,7 +134,8 @@ def evaluate(plan: CriteriaPlan, request: Mapping[str, Any], prop: Mapping[str, 
     results = []
     for criterion in plan.criteria:
         rule = registry.resolve(criterion["rule_id"], criterion["rule_version"])
-        out = _checked(rule.key, rule.evaluate(criterion, request, prop, offer))
+        out = _checked(rule.key, rule.evaluate(criterion, request, prop, offer),
+                       criterion["importance"])
         results.append(CriterionResult(
             request_criterion_id=criterion["request_criterion_id"],
             criterion_code=criterion["code"], ordinal=criterion["ordinal"],

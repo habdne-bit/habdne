@@ -4,7 +4,9 @@
 
 Each mutation reintroduces one defect: a rule decided differently, a
 refusal skipped (G4-3 (b), G4-5R, G4-7), a gate or blocking decision
-changed (G4-4), or the stored form bypassed. The test file is step 4's
+changed (G4-4), or the stored form bypassed. The review of f789a59 adds
+R26–R30, C16–C24, H11 and S3. Anchors shared by a rule's versions 1 and 2
+mutate both; only version 2 is selected by a new evaluation. The test file is step 4's
 only. The rule pins, which would catch any rule edit, are step 2's, so they
 cannot hide whether a behavioural test catches it.
 
@@ -91,10 +93,11 @@ MUTATIONS = [
   '    if value in ("UNKNOWN", "UNSPECIFIED_DOCUMENT"):', '    if value in ("UNKNOWN",):'),
  ("R22 an option criterion ignores NEQ / NOT_IN", R,
   '    inside = value in wanted\n    if operator in ("NEQ", "NOT_IN"):\n'
-  '        inside = not inside\n    mismatch',
-  '    inside = value in wanted\n    mismatch'),
+  '        inside = not inside\n    required',
+  '    inside = value in wanted\n    required'),
  ("R23 DOCUMENT_MISMATCH not emitted", R,
-  'mismatch = "DOCUMENT_MISMATCH" if code == "DOCUMENT_TYPE" else None', "mismatch = None"),
+  'mismatch = "DOCUMENT_MISMATCH" if code == "DOCUMENT_TYPE" and required else None',
+  "mismatch = None"),
  ("R24 DOCUMENT_NOT_KNOWN not emitted", R,
   'unknown_reason = "DOCUMENT_NOT_KNOWN" if code == "DOCUMENT_TYPE" else None',
   "unknown_reason = None"),
@@ -103,6 +106,20 @@ MUTATIONS = [
   '            "explanation": {"basis": "NO_DETERMINISTIC_RULE"}}',
   '"evidence_claim_id": None, "compatibility": "PASS", "reason_code": None,\n'
   '            "explanation": {"basis": "NO_DETERMINISTIC_RULE"}}'),
+ # --- review of f789a59: version 2 of four rules (reason codes; G4-18 (b)) -----------------
+ ("R26 a count on a type it cannot apply to is not FAIL (G4-18 (b))", R,
+  '    if types is not None and prop.get("property_type") not in types:', "    if False:"),
+ ("R27 count_min@2 reads a snapshot without applicability", R,
+  '    if not isinstance(applies, dict) or code not in applies:', "    if False:"),
+ ("R28 AREA_BELOW_PREFERENCE on a REQUIRED area", R,
+  'below = None if criterion["importance"] == "REQUIRED" else "AREA_BELOW_PREFERENCE"',
+  'below = "AREA_BELOW_PREFERENCE"'),
+ ("R29 LOCATION_MISMATCH on a soft location", R,
+  'mismatch = "LOCATION_MISMATCH" if criterion["importance"] == "REQUIRED" else None',
+  'mismatch = "LOCATION_MISMATCH"'),
+ ("R30 DOCUMENT_MISMATCH on a soft document", R,
+  'mismatch = "DOCUMENT_MISMATCH" if code == "DOCUMENT_TYPE" and required else None',
+  'mismatch = "DOCUMENT_MISMATCH" if code == "DOCUMENT_TYPE" else None'),
  # --- criteria: refusals (G4-3 (b), G4-5R, G4-7) ------------------------------------------
  ("C1 an unsuited operator is not refused", C,
   "    if operator not in operators:", "    if False:"),
@@ -110,13 +127,13 @@ MUTATIONS = [
   "    if value is None:\n        raise CriterionRefused",
   "    if False:\n        raise CriterionRefused"),
  ("C3 an unreadable unit is not refused", C,
-  '    if crit["unit"] not in UNITS.get(code, (None,)):', "    if False:"),
+  '    if row.get("unit") not in UNITS.get(code, (None,)):', "    if False:"),
  ("C4 a REQUIRED criterion without a rule is accepted", C,
   '        if importance == "REQUIRED":\n            raise CriterionRefused("G4-7", "REQUIRED, and',
   '        if False:\n            raise CriterionRefused("G4-7", "REQUIRED, and'),
  ("C5 a blocking criterion without a rule is accepted", C,
-  "        if blocking:\n            raise CriterionRefused",
-  "        if False:\n            raise CriterionRefused"),
+  '        if blocking:\n            raise CriterionRefused("G4-7", "blocking_if_unknown is set',
+  '        if False:\n            raise CriterionRefused("G4-7", "blocking_if_unknown is set'),
  ("C6 TEXT_SEMANTIC handed to the code's rule", C,
   '    if code not in RULES or operator == "TEXT_SEMANTIC":', "    if code not in RULES:"),
  ("C7 a REQUIRED BUDGET_TARGET is accepted", C,
@@ -145,6 +162,31 @@ MUTATIONS = [
   '        criterion["ordinal"] = ordinals["*"]'),
  ("C15 deferred criteria dropped", C,
   '    deferred = [r for r in rows if "deferred_to" in r]', "    deferred = []"),
+ # review of f789a59
+ ("C16 a value no property can pass is accepted", C,
+  "    if not _can_pass(code, operator, value, vocab):", "    if False:"),
+ ("C17 the not-known options counted as passable", C,
+  "        domain = vocab.options[code] - set(NOT_KNOWN_OPTIONS)",
+  "        domain = vocab.options[code]"),
+ ("C18 NEQ / NOT_IN judged as EQ / IN", C,
+  'passing = set(domain) & wanted if operator in ("EQ", "IN") else set(domain) - wanted',
+  "passing = set(domain) & wanted"),
+ ("C19 a deferred row is not validated", C,
+  "        value = _read_value(code, operator, DEFERRED_OPERATORS[code], row, vocab, rid)\n"
+  '        return {**crit, "value": value, "deferred_to": DEFERRED[code]}',
+  '        return {**crit, "deferred_to": DEFERRED[code]}'),
+ ("C20 a deferred row with blocking_if_unknown is accepted", C,
+  '        if blocking:\n            raise CriterionRefused("G4-7", "blocking_if_unknown has no',
+  '        if False:\n            raise CriterionRefused("G4-7", "blocking_if_unknown has no'),
+ ("C21 LOCATION evaluated by version 1", C,
+  '"LOCATION": ("criterion.location", "2",', '"LOCATION": ("criterion.location", "1",'),
+ ("C22 areas evaluated by version 1", C,
+  '"LAND_AREA_MIN": ("criterion.area_min", "2",', '"LAND_AREA_MIN": ("criterion.area_min", "1",'),
+ ("C23 counts evaluated by version 1", C,
+  '"ROOMS_MIN": ("criterion.count_min", "2",', '"ROOMS_MIN": ("criterion.count_min", "1",'),
+ ("C24 documents evaluated by version 1", C,
+  '"DOCUMENT_TYPE": ("criterion.attribute_option", "2",',
+  '"DOCUMENT_TYPE": ("criterion.attribute_option", "1",'),
  # --- hard_gate: G4-4 and the gates -------------------------------------------------------
  ("H1 a REQUIRED FAIL is not blocking", H,
   '        return compatibility in ("FAIL", "UNKNOWN")', '        return compatibility == "UNKNOWN"'),
@@ -168,6 +210,9 @@ MUTATIONS = [
   "    if False:"),
  ("H9 a compatibility outside PASS/FAIL/UNKNOWN is accepted", H,
   '    if output["compatibility"] not in COMPATIBILITY:', "    if False:"),
+ ("H11 a reason code naming another importance is accepted", H,
+  '    if importance not in REASON_IMPORTANCE.get(output["reason_code"], {importance}):',
+  "    if False:"),
  ("H10 rules read the live form, not the stored form", H,
   "    request, prop, offer = (snapshots.stored_form(x) for x in (request, prop, offer))",
   "    pass"),
@@ -179,6 +224,8 @@ MUTATIONS = [
  ("S2 ancestry root first", S,
   "    SELECT location_id FROM up ORDER BY depth\"\"\"",
   "    SELECT location_id FROM up ORDER BY depth DESC\"\"\""),
+ ("S3 applicability recorded as 'every type'", S,
+  "        code: None if types is None else list(types)", "        code: None"),
 ]
 
 if __name__ == "__main__":

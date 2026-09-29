@@ -52,7 +52,9 @@ from turab.matching import canonical
 REQUEST_FORMAT = "turab.request-snapshot/1"
 #: Revision 2 (step 4): adds `location_ancestry`, the chain that G4-6's
 #: subtree rule reads, so that the rule replays from the snapshot alone.
-PROPERTY_FORMAT = "turab.property-snapshot/2"
+#: Revision 3 (review of f789a59): adds `attribute_applies_to`, which
+#: `count_min@2` reads (G4-18 (b)).
+PROPERTY_FORMAT = "turab.property-snapshot/3"
 COMMERCIAL_FORMAT = "turab.commercial-context-snapshot/1"
 
 
@@ -136,6 +138,10 @@ def property_snapshot(session: Session, property_id: uuid.UUID) -> dict:
     availability and its confirmation time, identity status, and the current
     resolved attributes.
 
+    `attribute_applies_to` (format 3) maps every attribute code to the
+    property types it can apply to (null: all), as `attribute_definitions`
+    says at the snapshot (G4-18 (b)).
+
     `location_ancestry` (format 2) is the property's location and every
     location above it. G4-6 passes a LOCATION criterion when the requested
     location is in this chain, which is the same set as G3-14's subtree seen
@@ -176,6 +182,12 @@ def property_snapshot(session: Session, property_id: uuid.UUID) -> dict:
                             alias_of if alias_of is not None else snapshot["property_id"]}
     snapshot["location_ancestry"] = location_ancestry(session,
                                                       snapshot["canonical_location_id"])
+    # G4-18 (b): which property types each attribute can apply to, as the
+    # definitions say NOW (null: every type). Recorded for replay.
+    snapshot["attribute_applies_to"] = {
+        code: None if types is None else list(types)
+        for code, types in session.execute(text("""
+            SELECT code, applies_to::text[] FROM turab.attribute_definitions ORDER BY code"""))}
     return {"format": PROPERTY_FORMAT, **snapshot, "attributes": attributes}
 
 

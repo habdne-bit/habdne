@@ -26,8 +26,12 @@ The `ordinal` of `match_criterion_results` numbers the criteria of one code
 from 1, in that order.
 
 `budget_target_dzd` and BUDGET_TARGET rows are soft only (G4-3's table,
-G4-12). They are returned as DEFERRED to step 6, never dropped. A REQUIRED
-BUDGET_TARGET row is refused: it cannot be a hard criterion.
+G4-12). They are returned as DEFERRED to step 6, never dropped. A deferred
+row is validated like any other first (review of f789a59): EQ only (the
+target is a point, `|ask - target|` in G4-12), a whole, non-negative DZD
+amount, unit none or `DZD`. A REQUIRED BUDGET_TARGET row is refused: it
+cannot be a hard criterion. So is one with `blocking_if_unknown`: the flag
+has no meaning for it until its rule exists (step 6).
 
 ## What is refused, with a typed refusal (`CriterionRefused`)
 
@@ -36,6 +40,12 @@ G4-7, decided "as proposed":
 - a value no rule can read: the wrong JSON type, a location id that names
   no location, an option that is not a registered, active option, a
   negative or fractional count, an unrecognised unit;
+- a value no property can PASS (review of f789a59), at any importance:
+  `DOCUMENT_TYPE EQ UNKNOWN`, `EQ UNSPECIFIED_DOCUMENT`, `RIGHT_TYPE EQ
+  UNKNOWN`, an IN set of such values only, or a NOT_IN set excluding every
+  value that could pass. An unknown property value is UNKNOWN, never PASS,
+  so a set left with only `NOT_KNOWN_OPTIONS` can never pass. An IN set
+  holding at least one known, passable option is accepted;
 - a REQUIRED criterion that no deterministic rule evaluates
   (TEXT_SEMANTIC, CUSTOM_ATTRIBUTE, an unregistered code);
 - such a criterion with `blocking_if_unknown = true`: it would block every
@@ -74,26 +84,37 @@ PROPERTY_TYPES = ("HOUSE_VILLA", "APARTMENT", "LAND", "SHOP_COMMERCIAL",
 TRANSACTION_INTENTS = ("BUY", "RENT")
 SET_OPERATORS = ("EQ", "NEQ", "IN", "NOT_IN")
 
-#: code -> (rule_id, rule_version, operators the rule reads).
+#: code -> (rule_id, rule_version, operators the rule reads). The versions
+#: are those a NEW evaluation uses. Version 2 of four rules was registered
+#: beside version 1 in the review of f789a59 (G4-2): reason codes by
+#: importance, and G4-18 (b) for counts.
 RULES: Mapping[str, tuple[str, str, tuple[str, ...]]] = {
     "TRANSACTION_INTENT": ("criterion.transaction_intent", "1", SET_OPERATORS),
     "PROPERTY_TYPE": ("criterion.property_type", "1", SET_OPERATORS),
-    "LOCATION": ("criterion.location", "1", ("EQ", "IN")),
+    "LOCATION": ("criterion.location", "2", ("EQ", "IN")),
     "BUDGET_MAX": ("criterion.budget_max_sale", "1", ("LTE",)),
-    "LAND_AREA_MIN": ("criterion.area_min", "1", ("GTE",)),
-    "BUILT_AREA_MIN": ("criterion.area_min", "1", ("GTE",)),
-    "ROOMS_MIN": ("criterion.count_min", "1", ("GTE",)),
-    "BEDROOMS_MIN": ("criterion.count_min", "1", ("GTE",)),
-    "DOCUMENT_TYPE": ("criterion.attribute_option", "1", SET_OPERATORS),
-    "RIGHT_TYPE": ("criterion.attribute_option", "1", SET_OPERATORS),
+    "LAND_AREA_MIN": ("criterion.area_min", "2", ("GTE",)),
+    "BUILT_AREA_MIN": ("criterion.area_min", "2", ("GTE",)),
+    "ROOMS_MIN": ("criterion.count_min", "2", ("GTE",)),
+    "BEDROOMS_MIN": ("criterion.count_min", "2", ("GTE",)),
+    "DOCUMENT_TYPE": ("criterion.attribute_option", "2", SET_OPERATORS),
+    "RIGHT_TYPE": ("criterion.attribute_option", "2", SET_OPERATORS),
 }
 NO_RULE = ("criterion.no_deterministic_rule", "1")
 #: Soft-only codes: evaluated by the soft score, step 6 (G4-12).
 DEFERRED = {"BUDGET_TARGET": "step 6 (G4-12)"}
+#: The operators a deferred code accepts: the target is a point.
+DEFERRED_OPERATORS = {"BUDGET_TARGET": ("EQ",)}
+#: Option values that state the fact is NOT known. `attribute_option@2`
+#: evaluates a property holding one of them to UNKNOWN, never PASS;
+#: `test_not_known_options_are_exactly_those_the_rule_calls_unknown` holds the
+#: two in agreement.
+NOT_KNOWN_OPTIONS = ("UNKNOWN", "UNSPECIFIED_DOCUMENT")
 #: Attribute option vocabularies read for validation.
 OPTION_CODES = ("DOCUMENT_TYPE", "RIGHT_TYPE")
 #: The units a rule can read, per code; None means "no unit given".
-UNITS = {"BUDGET_MAX": (None, "DZD"), "LAND_AREA_MIN": (None, "m2", "m²"),
+UNITS = {"BUDGET_MAX": (None, "DZD"), "BUDGET_TARGET": (None, "DZD"),
+         "LAND_AREA_MIN": (None, "m2", "m²"),
          "BUILT_AREA_MIN": (None, "m2", "m²"), "ROOMS_MIN": (None,),
          "BEDROOMS_MIN": (None,)}
 
@@ -191,12 +212,42 @@ def _normalise(code: str, operator: str, value: Any, vocab: Vocabulary) -> Any:
         if any(p is None or p not in vocab.location_ancestry for p in parsed):
             return None
         return parsed if operator == "IN" else parsed[0]
-    if code in ("BUDGET_MAX", "ROOMS_MIN", "BEDROOMS_MIN"):
+    if code in ("BUDGET_MAX", "BUDGET_TARGET", "ROOMS_MIN", "BEDROOMS_MIN"):
         ok = _is_number(value) and value >= 0 and value == value.to_integral_value()
         return value if ok else None
     if code in ("LAND_AREA_MIN", "BUILT_AREA_MIN"):
         return value if _is_number(value) and value > 0 else None
     return None
+
+
+def _can_pass(code: str, operator: str, value: Any, vocab: Vocabulary) -> bool:
+    """Whether some property value could PASS this (already readable)
+    criterion. Only the set codes can be unsatisfiable by their value alone."""
+    domain = {"TRANSACTION_INTENT": TRANSACTION_INTENTS,
+              "PROPERTY_TYPE": PROPERTY_TYPES}.get(code)
+    if domain is None:
+        if code not in OPTION_CODES:
+            return True
+        domain = vocab.options[code] - set(NOT_KNOWN_OPTIONS)
+    wanted = set(value if operator in ("IN", "NOT_IN") else [value])
+    passing = set(domain) & wanted if operator in ("EQ", "IN") else set(domain) - wanted
+    return bool(passing)
+
+
+def _read_value(code: str, operator: str, operators: tuple[str, ...], row: Mapping[str, Any],
+                vocab: Vocabulary, rid: str | None) -> Any:
+    """G4-7: the operator, the unit, the value, and whether it can pass."""
+    if operator not in operators:
+        raise CriterionRefused("G4-7", f"operator {operator} does not suit {code}; "
+                               f"its rule reads {', '.join(operators)}", code, rid)
+    if row.get("unit") not in UNITS.get(code, (None,)):
+        raise CriterionRefused("G4-7", "a unit its rule cannot read", code, rid)
+    value = _normalise(code, operator, row["value"], vocab)
+    if value is None:
+        raise CriterionRefused("G4-7", "a value its rule cannot read", code, rid)
+    if not _can_pass(code, operator, value, vocab):
+        raise CriterionRefused("G4-7", "no property value can satisfy it", code, rid)
+    return value
 
 
 def _criterion(code: str, importance: str, operator: str, value: Any, unit: Any,
@@ -218,7 +269,12 @@ def _check_row(row: Mapping[str, Any], vocab: Vocabulary) -> dict:
         if importance == "REQUIRED":
             raise CriterionRefused("G4-7", "a soft-only criterion cannot be REQUIRED",
                                    code, rid)
-        return {**crit, "deferred_to": DEFERRED[code]}
+        if blocking:
+            raise CriterionRefused("G4-7", "blocking_if_unknown has no meaning for a "
+                                   "soft-only criterion until its rule exists (step 6)",
+                                   code, rid)
+        value = _read_value(code, operator, DEFERRED_OPERATORS[code], row, vocab, rid)
+        return {**crit, "value": value, "deferred_to": DEFERRED[code]}
     if code not in RULES or operator == "TEXT_SEMANTIC":
         if importance == "REQUIRED":
             raise CriterionRefused("G4-7", "REQUIRED, and no deterministic rule evaluates it",
@@ -228,14 +284,7 @@ def _check_row(row: Mapping[str, Any], vocab: Vocabulary) -> dict:
                                    "rule evaluates it: it would block for good", code, rid)
         return {**crit, "rule_id": NO_RULE[0], "rule_version": NO_RULE[1]}
     rule_id, rule_version, operators = RULES[code]
-    if operator not in operators:
-        raise CriterionRefused("G4-7", f"operator {operator} does not suit {code}; "
-                               f"its rule reads {', '.join(operators)}", code, rid)
-    if crit["unit"] not in UNITS.get(code, (None,)):
-        raise CriterionRefused("G4-7", "a unit its rule cannot read", code, rid)
-    value = _normalise(code, operator, row["value"], vocab)
-    if value is None:
-        raise CriterionRefused("G4-7", "a value its rule cannot read", code, rid)
+    value = _read_value(code, operator, operators, row, vocab, rid)
     return {**crit, "value": value, "rule_id": rule_id, "rule_version": rule_version}
 
 

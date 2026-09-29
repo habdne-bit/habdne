@@ -144,7 +144,7 @@ def test_every_rule_is_self_contained():
         if extra:
             offenders[rule.key] = sorted(extra)
     assert offenders == {}
-    assert len(registry.REGISTRY.rules()) == 8
+    assert len(registry.REGISTRY.rules()) == 12
 
 
 def test_the_detector_sees_a_module_constant():
@@ -602,7 +602,9 @@ def test_area_minimum(session, ids, code, column, area, compatibility):
     prop = _property(session, **{column: area})
     r = _result(_gate(session, req, prop, _offer(session, ids, prop, ask=1)), code)
     assert r.compatibility == compatibility
-    assert r.reason_code == ("AREA_BELOW_PREFERENCE" if compatibility == "FAIL" else None)
+    # REQUIRED: AREA_BELOW_PREFERENCE would name another importance (review of
+    # f789a59), so the reason is null; the soft case is tested below.
+    assert r.reason_code is None
     assert r.delta == (None if area is None else {"m2": Decimal(area) - 200})
 
 
@@ -663,13 +665,16 @@ def test_right_type_has_no_seeded_reason_code(session, ids, value, compatibility
 
 
 def test_an_attribute_of_the_wrong_json_type_is_unknown_not_compared():
-    rule = registry.REGISTRY.resolve("criterion.count_min", "1")
-    out = rule.evaluate({"code": "ROOMS_MIN", "value": Decimal(3)}, {},
-                        {"attributes": [{"code": "ROOMS", "value": "four"}]}, None)
+    rule = registry.REGISTRY.resolve("criterion.count_min", "2")
+    out = rule.evaluate({"code": "ROOMS_MIN", "value": Decimal(3), "importance": "REQUIRED"},
+                        {}, {"property_type": "APARTMENT",
+                             "attribute_applies_to": {"ROOMS": ["APARTMENT"]},
+                             "attributes": [{"code": "ROOMS", "value": "four"}]}, None)
     assert (out["compatibility"], out["explanation"]["basis"]) == (
         "UNKNOWN", "ATTRIBUTE_UNREADABLE")
-    rule = registry.REGISTRY.resolve("criterion.attribute_option", "1")
-    out = rule.evaluate({"code": "DOCUMENT_TYPE", "operator": "EQ", "value": "LAND_BOOK"}, {},
+    rule = registry.REGISTRY.resolve("criterion.attribute_option", "2")
+    out = rule.evaluate({"code": "DOCUMENT_TYPE", "operator": "EQ", "value": "LAND_BOOK",
+                         "importance": "REQUIRED"}, {},
                         {"attributes": [{"code": "DOCUMENT_TYPE", "value": 7}]}, None)
     assert out["compatibility"] == "UNKNOWN"
 
@@ -862,7 +867,8 @@ def test_stored_form_is_idempotent(session, ids):
     snap = snapshots.property_snapshot(session, ids.ASSISTED_APARTMENT)
     once = snapshots.stored_form(snap)
     assert snapshots.stored_form(once) == once
-    assert snap["format"] == "turab.property-snapshot/2" and "location_ancestry" in snap
+    assert snap["format"] == "turab.property-snapshot/3" and "location_ancestry" in snap
+    assert "attribute_applies_to" in snap
 
 
 def test_evaluating_writes_nothing(session, ids):
@@ -879,3 +885,256 @@ def test_evaluating_writes_nothing(session, ids):
     before = counts()
     _gate(session, req, prop, offer)
     assert counts() == before
+
+
+# ======================================================================================
+# Review of f789a59: three defects, and G4-18 (b)
+# ======================================================================================
+#
+# 1. G4-7: a requested value that no property can PASS was accepted
+#    (DOCUMENT_TYPE EQ UNKNOWN, EQ UNSPECIFIED_DOCUMENT, RIGHT_TYPE EQ UNKNOWN).
+# 2. G4-7: a deferred BUDGET_TARGET row skipped validation (IN, an object
+#    value, unit HOURS, blocking_if_unknown = true were all deferred as is).
+# 3. A reason code whose seeded label names another importance:
+#    AREA_BELOW_PREFERENCE on a REQUIRED area; LOCATION_MISMATCH and
+#    DOCUMENT_MISMATCH ("Required ...") on a soft criterion.
+# Measured against the f789a59 code: evidence/SLICE4-STEP4-REVIEW-BEFORE-FIX.txt.
+
+@pytest.mark.parametrize("code, operator, value", [
+    ("DOCUMENT_TYPE", "EQ", "UNKNOWN"),
+    ("DOCUMENT_TYPE", "EQ", "UNSPECIFIED_DOCUMENT"),
+    ("RIGHT_TYPE", "EQ", "UNKNOWN"),
+    ("DOCUMENT_TYPE", "IN", ["UNKNOWN", "UNSPECIFIED_DOCUMENT"]),
+    ("PROPERTY_TYPE", "NOT_IN", ["HOUSE_VILLA", "APARTMENT", "LAND", "SHOP_COMMERCIAL",
+                                 "AGRICULTURAL_PROPERTY", "BUILDING", "OTHER"]),
+    ("TRANSACTION_INTENT", "NOT_IN", ["BUY", "RENT"]),
+])
+@pytest.mark.parametrize("importance", ["REQUIRED", "PREFERRED"])
+def test_a_requested_value_no_property_can_pass_is_refused(session, ids, code, operator,
+                                                           value, importance):
+    """No property value can PASS these: an unknown value is UNKNOWN, a known
+    one FAILs (or, for the NOT_IN cases, every value is excluded)."""
+    req = _request(session, ids, bmax=10_000_000)
+    rid = _row(session, req, code, operator, value, importance=importance)
+    refused = _refusal(session, req)
+    assert (refused.decision, refused.criterion_code, refused.request_criterion_id) == (
+        "G4-7", code, str(rid))
+    assert refused.problem == "no property value can satisfy it"
+
+
+def test_not_in_every_known_document_type_is_refused(session, ids):
+    known = sorted(set(session.execute(text("""
+        SELECT o.option_code FROM turab.attribute_options o
+          JOIN turab.attribute_definitions d USING (attribute_definition_id)
+         WHERE d.code = 'DOCUMENT_TYPE' AND o.active""")).scalars())
+                   - {"UNKNOWN", "UNSPECIFIED_DOCUMENT"})
+    req = _request(session, ids, bmax=10_000_000)
+    _row(session, req, "DOCUMENT_TYPE", "NOT_IN", known)
+    assert _refusal(session, req).problem == "no property value can satisfy it"
+
+
+@pytest.mark.parametrize("operator, value", [
+    ("IN", ["UNKNOWN", "LAND_BOOK"]),     # one known, passable option: accepted
+    ("NEQ", "UNKNOWN"),
+    ("NOT_IN", ["UNKNOWN", "UNSPECIFIED_DOCUMENT"]),
+])
+def test_a_set_with_a_passable_known_option_is_accepted(session, ids, operator, value):
+    req = _request(session, ids, bmax=10_000_000)
+    _row(session, req, "DOCUMENT_TYPE", operator, value)
+    prop = _property(session, ptype="LAND")
+    _attribute(session, prop, "DOCUMENT_TYPE", "LAND_BOOK")
+    r = _result(_gate(session, req, prop, _offer(session, ids, prop, ask=1)), "DOCUMENT_TYPE")
+    assert r.compatibility == "PASS"
+
+
+@pytest.mark.parametrize("operator, value, unit, blocking, problem", [
+    ("IN", [24_000_000], None, False, "does not suit"),
+    ("EQ", {"amount": 24_000_000}, None, False, "a value its rule cannot read"),
+    ("EQ", 24_000_000, "HOURS", False, "a unit its rule cannot read"),
+    ("EQ", -5, None, False, "a value its rule cannot read"),
+    ("EQ", 24_000_000, None, True, "blocking_if_unknown"),
+    ("TEXT_SEMANTIC", "around 24M", None, False, "does not suit"),
+])
+def test_a_deferred_budget_target_is_validated_before_it_is_deferred(
+        session, ids, operator, value, unit, blocking, problem):
+    req = _request(session, ids, bmax=30_000_000)
+    rid = _row(session, req, "BUDGET_TARGET", operator, value, importance="PREFERRED",
+               unit=unit, blocking=blocking)
+    refused = _refusal(session, req)
+    assert (refused.decision, refused.criterion_code, refused.request_criterion_id) == (
+        "G4-7", "BUDGET_TARGET", str(rid))
+    assert problem in refused.problem
+
+
+def test_a_valid_budget_target_row_is_deferred_with_its_value_read(session, ids):
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "BUDGET_TARGET", "EQ", 24_000_000, importance="FLEXIBLE", unit="DZD")
+    _, plan = _plan(session, req)
+    [deferred] = plan.deferred
+    assert (deferred["value"], deferred["unit"], deferred["deferred_to"]) == (
+        Decimal(24_000_000), "DZD", "step 6 (G4-12)")
+
+
+@pytest.mark.parametrize("importance, reason", [("REQUIRED", None),
+                                                ("PREFERRED", "AREA_BELOW_PREFERENCE"),
+                                                ("FLEXIBLE", "AREA_BELOW_PREFERENCE")])
+def test_an_area_fail_carries_the_preference_code_only_when_soft(session, ids, importance,
+                                                                 reason):
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "LAND_AREA_MIN", "GTE", 500, importance=importance)
+    prop = _property(session, land=400)
+    r = _result(_gate(session, req, prop, _offer(session, ids, prop, ask=1)), "LAND_AREA_MIN")
+    assert (r.compatibility, r.reason_code, r.explanation["basis"]) == (
+        "FAIL", reason, "AREA_MINIMUM")
+
+
+@pytest.mark.parametrize("importance, reason", [("REQUIRED", "LOCATION_MISMATCH"),
+                                                ("PREFERRED", None), ("FLEXIBLE", None)])
+def test_a_location_fail_carries_the_required_code_only_when_required(session, ids,
+                                                                      importance, reason):
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "LOCATION", "EQ", str(_loc(session, "C-TAMEST")), importance=importance)
+    prop = _property(session, loc=_loc(session, "ADR-CENTER"))
+    r = _result(_gate(session, req, prop, _offer(session, ids, prop, ask=1)), "LOCATION")
+    assert (r.compatibility, r.reason_code, r.explanation["basis"]) == (
+        "FAIL", reason, "LOCATION_SUBTREE")
+
+
+@pytest.mark.parametrize("importance, reason", [("REQUIRED", "DOCUMENT_MISMATCH"),
+                                                ("PREFERRED", None), ("FLEXIBLE", None)])
+def test_a_document_fail_carries_the_required_code_only_when_required(session, ids,
+                                                                      importance, reason):
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", importance=importance)
+    prop = _property(session, ptype="LAND")
+    _attribute(session, prop, "DOCUMENT_TYPE", "POSSESSION_CERTIFICATE")
+    r = _result(_gate(session, req, prop, _offer(session, ids, prop, ask=1)), "DOCUMENT_TYPE")
+    assert (r.compatibility, r.reason_code, r.explanation["basis"]) == (
+        "FAIL", reason, "ATTRIBUTE_OPTION")
+
+
+# --- G4-18 (b), decided in the review of f789a59 --------------------------------------------
+
+@pytest.mark.parametrize("code, attribute", [("ROOMS_MIN", "ROOMS"),
+                                             ("BEDROOMS_MIN", "BEDROOMS")])
+def test_a_count_on_a_type_the_attribute_cannot_apply_to_fails(session, ids, code, attribute):
+    """G4-18 (b): ROOMS and BEDROOMS apply to HOUSE_VILLA and APARTMENT only
+    (seed lines 80–81). On LAND the fact cannot exist, so a REQUIRED minimum
+    is a confirmed FAIL, not a blocking unknown that can never be resolved."""
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, code, "GTE", 2)
+    land = _property(session, ptype="LAND")
+    gate = _gate(session, req, land, _offer(session, ids, land, ask=1))
+    r = _result(gate, code)
+    assert (r.compatibility, r.reason_code, r.explanation) == (
+        "FAIL", None, {"basis": "ATTRIBUTE_NOT_APPLICABLE", "attribute": attribute})
+    assert (r.rule_id, r.rule_version) == ("criterion.count_min", "2")
+    assert gate.hard_gate_status == "FAIL" and gate.blocking_unknowns == ()
+
+
+def test_an_applicable_count_that_is_not_recorded_stays_unknown(session, ids):
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "ROOMS_MIN", "GTE", 2)
+    flat = _property(session, ptype="APARTMENT")
+    r = _result(_gate(session, req, flat, _offer(session, ids, flat, ask=1)), "ROOMS_MIN")
+    assert (r.compatibility, r.blocking, r.explanation["basis"]) == (
+        "UNKNOWN", True, "ATTRIBUTE_NOT_RECORDED")
+
+
+def test_applicability_replays_from_the_snapshot_after_the_definition_changed(session, ids):
+    """`applies_to` is read from the snapshot (format 3), never the live
+    definition. After ROOMS is extended to LAND, the stored snapshot still
+    gives FAIL, and a fresh one gives UNKNOWN (applicable, not recorded)."""
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "ROOMS_MIN", "GTE", 2)
+    land = _property(session, ptype="LAND")
+    offer = _offer(session, ids, land, ask=1)
+    rs, plan = _plan(session, req)
+    stored_prop = snapshots.stored_form(snapshots.property_snapshot(session, land))
+    stored_offer = snapshots.stored_form(snapshots.commercial_context_snapshot(session, offer))
+    assert stored_prop["attribute_applies_to"]["ROOMS"] == ["HOUSE_VILLA", "APARTMENT"]
+    before = hard_gate.evaluate(plan, rs, stored_prop, stored_offer)
+
+    session.execute(text("""UPDATE turab.attribute_definitions
+                               SET applies_to = ARRAY['HOUSE_VILLA','APARTMENT','LAND']
+                                                ::turab.property_type[]
+                             WHERE code = 'ROOMS'"""))
+    assert hard_gate.evaluate(plan, rs, stored_prop, stored_offer) == before
+    assert _result(before, "ROOMS_MIN").compatibility == "FAIL"
+    assert _result(_gate(session, req, land, offer), "ROOMS_MIN").compatibility == "UNKNOWN"
+
+
+
+def test_count_min_2_refuses_a_snapshot_without_applicability():
+    rule = registry.REGISTRY.resolve("criterion.count_min", "2")
+    with pytest.raises(RuntimeError, match="G4-18"):
+        rule.evaluate({"code": "ROOMS_MIN", "value": Decimal(1), "importance": "REQUIRED"},
+                      {}, {"property_type": "LAND", "attributes": []}, None)
+
+
+# --- the mechanisms behind the three fixes ------------------------------------------------
+
+def test_not_known_options_are_exactly_those_the_rule_calls_unknown(session):
+    """`criteria.NOT_KNOWN_OPTIONS` (which values can never PASS) and the
+    rule's own UNKNOWN set must agree: every active option is run through
+    `attribute_option@2` as the property's value."""
+    rule = registry.REGISTRY.resolve("criterion.attribute_option", "2")
+    rows = session.execute(text("""
+        SELECT d.code, o.option_code FROM turab.attribute_options o
+          JOIN turab.attribute_definitions d USING (attribute_definition_id)
+         WHERE o.active AND d.code IN ('DOCUMENT_TYPE', 'RIGHT_TYPE')""")).all()
+    called_unknown = set()
+    for code, option in rows:
+        crit = {"code": code, "operator": "EQ", "value": option, "importance": "REQUIRED"}
+        out = rule.evaluate(crit, {}, {"attributes": [{"code": code, "value": option}]}, None)
+        if out["compatibility"] == "UNKNOWN":
+            called_unknown.add(option)
+        else:
+            assert out["compatibility"] == "PASS", (code, option)
+    assert called_unknown == set(criteria.NOT_KNOWN_OPTIONS)
+
+
+def test_the_importance_of_each_reason_code_is_its_seeded_label(session):
+    """`hard_gate.REASON_IMPORTANCE` is read off the seed: a label saying
+    "Required" binds its code to REQUIRED, one saying "preference" to the soft
+    importances, and every other MATCH code names no importance."""
+    labels = dict(session.execute(text(
+        "SELECT code, label_en FROM turab.reason_codes WHERE category = 'MATCH'")).all())
+    derived = {}
+    for code, label in labels.items():
+        if label.startswith("Required "):
+            derived[code] = frozenset({"REQUIRED"})
+        elif "preference" in label.lower():
+            derived[code] = frozenset({"PREFERRED", "FLEXIBLE"})
+    assert derived == hard_gate.REASON_IMPORTANCE
+
+
+def test_a_rule_output_naming_another_importance_is_refused():
+    reg = registry.RuleRegistry()
+
+    @reg.register("criterion.says_required", "1")
+    def says_required(criterion, request, prop, offer):
+        return {"compatibility": "FAIL", "property_value": None, "delta": None,
+                "evidence_level": None, "evidence_claim_id": None,
+                "reason_code": "LOCATION_MISMATCH", "explanation": {}}
+
+    crit = {"code": "LOCATION", "ordinal": 1, "operator": "EQ", "value": "x", "unit": None,
+            "blocking_if_unknown": False, "request_criterion_id": None, "source": "ROW",
+            "rule_id": "criterion.says_required", "rule_version": "1"}
+    hard_gate.evaluate(criteria.CriteriaPlan(({**crit, "importance": "REQUIRED"},), ()),
+                       {}, {}, None, registry=reg)
+    with pytest.raises(hard_gate.RuleOutputInvalid, match="another importance"):
+        hard_gate.evaluate(criteria.CriteriaPlan(({**crit, "importance": "PREFERRED"},), ()),
+                           {}, {}, None, registry=reg)
+
+
+def test_version_2_is_used_and_version_1_stays_registered_beside_it():
+    """G4-2: a changed rule is a new version, registered beside the old one."""
+    for rule_id in ("criterion.location", "criterion.area_min", "criterion.count_min",
+                    "criterion.attribute_option"):
+        assert registry.REGISTRY.versions(rule_id) == ("1", "2")
+    used = {(rule_id, version) for rule_id, version, _ in criteria.RULES.values()}
+    assert used == {("criterion.transaction_intent", "1"), ("criterion.property_type", "1"),
+                    ("criterion.location", "2"), ("criterion.budget_max_sale", "1"),
+                    ("criterion.area_min", "2"), ("criterion.count_min", "2"),
+                    ("criterion.attribute_option", "2")}

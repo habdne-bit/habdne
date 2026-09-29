@@ -1,5 +1,9 @@
 # Slice 4 · step 4 — the criterion rules, the unknown classification, the hard and information gates
 
+**Status: NOT closed.** The review of f789a59 found three defects. They are
+fixed and answered in **§10**, which supersedes the rows and choices it
+names below.
+
 **Authorised:** the review of 6b833fb closed step 3 and allowed step 4 on
 **G4-3, G4-4, G4-6, G4-7** and **the SALE table of G4-5 only**. G4-5R stays
 open: "no numeric comparison of a rent price with the request's budget, and
@@ -54,11 +58,11 @@ check detects a violation.
 |---|---|---|---|---|---|
 | TRANSACTION_INTENT | EQ NEQ IN NOT_IN | the evaluated offer's `transaction_type` | no offer | — | `transaction_intent@1` |
 | PROPERTY_TYPE | EQ NEQ IN NOT_IN | `property_type` (NOT NULL) | never | PROPERTY_TYPE_MISMATCH | `property_type@1` |
-| LOCATION | EQ IN | `location_ancestry` (G4-6: the subtree, as G3-14) | no location | LOCATION_MISMATCH | `location@1` |
+| LOCATION | EQ IN | `location_ancestry` (G4-6: the subtree, as G3-14) | no location | LOCATION_MISMATCH, REQUIRED only (§10) | `location@2` |
 | BUDGET_MAX (SALE) | LTE | asking price, negotiability, internal expectation | §3 | BUDGET_EXCEEDED | `budget_max_sale@1` |
-| LAND_AREA_MIN / BUILT_AREA_MIN | GTE | `land_area_m2` / `built_area_m2` | null | AREA_BELOW_PREFERENCE | `area_min@1` |
-| ROOMS_MIN / BEDROOMS_MIN | GTE | attribute ROOMS / BEDROOMS, with its claim | missing or non-numeric | — | `count_min@1` |
-| DOCUMENT_TYPE / RIGHT_TYPE | EQ NEQ IN NOT_IN | attribute of the same code, with its claim | missing, `UNKNOWN`, `UNSPECIFIED_DOCUMENT` | DOCUMENT_MISMATCH / — | `attribute_option@1` |
+| LAND_AREA_MIN / BUILT_AREA_MIN | GTE | `land_area_m2` / `built_area_m2` | null | AREA_BELOW_PREFERENCE, soft only (§10) | `area_min@2` |
+| ROOMS_MIN / BEDROOMS_MIN | GTE | attribute ROOMS / BEDROOMS, with its claim; `attribute_applies_to` | applicable, and missing or non-numeric. **FAIL** when the attribute cannot apply to the type (G4-18 (b)) | — | `count_min@2` |
+| DOCUMENT_TYPE / RIGHT_TYPE | EQ NEQ IN NOT_IN | attribute of the same code, with its claim | missing, `UNKNOWN`, `UNSPECIFIED_DOCUMENT` | DOCUMENT_MISMATCH, REQUIRED only (§10) / — | `attribute_option@2` |
 | TEXT_SEMANTIC, CUSTOM_ATTRIBUTE, unregistered code (soft only) | — | — | always | — | `no_deterministic_rule@1` |
 
 **Evidence (§3.4).**
@@ -220,16 +224,18 @@ None of these adds a table, a column or a reason code.
 
 ## 7. Raised
 
-- **G4-18 (open):** a REQUIRED `ROOMS_MIN` on a LAND property is a blocking
-  unknown that can never be resolved, because the attribute cannot apply.
-  The plan recommends a new rule version that FAILs. Version 1's UNKNOWN
-  holds until the decision.
+- **G4-18, decided (b) in the review of f789a59:** a REQUIRED `ROOMS_MIN`
+  on a LAND property was a blocking unknown that could never be resolved.
+  It is now FAIL (`count_min@2`, §10).
 - **§3.4 corrected:** `match_criterion_results` has no `explanation`
   column. Where the explanation is stored is proposed with step 7.
 - **A source fact for G4-5R:** red-team D01 writes "RENT 70k/month" for one
   offer. That is not a period for the budget.
 
 ## 8. Mutation evidence
+
+*This section records the first round, at `3391c86`. The round after the
+review of f789a59 is in §10.4.*
 
 `db/dev/mutate_slice4_step4.py`: **52 mutations**:
 - 25 in the rules;
@@ -260,6 +266,142 @@ directly by `test_location_ancestry_is_nearest_first_and_survives_a_cycle`.
 
 ## 9. What remains
 
-- **Step 5** (freshness, permission, eligibility) waits on **G4-10** and
-  **G4-11**.
-- **G4-5R** and **G4-18** are open.
+- **Step 5** (freshness, permission, eligibility): G4-10 and G4-11 were
+  decided in the review of f789a59. Step 5 starts only after this step is
+  closed.
+- **G4-5R:** the rent period is open. The interim refusal is approved.
+
+## 10. The review of f789a59: three defects, and G4-18 (b)
+
+The reviewer checked:
+- the archive digest and the manifest;
+- the source fingerprint `02538087…c0c95`;
+- `run_binding.py` (`bound`).
+
+They then probed the functions directly, without a database, for the
+first two findings. They did not re-run PostgreSQL.
+
+### 10.1 Measured before the fix
+
+`evidence/SLICE4-STEP4-REVIEW-BEFORE-FIX.txt`: the review's tests, run on
+PostgreSQL against the production code exactly as at `f789a59` (the tree
+differed by the test file only).
+- **27 failed.**
+- **9 passed.** Those are the cases whose old behaviour was already right:
+  - a passable set;
+  - a valid target deferred;
+  - a reason code at the importance its label names;
+  - an applicable count not recorded.
+
+### 10.2 The three defects, and what changed
+
+**1. A requested value no property can PASS was accepted (G4-7).**
+- `DOCUMENT_TYPE EQ UNKNOWN`, `EQ UNSPECIFIED_DOCUMENT` and `RIGHT_TYPE EQ
+  UNKNOWN` were accepted. A property holding that value is UNKNOWN, and any
+  other value is FAIL, so no property could PASS.
+- Now `criteria._can_pass` refuses, at any importance, a set criterion whose
+  passable values are empty: "no property value can satisfy it". The passable
+  values are:
+  - the domain (the enum; or the active options minus
+    `NOT_KNOWN_OPTIONS`), within an EQ/IN set;
+  - or the domain outside a NEQ/NOT_IN set.
+- This also refuses `IN` of not-known values only, `NOT_IN` of every known
+  document type, `PROPERTY_TYPE NOT_IN` all seven types, and
+  `TRANSACTION_INTENT NOT_IN [BUY, RENT]`.
+- An IN set holding one passable option is accepted, as the review asked.
+  So are `NEQ UNKNOWN` and `NOT_IN [UNKNOWN, UNSPECIFIED_DOCUMENT]`
+  (`test_a_set_with_a_passable_known_option_is_accepted`).
+- `test_not_known_options_are_exactly_those_the_rule_calls_unknown` runs
+  every active option through `attribute_option@2`. It proves that
+  `NOT_KNOWN_OPTIONS` is exactly the set the rule calls UNKNOWN, so the two
+  cannot drift apart.
+- Choice 6 of §6 is thereby bounded on the request side, as the review
+  asked. The property side is unchanged.
+
+**2. A deferred row skipped validation (G4-7).**
+- A PREFERRED BUDGET_TARGET row was deferred as it was, even with IN, an
+  object value, unit HOURS, or `blocking_if_unknown`.
+- Now a deferred row passes the same `_read_value` as every other row:
+  - operator EQ only. The target is a point: G4-12 uses `|ask − target|`;
+  - a whole, non-negative DZD amount;
+  - unit none or `DZD`.
+- `blocking_if_unknown` on it is refused: the flag has no meaning until its
+  rule exists (step 6). This is the first of the two remedies the review
+  offered.
+- Tests: `test_a_deferred_budget_target_is_validated_before_it_is_deferred`
+  (6) and `test_a_valid_budget_target_row_is_deferred_with_its_value_read`.
+
+**3. Reason codes that name another importance.** Three seeded labels name
+an importance (seed lines 135, 141, 142):
+- "Required location mismatch";
+- "Required document mismatch";
+- "Area below preference".
+
+Version 1 emitted these codes at every importance. Now:
+- **Version 2 of `location`, `attribute_option` and `area_min`** emits each
+  such code only at the importance its label names. Otherwise the reason is
+  null, and `basis` names the outcome:
+  - `test_an_area_fail_carries_the_preference_code_only_when_soft`;
+  - `test_a_location_fail_carries_the_required_code_only_when_required`;
+  - `test_a_document_fail_carries_the_required_code_only_when_required`.
+
+  Each is tested at REQUIRED, PREFERRED and FLEXIBLE.
+- **A backstop in `hard_gate`:** a rule output whose reason code names
+  another importance is refused (`test_a_rule_output_naming_another_importance_is_refused`).
+- **The table `REASON_IMPORTANCE` is derived from the labels in the
+  database** (`test_the_importance_of_each_reason_code_is_its_seeded_label`).
+- Choice 7 of §6 is corrected accordingly.
+
+### 10.3 G4-18 (b), decided in the same review
+
+- **`count_min@2`, beside version 1:**
+  - an attribute that cannot apply to the property's type is FAIL, with
+    basis ATTRIBUTE_NOT_APPLICABLE and a null reason;
+  - an applicable attribute that is not recorded stays UNKNOWN.
+- **The property snapshot, format 3,** records `attribute_applies_to` for
+  every attribute code.
+- **Replay:**
+  - `test_applicability_replays_from_the_snapshot_after_the_definition_changed`
+    extends ROOMS to LAND after the snapshot. The stored snapshot still gives
+    FAIL, and a fresh one gives UNKNOWN.
+  - A snapshot without applicability is refused
+    (`test_count_min_2_refuses_a_snapshot_without_applicability`).
+- **G4-2:** four rules gained version 2, and every version 1 stays
+  registered and pinned.
+  - No match row exists before step 7, so no stored match cites version 1.
+  - `criteria.RULES` selects version 2
+    (`test_version_2_is_used_and_version_1_stays_registered_beside_it`).
+  - Replayed today, version 1 of `location`, `attribute_option` and
+    `area_min` would be refused by the new backstop, because their reason
+    codes were the defect.
+
+### 10.4 Mutation evidence, second round
+
+- **68 mutations.** The first round's 52, plus:
+  - R26–R30: G4-18 and the importance of reason codes;
+  - C16–C24: satisfiability, deferred validation, versions in use;
+  - H11: the backstop;
+  - S3: applicability.
+- **R23, C3 and C5** were re-anchored on the new code.
+- **A survivor in the trial run, and its cause.** R22 "survived". Its anchor
+  matched only `attribute_option@1`, which no evaluation selects (1 site).
+  Re-anchored on version 2, it is killed.
+  - `tests/test_slice4_mutation_anchors.py` now fails whenever a rule
+    mutation reaches no version in use.
+  - It was shown to fail on R22's old anchor, and to pass on the corrected
+    one.
+  - It runs in the full suite, not in the mutation run, where it would kill
+    every rule mutation for the wrong reason.
+- The clean-tree result: see `evidence/SLICE4-STEP4-MUTATIONS.txt`.
+
+### 10.5 Decisions recorded (plan revision 8)
+
+- **G4-5R:** the interim refusal is accepted. The period is still open.
+- **G4-18:** (b).
+- **G4-10:** as proposed. A valid PUBLIC_LISTING_ALLOWED binding counts for
+  internal matching of the same bound resource, and grants no new sharing.
+- **G4-11:** as proposed. A missing or revoked permission stays visible in
+  the diagnostic, even under NEEDS_CONFIRMATION.
+- **§6 choices:** 1–5, 8–10 and 12 accepted as described. Choice 6 is
+  bounded on the request side. Choice 7 is corrected. Choice 11 is accepted
+  provisionally, under G4-5R.

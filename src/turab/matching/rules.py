@@ -35,6 +35,25 @@ Only codes of the frozen seed are emitted (acceptance condition 4: no new
 reason code). Where the seed has no code for an outcome, `reason_code` is
 null, and the `explanation`'s `basis` says what happened.
 
+## Version 2 (review of f789a59), registered BESIDE version 1
+
+G4-2: a changed rule is a new version; version 1 stays registered and
+pinned. No stored match cites any version yet (no match row exists before
+step 7), so version 1 is never selected. `criteria.RULES` names the versions
+a new evaluation uses.
+- `location@2`, `attribute_option@2`, `area_min@2`: a reason code whose
+  seeded label names an importance is emitted only at that importance.
+  - LOCATION_MISMATCH and DOCUMENT_MISMATCH read "Required ..." (seed lines
+    135, 141): REQUIRED only.
+  - AREA_BELOW_PREFERENCE reads "Area below preference" (line 142):
+    PREFERRED or FLEXIBLE only.
+  - Otherwise the reason is null, and `basis` names the outcome.
+  - Version 1 emitted them at every importance.
+- `count_min@2`: G4-18 (b), decided in the same review. An attribute that
+  cannot apply to the property's type (its `applies_to`, recorded in the
+  property snapshot, format 3) is FAIL. An applicable attribute that is not
+  recorded stays UNKNOWN.
+
 ## R9.3
 
 `seller_expectation_dzd` may decide a price PASS. It never appears in any
@@ -242,3 +261,127 @@ def no_deterministic_rule_v1(criterion, request, prop, offer):
     return {"property_value": None, "delta": None, "evidence_level": None,
             "evidence_claim_id": None, "compatibility": "UNKNOWN", "reason_code": None,
             "explanation": {"basis": "NO_DETERMINISTIC_RULE"}}
+
+
+# --- version 2 (review of f789a59) ------------------------------------------------------------
+
+@REGISTRY.register("criterion.location", "2")
+def location_v2(criterion, request, prop, offer):
+    """LOCATION (G4-6, as G3-14): PASS when a requested location is the
+    property's location or one of its ancestors. A property with no location
+    is UNKNOWN. LOCATION_MISMATCH ("Required location mismatch") only for a
+    REQUIRED criterion."""
+    wanted = criterion["value"] if criterion["operator"] == "IN" else [criterion["value"]]
+    here = prop.get("canonical_location_id")
+    base = {"property_value": here, "delta": None, "evidence_level": None,
+            "evidence_claim_id": None}
+    if here is None:
+        return {**base, "compatibility": "UNKNOWN", "reason_code": None,
+                "explanation": {"basis": "LOCATION_NOT_RECORDED", "evidence": "NO_CLAIM_LINK"}}
+    ancestry = prop.get("location_ancestry")
+    if not isinstance(ancestry, list) or not ancestry or ancestry[0] != here:
+        raise RuntimeError("the property snapshot carries no location ancestry for its "
+                           "location; the LOCATION rule refuses to guess (G4-6)")
+    inside = any(w in ancestry for w in wanted)
+    mismatch = "LOCATION_MISMATCH" if criterion["importance"] == "REQUIRED" else None
+    return {**base, "compatibility": "PASS" if inside else "FAIL",
+            "reason_code": None if inside else mismatch,
+            "explanation": {"basis": "LOCATION_SUBTREE", "evidence": "NO_CLAIM_LINK"}}
+
+
+@REGISTRY.register("criterion.area_min", "2")
+def area_min_v2(criterion, request, prop, offer):
+    """LAND_AREA_MIN / BUILT_AREA_MIN, GTE, against the projection columns.
+    A null area is UNKNOWN. AREA_BELOW_PREFERENCE ("Area below preference")
+    only for a PREFERRED or FLEXIBLE criterion; a REQUIRED FAIL has no seeded
+    code, so its reason is null."""
+    column = {"LAND_AREA_MIN": "land_area_m2", "BUILT_AREA_MIN": "built_area_m2"}[
+        criterion["code"]]
+    minimum = criterion["value"]
+    area = prop.get(column)
+    base = {"property_value": area, "evidence_level": None, "evidence_claim_id": None,
+            "delta": None if area is None else {"m2": area - minimum}}
+    if area is None:
+        return {**base, "compatibility": "UNKNOWN", "reason_code": None,
+                "explanation": {"basis": "AREA_NOT_RECORDED", "evidence": "NO_CLAIM_LINK"}}
+    inside = area >= minimum
+    below = None if criterion["importance"] == "REQUIRED" else "AREA_BELOW_PREFERENCE"
+    return {**base, "compatibility": "PASS" if inside else "FAIL",
+            "reason_code": None if inside else below,
+            "explanation": {"basis": "AREA_MINIMUM", "evidence": "NO_CLAIM_LINK"}}
+
+
+@REGISTRY.register("criterion.count_min", "2")
+def count_min_v2(criterion, request, prop, offer):
+    """ROOMS_MIN / BEDROOMS_MIN, GTE, against the resolved attribute of the
+    same name, with its claim (§3.4).
+
+    G4-18 (b): when the attribute cannot apply to the property's type (its
+    `applies_to` in the snapshot does not list the type), the fact cannot
+    exist, and the result is FAIL. An applicable attribute that is not
+    recorded, or not numeric, is UNKNOWN. The seed has no code for either
+    outcome, so the reason is null."""
+    code = {"ROOMS_MIN": "ROOMS", "BEDROOMS_MIN": "BEDROOMS"}[criterion["code"]]
+    minimum = criterion["value"]
+    applies = prop.get("attribute_applies_to")
+    if not isinstance(applies, dict) or code not in applies:
+        raise RuntimeError("the property snapshot records no applicability for the "
+                           "attribute; count_min@2 refuses to guess (G4-18)")
+    base = {"evidence_level": None, "evidence_claim_id": None, "delta": None,
+            "property_value": None}
+    types = applies[code]
+    if types is not None and prop.get("property_type") not in types:
+        return {**base, "compatibility": "FAIL", "reason_code": None,
+                "explanation": {"basis": "ATTRIBUTE_NOT_APPLICABLE", "attribute": code}}
+    found = [a for a in prop.get("attributes") or [] if a.get("code") == code]
+    if not found:
+        return {**base, "compatibility": "UNKNOWN", "reason_code": None,
+                "explanation": {"basis": "ATTRIBUTE_NOT_RECORDED", "attribute": code}}
+    attribute = found[0]
+    value = attribute.get("value")
+    base = {**base, "property_value": value, "evidence_level": attribute.get("evidence_level"),
+            "evidence_claim_id": attribute.get("resolved_claim_id")}
+    if not isinstance(value, Decimal):
+        return {**base, "compatibility": "UNKNOWN", "reason_code": None,
+                "explanation": {"basis": "ATTRIBUTE_UNREADABLE", "attribute": code}}
+    inside = value >= minimum
+    return {**base, "delta": {"count": value - minimum},
+            "compatibility": "PASS" if inside else "FAIL", "reason_code": None,
+            "explanation": {"basis": "COUNT_MINIMUM", "attribute": code}}
+
+
+@REGISTRY.register("criterion.attribute_option", "2")
+def attribute_option_v2(criterion, request, prop, offer):
+    """DOCUMENT_TYPE / RIGHT_TYPE against the resolved attribute of the same
+    code. Missing, unreadable, `UNKNOWN` or `UNSPECIFIED_DOCUMENT` is UNKNOWN
+    (§11, C03, M-02). DOCUMENT_NOT_KNOWN ("Document type unknown") at any
+    importance; DOCUMENT_MISMATCH ("Required document mismatch") only for a
+    REQUIRED criterion. The seed has no RIGHT_TYPE code."""
+    code = criterion["code"]
+    operator = criterion["operator"]
+    wanted = criterion["value"] if operator in ("IN", "NOT_IN") else [criterion["value"]]
+    unknown_reason = "DOCUMENT_NOT_KNOWN" if code == "DOCUMENT_TYPE" else None
+    found = [a for a in prop.get("attributes") or [] if a.get("code") == code]
+    base = {"evidence_level": None, "evidence_claim_id": None, "delta": None,
+            "property_value": None}
+    if not found:
+        return {**base, "compatibility": "UNKNOWN", "reason_code": unknown_reason,
+                "explanation": {"basis": "ATTRIBUTE_NOT_RECORDED", "attribute": code}}
+    attribute = found[0]
+    value = attribute.get("value")
+    base = {**base, "property_value": value, "evidence_level": attribute.get("evidence_level"),
+            "evidence_claim_id": attribute.get("resolved_claim_id")}
+    if not isinstance(value, str):
+        return {**base, "compatibility": "UNKNOWN", "reason_code": unknown_reason,
+                "explanation": {"basis": "ATTRIBUTE_UNREADABLE", "attribute": code}}
+    if value in ("UNKNOWN", "UNSPECIFIED_DOCUMENT"):
+        return {**base, "compatibility": "UNKNOWN", "reason_code": unknown_reason,
+                "explanation": {"basis": "ATTRIBUTE_VALUE_NOT_KNOWN", "attribute": code}}
+    inside = value in wanted
+    if operator in ("NEQ", "NOT_IN"):
+        inside = not inside
+    required = criterion["importance"] == "REQUIRED"
+    mismatch = "DOCUMENT_MISMATCH" if code == "DOCUMENT_TYPE" and required else None
+    return {**base, "compatibility": "PASS" if inside else "FAIL",
+            "reason_code": None if inside else mismatch,
+            "explanation": {"basis": "ATTRIBUTE_OPTION", "attribute": code}}
