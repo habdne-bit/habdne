@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 9**
+## Implementation plan — **revision 10**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -18,7 +18,8 @@ for.
 | 6 | `5ec9a84` | decisions recorded where they apply: **G4-17 (a)**, with narrowed wording; **G4-3 (b)**, **G4-4**, **G4-6**, **G4-7**; **G4-5 for SALE**. The **RENT price comparison is NOT approved**: no rent period is defined, so it is recorded as the open question G4-5R. Step 4 starts only after step 3 is closed |
 | 7 | `3391c86` | **Step 3 CLOSED at `6b833fb`** (review of 6b833fb); step 4 authorised on G4-3, G4-4, G4-6, G4-7 and the SALE table of G4-5 only. §3.4 corrected: `match_criterion_results` has no `explanation` column. The property snapshot gains `location_ancestry` (format 2), so that G4-6 replays. G4-5R: the step-4 behaviour, a typed refusal, is stated for review. **G4-18** raised (open) |
 | 8 | `1805eef` | Step 4 **not closed**: three defects fixed (a value no property can pass; a deferred row not validated; reason codes naming another importance). **Decided:** the G4-5R interim refusal (the period stays open); **G4-18 (b)**; **G4-10** as proposed, with PUBLIC_LISTING_ALLOWED; **G4-11** as proposed, with the permission reason kept visible. Step 4's §6 choices recorded. Step 5 starts only after step 4 is closed |
-| 9 | the commit that answers the review of ba5f25e | Step 4 **not closed**: the pre-check "no property value can pass" judged the option domain from the ACTIVE options, while the rule compares any held value. Unified on the rule's domain; the meaning of `active` is stated under G4-7. A limit is stated under G4-2: version 1 of three rules is registered and pinned, but not a proof of historical replay. **No new decision is taken** |
+| 9 | `99ffbaf` | Step 4 **not closed**: the pre-check "no property value can pass" judged the option domain from the ACTIVE options, while the rule compares any held value. Unified on the rule's domain; the meaning of `active` is stated under G4-7. A limit is stated under G4-2: version 1 of three rules is registered and pinned, but not a proof of historical replay. **No new decision is taken** |
+| 10 | the commit that delivers step 5 | **Step 4 CLOSED at `3c4816c`**: the review of 3c4816c authorised step 5, which by §8 follows step 4's closure. Step 5 delivered on G4-10 and G4-11. G4-5R's period stays open, and its interim refusal stays in force. The G4-2 limit stands. Step 6 waits on **G4-12** |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.

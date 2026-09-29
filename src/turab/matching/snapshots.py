@@ -11,11 +11,21 @@ open on it:
 - `property_snapshot`;
 - `commercial_context_snapshot`, for an offer.
 
-**Not here, each waiting on its decision:**
-- the permission snapshot, because WHICH bindings count is G4-10;
-- the freshness snapshot, because the state mapping and the gate are G4-11;
-- the commercial context of a POTENTIAL property WITHOUT an offer, because
-  no willingness data exists in the schema (G4-9).
+Delivered in step 5, after G4-10 and G4-11 were decided (review of
+f789a59):
+- `freshness_snapshot`: the three derived states. It is pure;
+- `permission_snapshot`: the matching bindings of the offer and its
+  property, each with its state at the run's instant.
+
+**Not here:** the commercial context of a POTENTIAL property WITHOUT an
+offer, because no willingness data exists in the schema (G4-9).
+
+**The run's instant (`as_of`).** Freshness and consent currency are judged
+at ONE instant, which the caller gives: the run takes it once (step 7), and
+stores it as the match's `evaluated_at`. It is not written into any
+snapshot. G4-13 decided that the hash excludes `evaluated_at` and includes
+the DERIVED states. So two runs that see the same states are the same input.
+A state change is a new input.
 
 ## Rules every snapshot follows
 
@@ -34,15 +44,17 @@ open on it:
 - **Internal.** These are staff-internal records. The commercial snapshot
   carries `seller_expectation_dzd`, which the engine may read (R9.3). No
   customer or public DTO may carry any of them (R9.2).
-- **No derived state.** A timestamp is recorded, and whether it is fresh is
-  not. That belongs to the freshness snapshot, under G4-11.
+- **No derived state** in the request, property and commercial snapshots. A
+  timestamp is recorded there, and whether it is fresh is not. The
+  freshness and permission snapshots hold the derived states (G4-13).
 """
 from __future__ import annotations
 
 import json
 import uuid
 from decimal import Decimal
-from typing import Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Mapping
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -56,6 +68,8 @@ REQUEST_FORMAT = "turab.request-snapshot/1"
 #: `count_min@2` reads (G4-18 (b)).
 PROPERTY_FORMAT = "turab.property-snapshot/3"
 COMMERCIAL_FORMAT = "turab.commercial-context-snapshot/1"
+FRESHNESS_FORMAT = "turab.freshness-snapshot/1"
+PERMISSION_FORMAT = "turab.permission-snapshot/1"
 
 
 class SnapshotSubjectMissing(LookupError):
@@ -207,3 +221,128 @@ def commercial_context_snapshot(session: Session, offer_id: uuid.UUID) -> dict:
     if row is None:
         raise SnapshotSubjectMissing("offer")
     return {"format": COMMERCIAL_FORMAT, "kind": "OFFER", **dict(row)}
+
+
+# --- step 5: freshness (G4-11) and permission (G4-10) -----------------------------------
+
+#: The consent purposes that count for matching (G4-10, decided in the review
+#: of f789a59): PRIVATE_MATCHING_ONLY, and a valid PUBLIC_LISTING_ALLOWED for
+#: internal matching of the same bound resource. The second grants no new
+#: sharing; sharing is Slice 5's check.
+MATCHING_PURPOSES = ("PRIVATE_MATCHING_ONLY", "PUBLIC_LISTING_ALLOWED")
+
+
+def _instant(value: Any) -> datetime | None:
+    """A timestamp in stored form (canonical string, UTC) or live form."""
+    if value is None or isinstance(value, datetime):
+        return value
+    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+
+
+def _aware(as_of: datetime) -> datetime:
+    if not isinstance(as_of, datetime) or as_of.tzinfo is None or as_of.utcoffset() is None:
+        raise ValueError("as_of must be a timezone-aware instant")
+    return as_of
+
+
+def _state(confirmed_at: Any, days: int, as_of: datetime) -> dict:
+    """G4-11: Slice 2's FRESH / STALE / NEVER_CONFIRMED, with NEVER_CONFIRMED
+    mapped to UNKNOWN. STALE exactly when `as_of - confirmed_at > days`, the
+    comparison of `services.freshness.evaluate`."""
+    last = _instant(confirmed_at)
+    if last is None:
+        return {"state": "UNKNOWN", "basis": "NEVER_CONFIRMED", "confirmed_at": None}
+    stale = as_of - last > timedelta(days=days)
+    return {"state": "STALE" if stale else "FRESH", "basis": "STALE" if stale else "FRESH",
+            "confirmed_at": last}
+
+
+def freshness_snapshot(request: Mapping[str, Any], prop: Mapping[str, Any],
+                       offer: Mapping[str, Any] | None, *, policy_version: str,
+                       threshold_days: Mapping[str, int], as_of: datetime) -> dict:
+    """The freshness snapshot (G4-11), from the three snapshots alone. Pure.
+
+    - request: `last_confirmed_at` against `threshold_days["request"]`;
+    - property: `availability_last_confirmed_at` against `["property"]`;
+    - offer: `commercial_terms_last_confirmed_at` against `["offer_terms"]`
+      (plan §3.4 of Slice 3, `evaluate_offer`). It is NOT_APPLICABLE only
+      when no offer is evaluated.
+
+    `as_of` is not recorded (see the module docstring)."""
+    as_of = _aware(as_of)
+    request, prop, offer = stored_form(request), stored_form(prop), stored_form(offer)
+    days = {key: threshold_days[key] for key in ("request", "property", "offer_terms")}
+    return {
+        "format": FRESHNESS_FORMAT,
+        "policy_version": policy_version,
+        "threshold_days": days,
+        "request": _state(request["last_confirmed_at"], days["request"], as_of),
+        "property": _state(prop["availability_last_confirmed_at"], days["property"], as_of),
+        "offer": ({"state": "NOT_APPLICABLE", "basis": "NO_EVALUATED_OFFER",
+                   "confirmed_at": None} if offer is None else
+                  _state(offer["commercial_terms_last_confirmed_at"], days["offer_terms"],
+                         as_of)),
+    }
+
+
+def binding_state(binding: Mapping[str, Any], offer_party_id: Any, as_of: datetime) -> str:
+    """One binding's state at `as_of`, in this precedence (G4-10; the
+    currency conditions of Slice 3 step 6, `public_listing._LISTABLE_OFFERS`):
+
+    1. OTHER_PARTY: the grant is not the offer's party. It does not count.
+    2. SCOPE_MISMATCH: the grant's scope is not the binding's purpose. The
+       trigger checks this only on write, so it is re-checked here. It does
+       not count.
+    3. REVOKED: the binding is revoked, the grant's status is REVOKED, or
+       the grant carries a revocation date. Any one marker is enough; a
+       future date is not guessed to be ineffective.
+    4. NOT_STARTED: the binding or the grant starts after `as_of`.
+    5. CURRENT."""
+    b = stored_form(binding)
+    if str(b["grant_party_id"]) != str(offer_party_id):
+        return "OTHER_PARTY"
+    if b["grant_scope"] != b["purpose"]:
+        return "SCOPE_MISMATCH"
+    if (b["binding_revoked_at"] is not None or b["grant_status"] != "GRANTED"
+            or b["grant_revoked_at"] is not None):
+        return "REVOKED"
+    if _instant(b["bound_at"]) > as_of or _instant(b["granted_at"]) > as_of:
+        return "NOT_STARTED"
+    return "CURRENT"
+
+
+def permission_snapshot(session: Session, offer_id: uuid.UUID, *, as_of: datetime) -> dict:
+    """The permission snapshot (G4-10): the offer's party and sharing scope,
+    and every binding for a matching purpose on the offer OR on its property,
+    each with its grant and its state at `as_of`.
+
+    `party_property_relations` is not read (acceptance condition 10). A
+    property binding counts only when its grant's party is the offer's
+    party, which the grant itself says."""
+    as_of = _aware(as_of)
+    offer = session.execute(text("""
+        SELECT offer_id, property_id, party_id, permission_scope::text AS permission_scope
+          FROM turab.property_offers WHERE offer_id = :o"""), {"o": offer_id}).mappings().first()
+    if offer is None:
+        raise SnapshotSubjectMissing("offer")
+    bindings = []
+    for row in session.execute(text("""
+            SELECT b.consent_binding_id,
+                   CASE WHEN b.offer_id IS NOT NULL THEN 'OFFER' ELSE 'PROPERTY' END AS bound_to,
+                   b.purpose::text AS purpose, b.bound_at, b.revoked_at AS binding_revoked_at,
+                   g.consent_id, g.party_id AS grant_party_id, g.scope::text AS grant_scope,
+                   g.status::text AS grant_status, g.granted_at,
+                   g.revoked_at AS grant_revoked_at
+              FROM turab.resource_consent_bindings b
+              JOIN turab.consent_grants g ON g.consent_id = b.consent_id
+             WHERE (b.offer_id = :o OR b.property_id = :p)
+               AND b.purpose::text = ANY(:purposes)
+             ORDER BY b.consent_binding_id"""),
+            {"o": offer_id, "p": offer["property_id"],
+             "purposes": list(MATCHING_PURPOSES)}).mappings():
+        binding = dict(row)
+        binding["state"] = binding_state(binding, offer["party_id"], as_of)
+        bindings.append(binding)
+    return {"format": PERMISSION_FORMAT, "offer_id": offer["offer_id"],
+            "offer_party_id": offer["party_id"],
+            "permission_scope": offer["permission_scope"], "bindings": bindings}

@@ -1,6 +1,10 @@
 # Slice 4 · step 4 — the criterion rules, the unknown classification, the hard and information gates
 
-**Status: NOT closed.**
+**Status: CLOSED at `3c4816c`.** The review of 3c4816c authorised step 5,
+which by the plan's §8 follows the closure of step 4. That review kept the
+G4-5R interim refusal in force, and confirmed the G4-2 limit of §11.3.
+
+**History of this note:**
 - The review of f789a59 found three defects. They are fixed and answered in
   **§10**, which supersedes the rows and choices it names below.
 - The review of ba5f25e found that §10's pre-check and the rule judged
