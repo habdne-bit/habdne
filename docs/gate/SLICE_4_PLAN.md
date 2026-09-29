@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 8**
+## Implementation plan — **revision 9**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -17,7 +17,8 @@ for.
 | 5 | `6396505` | **G4-17** raised (open): an ACTIVE offer on an alias cannot be evaluated. Found while building the candidate set; reported, not decided |
 | 6 | `5ec9a84` | decisions recorded where they apply: **G4-17 (a)**, with narrowed wording; **G4-3 (b)**, **G4-4**, **G4-6**, **G4-7**; **G4-5 for SALE**. The **RENT price comparison is NOT approved**: no rent period is defined, so it is recorded as the open question G4-5R. Step 4 starts only after step 3 is closed |
 | 7 | `3391c86` | **Step 3 CLOSED at `6b833fb`** (review of 6b833fb); step 4 authorised on G4-3, G4-4, G4-6, G4-7 and the SALE table of G4-5 only. §3.4 corrected: `match_criterion_results` has no `explanation` column. The property snapshot gains `location_ancestry` (format 2), so that G4-6 replays. G4-5R: the step-4 behaviour, a typed refusal, is stated for review. **G4-18** raised (open) |
-| 8 | the commit that answers the review of f789a59 | Step 4 **not closed**: three defects fixed (a value no property can pass; a deferred row not validated; reason codes naming another importance). **Decided:** the G4-5R interim refusal (the period stays open); **G4-18 (b)**; **G4-10** as proposed, with PUBLIC_LISTING_ALLOWED; **G4-11** as proposed, with the permission reason kept visible. Step 4's §6 choices recorded. Step 5 starts only after step 4 is closed |
+| 8 | `1805eef` | Step 4 **not closed**: three defects fixed (a value no property can pass; a deferred row not validated; reason codes naming another importance). **Decided:** the G4-5R interim refusal (the period stays open); **G4-18 (b)**; **G4-10** as proposed, with PUBLIC_LISTING_ALLOWED; **G4-11** as proposed, with the permission reason kept visible. Step 4's §6 choices recorded. Step 5 starts only after step 4 is closed |
+| 9 | the commit that answers the review of ba5f25e | Step 4 **not closed**: the pre-check "no property value can pass" judged the option domain from the ACTIVE options, while the rule compares any held value. Unified on the rule's domain; the meaning of `active` is stated under G4-7. A limit is stated under G4-2: version 1 of three rules is registered and pinned, but not a proof of historical replay. **No new decision is taken** |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -357,6 +358,16 @@ that cannot start without it.
 >   to its implementation.
 > - Removing a version is refused unless no match cites it, and even then
 >   it needs a Design Ledger entry.
+>
+> **A limit, stated in revision 9 (review of ba5f25e):** registered and
+> pinned does not mean replayable today.
+> - `location@1`, `attribute_option@1` and `area_min@1` emit reason codes
+>   that the step-4 backstop now refuses at the wrong importance.
+> - No stored match cites any version 1: no match row exists before step 7,
+>   and `criteria.RULES` selects version 2.
+> - Their presence in the registry must therefore NOT be offered, at step 7
+>   or step 8, as evidence of historical replay. A replay proof covers only
+>   the versions stored matches actually cite.
 
 ### G4-3 · Which data each criterion reads, and duplicate request criteria
 **The mapping proposed** (codes from the seed, lines 118–131; every rule
@@ -513,6 +524,32 @@ only (CHECK constraint).
 >   recorded UNKNOWN, not blocking.
 > - An invalid input, or a REQUIRED criterion that cannot be evaluated, is
 >   refused with a typed refusal.
+>
+> **What "no property value can pass" means, stated in revision 9 (review
+> of ba5f25e).** The pre-check judges the domain the RULE compares, not
+> the vocabulary active today.
+> - **`attribute_options.active` governs what may be NEWLY recorded or
+>   requested**:
+>   - the Slice 3 validator writes only active options
+>     (`truth.validate_attribute`);
+>   - a request may name only active options.
+> - **A value already recorded keeps its meaning after its option is
+>   retired.** The schema allows it:
+>   - `property_attributes.value` is `jsonb` and references no option;
+>   - no table references an option row, so an option can be deactivated,
+>     or deleted, while properties keep its value.
+>
+>   The rule compares such a value like any other.
+> - **The option domain is therefore open.** An EQ/IN option criterion is
+>   refused exactly when every value is a not-known option. A NEQ/NOT_IN
+>   option criterion is never refused, because a retired value may satisfy
+>   it.
+> - **Enum codes are closed domains** (PostgreSQL enums of the frozen
+>   schema). A set leaving no member is refused.
+> - **The path not taken:** treating a retired option as UNKNOWN in the rule
+>   would turn a recorded fact into a blocking unknown when an entry
+>   vocabulary changes. It would also need the activity state in every
+>   property snapshot, and a new rule version.
 
 ### G4-8 · The candidate set
 - **Request status.** **Recommendation:** run for `ACTIVE` and

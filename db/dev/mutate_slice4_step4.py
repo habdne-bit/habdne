@@ -5,7 +5,7 @@
 Each mutation reintroduces one defect: a rule decided differently, a
 refusal skipped (G4-3 (b), G4-5R, G4-7), a gate or blocking decision
 changed (G4-4), or the stored form bypassed. The review of f789a59 adds
-R26–R30, C16–C24, H11 and S3. Anchors shared by a rule's versions 1 and 2
+R26–R30, C16–C24, H11 and S3; the review of ba5f25e adds C25 and C26. Anchors shared by a rule's versions 1 and 2
 mutate both; only version 2 is selected by a new evaluation. The test file is step 4's
 only. The rule pins, which would catch any rule edit, are step 2's, so they
 cannot hide whether a behavioural test catches it.
@@ -164,10 +164,9 @@ MUTATIONS = [
   '    deferred = [r for r in rows if "deferred_to" in r]', "    deferred = []"),
  # review of f789a59
  ("C16 a value no property can pass is accepted", C,
-  "    if not _can_pass(code, operator, value, vocab):", "    if False:"),
+  "    if not can_pass(code, operator, value):", "    if False:"),
  ("C17 the not-known options counted as passable", C,
-  "        domain = vocab.options[code] - set(NOT_KNOWN_OPTIONS)",
-  "        domain = vocab.options[code]"),
+  "            return bool(wanted - set(NOT_KNOWN_OPTIONS))", "            return bool(wanted)"),
  ("C18 NEQ / NOT_IN judged as EQ / IN", C,
   'passing = set(domain) & wanted if operator in ("EQ", "IN") else set(domain) - wanted',
   "passing = set(domain) & wanted"),
@@ -178,6 +177,11 @@ MUTATIONS = [
  ("C20 a deferred row with blocking_if_unknown is accepted", C,
   '        if blocking:\n            raise CriterionRefused("G4-7", "blocking_if_unknown has no',
   '        if False:\n            raise CriterionRefused("G4-7", "blocking_if_unknown has no'),
+ # review of ba5f25e
+ ("C25 an option NEQ / NOT_IN judged on a closed domain", C,
+  "        return True\n    domain = {", "        return False\n    domain = {"),
+ ("C26 an option criterion judged on the enum branch", C,
+  "    if code in OPTION_CODES:\n        if operator", "    if False:\n        if operator"),
  ("C21 LOCATION evaluated by version 1", C,
   '"LOCATION": ("criterion.location", "2",', '"LOCATION": ("criterion.location", "1",'),
  ("C22 areas evaluated by version 1", C,

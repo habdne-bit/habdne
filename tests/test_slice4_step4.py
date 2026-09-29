@@ -922,7 +922,12 @@ def test_a_requested_value_no_property_can_pass_is_refused(session, ids, code, o
     assert refused.problem == "no property value can satisfy it"
 
 
-def test_not_in_every_known_document_type_is_refused(session, ids):
+def test_not_in_every_active_document_type_is_accepted_because_the_domain_is_open(session,
+                                                                                ids):
+    """Review of ba5f25e. Excluding every ACTIVE known option does not make
+    the criterion unsatisfiable: a property can hold a retired option's
+    value, and the rule compares it. The ba5f25e round refused this case; its
+    refusal was the contradiction the review found."""
     known = sorted(set(session.execute(text("""
         SELECT o.option_code FROM turab.attribute_options o
           JOIN turab.attribute_definitions d USING (attribute_definition_id)
@@ -930,7 +935,8 @@ def test_not_in_every_known_document_type_is_refused(session, ids):
                    - {"UNKNOWN", "UNSPECIFIED_DOCUMENT"})
     req = _request(session, ids, bmax=10_000_000)
     _row(session, req, "DOCUMENT_TYPE", "NOT_IN", known)
-    assert _refusal(session, req).problem == "no property value can satisfy it"
+    _, plan = _plan(session, req)
+    assert [c["code"] for c in plan.criteria].count("DOCUMENT_TYPE") == 1
 
 
 @pytest.mark.parametrize("operator, value", [
@@ -1138,3 +1144,105 @@ def test_version_2_is_used_and_version_1_stays_registered_beside_it():
                     ("criterion.location", "2"), ("criterion.budget_max_sale", "1"),
                     ("criterion.area_min", "2"), ("criterion.count_min", "2"),
                     ("criterion.attribute_option", "2")}
+
+
+# ======================================================================================
+# Review of ba5f25e: the pre-check and the rule must judge the same domain
+# ======================================================================================
+#
+# `_can_pass` took the option domain from the options ACTIVE now; the rule
+# compares whatever value the property holds. `attribute_options.active` gates
+# only new writes (`truth.validate_attribute`), `property_attributes.value` is
+# jsonb with no reference to `attribute_options`, and no table references an
+# option row. So an option can be deactivated, or deleted, while a property
+# still holds its value. Measured against the ba5f25e code:
+# evidence/SLICE4-STEP4-REVIEW2-BEFORE-FIX.txt.
+
+def _document_type_property_holding(session, ids, value):
+    """A LAND property whose DOCUMENT_TYPE is written through the Slice 3
+    validator, which accepts only an ACTIVE option: the option is active now."""
+    from turab.services import truth
+    prop = _property(session, ptype="LAND")
+    truth.upsert_property_attribute(session, property_id=prop, property_type="LAND",
+                                    attribute_code="DOCUMENT_TYPE", value=value)
+    return prop
+
+
+def _only_active(session, keep):
+    session.execute(text("""
+        UPDATE turab.attribute_options o SET active = (o.option_code = ANY(:keep))
+          FROM turab.attribute_definitions d
+         WHERE d.attribute_definition_id = o.attribute_definition_id
+           AND d.code = 'DOCUMENT_TYPE'"""), {"keep": list(keep)})
+
+
+@pytest.mark.parametrize("retired", ["deactivated", "deleted"])
+def test_a_retired_option_held_by_a_property_gets_the_same_verdict_from_both(
+        session, ids, retired):
+    """The review's case on PostgreSQL. OTHER is written while active; then
+    every document type but LAND_BOOK (and the two not-known values) is
+    deactivated, and OTHER is deactivated or deleted. `DOCUMENT_TYPE NOT_IN
+    [LAND_BOOK, UNKNOWN]` is then judged twice, on the same property:
+    - by the pre-check (`criteria_of`): can any property value pass it?
+    - by the rule (`attribute_option@2`): does THIS property pass it?
+    A refusal while the rule gives PASS is the contradiction."""
+    prop = _document_type_property_holding(session, ids, "OTHER")
+    _only_active(session, {"LAND_BOOK", "UNKNOWN", "UNSPECIFIED_DOCUMENT"})
+    if retired == "deleted":
+        session.execute(text("""
+            DELETE FROM turab.attribute_options o USING turab.attribute_definitions d
+             WHERE d.attribute_definition_id = o.attribute_definition_id
+               AND d.code = 'DOCUMENT_TYPE' AND o.option_code = 'OTHER'"""))
+    stored = snapshots.stored_form(snapshots.property_snapshot(session, prop))
+    assert [a["value"] for a in stored["attributes"]] == ["OTHER"]
+
+    req = _request(session, ids, bmax=30_000_000)
+    _row(session, req, "DOCUMENT_TYPE", "NOT_IN", ["LAND_BOOK", "UNKNOWN"])
+    rule = registry.REGISTRY.resolve(*criteria.RULES["DOCUMENT_TYPE"][:2])
+    verdict = rule.evaluate({"code": "DOCUMENT_TYPE", "operator": "NOT_IN",
+                             "value": ["LAND_BOOK", "UNKNOWN"], "importance": "REQUIRED"},
+                            {}, stored, None)["compatibility"]
+    try:
+        _plan(session, req)
+        refused = False
+    except CriterionRefused:
+        refused = True
+    assert verdict == "PASS"
+    assert not refused, "the pre-check says no property can pass; this property passes"
+    gate = _gate(session, req, prop, _offer(session, ids, prop, ask=1))
+    assert _result(gate, "DOCUMENT_TYPE").compatibility == "PASS"
+
+
+OPTION_POOL = ("LAND_BOOK", "POSSESSION_CERTIFICATE", "OTHER", "UNKNOWN",
+               "UNSPECIFIED_DOCUMENT", "A_VALUE_NO_OPTION_NAMES")
+
+
+def _sets():
+    import itertools
+    for size in (1, 2, len(OPTION_POOL) - 1, len(OPTION_POOL)):
+        yield from (list(c) for c in itertools.combinations(OPTION_POOL, size))
+
+
+def test_the_pre_check_refuses_exactly_what_the_rule_can_never_pass():
+    """Exhaustive over EQ, NEQ, IN and NOT_IN on a pool that holds known,
+    not-known and unregistered values, plus a value in no set at all: the
+    pre-check accepts a criterion exactly when some property value gets PASS
+    from `attribute_option@2`. No vocabulary is involved, so no state of
+    `attribute_options` can make the two disagree."""
+    rule = registry.REGISTRY.resolve(*criteria.RULES["DOCUMENT_TYPE"][:2])
+    candidates = OPTION_POOL + ("A_FRESH_VALUE_IN_NO_SET",)
+    checked = 0
+    for operator in ("EQ", "NEQ", "IN", "NOT_IN"):
+        for values in _sets():
+            if operator in ("EQ", "NEQ") and len(values) != 1:
+                continue
+            value = values if operator in ("IN", "NOT_IN") else values[0]
+            crit = {"code": "DOCUMENT_TYPE", "operator": operator, "value": value,
+                    "importance": "REQUIRED"}
+            some_pass = any(rule.evaluate(crit, {}, {"attributes": [
+                {"code": "DOCUMENT_TYPE", "value": v}]}, None)["compatibility"] == "PASS"
+                for v in candidates)
+            assert criteria.can_pass("DOCUMENT_TYPE", operator, value) is some_pass, (
+                operator, value)
+            checked += 1
+    assert checked == 2 * 6 + 2 * (6 + 15 + 6 + 1)

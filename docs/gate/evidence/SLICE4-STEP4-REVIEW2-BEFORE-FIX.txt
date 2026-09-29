@@ -1,0 +1,80 @@
+TURAB — Slice 4 step 4, review of ba5f25e: the pre-check and the rule judged BEFORE the fix
+============================================================
+Base commit       : ba5f25e79749d9c9f40b5e462e0a7a834f599f3c
+Production code   : exactly as committed at ba5f25e (git diff --stat below shows the test file only)
+Recorded          : 2026-09-29 18:47:28 UTC
+PostgreSQL        : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+--- git diff --stat ---
+ tests/test_slice4_step4.py | 102 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 102 insertions(+)
+
+=== 1. The review's case, on PostgreSQL (pytest -k 'retired_option_held or refuses_exactly_what') ===
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+E   AssertionError: the pre-check says no property can pass; this property passes
+    assert not True
+/home/user/habdne/tests/test_slice4_step4.py:1205: AssertionError: the pre-check says no property can pass; this property passes
+E   AssertionError: the pre-check says no property can pass; this property passes
+    assert not True
+/home/user/habdne/tests/test_slice4_step4.py:1205: AssertionError: the pre-check says no property can pass; this property passes
+E   AttributeError: module 'turab.matching.criteria' has no attribute 'can_pass'. Did you mean: '_can_pass'?
+/home/user/habdne/tests/test_slice4_step4.py:1239: AttributeError: module 'turab.matching.criteria' has no attribute 'can_pass'. Did you mean: '_can_pass'?
+=========================== short test summary info ============================
+FAILED tests/test_slice4_step4.py::test_a_retired_option_held_by_a_property_gets_the_same_verdict_from_both[deactivated]
+FAILED tests/test_slice4_step4.py::test_a_retired_option_held_by_a_property_gets_the_same_verdict_from_both[deleted]
+FAILED tests/test_slice4_step4.py::test_the_pre_check_refuses_exactly_what_the_rule_can_never_pass
+3 failed, 188 deselected in 8.88s
+
+=== 2. The ba5f25e pre-check (_can_pass with the seed's ACTIVE vocabulary) against attribute_option@2, exhaustively ===
+(scratch script, reproduced here verbatim; it is not committed as code)
+```
+"""Scratch measurement (not committed as code): the ba5f25e pre-check,
+`criteria._can_pass` with the seed's ACTIVE vocabulary, against the rule
+`attribute_option@2`, over the same exhaustive set as
+test_the_pre_check_refuses_exactly_what_the_rule_can_never_pass."""
+import itertools
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from turab.matching import criteria, registry
+
+POOL = ("LAND_BOOK", "POSSESSION_CERTIFICATE", "OTHER", "UNKNOWN", "UNSPECIFIED_DOCUMENT",
+        "A_VALUE_NO_OPTION_NAMES")
+engine = create_engine("postgresql+psycopg://turab:turab@127.0.0.1/turab_authz_test")
+with Session(engine) as s:
+    vocab = criteria.read_vocabulary(s, {"criteria": []})
+rule = registry.REGISTRY.resolve("criterion.attribute_option", "2")
+cands = POOL + ("A_FRESH_VALUE_IN_NO_SET",)
+checked = disagree = 0
+for op in ("EQ", "NEQ", "IN", "NOT_IN"):
+    for size in (1, 2, 5, 6):
+        for vals in itertools.combinations(POOL, size):
+            if op in ("EQ", "NEQ") and size != 1:
+                continue
+            value = list(vals) if op in ("IN", "NOT_IN") else vals[0]
+            crit = {"code": "DOCUMENT_TYPE", "operator": op, "value": value, "importance": "REQUIRED"}
+            some = any(rule.evaluate(crit, {}, {"attributes": [{"code": "DOCUMENT_TYPE", "value": v}]},
+                                     None)["compatibility"] == "PASS" for v in cands)
+            old = criteria._can_pass("DOCUMENT_TYPE", op, value, vocab)
+            checked += 1
+            if old != some:
+                disagree += 1
+                print(f"DISAGREE {op} {value}: pre-check={old} some-property-passes={some}")
+print(f"checked {checked}, disagreements {disagree}")
+```
+DISAGREE EQ A_VALUE_NO_OPTION_NAMES: pre-check=False some-property-passes=True
+DISAGREE IN ['A_VALUE_NO_OPTION_NAMES']: pre-check=False some-property-passes=True
+DISAGREE IN ['UNKNOWN', 'A_VALUE_NO_OPTION_NAMES']: pre-check=False some-property-passes=True
+DISAGREE IN ['UNSPECIFIED_DOCUMENT', 'A_VALUE_NO_OPTION_NAMES']: pre-check=False some-property-passes=True
+checked 68, disagreements 4
+
+Reading:
+- Case 1 is the contradiction the review found, reproduced on PostgreSQL in both ways an
+  option can be retired: the rule gives the property PASS (the first assertion held), and
+  the pre-check refused the criterion as unsatisfiable.
+- The third failure is the new public can_pass, which does not exist at ba5f25e.
+- In 2, the 4 disagreements are EQ/IN on a value no option names. criteria_of never
+  reaches the pre-check with such a value: _normalise refuses a requested value that is not
+  an ACTIVE option first. They are recorded because they show the pre-check's domain was
+  not the rule's. The reachable contradiction is case 1: the active vocabulary shrinks
+  while a property still holds a retired value.

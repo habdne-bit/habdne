@@ -1,8 +1,11 @@
 # Slice 4 · step 4 — the criterion rules, the unknown classification, the hard and information gates
 
-**Status: NOT closed.** The review of f789a59 found three defects. They are
-fixed and answered in **§10**, which supersedes the rows and choices it
-names below.
+**Status: NOT closed.**
+- The review of f789a59 found three defects. They are fixed and answered in
+  **§10**, which supersedes the rows and choices it names below.
+- The review of ba5f25e found that §10's pre-check and the rule judged
+  different domains. That is answered in **§11**, which supersedes §10.2's
+  first item where it says otherwise.
 
 **Authorised:** the review of 6b833fb closed step 3 and allowed step 4 on
 **G4-3, G4-4, G4-6, G4-7** and **the SALE table of G4-5 only**. G4-5R stays
@@ -305,9 +308,11 @@ differed by the test file only).
   - the domain (the enum; or the active options minus
     `NOT_KNOWN_OPTIONS`), within an EQ/IN set;
   - or the domain outside a NEQ/NOT_IN set.
-- This also refuses `IN` of not-known values only, `NOT_IN` of every known
-  document type, `PROPERTY_TYPE NOT_IN` all seven types, and
-  `TRANSACTION_INTENT NOT_IN [BUY, RENT]`.
+- This also refuses `IN` of not-known values only, `PROPERTY_TYPE NOT_IN` all
+  seven types, and `TRANSACTION_INTENT NOT_IN [BUY, RENT]`.
+- *Superseded in §11:* this round also refused `NOT_IN` of every ACTIVE
+  document type. That refusal was the contradiction the review of ba5f25e
+  found, because a property can hold a retired option.
 - An IN set holding one passable option is accepted, as the review asked.
   So are `NEQ UNKNOWN` and `NOT_IN [UNKNOWN, UNSPECIFIED_DOCUMENT]`
   (`test_a_set_with_a_passable_known_option_is_accepted`).
@@ -410,3 +415,86 @@ Version 1 emitted these codes at every importance. Now:
 - **§6 choices:** 1–5, 8–10 and 12 accepted as described. Choice 6 is
   bounded on the request side. Choice 7 is corrected. Choice 11 is accepted
   provisionally, under G4-5R.
+
+## 11. The review of ba5f25e: the pre-check and the rule judged different domains
+
+**The finding.**
+- `_can_pass` took the option domain from the options ACTIVE now.
+- `attribute_option@2` compares whatever value the property holds.
+- The schema lets a property keep a value whose option was deactivated.
+
+So the pre-check could refuse, as unsatisfiable, a criterion that a real
+property passes.
+
+### 11.1 Measured before the fix
+
+`evidence/SLICE4-STEP4-REVIEW2-BEFORE-FIX.txt`, on the `ba5f25e` production
+code.
+
+1. **On PostgreSQL:** `test_a_retired_option_held_by_a_property_gets_the_same_verdict_from_both`.
+   - OTHER is written through the Slice 3 validator while it is active.
+   - Every document type but LAND_BOOK is then deactivated, and OTHER is
+     deactivated, or **deleted**.
+   - For `DOCUMENT_TYPE NOT_IN [LAND_BOOK, UNKNOWN]`, the rule gives the
+     property PASS, and the pre-check refuses. **Both variants failed.**
+2. **Exhaustively**, with the seed's active vocabulary, over 68 criteria:
+   **4 disagreements**.
+   - All four are EQ/IN on a value no option names. `criteria_of` never
+     reaches the pre-check with them, because a request may name only
+     active options.
+   - They are recorded because they show the two domains differed. The
+     reachable contradiction is case 1.
+
+### 11.2 The path taken, and its meaning
+
+The reviewer's first path, "a retired option stays comparable in the
+pre-check", taken to its consequence: **the option domain is open**.
+- **What the schema says.**
+  - `attribute_options.active` (schema line 181) is read only when a value
+    is written (`truth.validate_attribute`).
+  - `property_attributes.value` is `jsonb` and references no option.
+  - No table references an option row. An option can be deactivated, and
+    deleted too; the second variant of the test deletes one.
+- **The meaning adopted.**
+  - `active` governs what may be NEWLY recorded or requested.
+  - A recorded value keeps its meaning after its option is retired, and the
+    rule compares it like any other.
+  - A request may still name active options only (`_normalise`, unchanged).
+- **`criteria.can_pass`** (public, documented) therefore judges the rule's
+  own domain:
+  - option codes: an EQ/IN is refused exactly when every value is in
+    `NOT_KNOWN_OPTIONS`; a NEQ/NOT_IN is never refused;
+  - enum codes (PROPERTY_TYPE, TRANSACTION_INTENT): a closed domain, as
+    before.
+- **Agreement is proven, not assumed.**
+  `test_the_pre_check_refuses_exactly_what_the_rule_can_never_pass` runs
+  every EQ/NEQ/IN/NOT_IN over a pool of known, not-known and unregistered
+  values (68 criteria). `can_pass` accepts exactly when some property value
+  gets PASS from `attribute_option@2`. No vocabulary is read, so no state
+  of `attribute_options` can make them disagree.
+- **Consequence:** `NOT_IN` of every ACTIVE document type is now accepted
+  (`test_not_in_every_active_document_type_is_accepted_because_the_domain_is_open`).
+- **The path not taken,** "the rule treats a retired option as UNKNOWN":
+  - a recorded fact would become a blocking unknown whenever an entry
+    vocabulary changes;
+  - it would need the activity state in every property snapshot, and a new
+    rule version.
+- **No rule changed, and no pin changed.**
+
+### 11.3 A limit stated (plan revision 9, G4-2)
+
+Version 1 of `location`, `attribute_option` and `area_min` stays registered
+and pinned. Some of its outputs would be refused by the new reason-code
+backstop, and no stored match cites it. It must not be offered as evidence
+of historical replay at step 7 or 8. A replay proof covers only the
+versions stored matches cite.
+
+### 11.4 Mutations
+
+- C16 and C17 are re-anchored on `can_pass`.
+- Added:
+  - **C25:** the option NEQ/NOT_IN judged on a closed domain again. It is
+    killed by both variants of the PostgreSQL test and by the exhaustive
+    agreement test.
+  - **C26:** an option criterion judged on the enum branch.
+- The clean-tree result is in `evidence/SLICE4-STEP4-MUTATIONS.txt`.

@@ -40,12 +40,15 @@ G4-7, decided "as proposed":
 - a value no rule can read: the wrong JSON type, a location id that names
   no location, an option that is not a registered, active option, a
   negative or fractional count, an unrecognised unit;
-- a value no property can PASS (review of f789a59), at any importance:
-  `DOCUMENT_TYPE EQ UNKNOWN`, `EQ UNSPECIFIED_DOCUMENT`, `RIGHT_TYPE EQ
-  UNKNOWN`, an IN set of such values only, or a NOT_IN set excluding every
-  value that could pass. An unknown property value is UNKNOWN, never PASS,
-  so a set left with only `NOT_KNOWN_OPTIONS` can never pass. An IN set
-  holding at least one known, passable option is accepted;
+- a value no property can PASS (review of f789a59), at any importance.
+  `can_pass` judges this on the RULE's domain (review of ba5f25e):
+  - for an option code (DOCUMENT_TYPE, RIGHT_TYPE), exactly an EQ or IN
+    whose every value is in `NOT_KNOWN_OPTIONS`
+    (`DOCUMENT_TYPE EQ UNKNOWN`, `EQ UNSPECIFIED_DOCUMENT`,
+    `RIGHT_TYPE EQ UNKNOWN`, IN of such values only). A NEQ or NOT_IN on
+    an option code is never refused: see `can_pass`;
+  - for an enum code (PROPERTY_TYPE, TRANSACTION_INTENT), a set leaving no
+    member of the enum, e.g. `PROPERTY_TYPE NOT_IN` all seven types;
 - a REQUIRED criterion that no deterministic rule evaluates
   (TEXT_SEMANTIC, CUSTOM_ATTRIBUTE, an unregistered code);
 - such a criterion with `blocking_if_unknown = true`: it would block every
@@ -108,7 +111,7 @@ DEFERRED_OPERATORS = {"BUDGET_TARGET": ("EQ",)}
 #: Option values that state the fact is NOT known. `attribute_option@2`
 #: evaluates a property holding one of them to UNKNOWN, never PASS;
 #: `test_not_known_options_are_exactly_those_the_rule_calls_unknown` holds the
-#: two in agreement.
+#: two in agreement. `can_pass` reads no other part of the option vocabulary.
 NOT_KNOWN_OPTIONS = ("UNKNOWN", "UNSPECIFIED_DOCUMENT")
 #: Attribute option vocabularies read for validation.
 OPTION_CODES = ("DOCUMENT_TYPE", "RIGHT_TYPE")
@@ -220,16 +223,45 @@ def _normalise(code: str, operator: str, value: Any, vocab: Vocabulary) -> Any:
     return None
 
 
-def _can_pass(code: str, operator: str, value: Any, vocab: Vocabulary) -> bool:
-    """Whether some property value could PASS this (already readable)
-    criterion. Only the set codes can be unsatisfiable by their value alone."""
+def can_pass(code: str, operator: str, value: Any) -> bool:
+    """Whether some property value could PASS this readable criterion,
+    judged on the domain its RULE compares (review of ba5f25e).
+
+    **Option codes: the domain is open.** `attribute_option@2` gives PASS to
+    a property value exactly when it is not in `NOT_KNOWN_OPTIONS` and it
+    satisfies the set. It compares whatever value the property holds; it
+    does not consult `attribute_options`. That is right: a property may hold
+    a value no active option names.
+    - `attribute_options.active` gates only new writes
+      (`truth.validate_attribute`; schema line 181).
+    - `property_attributes.value` is jsonb and references no option, and no
+      table references an option row. An option can therefore be
+      deactivated, or deleted, while properties keep its value.
+
+    What `active` means here, stated: it governs what may be NEWLY recorded
+    or requested (a request may name active options only, `_normalise`). A
+    value already recorded keeps its meaning after its option is retired,
+    and is compared like any other. The consequences:
+    - An EQ/IN criterion can pass exactly when one of its values is outside
+      `NOT_KNOWN_OPTIONS`.
+    - A NEQ/NOT_IN criterion can always pass: some value outside the set and
+      outside `NOT_KNOWN_OPTIONS` may be held, a retired one included.
+    - No state of `attribute_options` can make this function and the rule
+      disagree. `test_the_pre_check_refuses_exactly_what_the_rule_can_never_pass`
+      checks this exhaustively.
+
+    **Enum codes: the domain is closed.** PROPERTY_TYPE and
+    TRANSACTION_INTENT come from PostgreSQL enums of the frozen schema, so a
+    set that leaves no member can never pass."""
+    wanted = set(value if operator in ("IN", "NOT_IN") else [value])
+    if code in OPTION_CODES:
+        if operator in ("EQ", "IN"):
+            return bool(wanted - set(NOT_KNOWN_OPTIONS))
+        return True
     domain = {"TRANSACTION_INTENT": TRANSACTION_INTENTS,
               "PROPERTY_TYPE": PROPERTY_TYPES}.get(code)
     if domain is None:
-        if code not in OPTION_CODES:
-            return True
-        domain = vocab.options[code] - set(NOT_KNOWN_OPTIONS)
-    wanted = set(value if operator in ("IN", "NOT_IN") else [value])
+        return True
     passing = set(domain) & wanted if operator in ("EQ", "IN") else set(domain) - wanted
     return bool(passing)
 
@@ -245,7 +277,7 @@ def _read_value(code: str, operator: str, operators: tuple[str, ...], row: Mappi
     value = _normalise(code, operator, row["value"], vocab)
     if value is None:
         raise CriterionRefused("G4-7", "a value its rule cannot read", code, rid)
-    if not _can_pass(code, operator, value, vocab):
+    if not can_pass(code, operator, value):
         raise CriterionRefused("G4-7", "no property value can satisfy it", code, rid)
     return value
 
