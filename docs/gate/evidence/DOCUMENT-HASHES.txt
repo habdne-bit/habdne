@@ -454,3 +454,14 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   954bb6c1bf0d
 docs/gate/evidence/SLICE4-STEP4-REVIEW-BEFORE-FIX.txt          new  cc82e606ec438cba16064e245ae3b050f55e263475f5bedb701920ec5647c22f
 docs/gate/evidence/SLICE4-STEP4-MUTATIONS.txt                  --   e9fb4e6e07e0f6ffa8f94f66f0668739315e0726d1bf624225cb9dd66cd20873
 SLICE_4_PLAN.md changed revision: 7 -> 8 (G4-5R interim refusal, G4-18 (b), G4-10, G4-11 decided; step 4 not closed).
+
+--- Slice 4 step 4, review of ba5f25e: the pre-check judges the rule's (open) option domain ---
+src/turab/matching/criteria.py                                 --   2d3d9a9a37237f3e34846be64f992ab9969fafbfc8a18683b4231003bcd60fc1
+tests/test_slice4_step4.py                                     --   3587a62a3527508a86d627b01dfe527e78f9a7973c54a2e59d26d2c6e2271dd3
+db/dev/mutate_slice4_step4.py                                  --   6477bc4f041d8191abdfd4e31d3f5fa6555ced06ae562b545b521d29d8880a47
+docs/gate/SLICE_4_STEP4_DELIVERY.md                            --   abff4a9c3b1b974325d5d054c03ae30344a13c06bb7fb7f8f37e3e4d43e1f0a4
+docs/gate/SLICE_4_PLAN.md                                      rev9 9569b48e1e61e3fa30a883a292079a35d76f4075584c76228aec3301cc9e9b1f
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   0575aac07acc4b0794bc9b9edfee72a81f92809a5f9644a8cf4119053a349b94
+docs/gate/evidence/SLICE4-STEP4-REVIEW2-BEFORE-FIX.txt         new  9d5c57b31b62136ad7c50d7ef78ce71a674ebc3602e2b6cd16e2b1cc89c54be3
+docs/gate/evidence/SLICE4-STEP4-MUTATIONS.txt                  --   a5fd17089548e7c39158a5bee362abbe03f1820d6ea34b882738b485dee2f1b5
+SLICE_4_PLAN.md changed revision: 8 -> 9 (meaning of 'active' stated under G4-7; version-1 replay limit under G4-2; no decision taken).

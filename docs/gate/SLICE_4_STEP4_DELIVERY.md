@@ -497,4 +497,9 @@ versions stored matches cite.
     killed by both variants of the PostgreSQL test and by the exhaustive
     agreement test.
   - **C26:** an option criterion judged on the enum branch.
-- The clean-tree result is in `evidence/SLICE4-STEP4-MUTATIONS.txt`.
+- **Clean-tree result: 70 of 70 fail, and none survives.**
+  - Recorded at `99ffbaf`, source fingerprint `5877dedf…30e68`, baseline
+    191 passed (`evidence/SLICE4-STEP4-MUTATIONS.txt`).
+  - Every mutated file was restored and verified by sha256.
+  - It supersedes §10.4's record (68/68 at `1805eef`), which stays in git
+    history.
