@@ -392,7 +392,12 @@ Version 1 emitted these codes at every importance. Now:
     one.
   - It runs in the full suite, not in the mutation run, where it would kill
     every rule mutation for the wrong reason.
-- The clean-tree result: see `evidence/SLICE4-STEP4-MUTATIONS.txt`.
+- **Clean-tree result: 68 of 68 fail, and none survives.**
+  - Recorded at `1805eef`, source fingerprint `145a8bf8…27280`, baseline
+    188 passed (`evidence/SLICE4-STEP4-MUTATIONS.txt`).
+  - Every mutated file was restored and verified by sha256.
+  - The first round's record (52/52 at `3391c86`) is superseded, and stays
+    in git history.
 
 ### 10.5 Decisions recorded (plan revision 8)
 

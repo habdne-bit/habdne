@@ -1,15 +1,15 @@
 TURAB — Slice 4 step 4: which rule, refusal or gate decision fails which test
 ============================================================
-Base commit       : 3391c86dbf8440353d9ebc43feefc9468e8b8c1b
-Source fingerprint: 02538087875e4f4e5aeac5823c27f9da7cc54e66de24568e41262d9be9ac0c95
+Base commit       : 1805eefd0dfa751083f9d6156a331b0d25784764
+Source fingerprint: 145a8bf822ab296e9e587bc54b0ee4dfc0d66db297e977afc8b469b3b9127280
 Working tree      : CLEAN
-Recorded          : 2026-09-28 22:07:41 UTC
+Recorded          : 2026-09-29 07:19:12 UTC
 Test file         : tests/test_slice4_step4.py
 
 === baseline (no mutation) ===
-   147 passed in 3.66s
-== R1 transaction mapping swapped [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   12 failed, 135 passed in 3.55s
+   188 passed in 3.90s
+== R1 transaction mapping swapped [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   12 failed, 176 passed in 3.71s
    FAILED test_a_hard_fail_dominates_and_leaves_no_actionable_unknown
    FAILED test_a_required_unknown_is_never_pass_or_fail_and_blocks
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[FLEXIBLE-CUSTOM_ATTRIBUTE-EQ]
@@ -28,8 +28,8 @@ Test file         : tests/test_slice4_step4.py
    cause: AssertionError: assert ('FAIL', 'UNKNOWN') == ('PASS', 'UNKNOWN')
    cause: AssertionError: assert ('FAIL', 'UNKNOWN') == ('UNKNOWN', 'UNKNOWN')
    cause: AssertionError: assert ('PASS' == 'PASS'
-== R2 PROPERTY_TYPE ignores NEQ / NOT_IN [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   4 failed, 143 passed in 3.21s
+== R2 PROPERTY_TYPE ignores NEQ / NOT_IN [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   4 failed, 184 passed in 3.95s
    FAILED test_property_type[NEQ-APARTMENT-FAIL]
    FAILED test_property_type[NEQ-LAND-PASS]
    FAILED test_property_type[NOT_IN-value6-PASS]
@@ -38,16 +38,16 @@ Test file         : tests/test_slice4_step4.py
    cause: AssertionError: assert 'PASS' == 'FAIL'
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert 'PASS' == 'FAIL'
-== R3 PROPERTY_TYPE mismatch without its reason code [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   4 failed, 143 passed in 3.73s
+== R3 PROPERTY_TYPE mismatch without its reason code [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   4 failed, 184 passed in 3.94s
    FAILED test_property_type[EQ-LAND-FAIL]
    FAILED test_property_type[IN-value5-FAIL]
    FAILED test_property_type[NEQ-APARTMENT-FAIL]
    FAILED test_property_type[NOT_IN-value7-FAIL]
    cause: AssertionError: assert None == 'PROPERTY_TYPE_MISMATCH'
    cause: E   AssertionError: assert None == 'PROPERTY_TYPE_MISMATCH'
-== R4 LOCATION exact, not the subtree (G4-6) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   6 failed, 141 passed in 3.55s
+== R4 LOCATION exact, not the subtree (G4-6) [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   6 failed, 182 passed in 4.15s
    FAILED test_a_location_in_list_passes_on_any_member
    FAILED test_everything_passing_passes_both_gates
    FAILED test_location_is_the_requested_subtree[C-ADRAR-ADR-KSAR-OUGDIM-PASS]
@@ -60,26 +60,26 @@ Test file         : tests/test_slice4_step4.py
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert ['PASS', 'PAS...PASS', 'PASS'] == ['PASS', 'PAS...PASS', 'PASS']
    cause: E   AssertionError: assert [('TRANSACTIO...MIN', 'PASS')] == [('TRANSACTIO...MIN', 'PASS')]
-== R5 LOCATION unknown taken as PASS [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.58s
+== R5 LOCATION unknown taken as PASS [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.01s
    FAILED test_a_property_without_a_location_is_unknown
    cause: AssertionError: assert ('PASS', False) == ('UNKNOWN', True)
    cause: E   AssertionError: assert ('PASS', False) == ('UNKNOWN', True)
-== R6 LOCATION reads a snapshot without ancestry [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.47s
+== R6 LOCATION reads a snapshot without ancestry [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.08s
    FAILED test_the_location_rule_refuses_a_snapshot_without_ancestry
    cause: E   TypeError: argument of type 'NoneType' is not iterable
    cause: TypeError: argument of type 'NoneType' is not iterable
-== R7 the seller expectation ignored (M-03, mandatory test 5) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   2 failed, 145 passed in 3.32s
+== R7 the seller expectation ignored (M-03, mandatory test 5) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 3.86s
    FAILED test_seller_expectation_can_pass_price_and_is_never_in_the_criterion_result
    FAILED test_the_sale_price_table[25000000-27000000-NO-24000000-PASS-None]
    cause: AssertionError: assert 'FAIL' == 'PASS'
    cause: AssertionError: assert ('FAIL', 'BUDGET_EXCEEDED') == ('PASS', None)
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert ('FAIL', 'BUDGET_EXCEEDED') == ('PASS', None)
-== R8 negotiable above max is PASS (G02, mandatory test 4) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   4 failed, 143 passed in 3.76s
+== R8 negotiable above max is PASS (G02, mandatory test 4) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   4 failed, 184 passed in 3.86s
    FAILED test_negotiable_above_max_is_unknown_not_pass
    FAILED test_results_from_live_snapshots_equal_results_from_jsonb_round_trips
    FAILED test_the_sale_price_table[25000000-27000000-UNKNOWN-None-UNKNOWN-PRICE_NEGOTIATION_UNCONFIRMED]
@@ -90,45 +90,48 @@ Test file         : tests/test_slice4_step4.py
    cause: E   AssertionError: assert ('PASS' == 'UNKNOWN'
    cause: E   AssertionError: assert ('PASS', 'PRI..._UNCONFIRMED') == ('UNKNOWN', '..._UNCONFIRMED')
    cause: E   AssertionError: assert [('TRANSACTIO...MIN', 'PASS')] == [('TRANSACTIO...MIN', 'PASS')]
-== R9 negotiability UNKNOWN taken as NO [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.69s
+== R9 negotiability UNKNOWN taken as NO [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 3.94s
    FAILED test_the_sale_price_table[25000000-27000000-UNKNOWN-None-UNKNOWN-PRICE_NEGOTIATION_UNCONFIRMED]
    cause: AssertionError: assert ('FAIL', 'BUDGET_EXCEEDED') == ('UNKNOWN', '..._UNCONFIRMED')
    cause: E   AssertionError: assert ('FAIL', 'BUDGET_EXCEEDED') == ('UNKNOWN', '..._UNCONFIRMED')
-== R10 a null maximum is FAIL [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.69s
+== R10 a null maximum is FAIL [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.49s
    FAILED test_the_sale_price_table[None-20000000-NO-None-UNKNOWN-None]
    cause: AssertionError: assert ('FAIL', None) == ('UNKNOWN', None)
    cause: E   AssertionError: assert ('FAIL', None) == ('UNKNOWN', None)
-== R11 an unknown asking price is PASS [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.45s
+== R11 an unknown asking price is PASS [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.72s
    FAILED test_the_sale_price_table[25000000-None-NO-None-UNKNOWN-PRICE_NOT_KNOWN]
    cause: AssertionError: assert ('PASS', 'PRICE_NOT_KNOWN') == ('UNKNOWN', 'PRICE_NOT_KNOWN')
    cause: E   AssertionError: assert ('PASS', 'PRICE_NOT_KNOWN') == ('UNKNOWN', 'PRICE_NOT_KNOWN')
-== R12 the expectation leaks into the explanation (R9.3) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 4.06s
+== R12 the expectation leaks into the explanation (R9.3) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.49s
    FAILED test_seller_expectation_can_pass_price_and_is_never_in_the_criterion_result
    cause: AssertionError: assert (None, {'basi...('24123457')}) == (None, {'basi...ithin': None})
    cause: E   AssertionError: assert (None, {'basi...('24123457')}) == (None, {'basi...ithin': None})
-== R13 the SALE price rule compares a RENT price (G4-5R) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 4.24s
+== R13 the SALE price rule compares a RENT price (G4-5R) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.04s
    FAILED test_the_sale_price_rule_refuses_a_rent_offer_outright
    cause: E   Failed: DID NOT RAISE RuntimeError
    cause: Failed: DID NOT RAISE RuntimeError
-== R14 an area equal to the minimum fails [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   2 failed, 145 passed in 4.33s
+== R14 an area equal to the minimum fails [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 3.78s
    FAILED test_area_minimum[200.00-PASS-BUILT_AREA_MIN-built]
    FAILED test_area_minimum[200.00-PASS-LAND_AREA_MIN-land]
    cause: AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
-== R15 an unknown area is FAIL [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   2 failed, 145 passed in 3.99s
+== R15 an unknown area is FAIL [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 3.89s
    FAILED test_area_minimum[None-UNKNOWN-BUILT_AREA_MIN-built]
    FAILED test_area_minimum[None-UNKNOWN-LAND_AREA_MIN-land]
    cause: AssertionError: assert 'FAIL' == 'UNKNOWN'
    cause: E   AssertionError: assert 'FAIL' == 'UNKNOWN'
-== R16 land and built areas swapped [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   8 failed, 139 passed in 3.68s
+== R16 land and built areas swapped [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   11 failed, 177 passed in 3.83s
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[FLEXIBLE-AREA_BELOW_PREFERENCE]
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[PREFERRED-AREA_BELOW_PREFERENCE]
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[REQUIRED-None]
    FAILED test_area_minimum[199.99-FAIL-BUILT_AREA_MIN-built]
    FAILED test_area_minimum[199.99-FAIL-LAND_AREA_MIN-land]
    FAILED test_area_minimum[200.00-PASS-BUILT_AREA_MIN-built]
@@ -139,42 +142,45 @@ Test file         : tests/test_slice4_step4.py
    FAILED test_results_from_live_snapshots_equal_results_from_jsonb_round_trips
    cause: AssertionError: assert 'UNKNOWN' == 'FAIL'
    cause: AssertionError: assert 'UNKNOWN' == 'PASS'
+   cause: AssertionError: assert ('UNKNOWN', N...NOT_RECORDED') == ('FAIL', 'ARE...AREA_MINIMUM')
+   cause: AssertionError: assert ('UNKNOWN', N...NOT_RECORDED') == ('FAIL', None, 'AREA_MINIMUM')
    cause: AssertionError: assert ['PASS', 'PAS...S', 'UNKNOWN'] == ['PASS', 'PAS...PASS', 'PASS']
    cause: AssertionError: assert [('TRANSACTIO...', 'UNKNOWN')] == [('TRANSACTIO...MIN', 'PASS')]
-   cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
-   cause: E   AssertionError: assert 'UNKNOWN' == 'PASS'
-== R17 a count equal to the minimum fails [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   2 failed, 145 passed in 3.67s
+== R17 a count equal to the minimum fails [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 3.69s
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[BEDROOMS_MIN-BEDROOMS]
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[ROOMS_MIN-ROOMS]
    cause: AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
-== R18 the evidence claim is dropped (§3.4) [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   2 failed, 145 passed in 3.51s
+== R18 the evidence claim is dropped (§3.4) [src/turab/matching/rules.py, 4 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 3.72s
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[BEDROOMS_MIN-BEDROOMS]
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[ROOMS_MIN-ROOMS]
-   cause: AssertionError: assert (None, 'DECLARED') == ('d823daa3-e6...', 'DECLARED')
-   cause: AssertionError: assert (None, 'DECLARED') == ('df043da3-ce...', 'DECLARED')
-   cause: E   AssertionError: assert (None, 'DECLARED') == ('d823daa3-e6...', 'DECLARED')
-   cause: E   AssertionError: assert (None, 'DECLARED') == ('df043da3-ce...', 'DECLARED')
-== R19 a missing count attribute is PASS [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   4 failed, 143 passed in 3.62s
+   cause: AssertionError: assert (None, 'DECLARED') == ('42ccb087-95...', 'DECLARED')
+   cause: AssertionError: assert (None, 'DECLARED') == ('d8b4254e-56...', 'DECLARED')
+   cause: E   AssertionError: assert (None, 'DECLARED') == ('42ccb087-95...', 'DECLARED')
+   cause: E   AssertionError: assert (None, 'DECLARED') == ('d8b4254e-56...', 'DECLARED')
+== R19 a missing count attribute is PASS [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   6 failed, 182 passed in 3.64s
+   FAILED test_an_applicable_count_that_is_not_recorded_stays_unknown
+   FAILED test_applicability_replays_from_the_snapshot_after_the_definition_changed
    FAILED test_blocking_if_unknown_adds_blocking_to_a_soft_criterion
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[BEDROOMS_MIN-BEDROOMS]
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[ROOMS_MIN-ROOMS]
    FAILED test_soft_criteria_never_decide_the_hard_gate
    cause: AssertionError: assert 'PASS' == 'UNKNOWN'
    cause: AssertionError: assert ('PASS', 'ATT...NOT_RECORDED') == ('UNKNOWN', '...NOT_RECORDED')
+   cause: AssertionError: assert ('PASS', Fals...NOT_RECORDED') == ('UNKNOWN', T...NOT_RECORDED')
    cause: AssertionError: assert False is True
    cause: E   AssertionError: assert 'PASS' == 'UNKNOWN'
    cause: E   AssertionError: assert ('PASS', 'ATT...NOT_RECORDED') == ('UNKNOWN', '...NOT_RECORDED')
-   cause: E   AssertionError: assert False is True
-== R20 an UNKNOWN option compared as a value (C03, M-02) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   6 failed, 141 passed in 3.98s
+== R20 an UNKNOWN option compared as a value (C03, M-02) [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   7 failed, 181 passed in 3.73s
    FAILED test_a_required_unknown_is_never_pass_or_fail_and_blocks
    FAILED test_document_type[UNKNOWN-EQ-LAND_BOOK-UNKNOWN-DOCUMENT_NOT_KNOWN]
    FAILED test_document_type[UNKNOWN-NOT_IN-wanted4-UNKNOWN-DOCUMENT_NOT_KNOWN]
    FAILED test_document_type[UNSPECIFIED_DOCUMENT-EQ-LAND_BOOK-UNKNOWN-DOCUMENT_NOT_KNOWN]
+   FAILED test_not_known_options_are_exactly_those_the_rule_calls_unknown
    FAILED test_results_from_live_snapshots_equal_results_from_jsonb_round_trips
    FAILED test_right_type_has_no_seeded_reason_code[UNKNOWN-UNKNOWN]
    cause: AssertionError: assert ('FAIL', 'DOCUMENT_MISMATCH') == ('UNKNOWN', '...NT_NOT_KNOWN')
@@ -182,40 +188,91 @@ Test file         : tests/test_slice4_step4.py
    cause: AssertionError: assert ('FAIL', None) == ('UNKNOWN', None)
    cause: AssertionError: assert ('PASS', None) == ('UNKNOWN', '...NT_NOT_KNOWN')
    cause: AssertionError: assert [('TRANSACTIO...MIN', 'PASS')] == [('TRANSACTIO...MIN', 'PASS')]
-   cause: E   AssertionError: assert ('FAIL', 'DOCUMENT_MISMATCH') == ('UNKNOWN', '...NT_NOT_KNOWN')
-== R21 UNSPECIFIED_DOCUMENT compared as a value [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 4.46s
+   cause: AssertionError: assert set() == {'UNKNOWN', '...IED_DOCUMENT'}
+== R21 UNSPECIFIED_DOCUMENT compared as a value [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 3.87s
    FAILED test_document_type[UNSPECIFIED_DOCUMENT-EQ-LAND_BOOK-UNKNOWN-DOCUMENT_NOT_KNOWN]
+   FAILED test_not_known_options_are_exactly_those_the_rule_calls_unknown
    cause: AssertionError: assert ('FAIL', 'DOCUMENT_MISMATCH') == ('UNKNOWN', '...NT_NOT_KNOWN')
+   cause: AssertionError: assert {'UNKNOWN'} == {'UNKNOWN', '...IED_DOCUMENT'}
    cause: E   AssertionError: assert ('FAIL', 'DOCUMENT_MISMATCH') == ('UNKNOWN', '...NT_NOT_KNOWN')
-== R22 an option criterion ignores NEQ / NOT_IN [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.80s
+   cause: E   AssertionError: assert {'UNKNOWN'} == {'UNKNOWN', '...IED_DOCUMENT'}
+== R22 an option criterion ignores NEQ / NOT_IN [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   3 failed, 185 passed in 4.18s
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[NEQ-UNKNOWN]
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[NOT_IN-value2]
    FAILED test_document_type[LAND_BOOK-NOT_IN-wanted5-PASS-None]
+   cause: AssertionError: assert 'FAIL' == 'PASS'
    cause: AssertionError: assert ('FAIL', 'DOCUMENT_MISMATCH') == ('PASS', None)
+   cause: E   AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert ('FAIL', 'DOCUMENT_MISMATCH') == ('PASS', None)
-== R23 DOCUMENT_MISMATCH not emitted [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   1 failed, 146 passed in 3.70s
+== R23 DOCUMENT_MISMATCH not emitted [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 4.11s
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[REQUIRED-DOCUMENT_MISMATCH]
    FAILED test_document_type[POSSESSION_CERTIFICATE-EQ-LAND_BOOK-FAIL-DOCUMENT_MISMATCH]
    cause: AssertionError: assert ('FAIL', None) == ('FAIL', 'DOCUMENT_MISMATCH')
+   cause: AssertionError: assert ('FAIL', None...IBUTE_OPTION') == ('FAIL', 'DOC...IBUTE_OPTION')
    cause: E   AssertionError: assert ('FAIL', None) == ('FAIL', 'DOCUMENT_MISMATCH')
-== R24 DOCUMENT_NOT_KNOWN not emitted [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   4 failed, 143 passed in 3.61s
+   cause: E   AssertionError: assert ('FAIL', None...IBUTE_OPTION') == ('FAIL', 'DOC...IBUTE_OPTION')
+== R24 DOCUMENT_NOT_KNOWN not emitted [src/turab/matching/rules.py, 2 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   4 failed, 184 passed in 3.99s
    FAILED test_document_type[None-EQ-LAND_BOOK-UNKNOWN-DOCUMENT_NOT_KNOWN]
    FAILED test_document_type[UNKNOWN-EQ-LAND_BOOK-UNKNOWN-DOCUMENT_NOT_KNOWN]
    FAILED test_document_type[UNKNOWN-NOT_IN-wanted4-UNKNOWN-DOCUMENT_NOT_KNOWN]
    FAILED test_document_type[UNSPECIFIED_DOCUMENT-EQ-LAND_BOOK-UNKNOWN-DOCUMENT_NOT_KNOWN]
    cause: AssertionError: assert ('UNKNOWN', None) == ('UNKNOWN', '...NT_NOT_KNOWN')
    cause: E   AssertionError: assert ('UNKNOWN', None) == ('UNKNOWN', '...NT_NOT_KNOWN')
-== R25 a criterion without a rule passes silently (§3.2) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 83e6537aa38f03ad identical
-   4 failed, 143 passed in 3.56s
+== R25 a criterion without a rule passes silently (§3.2) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   4 failed, 184 passed in 3.87s
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[FLEXIBLE-CUSTOM_ATTRIBUTE-EQ]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[FLEXIBLE-PROPERTY_TYPE-TEXT_SEMANTIC]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[PREFERRED-CUSTOM_ATTRIBUTE-EQ]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[PREFERRED-PROPERTY_TYPE-TEXT_SEMANTIC]
    cause: AssertionError: assert ('PASS', Fals...inistic_rule') == ('UNKNOWN', F...inistic_rule')
    cause: E   AssertionError: assert ('PASS', Fals...inistic_rule') == ('UNKNOWN', F...inistic_rule')
-== C1 an unsuited operator is not refused [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   14 failed, 133 passed in 3.78s
+== R26 a count on a type it cannot apply to is not FAIL (G4-18 (b)) [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   3 failed, 185 passed in 3.75s
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[BEDROOMS_MIN-BEDROOMS]
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[ROOMS_MIN-ROOMS]
+   FAILED test_applicability_replays_from_the_snapshot_after_the_definition_changed
+   cause: AssertionError: assert 'UNKNOWN' == 'FAIL'
+   cause: AssertionError: assert ('UNKNOWN', N...: 'BEDROOMS'}) == ('FAIL', None...: 'BEDROOMS'})
+   cause: AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+   cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
+   cause: E   AssertionError: assert ('UNKNOWN', N...: 'BEDROOMS'}) == ('FAIL', None...: 'BEDROOMS'})
+   cause: E   AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+== R27 count_min@2 reads a snapshot without applicability [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   1 failed, 187 passed in 4.03s
+   FAILED test_count_min_2_refuses_a_snapshot_without_applicability
+   cause: E   TypeError: 'NoneType' object is not subscriptable
+   cause: TypeError: 'NoneType' object is not subscriptable
+== R28 AREA_BELOW_PREFERENCE on a REQUIRED area [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   3 failed, 185 passed in 3.99s
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[REQUIRED-None]
+   FAILED test_area_minimum[199.99-FAIL-BUILT_AREA_MIN-built]
+   FAILED test_area_minimum[199.99-FAIL-LAND_AREA_MIN-land]
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.area_min@2: AREA_BELOW_PREFERENCE describes another importance than REQUIRED
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.area_min@2: AREA_BELOW_PREFERENCE describes another importance than REQUIRED
+== R29 LOCATION_MISMATCH on a soft location [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 4.06s
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.location@2: LOCATION_MISMATCH describes another importance than FLEXIBLE
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.location@2: LOCATION_MISMATCH describes another importance than PREFERRED
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.location@2: LOCATION_MISMATCH describes another importance than FLEXIBLE
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.location@2: LOCATION_MISMATCH describes another importance than PREFERRED
+== R30 DOCUMENT_MISMATCH on a soft document [src/turab/matching/rules.py, 1 site(s)]  restored: sha256 1c22fa15fdd698de identical
+   2 failed, 186 passed in 4.10s
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@2: DOCUMENT_MISMATCH describes another importance than FLEXIBLE
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@2: DOCUMENT_MISMATCH describes another importance than PREFERRED
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@2: DOCUMENT_MISMATCH describes another importance than FLEXIBLE
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@2: DOCUMENT_MISMATCH describes another importance than PREFERRED
+== C1 an unsuited operator is not refused [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   16 failed, 172 passed in 4.32s
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[IN-value0-None-False-does
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[TEXT_SEMANTIC-around
    FAILED test_an_operator_that_does_not_suit_its_code_is_refused[PREFERRED-BEDROOMS_MIN-LTE-2]
    FAILED test_an_operator_that_does_not_suit_its_code_is_refused[PREFERRED-BUDGET_MAX-IN-value0]
    FAILED test_an_operator_that_does_not_suit_its_code_is_refused[PREFERRED-DOCUMENT_TYPE-BOOL-True]
@@ -234,10 +291,11 @@ Test file         : tests/test_slice4_step4.py
    cause: E   AssertionError: assert 'does not suit' in 'a value its rule cannot read'
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C2 an unreadable value is not refused [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   19 failed, 128 passed in 3.71s
+== C2 an unreadable value is not refused [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   20 failed, 168 passed in 4.11s
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ--5-None-False-a
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-value1-None-False-a
    FAILED test_a_location_naming_no_location_is_refused
-   FAILED test_a_refusal_never_echoes_the_value
    FAILED test_a_value_no_rule_can_read_is_refused[BEDROOMS_MIN-GTE--1]
    FAILED test_a_value_no_rule_can_read_is_refused[BUDGET_MAX-LTE--1]
    FAILED test_a_value_no_rule_can_read_is_refused[BUDGET_MAX-LTE-1500000.5]
@@ -256,90 +314,109 @@ Test file         : tests/test_slice4_step4.py
    FAILED test_a_value_no_rule_can_read_is_refused[TRANSACTION_INTENT-EQ-LEASE]
    FAILED test_every_row_is_validated_before_any_contradiction_is_judged
    cause: AssertionError: assert 'G4-3' == 'G4-7'
+   cause: AssertionError: assert 'no property ...an satisfy it' == 'a value its rule cannot read'
    cause: E   AssertionError: assert 'G4-3' == 'G4-7'
+   cause: E   AssertionError: assert 'no property ...an satisfy it' == 'a value its rule cannot read'
    cause: E   Failed: DID NOT RAISE CriterionRefused
-   cause: Failed: DID NOT RAISE CriterionRefused
-== C3 an unreadable unit is not refused [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   3 failed, 144 passed in 3.93s
+   cause: E   TypeError: 'NoneType' object is not iterable
+== C3 an unreadable unit is not refused [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   4 failed, 184 passed in 3.94s
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-24000000-HOURS-False-a
    FAILED test_only_a_unit_the_rule_reads_is_accepted[BUDGET_MAX-centimes-True]
    FAILED test_only_a_unit_the_rule_reads_is_accepted[LAND_AREA_MIN-ha-True]
    FAILED test_only_a_unit_the_rule_reads_is_accepted[ROOMS_MIN-rooms-True]
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C4 a REQUIRED criterion without a rule is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   4 failed, 143 passed in 3.79s
+== C4 a REQUIRED criterion without a rule is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   4 failed, 184 passed in 3.88s
    FAILED test_a_required_criterion_without_a_deterministic_rule_is_refused[CUSTOM_ATTRIBUTE-EQ]
    FAILED test_a_required_criterion_without_a_deterministic_rule_is_refused[LOCATION-TEXT_SEMANTIC]
    FAILED test_a_required_criterion_without_a_deterministic_rule_is_refused[PROPERTY_TYPE-TEXT_SEMANTIC]
    FAILED test_an_unregistered_code_is_treated_as_having_no_rule
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C5 a blocking criterion without a rule is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   1 failed, 146 passed in 3.68s
+== C5 a blocking criterion without a rule is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   1 failed, 187 passed in 3.91s
    FAILED test_a_soft_criterion_without_a_rule_that_asks_to_block_is_refused
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C6 TEXT_SEMANTIC handed to the code's rule [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   4 failed, 143 passed in 3.72s
+== C6 TEXT_SEMANTIC handed to the code's rule [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   4 failed, 184 passed in 4.20s
    FAILED test_a_required_criterion_without_a_deterministic_rule_is_refused[LOCATION-TEXT_SEMANTIC]
    FAILED test_a_required_criterion_without_a_deterministic_rule_is_refused[PROPERTY_TYPE-TEXT_SEMANTIC]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[FLEXIBLE-PROPERTY_TYPE-TEXT_SEMANTIC]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[PREFERRED-PROPERTY_TYPE-TEXT_SEMANTIC]
    cause: AssertionError: assert ('G4-7' == 'G4-7'
    cause: E   AssertionError: assert ('G4-7' == 'G4-7'
-   cause: E   turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion 4fd3be3e-785a-4e7f-a8c5-63e5a05ed8ce): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; it
-   cause: E   turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion e9f3355a-228f-446e-8b51-dbab12511a5d): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; it
-   cause: turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion 4fd3be3e-785a-4e7f-a8c5-63e5a05ed8ce): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; its ru
-   cause: turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion e9f3355a-228f-446e-8b51-dbab12511a5d): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; its ru
-== C7 a REQUIRED BUDGET_TARGET is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   1 failed, 146 passed in 3.53s
+   cause: E   turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion 30dafe5d-2602-453d-a95d-209910aff21a): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; it
+   cause: E   turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion dc3258ce-0db7-4780-befe-85a3346b3c34): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; it
+   cause: turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion 30dafe5d-2602-453d-a95d-209910aff21a): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; its ru
+   cause: turab.matching.criteria.CriterionRefused: G4-7: PROPERTY_TYPE (criterion dc3258ce-0db7-4780-befe-85a3346b3c34): operator TEXT_SEMANTIC does not suit PROPERTY_TYPE; its ru
+== C7 a REQUIRED BUDGET_TARGET is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   1 failed, 187 passed in 3.79s
    FAILED test_budget_target_is_deferred_to_the_soft_score_and_never_required
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C8 a location that does not exist is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   1 failed, 146 passed in 3.64s
+== C8 a location that does not exist is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   1 failed, 187 passed in 3.48s
    FAILED test_a_location_naming_no_location_is_refused
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C9 no contradiction check (G4-3 (b)) [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   3 failed, 144 passed in 3.59s
+== C9 no contradiction check (G4-3 (b)) [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   3 failed, 185 passed in 3.83s
    FAILED test_a_required_row_disjoint_from_the_required_column_is_refused
    FAILED test_a_required_transaction_intent_row_against_the_request_is_refused
    FAILED test_disjoint_required_location_subtrees_are_refused_nested_ones_are_not
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C10 nested locations judged disjoint [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   1 failed, 146 passed in 3.94s
+== C10 nested locations judged disjoint [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   1 failed, 187 passed in 3.86s
    FAILED test_disjoint_required_location_subtrees_are_refused_nested_ones_are_not
-   cause: E   turab.matching.criteria.CriterionRefused: G4-3: LOCATION (criterion 5ec6d34c-4fb1-4b20-8f5a-e7207aaa4ba5): REQUIRED, and disjoint from the request's own REQUIRED valu
-   cause: turab.matching.criteria.CriterionRefused: G4-3: LOCATION (criterion 5ec6d34c-4fb1-4b20-8f5a-e7207aaa4ba5): REQUIRED, and disjoint from the request's own REQUIRED value: n
-== C11 a soft column counted in the contradiction check [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   1 failed, 146 passed in 3.37s
+   cause: E   turab.matching.criteria.CriterionRefused: G4-3: LOCATION (criterion d8f1bf49-426b-4492-b603-9263995d524d): REQUIRED, and disjoint from the request's own REQUIRED valu
+   cause: turab.matching.criteria.CriterionRefused: G4-3: LOCATION (criterion d8f1bf49-426b-4492-b603-9263995d524d): REQUIRED, and disjoint from the request's own REQUIRED value: n
+== C11 a soft column counted in the contradiction check [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   1 failed, 187 passed in 3.82s
    FAILED test_anything_short_of_a_provable_contradiction_is_evaluated_both_ways[PREFERRED-REQUIRED-EQ-APARTMENT]
-   cause: E   turab.matching.criteria.CriterionRefused: G4-3: PROPERTY_TYPE (criterion 0d4c3172-af61-41fa-9475-6ca681f71762): REQUIRED, and disjoint from the request's own REQUIRED
-   cause: turab.matching.criteria.CriterionRefused: G4-3: PROPERTY_TYPE (criterion 0d4c3172-af61-41fa-9475-6ca681f71762): REQUIRED, and disjoint from the request's own REQUIRED val
-== C12 a RENT request is evaluated (G4-5R) [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   3 failed, 144 passed in 3.62s
+   cause: E   turab.matching.criteria.CriterionRefused: G4-3: PROPERTY_TYPE (criterion c280ee33-bf27-40af-add6-6746338e52b7): REQUIRED, and disjoint from the request's own REQUIRED
+   cause: turab.matching.criteria.CriterionRefused: G4-3: PROPERTY_TYPE (criterion c280ee33-bf27-40af-add6-6746338e52b7): REQUIRED, and disjoint from the request's own REQUIRED val
+== C12 a RENT request is evaluated (G4-5R) [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   3 failed, 185 passed in 3.77s
    FAILED test_a_rent_request_is_refused_naming_g4_5r[70000-None]
    FAILED test_a_rent_request_is_refused_naming_g4_5r[None-70000]
    FAILED test_a_rent_request_is_refused_naming_g4_5r[None-None]
    cause: E   Failed: DID NOT RAISE CriterionRefused
    cause: Failed: DID NOT RAISE CriterionRefused
-== C13 a null budget column is added beside a budget row [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   2 failed, 145 passed in 3.19s
+== C13 a null budget column is added beside a budget row [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   2 failed, 186 passed in 4.19s
    FAILED test_a_null_budget_column_yields_to_a_budget_row
    FAILED test_a_rent_request_is_refused_naming_g4_5r[None-70000]
    cause: AssertionError: assert [('BUDGET_MAX..._MAX', 'ROW')] == [('BUDGET_MAX', 'ROW')]
    cause: E   AssertionError: assert [('BUDGET_MAX..._MAX', 'ROW')] == [('BUDGET_MAX', 'ROW')]
-   cause: E   assert None == 'feeef3ff-0dd4-47ee-b31c-c76f9b894e7b'
-   cause: assert None == 'feeef3ff-0dd4-47ee-b31c-c76f9b894e7b'
-== C14 ordinals counted across codes [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   52 failed, 95 passed in 3.43s
+   cause: E   assert None == '6db2e03c-9e91-4568-a3da-3ee4c5275ad9'
+   cause: assert None == '6db2e03c-9e91-4568-a3da-3ee4c5275ad9'
+== C14 ordinals counted across codes [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   68 failed, 120 passed in 3.66s
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[BEDROOMS_MIN-BEDROOMS]
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[ROOMS_MIN-ROOMS]
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[REQUIRED-DOCUMENT_MISMATCH]
    FAILED test_a_hard_fail_dominates_and_leaves_no_actionable_unknown
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[REQUIRED-LOCATION_MISMATCH]
    FAILED test_a_location_in_list_passes_on_any_member
    FAILED test_a_property_without_a_location_is_unknown
    FAILED test_a_required_unknown_is_never_pass_or_fail_and_blocks
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[IN-value0]
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[NEQ-UNKNOWN]
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[NOT_IN-value2]
    FAILED test_a_stricter_numeric_row_is_evaluated_and_prevails
+   FAILED test_an_applicable_count_that_is_not_recorded_stays_unknown
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[FLEXIBLE-AREA_BELOW_PREFERENCE]
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[PREFERRED-AREA_BELOW_PREFERENCE]
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[REQUIRED-None]
+   FAILED test_applicability_replays_from_the_snapshot_after_the_definition_changed
    FAILED test_area_minimum[199.99-FAIL-BUILT_AREA_MIN-built]
    FAILED test_area_minimum[199.99-FAIL-LAND_AREA_MIN-land]
    FAILED test_area_minimum[200.00-PASS-BUILT_AREA_MIN-built]
@@ -389,37 +466,141 @@ Test file         : tests/test_slice4_step4.py
    FAILED test_the_sale_price_table[None-20000000-NO-None-UNKNOWN-None]
    cause: AssertionError: assert (('DOCUMENT_TYPE', 3),) == (('DOCUMENT_TYPE', 1),)
    cause: AssertionError: assert (('LOCATION', 2),) == (('LOCATION', 1),)
-   cause: AssertionError: assert [('TRANSACTIO...edf57ec2631')] == [('TRANSACTIO...edf57ec2631')]
+   cause: AssertionError: assert [('TRANSACTIO...be4b9891bdf')] == [('TRANSACTIO...be4b9891bdf')]
    cause: E   AssertionError: assert (('DOCUMENT_TYPE', 3),) == (('DOCUMENT_TYPE', 1),)
    cause: E   AssertionError: assert (('LOCATION', 2),) == (('LOCATION', 1),)
-   cause: E   AssertionError: assert [('TRANSACTIO...edf57ec2631')] == [('TRANSACTIO...edf57ec2631')]
-== C15 deferred criteria dropped [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 db8f44aef1cb3cd9 identical
-   1 failed, 146 passed in 3.48s
+   cause: E   AssertionError: assert [('TRANSACTIO...be4b9891bdf')] == [('TRANSACTIO...be4b9891bdf')]
+== C15 deferred criteria dropped [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   2 failed, 186 passed in 3.84s
+   FAILED test_a_valid_budget_target_row_is_deferred_with_its_value_read
    FAILED test_budget_target_is_deferred_to_the_soft_score_and_never_required
    cause: AssertionError: assert [('BUDGET_TAR...p 6 (G4-12)')] == [('BUDGET_TAR...p 6 (G4-12)')]
    cause: E   AssertionError: assert [('BUDGET_TAR...p 6 (G4-12)')] == [('BUDGET_TAR...p 6 (G4-12)')]
-== H1 a REQUIRED FAIL is not blocking [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   3 failed, 144 passed in 3.37s
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== C16 a value no property can pass is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   13 failed, 175 passed in 3.71s
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-EQ-UNSPECIFIED_DOCUMENT]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-IN-value3]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-PROPERTY_TYPE-NOT_IN-value4]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-RIGHT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-TRANSACTION_INTENT-NOT_IN-value5]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-EQ-UNSPECIFIED_DOCUMENT]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-IN-value3]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-PROPERTY_TYPE-NOT_IN-value4]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-RIGHT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-TRANSACTION_INTENT-NOT_IN-value5]
+   FAILED test_not_in_every_known_document_type_is_refused
+   cause: E   Failed: DID NOT RAISE CriterionRefused
+   cause: Failed: DID NOT RAISE CriterionRefused
+== C17 the not-known options counted as passable [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   9 failed, 179 passed in 3.47s
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-EQ-UNSPECIFIED_DOCUMENT]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-DOCUMENT_TYPE-IN-value3]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-RIGHT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-EQ-UNKNOWN]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-EQ-UNSPECIFIED_DOCUMENT]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-DOCUMENT_TYPE-IN-value3]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-RIGHT_TYPE-EQ-UNKNOWN]
+   FAILED test_not_in_every_known_document_type_is_refused
+   cause: E   Failed: DID NOT RAISE CriterionRefused
+   cause: Failed: DID NOT RAISE CriterionRefused
+== C18 NEQ / NOT_IN judged as EQ / IN [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   7 failed, 181 passed in 3.62s
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-PROPERTY_TYPE-NOT_IN-value4]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[PREFERRED-TRANSACTION_INTENT-NOT_IN-value5]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-PROPERTY_TYPE-NOT_IN-value4]
+   FAILED test_a_requested_value_no_property_can_pass_is_refused[REQUIRED-TRANSACTION_INTENT-NOT_IN-value5]
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[NEQ-UNKNOWN]
+   FAILED test_a_set_with_a_passable_known_option_is_accepted[NOT_IN-value2]
+   FAILED test_not_in_every_known_document_type_is_refused
+   cause: E   Failed: DID NOT RAISE CriterionRefused
+   cause: E   turab.matching.criteria.CriterionRefused: G4-7: DOCUMENT_TYPE (criterion 32ab7081-373a-45a6-a127-a51bd73e7c64): no property value can satisfy it
+   cause: E   turab.matching.criteria.CriterionRefused: G4-7: DOCUMENT_TYPE (criterion 4055e871-f6de-41a2-bbc1-1d3364e04905): no property value can satisfy it
+   cause: Failed: DID NOT RAISE CriterionRefused
+   cause: turab.matching.criteria.CriterionRefused: G4-7: DOCUMENT_TYPE (criterion 32ab7081-373a-45a6-a127-a51bd73e7c64): no property value can satisfy it
+   cause: turab.matching.criteria.CriterionRefused: G4-7: DOCUMENT_TYPE (criterion 4055e871-f6de-41a2-bbc1-1d3364e04905): no property value can satisfy it
+== C19 a deferred row is not validated [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   5 failed, 183 passed in 3.69s
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ--5-None-False-a
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-24000000-HOURS-False-a
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-value1-None-False-a
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[IN-value0-None-False-does
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[TEXT_SEMANTIC-around
+   cause: E   Failed: DID NOT RAISE CriterionRefused
+   cause: Failed: DID NOT RAISE CriterionRefused
+== C20 a deferred row with blocking_if_unknown is accepted [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   1 failed, 187 passed in 3.94s
+   FAILED test_a_deferred_budget_target_is_validated_before_it_is_deferred[EQ-24000000-None-True-blocking_if_unknown]
+   cause: E   Failed: DID NOT RAISE CriterionRefused
+   cause: Failed: DID NOT RAISE CriterionRefused
+== C21 LOCATION evaluated by version 1 [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   3 failed, 185 passed in 3.95s
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   FAILED test_version_2_is_used_and_version_1_stays_registered_beside_it
+   cause: AssertionError: assert {('criterion....e', '1'), ...} == {('criterion....e', '1'), ...}
+   cause: E   AssertionError: assert {('criterion....e', '1'), ...} == {('criterion....e', '1'), ...}
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.location@1: LOCATION_MISMATCH describes another importance than FLEXIBLE
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.location@1: LOCATION_MISMATCH describes another importance than PREFERRED
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.location@1: LOCATION_MISMATCH describes another importance than FLEXIBLE
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.location@1: LOCATION_MISMATCH describes another importance than PREFERRED
+== C22 areas evaluated by version 1 [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   3 failed, 185 passed in 3.82s
+   FAILED test_an_area_fail_carries_the_preference_code_only_when_soft[REQUIRED-None]
+   FAILED test_area_minimum[199.99-FAIL-LAND_AREA_MIN-land]
+   FAILED test_version_2_is_used_and_version_1_stays_registered_beside_it
+   cause: AssertionError: assert {('criterion....n', '2'), ...} == {('criterion....e', '1'), ...}
+   cause: E   AssertionError: assert {('criterion....n', '2'), ...} == {('criterion....e', '1'), ...}
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.area_min@1: AREA_BELOW_PREFERENCE describes another importance than REQUIRED
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.area_min@1: AREA_BELOW_PREFERENCE describes another importance than REQUIRED
+== C23 counts evaluated by version 1 [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   3 failed, 185 passed in 3.70s
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[ROOMS_MIN-ROOMS]
+   FAILED test_applicability_replays_from_the_snapshot_after_the_definition_changed
+   FAILED test_version_2_is_used_and_version_1_stays_registered_beside_it
+   cause: AssertionError: assert 'UNKNOWN' == 'FAIL'
+   cause: AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+   cause: AssertionError: assert {('criterion....n', '2'), ...} == {('criterion....e', '1'), ...}
+   cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
+   cause: E   AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+   cause: E   AssertionError: assert {('criterion....n', '2'), ...} == {('criterion....e', '1'), ...}
+== C24 documents evaluated by version 1 [src/turab/matching/criteria.py, 1 site(s)]  restored: sha256 00906933ceb36297 identical
+   3 failed, 185 passed in 3.68s
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_document_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   FAILED test_version_2_is_used_and_version_1_stays_registered_beside_it
+   cause: AssertionError: assert {('criterion....n', '2'), ...} == {('criterion....e', '1'), ...}
+   cause: E   AssertionError: assert {('criterion....n', '2'), ...} == {('criterion....e', '1'), ...}
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@1: DOCUMENT_MISMATCH describes another importance than FLEXIBLE
+   cause: E   turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@1: DOCUMENT_MISMATCH describes another importance than PREFERRED
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@1: DOCUMENT_MISMATCH describes another importance than FLEXIBLE
+   cause: turab.matching.hard_gate.RuleOutputInvalid: criterion.attribute_option@1: DOCUMENT_MISMATCH describes another importance than PREFERRED
+== H1 a REQUIRED FAIL is not blocking [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   3 failed, 185 passed in 3.64s
    FAILED test_a_hard_fail_dominates_and_leaves_no_actionable_unknown
    FAILED test_blocking_is_g4_4[False-FAIL-REQUIRED]
    FAILED test_blocking_is_g4_4[True-FAIL-REQUIRED]
    cause: AssertionError: assert False is True
    cause: E   AssertionError: assert False is True
-== H2 blocking_if_unknown ignored [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   3 failed, 144 passed in 3.40s
+== H2 blocking_if_unknown ignored [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   3 failed, 185 passed in 3.88s
    FAILED test_blocking_if_unknown_adds_blocking_to_a_soft_criterion
    FAILED test_blocking_is_g4_4[True-UNKNOWN-FLEXIBLE]
    FAILED test_blocking_is_g4_4[True-UNKNOWN-PREFERRED]
    cause: AssertionError: assert False is True
    cause: E   AssertionError: assert False is True
-== H3 blocking_if_unknown blocks a soft FAIL [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   2 failed, 145 passed in 3.14s
+== H3 blocking_if_unknown blocks a soft FAIL [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   2 failed, 186 passed in 4.09s
    FAILED test_blocking_is_g4_4[True-FAIL-FLEXIBLE]
    FAILED test_blocking_is_g4_4[True-FAIL-PREFERRED]
    cause: AssertionError: assert True is False
    cause: E   AssertionError: assert True is False
-== H4 soft criteria decide the hard gate [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   6 failed, 141 passed in 3.18s
+== H4 soft criteria decide the hard gate [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   6 failed, 182 passed in 3.78s
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[FLEXIBLE-CUSTOM_ATTRIBUTE-EQ]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[FLEXIBLE-PROPERTY_TYPE-TEXT_SEMANTIC]
    FAILED test_a_soft_criterion_without_a_rule_is_unknown_and_not_blocking[PREFERRED-CUSTOM_ATTRIBUTE-EQ]
@@ -432,21 +613,21 @@ Test file         : tests/test_slice4_step4.py
    cause: E   AssertionError: assert ('FAIL', 'PASS') == ('PASS', 'PASS')
    cause: E   AssertionError: assert ('PASS' == 'PASS'
    cause: E   AssertionError: assert ('UNKNOWN', 'UNKNOWN') == ('PASS', 'UNKNOWN')
-== H5 a REQUIRED unknown leaves the hard gate PASS [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   2 failed, 145 passed in 3.14s
+== H5 a REQUIRED unknown leaves the hard gate PASS [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   2 failed, 186 passed in 3.90s
    FAILED test_a_required_unknown_is_never_pass_or_fail_and_blocks
    FAILED test_negotiable_above_max_is_unknown_not_pass
    cause: AssertionError: assert ('PASS' == 'UNKNOWN'
    cause: AssertionError: assert ('PASS', 'UNKNOWN') == ('UNKNOWN', 'UNKNOWN')
    cause: E   AssertionError: assert ('PASS' == 'UNKNOWN'
    cause: E   AssertionError: assert ('PASS', 'UNKNOWN') == ('UNKNOWN', 'UNKNOWN')
-== H6 unknowns on a rejected candidate called actionable [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   1 failed, 146 passed in 3.17s
+== H6 unknowns on a rejected candidate called actionable [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   1 failed, 187 passed in 3.69s
    FAILED test_a_hard_fail_dominates_and_leaves_no_actionable_unknown
    cause: AssertionError: assert (('DOCUMENT_TYPE', 1),) == ()
    cause: E   AssertionError: assert (('DOCUMENT_TYPE', 1),) == ()
-== H7 the information gate ignores blocking unknowns [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   3 failed, 144 passed in 3.45s
+== H7 the information gate ignores blocking unknowns [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   3 failed, 185 passed in 3.87s
    FAILED test_a_required_unknown_is_never_pass_or_fail_and_blocks
    FAILED test_blocking_if_unknown_adds_blocking_to_a_soft_criterion
    FAILED test_negotiable_above_max_is_unknown_not_pass
@@ -456,18 +637,23 @@ Test file         : tests/test_slice4_step4.py
    cause: E   AssertionError: assert ('PASS', 'PASS') == ('PASS', 'UNKNOWN')
    cause: E   AssertionError: assert ('UNKNOWN' == 'UNKNOWN'
    cause: E   AssertionError: assert ('UNKNOWN', 'PASS') == ('UNKNOWN', 'UNKNOWN')
-== H8 a reason code outside the seed is accepted [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   1 failed, 146 passed in 3.69s
+== H8 a reason code outside the seed is accepted [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   1 failed, 187 passed in 3.70s
    FAILED test_a_rule_output_the_table_cannot_hold_is_refused
    cause: E   Failed: DID NOT RAISE RuleOutputInvalid
    cause: Failed: DID NOT RAISE RuleOutputInvalid
-== H9 a compatibility outside PASS/FAIL/UNKNOWN is accepted [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   1 failed, 146 passed in 3.32s
+== H9 a compatibility outside PASS/FAIL/UNKNOWN is accepted [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   1 failed, 187 passed in 3.79s
    FAILED test_a_rule_output_the_table_cannot_hold_is_refused
    cause: E   Failed: DID NOT RAISE RuleOutputInvalid
    cause: Failed: DID NOT RAISE RuleOutputInvalid
-== H10 rules read the live form, not the stored form [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 75a19b8837b1b59c identical
-   8 failed, 139 passed in 3.32s
+== H11 a reason code naming another importance is accepted [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   1 failed, 187 passed in 3.74s
+   FAILED test_a_rule_output_naming_another_importance_is_refused
+   cause: E   Failed: DID NOT RAISE RuleOutputInvalid
+   cause: Failed: DID NOT RAISE RuleOutputInvalid
+== H10 rules read the live form, not the stored form [src/turab/matching/hard_gate.py, 1 site(s)]  restored: sha256 f846fc9d1b903055 identical
+   8 failed, 180 passed in 3.59s
    FAILED test_a_location_in_list_passes_on_any_member
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[BEDROOMS_MIN-BEDROOMS]
    FAILED test_count_minimum_reads_the_resolved_attribute_and_its_evidence[ROOMS_MIN-ROOMS]
@@ -477,13 +663,13 @@ Test file         : tests/test_slice4_step4.py
    FAILED test_location_is_the_requested_subtree[W-ADRAR-ADR-KSAR-OUGDIM-PASS]
    FAILED test_results_from_live_snapshots_equal_results_from_jsonb_round_trips
    cause: AssertionError: assert 'FAIL' == 'PASS'
-   cause: AssertionError: assert (UUID('54b70a...), 'DECLARED') == ('54b70a8a-f2...', 'DECLARED')
-   cause: AssertionError: assert (UUID('9a1844...), 'DECLARED') == ('9a18442e-2e...', 'DECLARED')
+   cause: AssertionError: assert (UUID('67d29f...), 'DECLARED') == ('67d29f9d-40...', 'DECLARED')
+   cause: AssertionError: assert (UUID('85bf4f...), 'DECLARED') == ('85bf4f8b-6c...', 'DECLARED')
    cause: AssertionError: assert HardGate(resu...NT_TYPE', 1))) == HardGate(resu...e_unknowns=())
    cause: AssertionError: assert ['PASS', 'PAS...PASS', 'PASS'] == ['PASS', 'PAS...PASS', 'PASS']
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
-== S1 no ancestry recorded, only the location itself [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 2d849f2629eedcc8 identical
-   6 failed, 141 passed in 3.42s
+== S1 no ancestry recorded, only the location itself [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 b9dc0b90ea3bf814 identical
+   6 failed, 182 passed in 4.03s
    FAILED test_a_location_in_list_passes_on_any_member
    FAILED test_everything_passing_passes_both_gates
    FAILED test_location_is_the_requested_subtree[C-ADRAR-ADR-KSAR-OUGDIM-PASS]
@@ -496,9 +682,12 @@ Test file         : tests/test_slice4_step4.py
    cause: E   AssertionError: assert 'FAIL' == 'PASS'
    cause: E   AssertionError: assert ['PASS', 'PAS...PASS', 'PASS'] == ['PASS', 'PAS...PASS', 'PASS']
    cause: E   AssertionError: assert [('TRANSACTIO...MIN', 'PASS')] == [('TRANSACTIO...MIN', 'PASS')]
-== S2 ancestry root first [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 2d849f2629eedcc8 identical
-   12 failed, 135 passed in 3.32s
+== S2 ancestry root first [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 b9dc0b90ea3bf814 identical
+   15 failed, 173 passed in 3.68s
    FAILED test_a_hard_fail_dominates_and_leaves_no_actionable_unknown
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[FLEXIBLE-None]
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[PREFERRED-None]
+   FAILED test_a_location_fail_carries_the_required_code_only_when_required[REQUIRED-LOCATION_MISMATCH]
    FAILED test_a_location_in_list_passes_on_any_member
    FAILED test_evaluating_writes_nothing
    FAILED test_everything_passing_passes_both_gates
@@ -510,9 +699,20 @@ Test file         : tests/test_slice4_step4.py
    FAILED test_location_is_the_requested_subtree[W-ADRAR-ADR-KSAR-OUGDIM-PASS]
    FAILED test_results_from_live_snapshots_equal_results_from_jsonb_round_trips
    FAILED test_the_location_rule_replays_from_the_snapshot_after_the_tree_changed
-   cause: AssertionError: assert [UUID('aecfe6...2233c49c4c0')] == [UUID('0f9d61...efba4d2807c')]
-   cause: E   AssertionError: assert [UUID('aecfe6...2233c49c4c0')] == [UUID('0f9d61...efba4d2807c')]
+   cause: AssertionError: assert [UUID('78cf09...f2931d72973')] == [UUID('0c5e1a...5e1e5ce343d')]
+   cause: E   AssertionError: assert [UUID('78cf09...f2931d72973')] == [UUID('0c5e1a...5e1e5ce343d')]
    cause: E   RuntimeError: the property snapshot carries no location ancestry for its location; the LOCATION rule refuses to guess (G4-6)
    cause: RuntimeError: the property snapshot carries no location ancestry for its location; the LOCATION rule refuses to guess (G4-6)
+== S3 applicability recorded as 'every type' [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 b9dc0b90ea3bf814 identical
+   3 failed, 185 passed in 3.79s
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[BEDROOMS_MIN-BEDROOMS]
+   FAILED test_a_count_on_a_type_the_attribute_cannot_apply_to_fails[ROOMS_MIN-ROOMS]
+   FAILED test_applicability_replays_from_the_snapshot_after_the_definition_changed
+   cause: AssertionError: assert ('UNKNOWN', N...: 'BEDROOMS'}) == ('FAIL', None...: 'BEDROOMS'})
+   cause: AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+   cause: AssertionError: assert None == ['HOUSE_VILLA', 'APARTMENT']
+   cause: E   AssertionError: assert ('UNKNOWN', N...: 'BEDROOMS'}) == ('FAIL', None...: 'BEDROOMS'})
+   cause: E   AssertionError: assert ('UNKNOWN', N...te': 'ROOMS'}) == ('FAIL', None...te': 'ROOMS'})
+   cause: E   AssertionError: assert None == ['HOUSE_VILLA', 'APARTMENT']
 
 SURVIVING MUTATIONS: none

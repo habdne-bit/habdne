@@ -438,3 +438,19 @@ docs/gate/SLICE_4_PLAN.md                                      rev7 c32659650c72
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   f052bb1b4b853ee6bfe6d00c65ba333621d1cc1cad55033b99aba48995ae7880
 docs/gate/evidence/SLICE4-STEP4-MUTATIONS.txt                  new  5b5544d4f38488a962fffacb7795f98b2df3b8dc0fdf92a4a2a7bdfb5334dd61
 SLICE_4_PLAN.md changed revision: 6 -> 7 (step 3 closed; 3.4 corrected; G4-5R step-4 behaviour stated; G4-18 raised).
+
+--- Slice 4 step 4, review of f789a59: unsatisfiable values, deferred validation, reason codes by importance; G4-18 (b); G4-5R interim, G4-10, G4-11 decided ---
+src/turab/matching/rules.py                                    --   1c22fa15fdd698de01462b480262d3d7565f8e41fbeddbceda3dc1c4a33935a7
+src/turab/matching/criteria.py                                 --   00906933ceb362972fff71b0d3c2070846f9a6602a93912550e1be6a4b8d47e5
+src/turab/matching/hard_gate.py                                --   f846fc9d1b90305574d6373b6eb0f9b469a64c25256bf1933d9eee7b9569e386
+src/turab/matching/snapshots.py                                --   b9dc0b90ea3bf8141f2ff1889ba3380b2aca89d595d3ffd5a55bb3451411f5b3
+src/turab/matching/rule_pins.py                                --   980f6db21bb6f3c224f24f9df39b12951b36ad80e900808070b41b3d5c18659f
+tests/test_slice4_step4.py                                     --   5f8e227b886cc8cfc743c947b1faf0eb7065f477ae5c61d95a9f3782db480d08
+tests/test_slice4_mutation_anchors.py                          new  2165fcef0ea21ac891be0b2f1f68d449d2ce92b501bf86f36b5f04699dbe50e6
+db/dev/mutate_slice4_step4.py                                  --   f9f53f3e98425aa68fa9530818923d8486b9aff08cd54fb874267d23119e1c14
+docs/gate/SLICE_4_STEP4_DELIVERY.md                            --   a0ca91c4bf1887b40adb265bbb7c6012e41a180a72b3bf9c0d5147c1d7d0c611
+docs/gate/SLICE_4_PLAN.md                                      rev8 0b7866488bd356ba000324e25f71adc61e82a314e5b4efe6a5af83b586ca332d
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   954bb6c1bf0de512c7c85037a27525f87e00cd087945cadfef497c524bffbf57
+docs/gate/evidence/SLICE4-STEP4-REVIEW-BEFORE-FIX.txt          new  cc82e606ec438cba16064e245ae3b050f55e263475f5bedb701920ec5647c22f
+docs/gate/evidence/SLICE4-STEP4-MUTATIONS.txt                  --   e9fb4e6e07e0f6ffa8f94f66f0668739315e0726d1bf624225cb9dd66cd20873
+SLICE_4_PLAN.md changed revision: 7 -> 8 (G4-5R interim refusal, G4-18 (b), G4-10, G4-11 decided; step 4 not closed).
