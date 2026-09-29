@@ -179,7 +179,11 @@ intended assertions, for example:
 - P9 (PUBLIC_LISTING_ALLOWED not counted) fails the G4-10 decision's test;
 - E10 (the permission reason dropped) fails 28 tests.
 
-The clean-tree result is in `evidence/SLICE4-STEP5-MUTATIONS.txt`.
+**Clean-tree result: 32 of 32 fail, and none survives.**
+- Recorded at `02b9898`, source fingerprint `c7f6b318…df778`, baseline 122
+  passed (`evidence/SLICE4-STEP5-MUTATIONS.txt`).
+- Every mutated file was restored and verified by sha256.
+- No test and no production file changed between the trial and this run.
 
 ## 7. What remains
 

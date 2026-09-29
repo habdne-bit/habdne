@@ -1,0 +1,427 @@
+TURAB — Slice 4 step 5: which freshness, permission or eligibility decision fails which test
+============================================================
+Base commit       : 02b9898e5d9eeb35a95c04c0d4f1c4f89db2fda1
+Source fingerprint: c7f6b3188ecb2be9c3f097446f5b2953917a45de67249052a334d225167df778
+Working tree      : CLEAN
+Recorded          : 2026-09-29 20:45:55 UTC
+Test file         : tests/test_slice4_step5.py
+
+=== baseline (no mutation) ===
+   122 passed in 2.84s
+== F1 stale AT the threshold, not past it [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   3 failed, 119 passed in 2.74s
+   FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[threshold-offer_terms]
+   FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[threshold-property]
+   FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[threshold-request]
+   cause: AssertionError: assert 'FRESH' == 'STALE'
+   cause: E   AssertionError: assert 'FRESH' == 'STALE'
+== F2 never confirmed taken as FRESH [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   4 failed, 118 passed in 2.67s
+   FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[None-offer_terms]
+   FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[None-property]
+   FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[None-request]
+   FAILED test_the_freshness_snapshot_reads_the_three_clocks
+   cause: AssertionError: assert 'UNKNOWN' == 'FRESH'
+   cause: AssertionError: assert ('STALE', 'FRESH', 'STALE') == ('STALE', 'UNKNOWN', 'STALE')
+   cause: E   AssertionError: assert 'UNKNOWN' == 'FRESH'
+   cause: E   AssertionError: assert ('STALE', 'FRESH', 'STALE') == ('STALE', 'UNKNOWN', 'STALE')
+== F3 the offer judged on last_confirmed_at, not its terms [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   9 failed, 113 passed in 2.92s
+   FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[missing-PERMISSION_MISSING]
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
+   FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
+   FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
+   FAILED test_a_stale_request_needs_confirmation
+   FAILED test_every_gate_passing_is_eligible_with_no_reason
+   FAILED test_the_freshness_snapshot_reads_the_three_clocks
+   FAILED test_the_instant_is_not_in_the_snapshot_and_states_decide_the_hash
+   cause: AssertionError: assert ('NEEDS_CONFI...STALE', None]) == ('NEEDS_CONFI...QUEST_STALE'])
+   cause: AssertionError: assert ('NEEDS_CONFIRMATION' == 'ELIGIBLE'
+   cause: AssertionError: assert ('STALE', 'UNKNOWN', 'FRESH') == ('STALE', 'UNKNOWN', 'STALE')
+   cause: AssertionError: assert ('STALE', ['P...STALE', None]) == ('STALE', ['PROPERTY_STALE'])
+   cause: AssertionError: assert ['DOCUMENT_MI...SION_MISSING'] == ['DOCUMENT_MI...SION_MISSING']
+   cause: AssertionError: assert ['DOCUMENT_NO...SION_MISSING'] == ['DOCUMENT_NO...SION_MISSING']
+== F4 the offer judged on the property's threshold [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   2 failed, 120 passed in 2.77s
+   FAILED test_the_freshness_snapshot_reads_the_three_clocks
+   FAILED test_the_instant_is_not_in_the_snapshot_and_states_decide_the_hash
+   cause: AssertionError: assert ('STALE', 'UNKNOWN', 'FRESH') == ('STALE', 'UNKNOWN', 'STALE')
+   cause: E   AssertionError: assert ('STALE', 'UNKNOWN', 'FRESH') == ('STALE', 'UNKNOWN', 'STALE')
+   cause: E   assert b'{"format":"turab.freshness-snapshot/1","offer":{"basis":"FRESH","confirmed_at":"2026-09-28T12:00:00.000000Z","state"...med_at":"2026-09-28T12:00:00.000000Z",
+   cause: assert b'{"format":"turab.freshness-snapshot/1","offer":{"basis":"FRESH","confirmed_at":"2026-09-28T12:00:00.000000Z","state"...med_at":"2026-09-28T12:00:00.000000Z","sta
+== F5 no evaluated offer taken as FRESH [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.72s
+   FAILED test_no_evaluated_offer_is_not_applicable
+   cause: AssertionError: assert {'state': 'FR...med_at': None} == {'state': 'NO...med_at': None}
+   cause: E   AssertionError: assert {'state': 'FR...med_at': None} == {'state': 'NO...med_at': None}
+== F6 the instant written into the snapshot (G4-13) [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.46s
+   FAILED test_the_instant_is_not_in_the_snapshot_and_states_decide_the_hash
+   cause: E   assert b'{"as_of":"2...request":30}}' == b'{"as_of":"2...request":30}}'
+   cause: assert b'{"as_of":"2...request":30}}' == b'{"as_of":"2...request":30}}'
+== F7 a naive instant accepted [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.50s
+   FAILED test_a_naive_instant_is_refused
+   cause: E   TypeError: can't compare offset-naive and offset-aware datetimes
+   cause: TypeError: can't compare offset-naive and offset-aware datetimes
+== P1 another party's consent counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.55s
+   FAILED test_a_property_binding_counts_only_for_the_offers_own_party
+   cause: AssertionError: assert [('PROPERTY', 'CURRENT')] == [('PROPERTY', 'OTHER_PARTY')]
+   cause: E   AssertionError: assert [('PROPERTY', 'CURRENT')] == [('PROPERTY', 'OTHER_PARTY')]
+== P2 a grant whose scope changed counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.43s
+   FAILED test_a_grant_whose_scope_changed_after_binding_does_not_count
+   cause: AssertionError: assert ['CURRENT'] == ['SCOPE_MISMATCH']
+   cause: E   AssertionError: assert ['CURRENT'] == ['SCOPE_MISMATCH']
+== P3 a revoked binding counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.35s
+   FAILED test_only_revoked_bindings_fail_with_consent_revoked[binding
+   cause: AssertionError: assert ['CURRENT'] == ['REVOKED']
+   cause: E   AssertionError: assert ['CURRENT'] == ['REVOKED']
+== P4 a REVOKED grant counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   2 failed, 120 passed in 2.59s
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
+   FAILED test_only_revoked_bindings_fail_with_consent_revoked[grant
+   cause: AssertionError: assert ('ELIGIBLE', 'PASS') == ('NEEDS_CONFIRMATION', 'FAIL')
+   cause: AssertionError: assert ['CURRENT'] == ['REVOKED']
+   cause: E   AssertionError: assert ('ELIGIBLE', 'PASS') == ('NEEDS_CONFIRMATION', 'FAIL')
+   cause: E   AssertionError: assert ['CURRENT'] == ['REVOKED']
+== P5 a grant with a revocation date counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.42s
+   FAILED test_only_revoked_bindings_fail_with_consent_revoked[grant
+   cause: AssertionError: assert ['CURRENT'] == ['REVOKED']
+   cause: E   AssertionError: assert ['CURRENT'] == ['REVOKED']
+== P6 a binding not yet started counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   2 failed, 120 passed in 2.47s
+   FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[bound_at]
+   FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[granted_at]
+   cause: AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
+   cause: E   AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
+== P7 a grant not yet started counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.57s
+   FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[granted_at]
+   cause: AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
+   cause: E   AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
+== P8 bindings on the property are not read [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.75s
+   FAILED test_a_property_binding_counts_only_for_the_offers_own_party
+   cause: AssertionError: assert [] == [('PROPERTY', 'OTHER_PARTY')]
+   cause: E   AssertionError: assert [] == [('PROPERTY', 'OTHER_PARTY')]
+== P9 PUBLIC_LISTING_ALLOWED does not count (G4-10 decision) [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.58s
+   FAILED test_a_current_matching_binding_on_the_offer_passes[PUBLIC_LISTING_ALLOWED]
+   cause: AssertionError: assert [] == [(UUID('cca47...', 'CURRENT')]
+   cause: E   AssertionError: assert [] == [(UUID('cca47...', 'CURRENT')]
+== P10 every purpose counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 4826c49af9a5014e identical
+   1 failed, 121 passed in 2.66s
+   FAILED test_other_purposes_are_not_matching_permission
+   cause: AssertionError: assert [{'consent_bi.../UTC')), ...}] == []
+   cause: E   AssertionError: assert [{'consent_bi.../UTC')), ...}] == []
+== E1 bindings that do not count are counted [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   1 failed, 121 passed in 2.88s
+   FAILED test_the_permission_gate_is_g4_10[states7-FAIL]
+   cause: AssertionError: assert 'UNKNOWN' == 'FAIL'
+   cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
+== E2 one revoked binding fails the gate [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   1 failed, 121 passed in 2.82s
+   FAILED test_the_permission_gate_is_g4_10[states4-UNKNOWN]
+   cause: AssertionError: assert 'FAIL' == 'UNKNOWN'
+   cause: E   AssertionError: assert 'FAIL' == 'UNKNOWN'
+== E3 STALE does not fail the freshness gate [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   37 failed, 85 passed in 2.82s
+   FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-FRESH-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-UNKNOWN-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-FRESH-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-UNKNOWN-STALE]
+   cause: AssertionError: assert 'UNKNOWN' == 'FAIL'
+   cause: AssertionError: assert ('NEEDS_CONFI...S', 'UNKNOWN') == ('NEEDS_CONFI...PASS', 'FAIL')
+   cause: AssertionError: assert ('UNKNOWN', 'FAIL') == ('FAIL', 'FAIL')
+   cause: AssertionError: assert ('UNKNOWN', 'PASS') == ('FAIL', 'PASS')
+   cause: AssertionError: assert ('UNKNOWN', 'UNKNOWN') == ('FAIL', 'UNKNOWN')
+   cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
+== E4 UNKNOWN freshness passes [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   22 failed, 100 passed in 2.82s
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-FRESH-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-UNKNOWN-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-UNKNOWN-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-UNKNOWN-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-FRESH-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-FRESH-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-FRESH-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-UNKNOWN-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-UNKNOWN-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-UNKNOWN-UNKNOWN]
+   cause: AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
+   cause: AssertionError: assert 'PASS' == 'UNKNOWN'
+   cause: AssertionError: assert ('PASS', 'FAIL') == ('UNKNOWN', 'FAIL')
+   cause: AssertionError: assert ('PASS', 'PASS') == ('UNKNOWN', 'PASS')
+   cause: AssertionError: assert ('PASS', 'UNKNOWN') == ('UNKNOWN', 'UNKNOWN')
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
+== E5 a hard FAIL is not REJECTED [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   11 failed, 111 passed in 2.69s
+   FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-UNKNOWN]
+   FAILED test_the_values_produced_are_the_schema_enums
+   cause: AssertionError: assert 'ELIGIBLE' == 'REJECTED'
+   cause: AssertionError: assert 'NEEDS_CONFIRMATION' == 'REJECTED'
+   cause: AssertionError: assert {'ELIGIBLE', ..._INFORMATION'} == {'ELIGIBLE', ...', 'REJECTED'}
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'REJECTED'
+   cause: E   AssertionError: assert 'NEEDS_CONFIRMATION' == 'REJECTED'
+   cause: E   AssertionError: assert {'ELIGIBLE', ..._INFORMATION'} == {'ELIGIBLE', ...', 'REJECTED'}
+== E6 a blocking unknown is not NEED_MORE_INFORMATION [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   20 failed, 102 passed in 2.59s
+   FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-PASS-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-UNKNOWN]
+   FAILED test_the_values_produced_are_the_schema_enums
+   cause: AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
+   cause: AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
+   cause: AssertionError: assert ('ELIGIBLE', ...N', 'UNKNOWN') == ('NEED_MORE_I...N', 'UNKNOWN')
+   cause: AssertionError: assert {'ELIGIBLE', ...', 'REJECTED'} == {'ELIGIBLE', ...', 'REJECTED'}
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
+   cause: E   AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
+== E7 only a REQUIRED unknown is NEED_MORE_INFORMATION [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   9 failed, 113 passed in 2.61s
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-UNKNOWN]
+   cause: AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
+   cause: AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
+   cause: E   AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
+== E8 permission ignored by eligibility [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   4 failed, 118 passed in 2.57s
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[missing-PERMISSION_MISSING]
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-PASS-UNKNOWN]
+   cause: AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
+   cause: AssertionError: assert ('ELIGIBLE', 'FAIL') == ('NEEDS_CONFIRMATION', 'FAIL')
+   cause: AssertionError: assert ('ELIGIBLE', 'UNKNOWN') == ('NEEDS_CONFI...N', 'UNKNOWN')
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
+   cause: E   AssertionError: assert ('ELIGIBLE', 'FAIL') == ('NEEDS_CONFIRMATION', 'FAIL')
+   cause: E   AssertionError: assert ('ELIGIBLE', 'UNKNOWN') == ('NEEDS_CONFI...N', 'UNKNOWN')
+== E9 freshness ignored by eligibility [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   4 failed, 118 passed in 2.60s
+   FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
+   FAILED test_a_stale_request_needs_confirmation
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-PASS]
+   cause: AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
+   cause: AssertionError: assert ('ELIGIBLE', 'PASS', 'FAIL') == ('NEEDS_CONFI...PASS', 'FAIL')
+   cause: AssertionError: assert ('ELIGIBLE', ...QUEST_STALE']) == ('NEEDS_CONFI...QUEST_STALE'])
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
+   cause: E   AssertionError: assert ('ELIGIBLE', 'PASS', 'FAIL') == ('NEEDS_CONFI...PASS', 'FAIL')
+   cause: E   AssertionError: assert ('ELIGIBLE', ...QUEST_STALE']) == ('NEEDS_CONFI...QUEST_STALE'])
+== E10 the permission reason dropped (the review's condition) [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   28 failed, 94 passed in 2.69s
+   FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[missing-PERMISSION_MISSING]
+   FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
+   FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-UNKNOWN]
+   cause: AssertionError: assert ('PERMISSION' in ['FRESHNESS']) == ('FAIL' != 'PASS')
+   cause: AssertionError: assert ('PERMISSION' in ['FRESHNESS']) == ('UNKNOWN' != 'PASS')
+   cause: AssertionError: assert ('PERMISSION' in ['HARD', 'FRESHNESS']) == ('FAIL' != 'PASS')
+   cause: AssertionError: assert ('PERMISSION' in ['HARD', 'FRESHNESS']) == ('UNKNOWN' != 'PASS')
+   cause: AssertionError: assert ('PERMISSION' in ['HARD']) == ('FAIL' != 'PASS')
+   cause: AssertionError: assert ('PERMISSION' in ['HARD']) == ('UNKNOWN' != 'PASS')
+== E11 the freshness reasons dropped [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   28 failed, 94 passed in 2.52s
+   FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
+   FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
+   FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
+   FAILED test_a_stale_request_needs_confirmation
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[PASS-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-UNKNOWN-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-UNKNOWN-UNKNOWN]
+   cause: AssertionError: assert ('FRESHNESS' in ['HARD', 'PERMISSION']) == ('FAIL' != 'PASS')
+   cause: AssertionError: assert ('FRESHNESS' in ['HARD', 'PERMISSION']) == ('UNKNOWN' != 'PASS')
+   cause: AssertionError: assert ('FRESHNESS' in ['HARD']) == ('FAIL' != 'PASS')
+   cause: AssertionError: assert ('FRESHNESS' in ['HARD']) == ('UNKNOWN' != 'PASS')
+   cause: AssertionError: assert ('FRESHNESS' in ['INFORMATION', 'PERMISSION']) == ('FAIL' != 'PASS')
+   cause: AssertionError: assert ('FRESHNESS' in ['INFORMATION', 'PERMISSION']) == ('UNKNOWN' != 'PASS')
+== E12 request and property stale codes swapped [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   24 failed, 98 passed in 2.36s
+   FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
+   FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
+   FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
+   FAILED test_a_stale_request_needs_confirmation
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[FRESH-STALE-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-FRESH-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-STALE-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[STALE-UNKNOWN-UNKNOWN]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-FRESH]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-NOT_APPLICABLE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-STALE]
+   FAILED test_the_freshness_gate_is_g4_11[UNKNOWN-STALE-UNKNOWN]
+   cause: AssertionError: assert ('NEEDS_CONFI...PERTY_STALE']) == ('NEEDS_CONFI...QUEST_STALE'])
+   cause: AssertionError: assert ('STALE', ['REQUEST_STALE']) == ('STALE', ['PROPERTY_STALE'])
+   cause: AssertionError: assert ['DOCUMENT_MI...SION_MISSING'] == ['DOCUMENT_MI...SION_MISSING']
+   cause: AssertionError: assert ['DOCUMENT_NO...SION_MISSING'] == ['DOCUMENT_NO...SION_MISSING']
+   cause: AssertionError: assert [('PROPERTY',...OFFER', None)] == [('PROPERTY',...OFFER', None)]
+   cause: AssertionError: assert [('PROPERTY',...OFFER_STALE')] == [('PROPERTY',...OFFER_STALE')]
+== E13 a binding not yet started reported as none [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   2 failed, 120 passed in 2.65s
+   FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[bound_at]
+   FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[granted_at]
+   cause: AssertionError: assert ('UNKNOWN', '...RENT_BINDING') == ('UNKNOWN', 'NOT_STARTED')
+   cause: E   AssertionError: assert ('UNKNOWN', '...RENT_BINDING') == ('UNKNOWN', 'NOT_STARTED')
+== E14 the next action dropped [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   1 failed, 121 passed in 2.62s
+   FAILED test_no_binding_is_unknown_with_the_next_action
+   cause: AssertionError: assert [{'gate': 'PE...ENT_BINDING'}] == [{'gate': 'PE...INDING', ...}]
+   cause: E   AssertionError: assert [{'gate': 'PE...ENT_BINDING'}] == [{'gate': 'PE...INDING', ...}]
+== E15 the hard gate's reasons dropped [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 519a3e9c1fa6eeff identical
+   10 failed, 112 passed in 2.63s
+   FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-PASS-UNKNOWN]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-FAIL]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-PASS]
+   FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-UNKNOWN]
+   cause: AssertionError: assert ('HARD' in ['FRESHNESS', 'PERMISSION']) == ('FAIL' == 'FAIL'
+   cause: AssertionError: assert ('HARD' in ['FRESHNESS']) == ('FAIL' == 'FAIL'
+   cause: AssertionError: assert ('HARD' in ['PERMISSION']) == ('FAIL' == 'FAIL'
+   cause: AssertionError: assert ('HARD' in []) == ('FAIL' == 'FAIL'
+   cause: AssertionError: assert ['REQUEST_STA...SION_MISSING'] == ['DOCUMENT_MI...SION_MISSING']
+   cause: E   AssertionError: assert ('HARD' in ['FRESHNESS', 'PERMISSION']) == ('FAIL' == 'FAIL'
+
+SURVIVING MUTATIONS: none

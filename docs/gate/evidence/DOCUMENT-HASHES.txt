@@ -465,3 +465,16 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --   0575aac07acc
 docs/gate/evidence/SLICE4-STEP4-REVIEW2-BEFORE-FIX.txt         new  9d5c57b31b62136ad7c50d7ef78ce71a674ebc3602e2b6cd16e2b1cc89c54be3
 docs/gate/evidence/SLICE4-STEP4-MUTATIONS.txt                  --   a5fd17089548e7c39158a5bee362abbe03f1820d6ea34b882738b485dee2f1b5
 SLICE_4_PLAN.md changed revision: 8 -> 9 (meaning of 'active' stated under G4-7; version-1 replay limit under G4-2; no decision taken).
+
+--- Slice 4 step 5 (G4-10, G4-11): freshness and permission gates, eligibility; step 4 closed at 3c4816c ---
+src/turab/matching/eligibility.py                              new   519a3e9c1fa6eeff0dace75273659f79f249b69b80d11d35d3462af60dc36d13
+src/turab/matching/snapshots.py                                --    4826c49af9a5014e816457c3eddcffd9b53456b10486152a7baa9b5b02292a73
+src/turab/matching/__init__.py                                 --    6dc8788b4204b7ebe14ed7bb8c15cedc961ba1991c6299c8da802c066fedc906
+tests/test_slice4_step5.py                                     new   d6f8adfe6eafa66590408a36540e7e96a9006b402cd410dc0f4a7a9a25864a4e
+db/dev/mutate_slice4_step5.py                                  new   433b638d7925550d789c8c7768bbb63b63b69ad860226974184ba353226da289
+docs/gate/SLICE_4_STEP5_DELIVERY.md                            new   84841a6e5e23e4afacf4dbeb122e2aa15b31f91b3fa1307b789049028321f44d
+docs/gate/SLICE_4_STEP4_DELIVERY.md                            --    72a981c890af032fdc74f237d5710aab91f43e54f7ba039273fbb25ffa2658b9
+docs/gate/SLICE_4_PLAN.md                                      rev10 346d9fac09affd63057a7f86305c96a24651e51542799f59c835e82d19963cfc
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    a93d6bc115b24d6a26d53e176d2eb758a9510156503132609445f3239a96b209
+docs/gate/evidence/SLICE4-STEP5-MUTATIONS.txt                  new   11c949c28c687f52a602cc14359ced9499c7f319eb53335767b82c3c7928dd26
+SLICE_4_PLAN.md changed revision: 9 -> 10 (step 4 closed at 3c4816c; step 5 delivered; step 6 waits on G4-12).
