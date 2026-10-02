@@ -82,6 +82,16 @@ class ProblemCode(StrEnum):
     #: wrong account. One message covers every failing reason, so the code
     #: cannot be used to map which records belong to which party.
     CLAIM_NOT_ELIGIBLE = "CLAIM_NOT_ELIGIBLE"
+    #: Slice 4 step 7, G4-15 D6. CORRECTION-004: the requested version is not
+    #: the ACTIVE policy's (omitted, unknown, or inactive). 422; the value is
+    #: never echoed.
+    MATCHING_POLICY_VERSION_REFUSED = "MATCHING_POLICY_VERSION_REFUSED"
+    #: G4-8: the request's status is not one a run accepts. 409: the body is
+    #: valid; the request's current state refuses it.
+    REQUEST_NOT_MATCHABLE = "REQUEST_NOT_MATCHABLE"
+    #: G4-3 (b), G4-5R, G4-7: the request's criteria cannot be matched as
+    #: they stand. 422, naming the rule and the criterion, never the value.
+    MATCHING_INPUT_REFUSED = "MATCHING_INPUT_REFUSED"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -118,6 +128,9 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.ATTRIBUTE_VOCABULARY_UNDECIDED: (422, "Attribute vocabulary undecided"),
     ProblemCode.IDENTITY_CANDIDATE_DECIDED: (409, "Identity decision is final"),
     ProblemCode.CLAIM_NOT_ELIGIBLE: (403, "Not eligible to claim"),
+    ProblemCode.MATCHING_POLICY_VERSION_REFUSED: (422, "Matching policy version refused"),
+    ProblemCode.REQUEST_NOT_MATCHABLE: (409, "Request not matchable"),
+    ProblemCode.MATCHING_INPUT_REFUSED: (422, "Matching input refused"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),
     ProblemCode.NOT_IMPLEMENTED: (501, "Not implemented"),

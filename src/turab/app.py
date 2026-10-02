@@ -14,7 +14,7 @@ from sqlalchemy import text as sa_text
 from .api import handlers
 from .api.routes import (
     auth, consents, external_leads as lead_routes, identity as identity_routes,
-    internal, me, parties,
+    internal, matching as matching_routes, me, parties,
     offers as offer_routes, properties as property_routes, records,
     public as public_routes, relations as relation_routes, truth as truth_routes,
     requests as request_routes,
@@ -103,4 +103,5 @@ def create_app(
     app.include_router(truth_routes.router)
     app.include_router(public_routes.router)
     app.include_router(identity_routes.router)
+    app.include_router(matching_routes.router)
     return app

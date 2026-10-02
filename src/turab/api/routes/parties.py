@@ -274,7 +274,7 @@ def get_party_timeline(
 
 
 def _run(request, command, operation_id, route_key, payload, handler,
-         success_status, version_guard=None, extra_errors=None):
+         success_status, version_guard=None, extra_errors=None, **run_options):
     """Shared command plumbing: idempotency, concurrency and stable errors.
 
     `extra_errors` lets a caller add one typed domain exception that carries
@@ -288,7 +288,7 @@ def _run(request, command, operation_id, route_key, payload, handler,
         result = command.run(
             operation_id=operation_id, route_key=route_key, payload=payload,
             handler=handler, success_status=success_status,
-            version_guard=version_guard,
+            version_guard=version_guard, **run_options,
         )
     except IdempotencyKeyRequired:
         return coded(ProblemCode.IDEMPOTENCY_KEY_REQUIRED, trace,

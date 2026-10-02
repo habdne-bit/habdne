@@ -34,6 +34,11 @@ AUDITED_BY_COMMAND = {
     "property_identity_candidates": "identity_candidate_id",
     "property_identity_aliases": "alias_property_id",
     "tasks": "task_id",
+    # Slice 4 step 7: the matching run (plan §3.6). None of the three match
+    # tables has an audit trigger in the frozen schema.
+    "match_candidates": "match_id",
+    "match_criterion_results": "match_criterion_result_id",
+    "match_diagnostic_runs": "diagnostic_run_id",
 }
 
 

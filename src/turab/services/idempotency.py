@@ -81,6 +81,94 @@ def _validate_key(key: str | None) -> str:
     return key
 
 
+def lookup(
+    session: Session,
+    *,
+    actor_account_id: uuid.UUID,
+    route_key: str,
+    idempotency_key: str | None,
+    payload: Any,
+) -> tuple[Replay | None, uuid.UUID | None]:
+    """The read half of `begin`: (the stored result of an identical earlier
+    call, or None; the id of an EXPIRED record to replace, or None).
+
+    It writes nothing, so a command can decide a refusal between this and
+    `claim` and write nothing at all (Slice 4, G4-15 D6). Raises on a key
+    reused with a different body, or claimed and never completed.
+    """
+    key = _validate_key(idempotency_key)
+    request_hash = canonical_request_hash(payload)
+    existing = session.execute(
+        text(
+            """
+            SELECT idempotency_record_id, request_hash, response_status,
+                   response_body, response_resource_ref, expires_at
+              FROM turab.idempotency_records
+             WHERE actor_account_id = :actor
+               AND route_key = :route_key
+               AND idempotency_key = :key
+            """
+        ),
+        {"actor": actor_account_id, "route_key": route_key, "key": key},
+    ).mappings().first()
+    if existing is None:
+        return None, None
+    if existing["expires_at"] <= datetime.now(UTC):
+        return None, existing["idempotency_record_id"]
+    if existing["request_hash"] != request_hash:
+        raise IdempotencyKeyConflict(route_key, key)
+    if existing["response_status"] is None:
+        # Claimed but never completed: an earlier attempt died mid-flight.
+        # Replaying an absent result would be a lie, and re-running could
+        # duplicate a side effect, so the client is told to retry with a
+        # new key rather than silently getting either.
+        raise IdempotencyKeyConflict(route_key, key)
+    return Replay(
+        status=existing["response_status"],
+        body=existing["response_body"],
+        resource_ref=existing["response_resource_ref"],
+    ), None
+
+
+def claim(
+    session: Session,
+    *,
+    actor_account_id: uuid.UUID,
+    route_key: str,
+    idempotency_key: str | None,
+    payload: Any,
+    expired_record_id: uuid.UUID | None = None,
+    ttl: timedelta = DEFAULT_TTL,
+) -> None:
+    """The write half of `begin`: replace an expired record, then claim."""
+    key = _validate_key(idempotency_key)
+    if expired_record_id is not None:
+        session.execute(
+            text(
+                """DELETE FROM turab.idempotency_records
+                    WHERE idempotency_record_id = :id"""
+            ),
+            {"id": expired_record_id},
+        )
+    session.execute(
+        text(
+            """
+            INSERT INTO turab.idempotency_records
+                   (actor_account_id, route_key, idempotency_key, request_hash,
+                    expires_at)
+            VALUES (:actor, :route_key, :key, :hash, :expires_at)
+            """
+        ),
+        {
+            "actor": actor_account_id,
+            "route_key": route_key,
+            "key": key,
+            "hash": canonical_request_hash(payload),
+            "expires_at": datetime.now(UTC) + ttl,
+        },
+    )
+
+
 def begin(
     session: Session,
     *,
@@ -97,67 +185,17 @@ def begin(
     different body.
 
     Expired records are replaced rather than replayed: `expires_at` marks the
-    point past which a replay is no longer promised.
+    point past which a replay is no longer promised. `lookup` then `claim`,
+    in one call.
     """
-    key = _validate_key(idempotency_key)
-    request_hash = canonical_request_hash(payload)
-    now = datetime.now(UTC)
-
-    existing = session.execute(
-        text(
-            """
-            SELECT idempotency_record_id, request_hash, response_status,
-                   response_body, response_resource_ref, expires_at
-              FROM turab.idempotency_records
-             WHERE actor_account_id = :actor
-               AND route_key = :route_key
-               AND idempotency_key = :key
-            """
-        ),
-        {"actor": actor_account_id, "route_key": route_key, "key": key},
-    ).mappings().first()
-
-    if existing is not None:
-        if existing["expires_at"] <= now:
-            session.execute(
-                text(
-                    """DELETE FROM turab.idempotency_records
-                        WHERE idempotency_record_id = :id"""
-                ),
-                {"id": existing["idempotency_record_id"]},
-            )
-        elif existing["request_hash"] != request_hash:
-            raise IdempotencyKeyConflict(route_key, key)
-        elif existing["response_status"] is None:
-            # Claimed but never completed: an earlier attempt died mid-flight.
-            # Replaying an absent result would be a lie, and re-running could
-            # duplicate a side effect, so the client is told to retry with a
-            # new key rather than silently getting either.
-            raise IdempotencyKeyConflict(route_key, key)
-        else:
-            return IdempotencyOutcome.REPLAYED, Replay(
-                status=existing["response_status"],
-                body=existing["response_body"],
-                resource_ref=existing["response_resource_ref"],
-            )
-
-    session.execute(
-        text(
-            """
-            INSERT INTO turab.idempotency_records
-                   (actor_account_id, route_key, idempotency_key, request_hash,
-                    expires_at)
-            VALUES (:actor, :route_key, :key, :hash, :expires_at)
-            """
-        ),
-        {
-            "actor": actor_account_id,
-            "route_key": route_key,
-            "key": key,
-            "hash": request_hash,
-            "expires_at": now + ttl,
-        },
-    )
+    replay, expired = lookup(session, actor_account_id=actor_account_id,
+                             route_key=route_key, idempotency_key=idempotency_key,
+                             payload=payload)
+    if replay is not None:
+        return IdempotencyOutcome.REPLAYED, replay
+    claim(session, actor_account_id=actor_account_id, route_key=route_key,
+          idempotency_key=idempotency_key, payload=payload,
+          expired_record_id=expired, ttl=ttl)
     return IdempotencyOutcome.NEW, None
 
 

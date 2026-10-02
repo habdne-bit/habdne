@@ -299,9 +299,11 @@ class CommandService:
         operation_id: str,
         route_key: str,
         payload: Any,
-        handler: Callable[[Session], tuple[int, dict[str, Any] | None]],
+        handler: Callable[..., tuple[int, dict[str, Any] | None]],
         success_status: int = 200,
         version_guard: tuple[str, uuid.UUID, int] | None = None,
+        prepare: Callable[[Session], Any] | None = None,
+        isolation: str | None = None,
     ) -> CommandResult:
         """Execute, or replay an identical earlier call.
 
@@ -312,6 +314,15 @@ class CommandService:
 
         `version_guard` is checked INSIDE the transaction and before the
         handler runs, so a stale version applies nothing at all (§2.4).
+
+        `prepare`, when given, runs inside the transaction AFTER the replay
+        lookup and BEFORE the key is claimed, and only reads. A refusal it
+        raises is therefore decided before any write, the claim included
+        (Slice 4, G4-15 D6), while an identical earlier call still replays.
+        Its result is passed to `handler(session, prepared)`.
+
+        `isolation` is passed to `audited_transaction` (the matching run asks
+        for REPEATABLE READ, plan §3.3).
         """
         policy = self._policies.get(operation_id)
         use_idempotency = policy.requires_idempotency if policy else True
@@ -319,26 +330,40 @@ class CommandService:
             self._session,
             self._subject.account_id,
             {"operation": operation_id, "trace_id": self._trace_id},
+            isolation=isolation,
         ) as session:
             # Claimed inside the transaction, so a command that fails does not
             # burn its key and a retry is treated as new, which is correct:
             # nothing happened.
             if use_idempotency:
-                outcome, replay = idempotency.begin(
+                replay, expired = idempotency.lookup(
                     session,
                     actor_account_id=self._subject.account_id,
                     route_key=route_key,
                     idempotency_key=self._idempotency_key,
                     payload=payload,
                 )
-                if outcome is idempotency.IdempotencyOutcome.REPLAYED and replay:
+                if replay is not None:
                     return CommandResult(replay.status, replay.body, replayed=True)
+
+            prepared = prepare(session) if prepare is not None else None
+
+            if use_idempotency:
+                idempotency.claim(
+                    session,
+                    actor_account_id=self._subject.account_id,
+                    route_key=route_key,
+                    idempotency_key=self._idempotency_key,
+                    payload=payload,
+                    expired_record_id=expired,
+                )
 
             if version_guard is not None:
                 table, resource_id, expected = version_guard
                 check_version(session, table, resource_id, expected)
 
-            status, body = handler(session)
+            status, body = (handler(session) if prepare is None
+                            else handler(session, prepared))
 
             if use_idempotency:
                 idempotency.complete(

@@ -214,6 +214,14 @@ def _routed() -> set[str]:
             for m in re.findall(r'operation_id="([A-Za-z]+)"', p.read_text())}
 
 
+#: Slice 3's condition 6 held that NO path writes `match_candidates`: matching
+#: was closed. Slice 4 opened it, and its run is the one writer G4-15 approves
+#: (review of b3246b0, step 7). Any OTHER writer is still a problem.
+APPROVED_MATCH_WRITERS = {
+    "src/turab/services/matching_run.py": "the Slice 4 matching run (G4-15, review of b3246b0)",
+}
+
+
 def _writers(table: str) -> list[str]:
     pattern = re.compile(rf"INSERT\s+INTO\s+turab\.{table}\b")
     return sorted(str(p.relative_to(ROOT)) for p in (ROOT / "src").rglob("*.py")
@@ -290,15 +298,19 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
     if missing_routes:
         problems.append(f"plan operations without a route: {missing_routes}")
     mc, rce = _writers("match_candidates"), _writers("record_claim_events")
-    if mc:
-        problems.append(f"match_candidates written by {mc}")
+    unapproved = [w for w in mc if w not in APPROVED_MATCH_WRITERS]
+    if unapproved:
+        problems.append(f"match_candidates written by {unapproved}")
     migrations = sorted(p.name for p in (ROOT / "db" / "migrations" / "versions").glob("0*.py"))
     out += [
         "", "## 5. Acceptance conditions (plan §7): what is computed from the tree", "",
         f"- **Condition 1.** The plan names {len(ops)} operations; {len(ops) - len(missing_routes)} "
         f"have a route{'' if not missing_routes else '; WITHOUT: ' + ', '.join(missing_routes)}.",
         f"- **Condition 6.** Files inserting into `match_candidates`: "
-        f"{mc if mc else 'none'}.",
+        f"{mc if mc else 'none'}"
+        + ("" if not mc else "; approved since: " + "; ".join(
+            f"`{w}`, {APPROVED_MATCH_WRITERS[w]}" for w in mc if w in APPROVED_MATCH_WRITERS))
+        + ".",
         f"- **Condition 7.** Files inserting into `record_claim_events`: {rce}. PROPERTY "
         f"claims fail closed: `test_property_claiming_fails_closed` "
         f"{_status(results, CONDITION_TESTS[0], problems, 'condition 7')}.",

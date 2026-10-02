@@ -1,7 +1,7 @@
 """Slice 4 — the deterministic matching core.
 
 Built step by step, under the decisions recorded in `docs/gate/SLICE_4_PLAN.md`.
-What exists so far (steps 2 to 6):
+What exists so far (steps 2 to 7):
 
 - `canonical`: the canonical JSON form and the input hash (G4-13);
 - `registry`: the rule registry, keyed by (rule_id, rule_version), with
@@ -18,10 +18,12 @@ What exists so far (steps 2 to 6):
 - `hard_gate`: blocking (G4-4), the hard gate and the information gate;
 - `eligibility`: the freshness and permission gates, and eligibility
   (G4-10, G4-11), with every reason kept;
-- `gates`: the pinned functions behind freshness, permission, eligibility
-  and the soft score (review of a5ea6f5);
-- `soft`: the soft score (G4-12).
+- `gates`: the pinned functions behind freshness, permission, eligibility,
+  the soft score (review of a5ea6f5) and the next action (G4-15 D5);
+- `soft`: the soft score (G4-12);
+- `explain`: the explanation, the next action, the diagnostic's counts and
+  blocker summary (G4-15).
 
-Nothing here writes. No match row is inserted. The run (step 7) waits on its
-own decision (G4-15).
+Nothing in this package writes. The run that stores matches is
+`turab.services.matching_run` (step 7, G4-15).
 """

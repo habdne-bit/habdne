@@ -34,6 +34,11 @@ def session_factory(engine: Engine) -> sessionmaker[Session]:
     return sessionmaker(bind=engine, expire_on_commit=False, future=True)
 
 
+#: The isolation levels a command may ask for. Closed, because the value is
+#: written into SQL.
+_ISOLATIONS = frozenset({None, "REPEATABLE READ"})
+
+
 class MissingAuditActor(RuntimeError):
     """A writing transaction was opened with no actor. Refused."""
 
@@ -45,13 +50,22 @@ def audited_transaction(
     context: dict[str, Any] | None = None,
     *,
     require_actor: bool = True,
+    isolation: str | None = None,
 ) -> Iterator[Session]:
     """Run inside a transaction that carries the audit actor.
 
     S23: a write with `app.account_id` unset is refused rather than recorded
     anonymously. `require_actor=False` is for genuinely actor-less system work
     and is not reachable from a request path.
+
+    `isolation="REPEATABLE READ"` makes every statement of the transaction
+    read one snapshot (PostgreSQL 16 documentation, §13.2.2). It is set by
+    the transaction's FIRST statement, as `SET TRANSACTION` requires. The
+    matching run uses it (Slice 4 plan §3.3, measured D7). The default stays
+    the server's, Read Committed, for every other command.
     """
+    if isolation not in _ISOLATIONS:
+        raise ValueError(f"isolation must be one of {sorted(i for i in _ISOLATIONS if i)}")
     if require_actor and account_id is None:
         raise MissingAuditActor(
             "a writing transaction needs an actor; audit_row_change() would "
@@ -63,6 +77,8 @@ def audited_transaction(
     # reason, so the command owns its transaction outright and the idempotency
     # claim, the work and the stored result commit together.
     with session.begin():
+        if isolation is not None:
+            session.execute(text(f"SET TRANSACTION ISOLATION LEVEL {isolation}"))
         session.execute(
             text("SELECT set_config('app.account_id', :v, true)"),
             {"v": str(account_id) if account_id else ""},

@@ -8,6 +8,7 @@ to the exact pins it ran with.
 FORMAT = 1
 
 PINS: dict[str, str] = {
+    'action.next@1': '76cb97622d5c3ba5808e42c074914e97a7efd9d33d8114fc8ad2526dee542d2a',
     'criterion.area_min@1': 'db0d9ebfe402214130b14e7f2488d976f01bc67919399bd1e79b3757b239bda9',
     'criterion.area_min@2': 'ee6876e0500ef4572a7501da31a397d9102135d55b1b49279e7831c457edc627',
     'criterion.attribute_option@1': 'e306194ca6f522c12913badde67f57720254222a848a4cd5db284d37dccec5e9',

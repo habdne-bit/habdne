@@ -308,3 +308,68 @@ def soft_score_v2(hard_gate_status, criteria, targets, offer):
                                 f"{term['contribution'].denominator}")
     return {"soft_score": Decimal(millionths).scaleb(-6), "basis": "WEIGHTED_SHARE",
             "terms": terms}
+
+
+@REGISTRY.register("action.next", "1")
+def next_action_v1(eligibility, information, freshness_reasons, permission_reasons,
+                   subjects):
+    """G4-15 D5, as decided in the review of b3246b0: the ONE action of
+    highest priority, in §13.1's order, typed from `Task.task_type`. It is a
+    recommendation stored on the candidate; no task is created (D1).
+
+    **Null** for ELIGIBLE (the next step is a human review, Slice 5) and for
+    REJECTED (relaxation is Slice 6).
+
+    **Order (§13.1), and the tie-break, both fixed:**
+    1. information, for an ACTIONABLE blocking unknown only (`information`
+       lists them, in the order the criteria were evaluated). REQUIRED
+       before PREFERRED or FLEXIBLE; otherwise the evaluation order. Type:
+       DOCUMENT_TYPE or RIGHT_TYPE → VERIFY_DOCUMENT; BUDGET_MAX →
+       CONFIRM_PRICE; any other code → OTHER. Priority HIGH ("blocking
+       unknown → high-priority task", §13);
+    2. reconfirmation, in the order request, property, offer: a request →
+       RECONFIRM_REQUEST, a property → RECONFIRM_PROPERTY, an offer's terms
+       → CONFIRM_PRICE. Priority NORMAL;
+    3. permission → CONFIRM_PERMISSION, priority NORMAL.
+
+    **`subject`** names the entity the action is about, by its id in
+    `subjects` (REQUEST, PROPERTY, PROPERTY_OFFER), and, for a criterion,
+    the criterion (code, ordinal, request criterion id). The entity follows
+    the unknown's basis: the request when its own maximum is not stated, or
+    no rule reads the criterion; the offer when its price or negotiation is
+    unknown; the property otherwise."""
+    if eligibility in ("ELIGIBLE", "REJECTED"):
+        return None
+    if information:
+        ranked = sorted(information, key=lambda u: 0 if u["importance"] == "REQUIRED" else 1)
+        first = ranked[0]
+        basis = first["basis"]
+        if basis in ("BUDGET_MAX_NOT_STATED", "NO_DETERMINISTIC_RULE"):
+            entity = "REQUEST"
+        elif basis in ("PRICE_NOT_KNOWN", "PRICE_ABOVE_MAX_NEGOTIATION_UNCONFIRMED",
+                       "NO_EVALUATED_OFFER"):
+            entity = "PROPERTY_OFFER"
+        else:
+            entity = "PROPERTY"
+        kind = {"DOCUMENT_TYPE": "VERIFY_DOCUMENT", "RIGHT_TYPE": "VERIFY_DOCUMENT",
+                "BUDGET_MAX": "CONFIRM_PRICE"}.get(first["criterion"], "OTHER")
+        return {"type": kind, "priority": "HIGH",
+                "subject": {"entity": entity, "id": subjects[entity], "gate": "INFORMATION",
+                            "criterion": first["criterion"], "ordinal": first["ordinal"],
+                            "request_criterion_id": first["request_criterion_id"],
+                            "reason_code": first["reason_code"], "basis": basis}}
+    for subject, entity, kind in (("REQUEST", "REQUEST", "RECONFIRM_REQUEST"),
+                                  ("PROPERTY", "PROPERTY", "RECONFIRM_PROPERTY"),
+                                  ("OFFER", "PROPERTY_OFFER", "CONFIRM_PRICE")):
+        for reason in freshness_reasons:
+            if reason["subject"] == subject:
+                return {"type": kind, "priority": "NORMAL",
+                        "subject": {"entity": entity, "id": subjects[entity],
+                                    "gate": "FRESHNESS", "reason_code": reason["reason_code"],
+                                    "basis": reason["basis"]}}
+    for reason in permission_reasons:
+        return {"type": "CONFIRM_PERMISSION", "priority": "NORMAL",
+                "subject": {"entity": "PROPERTY_OFFER", "id": subjects["PROPERTY_OFFER"],
+                            "gate": "PERMISSION", "reason_code": reason["reason_code"],
+                            "basis": reason["basis"]}}
+    return None

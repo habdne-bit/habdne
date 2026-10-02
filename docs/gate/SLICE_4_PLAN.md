@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 13**
+## Implementation plan — **revision 14**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -22,7 +22,8 @@ for.
 | 10 | `02b9898` | **Step 4 CLOSED at `3c4816c`**: the review of 3c4816c authorised step 5, which by §8 follows step 4's closure. Step 5 delivered on G4-10 and G4-11. G4-5R's period stays open, and its interim refusal stays in force. The G4-2 limit stands. Step 6 waits on **G4-12** |
 | 11 | `bb55a67` | **Step 5 CLOSED at `a5ea6f5`** (review of a5ea6f5, which also confirmed step 4's closure as intended). **Decided:** pin the freshness and permission gates and the eligibility precedence before step 7 (done in step 6, under their own ids); **G4-12** with its edge cases; PERMISSION_MISSING displayed from its basis. G4-5R unchanged. **Raised (open):** the weight of the request's `budget_target_dzd` column, which G4-12's decision does not give |
 | 12 | `7b09da3` | Step 6 **not closed** until applied: **the column target's weight decided, option (a)** (PREFERRED, weight 2, its own COLUMN term, never merged with a BUDGET_TARGET row). Applied as `score.soft@2` beside `@1`. Step 5's closure at `a5ea6f5` confirmed. G4-5R unchanged; step 7 waits on G4-15 |
-| 13 | the commit that records the review of ee7fbc0 | **Step 6 CLOSED at `ee7fbc0`.** G4-15 detailed for decision, D1–D6, with the conditions that already bind step 7. **No decision is taken; no code changes** |
+| 13 | `b3246b0` | **Step 6 CLOSED at `ee7fbc0`.** G4-15 detailed for decision, D1–D6, with the conditions that already bind step 7. **No decision is taken; no code changes** |
+| 14 | the step-7 delivery commit | **G4-15 DECIDED** (review of b3246b0), D1–D6 with the reviewer's constraints, recorded under G4-15. Step 7 authorised on them, with the seven conditions already recorded. Slice 4 is not closed; G4-5R is not decided, and the RENT refusal stays |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -302,7 +303,7 @@ accept a recommendation by number.
 | G4-12 | Soft score | **APPROVED** (review of a5ea6f5), with its edge cases; the `budget_target_dzd` COLUMN weighs 2, as PREFERRED (review of 0cf6a7a, option (a)) | step 6 |
 | G4-13 | Input hash; an identical re-run | **APPROVED** (review of aad9f34): canonical JSON; the existing match is returned; `evaluated_offer_id` is named in the input | step 2 |
 | G4-14 | Migration `0005` (immutability) | **APPROVED** (2026-09-26), delivered in step 1 | step 1 |
-| G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
+| G4-15 | The boundary with Slices 5 and 6; "near match" | **APPROVED** (review of b3246b0), D1–D6 with constraints: near match = REJECTED with exactly one REQUIRED FAIL and every other REQUIRED PASS | step 7 |
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
 | G4-17 | An ACTIVE offer on an alias (raised in step 3) | **APPROVED (a)** (review of cc3a7fe): kept and reported; nothing moved or re-linked | — |
 | G4-18 | A count criterion on a type the attribute cannot apply to (raised in step 4) | **APPROVED (b)** (review of f789a59): FAIL when the attribute cannot apply; UNKNOWN when it applies and is not recorded; `count_min@2` beside version 1 | step 4 |
@@ -855,6 +856,41 @@ The contract does not give how they are filled.
    transaction (§3.6). `generated_by = 'RULE_ENGINE'` and
    `ai_trace_ref IS NULL` on every row.
 7. **G4-5R:** a RENT run is refused.
+
+> **DECIDED (review of b3246b0): D1–D6, with these constraints.** Step 7
+> may proceed on them, with the seven conditions above. This does not close
+> Slice 4 and does not decide G4-5R; the RENT refusal stays.
+>
+> - **D1.** No `match_reviews`, no `opportunities` and no task row.
+>   `suggested_actions` and `relaxation_scenarios` are written as `[]`.
+>   `next_action` is a recommendation stored on the candidate, not a task.
+> - **D2 (near match).** A REJECTED candidate with **exactly one** REQUIRED
+>   FAIL, **and every other REQUIRED criterion PASS** (no REQUIRED UNKNOWN).
+>   It is counted only; nothing is suggested from it.
+> - **D3.** Each candidate is counted at most once in each count:
+>   ELIGIBLE → `ready_opportunity_count`; NEED_MORE_INFORMATION →
+>   `actionable_unknown_count`; D2 → `near_match_count`.
+> - **D3b (`blocker_summary`).** Keyed by the reason code, or `GATE:basis`
+>   when the code is null. A candidate counts once per distinct key. The
+>   candidate set's exclusions (step 3) are listed separately, with their
+>   reasons and ids. PERMISSION_MISSING is worded from its basis, never from
+>   its seeded label.
+> - **D4 (explanation).** Stored in `match_candidates.explanation`: each
+>   criterion's explanation keyed `CODE#ordinal`, the soft-score terms, the
+>   reasons, and the versions of the pinned functions used. It carries
+>   neither `seller_expectation_dzd` nor anything taken from a claim.
+> - **D5 (`next_action`).** Only the single highest-priority action, in
+>   §13.1's order. Its type is from `Task.task_type`. An information action
+>   is given only for an ACTIONABLE blocking unknown. Ties are broken in a
+>   fixed order. `subject` names the specific entity and, for a criterion,
+>   the criterion. No task is created. Null for ELIGIBLE and REJECTED.
+> - **D6 (a refused run).** 409 for a request status a run does not accept;
+>   422 for every other defined refusal (CORRECTION-004, G4-3 (b), G4-5R,
+>   G4-7). Every refusal is decided before any write. Tests show that the
+>   match rows, the audit rows and the idempotency record of the call are
+>   unchanged.
+>
+> How step 7 applies each is stated in `docs/gate/SLICE_4_STEP7_DELIVERY.md`.
 
 ### G4-16 · Should Slice 2 refuse these criteria at entry? (new in revision 2)
 - **Fact:** the defects measured in §E enter through Slice 2's
