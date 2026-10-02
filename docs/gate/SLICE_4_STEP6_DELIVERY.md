@@ -1,9 +1,9 @@
 # Slice 4 · step 6 — the soft score, and the pinned gates
 
-**Status: NOT closed.** The review of 0cf6a7a decided the column target's
-weight (option (a)), and the step closes once it is applied. It is applied
-in **§9**, which supersedes §4, the S1 mutation of §6, and the remaining
-items of §7.
+**Status: CLOSED at `ee7fbc0`** (review of ee7fbc0). The review of 0cf6a7a
+decided the column target's weight (option (a)), and it is applied in
+**§9**. §9 supersedes §4, the S1 mutation of §6, and the remaining items of
+§7. Step 7 waits on G4-15, detailed for decision in the plan's revision 13.
 
 **Authorised:** the review of a5ea6f5 closed step 5 and allowed step 6 under
 these decisions:

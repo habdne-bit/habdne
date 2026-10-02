@@ -513,3 +513,8 @@ docs/gate/evidence/SLICE4-STEP6-REVIEW-BEFORE-FIX.txt          new   af88db0886a
 docs/gate/evidence/SLICE4-STEP6-MUTATIONS.txt                  --    420d09c8579562e0a4264aea75159d32e8087528b4f198c655006f4403b7e451
 docs/gate/evidence/SLICE4-STEP5-MUTATIONS.txt                  --    589f4d4409bdc7a4b4be44178209abea36601b97e6795f09e0bd02285bd68b45
 SLICE_4_PLAN.md changed revision: 11 -> 12 (column target weight decided (a), applied as score.soft@2).
+
+--- Slice 4: step 6 closed at ee7fbc0; G4-15 detailed for decision (D1-D6); no code change ---
+docs/gate/SLICE_4_PLAN.md                                      rev13 dcca31ea75b5d747f94aee8aeaaf776655264e2edd88da7e8ed9e5c694bf2fb4
+docs/gate/SLICE_4_STEP6_DELIVERY.md                            --    54695de77862d4102b77638386d1a55791fe00160b4b25817cad901541013b6e
+SLICE_4_PLAN.md changed revision: 12 -> 13 (step 6 closed; G4-15 detailed; no decision taken).

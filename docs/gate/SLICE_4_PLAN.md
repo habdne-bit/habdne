@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 12**
+## Implementation plan — **revision 13**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -21,7 +21,8 @@ for.
 | 9 | `99ffbaf` | Step 4 **not closed**: the pre-check "no property value can pass" judged the option domain from the ACTIVE options, while the rule compares any held value. Unified on the rule's domain; the meaning of `active` is stated under G4-7. A limit is stated under G4-2: version 1 of three rules is registered and pinned, but not a proof of historical replay. **No new decision is taken** |
 | 10 | `02b9898` | **Step 4 CLOSED at `3c4816c`**: the review of 3c4816c authorised step 5, which by §8 follows step 4's closure. Step 5 delivered on G4-10 and G4-11. G4-5R's period stays open, and its interim refusal stays in force. The G4-2 limit stands. Step 6 waits on **G4-12** |
 | 11 | `bb55a67` | **Step 5 CLOSED at `a5ea6f5`** (review of a5ea6f5, which also confirmed step 4's closure as intended). **Decided:** pin the freshness and permission gates and the eligibility precedence before step 7 (done in step 6, under their own ids); **G4-12** with its edge cases; PERMISSION_MISSING displayed from its basis. G4-5R unchanged. **Raised (open):** the weight of the request's `budget_target_dzd` column, which G4-12's decision does not give |
-| 12 | the commit that answers the review of 0cf6a7a | Step 6 **not closed** until applied: **the column target's weight decided, option (a)** (PREFERRED, weight 2, its own COLUMN term, never merged with a BUDGET_TARGET row). Applied as `score.soft@2` beside `@1`. Step 5's closure at `a5ea6f5` confirmed. G4-5R unchanged; step 7 waits on G4-15 |
+| 12 | `7b09da3` | Step 6 **not closed** until applied: **the column target's weight decided, option (a)** (PREFERRED, weight 2, its own COLUMN term, never merged with a BUDGET_TARGET row). Applied as `score.soft@2` beside `@1`. Step 5's closure at `a5ea6f5` confirmed. G4-5R unchanged; step 7 waits on G4-15 |
+| 13 | the commit that records the review of ee7fbc0 | **Step 6 CLOSED at `ee7fbc0`.** G4-15 detailed for decision, D1–D6, with the conditions that already bind step 7. **No decision is taken; no code changes** |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -814,6 +815,46 @@ the criterion instead.
   exactly one REQUIRED FAIL. It is counted only, and nothing is suggested
   from it in this slice.
 - **Blocks:** step 7.
+
+#### G4-15 in detail, for decision (revision 13)
+
+Step 7 writes the rows, so every field it fills must have a decided
+meaning. The contract gives the shapes:
+- `MatchCandidate` has `explanation` (object), `next_action` (object or
+  null) and `criteria`;
+- `Diagnostic` has three required counts, `blocker_summary`,
+  `suggested_actions` and `relaxation_scenarios`.
+
+The contract does not give how they are filled.
+
+| # | Question | Recommendation | Source |
+|---|---|---|---|
+| D1 | The boundary with Slices 5 and 6 | As §0: no `match_reviews` and no `opportunities` row; no task created; `suggested_actions` and `relaxation_scenarios` written as `[]` | §0; `IMPLEMENTATION_SLICES_v0.2.md` |
+| D2 | "Near match" | A REJECTED candidate with exactly ONE REQUIRED FAIL. It is counted only; nothing is suggested from it | Spec §13 ("fails one or two conditions") |
+| D3 | The three counts | `ready_opportunity_count`: candidates ELIGIBLE, the only ones a review may approve (`enforce_approved_review_gate`). `actionable_unknown_count`: candidates with at least one actionable unknown, i.e. the NEED_MORE_INFORMATION candidates; each counted once. `near_match_count`: as D2 | Spec §13, §13.1 |
+| D3b | `blocker_summary` | The number of candidates per reason: the reason code, or `GATE:basis` when the code is null (e.g. `FRESHNESS:NEVER_CONFIRMED`, `PERMISSION:NO_CURRENT_BINDING`, so PERMISSION_MISSING is worded from its basis). Plus the candidate set's exclusions with their reasons and ids (G4-8: "excluded ids reported in the diagnostic") | G4-8, G4-10 display rule |
+| D4 | Where the explanation is stored | `match_candidates.explanation`: each criterion's explanation keyed `CODE#ordinal`, the deferred and soft terms, every reason kept (step 5), and the engine versions (`derived_by`, `engine`, the score's). Each criterion's row stays in `match_criterion_results`. No column is added | §3.4 (corrected in revision 7) |
+| D5 | `next_action` | A pinned function (like the gates) gives `{"type", "priority", "subject"}`, typed from the contract's `Task.task_type` vocabulary (as the spec's own example, §22.1). It takes the first actionable reason in §13.1's order: information first, then reconfirmation, then permission. **Mapping:** a blocking unknown on DOCUMENT_TYPE or RIGHT_TYPE gives VERIFY_DOCUMENT/HIGH; on BUDGET_MAX, CONFIRM_PRICE/HIGH; on any other code, OTHER/HIGH. A STALE or never-confirmed request gives RECONFIRM_REQUEST/NORMAL, a property RECONFIRM_PROPERTY/NORMAL, and an offer's terms CONFIRM_PRICE/NORMAL. Permission UNKNOWN or FAIL gives CONFIRM_PERMISSION/NORMAL. **null** for ELIGIBLE (the next step is a human review, Slice 5) and for REJECTED (relaxation is Slice 6). No task is created | Spec §13 ("blocking unknown → high-priority task"), §13.1, §22.1, M-12 |
+| D6 | A refused run | Writes nothing: no match and no diagnostic row. A typed error naming the rule. 409 for a request status a run does not accept (G4-8, as recorded), and 422 for every other refusal: CORRECTION-004's version, G4-3 (b), G4-5R and G4-7 | G4-8; CORRECTION-004 |
+
+**Conditions that already bind step 7**, recorded in earlier reviews:
+1. **One Repeatable Read transaction per run.** Each insert runs under its
+   own SAVEPOINT, and a 23505 means the identical input exists. It is read
+   after commit. No `ON CONFLICT` (§3.3, measured).
+2. **The input hash** (G4-13), with `evaluated_offer_id`. An identical
+   re-run returns the existing match and writes no second row. Two offers
+   on identical terms give two matches.
+3. **The versions** each result names (`rule_id`/`rule_version` per
+   criterion, `derived_by`, `engine`, `score.soft@2`) are stored with the
+   match.
+4. **PERMISSION_MISSING** is displayed from its basis, never from its
+   seeded label (review of a5ea6f5).
+5. **Version 1 of `location`, `attribute_option` and `area_min`** is not
+   offered as replay evidence (G4-2 limit).
+6. **The audit rows** of the three match tables are written in the same
+   transaction (§3.6). `generated_by = 'RULE_ENGINE'` and
+   `ai_trace_ref IS NULL` on every row.
+7. **G4-5R:** a RENT run is refused.
 
 ### G4-16 · Should Slice 2 refuse these criteria at entry? (new in revision 2)
 - **Fact:** the defects measured in §E enter through Slice 2's
