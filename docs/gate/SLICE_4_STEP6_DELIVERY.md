@@ -253,7 +253,11 @@ Around it:
   `tests/test_slice4_mutation_anchors.py` now guards every `gates.py`
   mutation of steps 5 and 6, as it already guarded the step-4 rules. It was
   shown to flag G13's old anchor, which reaches only `soft_score_v1`.
-- The clean-tree result is in `evidence/SLICE4-STEP6-MUTATIONS.txt`.
+- **Clean-tree result: 22 of 22 fail, and none survives.**
+  - Recorded at `7b09da3`, source fingerprint `401ce897…e2577`, baseline 36
+    passed (`evidence/SLICE4-STEP6-MUTATIONS.txt`).
+  - Step 5's 32 mutations were run on the same tree: 32 of 32 fail.
+  - The first round's records (at `bb55a67`) stay in git history.
 
 ### 9.4 What remains
 

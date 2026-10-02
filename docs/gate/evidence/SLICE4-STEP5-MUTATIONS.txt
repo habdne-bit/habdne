@@ -1,22 +1,22 @@
 TURAB — Slice 4 step 5: which freshness, permission or eligibility decision fails which test
 ============================================================
-Base commit       : bb55a672899759edc24f3671910ab80004fe003d
-Source fingerprint: 336180a344a5ee3e4558cd1b1345dbcf8f2bfc289ef2e44da763a50ce112582a
+Base commit       : 7b09da314b59753bd4346e024ca3333171cb82e8
+Source fingerprint: 401ce8979b15e48e90c4446c287846d914c12e59cab3eeeed966e7193b9e2577
 Working tree      : CLEAN
-Recorded          : 2026-10-02 20:49:57 UTC
+Recorded          : 2026-10-02 21:28:22 UTC
 Test file         : tests/test_slice4_step5.py
 
 === baseline (no mutation) ===
-   122 passed in 2.83s
-== F1 stale AT the threshold, not past it [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   122 passed in 2.60s
+== F1 stale AT the threshold, not past it [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
    3 failed, 119 passed in 2.72s
    FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[threshold-offer_terms]
    FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[threshold-property]
    FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[threshold-request]
    cause: AssertionError: assert 'FRESH' == 'STALE'
    cause: E   AssertionError: assert 'FRESH' == 'STALE'
-== F2 never confirmed taken as FRESH [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   4 failed, 118 passed in 2.82s
+== F2 never confirmed taken as FRESH [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   4 failed, 118 passed in 2.50s
    FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[None-offer_terms]
    FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[None-property]
    FAILED test_freshness_agrees_with_the_slice_2_service_at_the_boundary[None-request]
@@ -26,7 +26,7 @@ Test file         : tests/test_slice4_step5.py
    cause: E   AssertionError: assert 'UNKNOWN' == 'FRESH'
    cause: E   AssertionError: assert ('STALE', 'FRESH', 'STALE') == ('STALE', 'UNKNOWN', 'STALE')
 == F3 the offer judged on last_confirmed_at, not its terms [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   9 failed, 113 passed in 2.81s
+   9 failed, 113 passed in 2.65s
    FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[missing-PERMISSION_MISSING]
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
@@ -43,7 +43,7 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert ['DOCUMENT_MI...SION_MISSING'] == ['DOCUMENT_MI...SION_MISSING']
    cause: AssertionError: assert ['DOCUMENT_NO...SION_MISSING'] == ['DOCUMENT_NO...SION_MISSING']
 == F4 the offer judged on the property's threshold [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   2 failed, 120 passed in 2.77s
+   2 failed, 120 passed in 2.54s
    FAILED test_the_freshness_snapshot_reads_the_three_clocks
    FAILED test_the_instant_is_not_in_the_snapshot_and_states_decide_the_hash
    cause: AssertionError: assert ('STALE', 'UNKNOWN', 'FRESH') == ('STALE', 'UNKNOWN', 'STALE')
@@ -51,86 +51,86 @@ Test file         : tests/test_slice4_step5.py
    cause: E   assert b'{"derived_by":"freshness.state@1","format":"turab.freshness-snapshot/2","offer":{"basis":"FRESH","confirmed_at":"202...med_at":"2026-09-28T12:00:00.000000Z",
    cause: assert b'{"derived_by":"freshness.state@1","format":"turab.freshness-snapshot/2","offer":{"basis":"FRESH","confirmed_at":"202...med_at":"2026-09-28T12:00:00.000000Z","sta
 == F5 no evaluated offer taken as FRESH [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   1 failed, 121 passed in 2.72s
+   1 failed, 121 passed in 2.64s
    FAILED test_no_evaluated_offer_is_not_applicable
    cause: AssertionError: assert {'state': 'FR...med_at': None} == {'state': 'NO...med_at': None}
    cause: E   AssertionError: assert {'state': 'FR...med_at': None} == {'state': 'NO...med_at': None}
 == F6 the instant written into the snapshot (G4-13) [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   1 failed, 121 passed in 2.91s
+   1 failed, 121 passed in 2.59s
    FAILED test_the_instant_is_not_in_the_snapshot_and_states_decide_the_hash
    cause: E   assert b'{"as_of":"2...request":30}}' == b'{"as_of":"2...request":30}}'
    cause: assert b'{"as_of":"2...request":30}}' == b'{"as_of":"2...request":30}}'
 == F7 a naive instant accepted [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   1 failed, 121 passed in 3.16s
+   1 failed, 121 passed in 2.63s
    FAILED test_a_naive_instant_is_refused
    cause: E   TypeError: can't compare offset-naive and offset-aware datetimes
    cause: TypeError: can't compare offset-naive and offset-aware datetimes
-== P1 another party's consent counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 3.38s
+== P1 another party's consent counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.55s
    FAILED test_a_property_binding_counts_only_for_the_offers_own_party
    cause: AssertionError: assert [('PROPERTY', 'CURRENT')] == [('PROPERTY', 'OTHER_PARTY')]
    cause: E   AssertionError: assert [('PROPERTY', 'CURRENT')] == [('PROPERTY', 'OTHER_PARTY')]
-== P2 a grant whose scope changed counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 3.21s
+== P2 a grant whose scope changed counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.51s
    FAILED test_a_grant_whose_scope_changed_after_binding_does_not_count
    cause: AssertionError: assert ['CURRENT'] == ['SCOPE_MISMATCH']
    cause: E   AssertionError: assert ['CURRENT'] == ['SCOPE_MISMATCH']
-== P3 a revoked binding counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 3.60s
+== P3 a revoked binding counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.59s
    FAILED test_only_revoked_bindings_fail_with_consent_revoked[binding
    cause: AssertionError: assert ['CURRENT'] == ['REVOKED']
    cause: E   AssertionError: assert ['CURRENT'] == ['REVOKED']
-== P4 a REVOKED grant counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   2 failed, 120 passed in 2.99s
+== P4 a REVOKED grant counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   2 failed, 120 passed in 2.65s
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
    FAILED test_only_revoked_bindings_fail_with_consent_revoked[grant
    cause: AssertionError: assert ('ELIGIBLE', 'PASS') == ('NEEDS_CONFIRMATION', 'FAIL')
    cause: AssertionError: assert ['CURRENT'] == ['REVOKED']
    cause: E   AssertionError: assert ('ELIGIBLE', 'PASS') == ('NEEDS_CONFIRMATION', 'FAIL')
    cause: E   AssertionError: assert ['CURRENT'] == ['REVOKED']
-== P5 a grant with a revocation date counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 2.94s
+== P5 a grant with a revocation date counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.69s
    FAILED test_only_revoked_bindings_fail_with_consent_revoked[grant
    cause: AssertionError: assert ['CURRENT'] == ['REVOKED']
    cause: E   AssertionError: assert ['CURRENT'] == ['REVOKED']
-== P6 a binding not yet started counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   2 failed, 120 passed in 3.07s
+== P6 a binding not yet started counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   2 failed, 120 passed in 2.89s
    FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[bound_at]
    FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[granted_at]
    cause: AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
    cause: E   AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
-== P7 a grant not yet started counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 3.09s
+== P7 a grant not yet started counts [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.59s
    FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[granted_at]
    cause: AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
    cause: E   AssertionError: assert ['CURRENT'] == ['NOT_STARTED']
 == P8 bindings on the property are not read [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   1 failed, 121 passed in 2.94s
+   1 failed, 121 passed in 2.89s
    FAILED test_a_property_binding_counts_only_for_the_offers_own_party
    cause: AssertionError: assert [] == [('PROPERTY', 'OTHER_PARTY')]
    cause: E   AssertionError: assert [] == [('PROPERTY', 'OTHER_PARTY')]
 == P9 PUBLIC_LISTING_ALLOWED does not count (G4-10 decision) [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   1 failed, 121 passed in 2.93s
+   1 failed, 121 passed in 2.76s
    FAILED test_a_current_matching_binding_on_the_offer_passes[PUBLIC_LISTING_ALLOWED]
-   cause: AssertionError: assert [] == [(UUID('44295...', 'CURRENT')]
-   cause: E   AssertionError: assert [] == [(UUID('44295...', 'CURRENT')]
+   cause: AssertionError: assert [] == [(UUID('a03d5...', 'CURRENT')]
+   cause: E   AssertionError: assert [] == [(UUID('a03d5...', 'CURRENT')]
 == P10 every purpose counts [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
-   1 failed, 121 passed in 2.79s
+   1 failed, 121 passed in 2.80s
    FAILED test_other_purposes_are_not_matching_permission
    cause: AssertionError: assert [{'consent_bi.../UTC')), ...}] == []
    cause: E   AssertionError: assert [{'consent_bi.../UTC')), ...}] == []
-== E1 bindings that do not count are counted [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 2.77s
+== E1 bindings that do not count are counted [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.62s
    FAILED test_the_permission_gate_is_g4_10[states7-FAIL]
    cause: AssertionError: assert 'UNKNOWN' == 'FAIL'
    cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
-== E2 one revoked binding fails the gate [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 2.71s
+== E2 one revoked binding fails the gate [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 3.39s
    FAILED test_the_permission_gate_is_g4_10[states4-UNKNOWN]
    cause: AssertionError: assert 'FAIL' == 'UNKNOWN'
    cause: E   AssertionError: assert 'FAIL' == 'UNKNOWN'
-== E3 STALE does not fail the freshness gate [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   37 failed, 85 passed in 2.96s
+== E3 STALE does not fail the freshness gate [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   37 failed, 85 passed in 2.87s
    FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
    FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
    FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
@@ -174,8 +174,8 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert ('UNKNOWN', 'PASS') == ('FAIL', 'PASS')
    cause: AssertionError: assert ('UNKNOWN', 'UNKNOWN') == ('FAIL', 'UNKNOWN')
    cause: E   AssertionError: assert 'UNKNOWN' == 'FAIL'
-== E4 UNKNOWN freshness passes [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   22 failed, 100 passed in 3.02s
+== E4 UNKNOWN freshness passes [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   22 failed, 100 passed in 2.75s
    FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-FAIL]
    FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-PASS]
    FAILED test_eligibility_precedence_is_g4_11[FAIL-UNKNOWN-UNKNOWN]
@@ -204,8 +204,8 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert ('PASS', 'PASS') == ('UNKNOWN', 'PASS')
    cause: AssertionError: assert ('PASS', 'UNKNOWN') == ('UNKNOWN', 'UNKNOWN')
    cause: E   AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
-== E5 a hard FAIL is not REJECTED [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   11 failed, 111 passed in 2.81s
+== E5 a hard FAIL is not REJECTED [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   11 failed, 111 passed in 2.65s
    FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
    FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
    FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
@@ -223,8 +223,8 @@ Test file         : tests/test_slice4_step5.py
    cause: E   AssertionError: assert 'ELIGIBLE' == 'REJECTED'
    cause: E   AssertionError: assert 'NEEDS_CONFIRMATION' == 'REJECTED'
    cause: E   AssertionError: assert {'ELIGIBLE', ..._INFORMATION'} == {'ELIGIBLE', ...', 'REJECTED'}
-== E6 a blocking unknown is not NEED_MORE_INFORMATION [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   20 failed, 102 passed in 2.84s
+== E6 a blocking unknown is not NEED_MORE_INFORMATION [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   20 failed, 102 passed in 2.57s
    FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
    FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-FAIL]
    FAILED test_eligibility_precedence_is_g4_11[REQUIRED_UNKNOWN-FAIL-PASS]
@@ -251,8 +251,8 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert {'ELIGIBLE', ...', 'REJECTED'} == {'ELIGIBLE', ...', 'REJECTED'}
    cause: E   AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
    cause: E   AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
-== E7 only a REQUIRED unknown is NEED_MORE_INFORMATION [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   9 failed, 113 passed in 3.38s
+== E7 only a REQUIRED unknown is NEED_MORE_INFORMATION [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   9 failed, 113 passed in 2.50s
    FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-FAIL]
    FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-PASS]
    FAILED test_eligibility_precedence_is_g4_11[SOFT_BLOCKING_UNKNOWN-FAIL-UNKNOWN]
@@ -266,8 +266,8 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
    cause: E   AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
    cause: E   AssertionError: assert 'NEEDS_CONFIRMATION' == 'NEED_MORE_INFORMATION'
-== E8 permission ignored by eligibility [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   4 failed, 118 passed in 2.78s
+== E8 permission ignored by eligibility [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   4 failed, 118 passed in 2.71s
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[missing-PERMISSION_MISSING]
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
    FAILED test_eligibility_precedence_is_g4_11[PASS-PASS-FAIL]
@@ -278,8 +278,8 @@ Test file         : tests/test_slice4_step5.py
    cause: E   AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
    cause: E   AssertionError: assert ('ELIGIBLE', 'FAIL') == ('NEEDS_CONFIRMATION', 'FAIL')
    cause: E   AssertionError: assert ('ELIGIBLE', 'UNKNOWN') == ('NEEDS_CONFI...N', 'UNKNOWN')
-== E9 freshness ignored by eligibility [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   4 failed, 118 passed in 2.86s
+== E9 freshness ignored by eligibility [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   4 failed, 118 passed in 2.59s
    FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
    FAILED test_a_stale_request_needs_confirmation
    FAILED test_eligibility_precedence_is_g4_11[PASS-FAIL-PASS]
@@ -290,8 +290,8 @@ Test file         : tests/test_slice4_step5.py
    cause: E   AssertionError: assert 'ELIGIBLE' == 'NEEDS_CONFIRMATION'
    cause: E   AssertionError: assert ('ELIGIBLE', 'PASS', 'FAIL') == ('NEEDS_CONFI...PASS', 'FAIL')
    cause: E   AssertionError: assert ('ELIGIBLE', ...QUEST_STALE']) == ('NEEDS_CONFI...QUEST_STALE'])
-== E10 the permission reason dropped (the review's condition) [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   28 failed, 94 passed in 2.89s
+== E10 the permission reason dropped (the review's condition) [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   28 failed, 94 passed in 2.81s
    FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[missing-PERMISSION_MISSING]
    FAILED test_a_permission_reason_stays_visible_under_needs_confirmation[revoked-CONSENT_REVOKED]
@@ -326,8 +326,8 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert ('PERMISSION' in ['HARD', 'FRESHNESS']) == ('UNKNOWN' != 'PASS')
    cause: AssertionError: assert ('PERMISSION' in ['HARD']) == ('FAIL' != 'PASS')
    cause: AssertionError: assert ('PERMISSION' in ['HARD']) == ('UNKNOWN' != 'PASS')
-== E11 the freshness reasons dropped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   28 failed, 94 passed in 3.02s
+== E11 the freshness reasons dropped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   28 failed, 94 passed in 2.87s
    FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
    FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
    FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
@@ -362,8 +362,8 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert ('FRESHNESS' in ['HARD']) == ('UNKNOWN' != 'PASS')
    cause: AssertionError: assert ('FRESHNESS' in ['INFORMATION', 'PERMISSION']) == ('FAIL' != 'PASS')
    cause: AssertionError: assert ('FRESHNESS' in ['INFORMATION', 'PERMISSION']) == ('UNKNOWN' != 'PASS')
-== E12 request and property stale codes swapped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   24 failed, 98 passed in 3.17s
+== E12 request and property stale codes swapped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   24 failed, 98 passed in 2.77s
    FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
    FAILED test_a_required_unknown_is_need_more_information_never_pass_or_fail
    FAILED test_a_stale_property_with_every_criterion_passing_needs_confirmation
@@ -394,19 +394,19 @@ Test file         : tests/test_slice4_step5.py
    cause: AssertionError: assert ['DOCUMENT_NO...SION_MISSING'] == ['DOCUMENT_NO...SION_MISSING']
    cause: AssertionError: assert [('PROPERTY',...OFFER', None)] == [('PROPERTY',...OFFER', None)]
    cause: AssertionError: assert [('PROPERTY',...OFFER_STALE')] == [('PROPERTY',...OFFER_STALE')]
-== E13 a binding not yet started reported as none [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   2 failed, 120 passed in 3.32s
+== E13 a binding not yet started reported as none [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   2 failed, 120 passed in 2.93s
    FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[bound_at]
    FAILED test_a_binding_that_has_not_started_is_unknown_until_it_starts[granted_at]
    cause: AssertionError: assert ('UNKNOWN', '...RENT_BINDING') == ('UNKNOWN', 'NOT_STARTED')
    cause: E   AssertionError: assert ('UNKNOWN', '...RENT_BINDING') == ('UNKNOWN', 'NOT_STARTED')
-== E14 the next action dropped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   1 failed, 121 passed in 3.25s
+== E14 the next action dropped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   1 failed, 121 passed in 2.63s
    FAILED test_no_binding_is_unknown_with_the_next_action
    cause: AssertionError: assert [{'gate': 'PE...ENT_BINDING'}] == [{'gate': 'PE...INDING', ...}]
    cause: E   AssertionError: assert [{'gate': 'PE...ENT_BINDING'}] == [{'gate': 'PE...INDING', ...}]
-== E15 the hard gate's reasons dropped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
-   10 failed, 112 passed in 3.22s
+== E15 the hard gate's reasons dropped [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 7468a6985ac3a391 identical
+   10 failed, 112 passed in 2.79s
    FAILED test_a_hard_fail_is_rejected_whatever_freshness_and_permission
    FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-FAIL]
    FAILED test_eligibility_precedence_is_g4_11[FAIL-FAIL-PASS]
