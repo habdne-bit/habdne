@@ -24,7 +24,7 @@ AS_OF = datetime(2026, 10, 2, 12, 0, 0, tzinfo=timezone.utc)
 DAY = timedelta(days=1)
 SCORE = registry.REGISTRY.resolve(*soft.SOFT_SCORE).evaluate
 PINNED = ("freshness.state@1", "freshness.gate@1", "permission.binding_state@1",
-          "permission.gate@1", "eligibility.precedence@1", "score.soft@1")
+          "permission.gate@1", "eligibility.precedence@1", "score.soft@1", "score.soft@2")
 
 
 # ======================================================================================
@@ -105,7 +105,7 @@ def test_each_result_names_the_versions_that_decided_it(session, ids):
     assert dict(run["eligibility"].engine) == {
         "freshness_gate": "freshness.gate@1", "permission_gate": "permission.gate@1",
         "precedence": "eligibility.precedence@1"}
-    assert run["soft"].engine == "score.soft@1"
+    assert run["soft"].engine == "score.soft@2"
     for key in ("freshness.state@1", "permission.binding_state@1",
                 *run["eligibility"].engine.values(), run["soft"].engine):
         registry.REGISTRY.resolve(*key.split("@"))
@@ -246,17 +246,21 @@ def _row(session, req, code, operator, value, importance):
         {"r": req, "c": code, "i": importance, "o": operator, "v": json.dumps(value)})
 
 
-def _world(session, ids, document="LAND_BOOK", target_column=None):
+def _world(session, ids, document="LAND_BOOK", target_column=None, target_row=True,
+           budget_importance="REQUIRED"):
     req = _one(session, """
         INSERT INTO turab.requests (party_id, transaction_intent, status, management_mode,
                                     claim_status, budget_max_dzd, budget_target_dzd,
-                                    last_confirmed_at)
-        VALUES (:p, 'BUY', 'ACTIVE', 'ASSISTED', 'UNCLAIMED', 30000000, :t, :c)
-        RETURNING request_id""", p=ids.BRAHIM, t=target_column, c=AS_OF - DAY)
+                                    budget_importance, last_confirmed_at)
+        VALUES (:p, 'BUY', 'ACTIVE', 'ASSISTED', 'UNCLAIMED', 30000000, :t,
+                CAST(:bi AS turab.criterion_importance), :c)
+        RETURNING request_id""", p=ids.BRAHIM, t=target_column, bi=budget_importance,
+        c=AS_OF - DAY)
     _row(session, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
     _row(session, req, "PROPERTY_TYPE", "EQ", "LAND", "PREFERRED")
     _row(session, req, "LAND_AREA_MIN", "GTE", 300, "FLEXIBLE")
-    _row(session, req, "BUDGET_TARGET", "EQ", 20_000_000, "PREFERRED")
+    if target_row:
+        _row(session, req, "BUDGET_TARGET", "EQ", 20_000_000, "PREFERRED")
     prop = _one(session, """
         INSERT INTO turab.properties (property_type, supply_mode, management_mode, claim_status,
                                       land_area_m2, availability_last_confirmed_at,
@@ -354,16 +358,69 @@ def test_the_score_fits_the_column(session, ids):
                            ).scalar_one() == score
 
 
-def test_the_request_target_column_is_refused_until_its_weight_is_decided(session, ids):
-    """G4-12 gives weights by importance; `budget_target_dzd` has none of its
-    own. Acceptance condition 1: refused, naming G4-12, whatever the hard
-    gate says."""
-    for document in ("LAND_BOOK", "POSSESSION_CERTIFICATE"):
-        req, prop, offer = _world(session, ids, document=document,
-                                  target_column=20_000_000)
-        with pytest.raises(soft.SoftScoreUndecided) as refused:
-            _evaluate(session, req, prop, offer)
-        assert refused.value.decision == "G4-12"
+# --- the review of 0cf6a7a: the column target weighs as PREFERRED ------------------------
+#
+# Decision (a): the request's `budget_target_dzd` COLUMN is a soft term of
+# weight 2, recorded as its own source (COLUMN). A BUDGET_TARGET ROW beside
+# it stays a separate term with its own weight; the two are never merged.
+# Measured against the 0cf6a7a code: evidence/SLICE4-STEP6-REVIEW-BEFORE-FIX.txt.
+
+def _targets(run):
+    return [(t["source"], t["weight"], t["contribution"]) for t in run["soft"].terms
+            if t["kind"] == "BUDGET_TARGET"]
+
+
+def test_the_target_column_alone_weighs_as_preferred(session, ids):
+    """A column target of 16,000,000 against an ask of 20,000,000 has
+    proximity (16 - 4) / 16 = 3/4 (the schema keeps the target within
+    `budget_max_dzd`, 30,000,000 here). With PROPERTY_TYPE (PREFERRED, PASS)
+    and LAND_AREA_MIN (FLEXIBLE, PASS): (2 + 1 + 2 x 3/4) / (2 + 1 + 2) =
+    9/10."""
+    req, prop, offer = _world(session, ids, target_column=16_000_000, target_row=False)
+    run = _evaluate(session, req, prop, offer)
+    assert _targets(run) == [("COLUMN", 2, "3/4")]
+    assert run["soft"].soft_score == Decimal("0.900000")
+    assert run["soft"].engine == "score.soft@2"
+
+
+def test_the_target_column_and_a_target_row_are_two_separate_terms(session, ids):
+    """The column (16,000,000: 3/4) and the row (20,000,000, PREFERRED: 1):
+    (2 + 1 + 2 x 3/4 + 2 x 1) / (2 + 1 + 2 + 2) = 13/14 = 0.928571... Each
+    appears in the explanation with its own source and weight."""
+    req, prop, offer = _world(session, ids, target_column=16_000_000, target_row=True)
+    run = _evaluate(session, req, prop, offer)
+    assert _targets(run) == [("COLUMN", 2, "3/4"), ("ROW", 2, "1/1")]
+    [column, row] = [t for t in run["soft"].terms if t["kind"] == "BUDGET_TARGET"]
+    assert (column["weight_basis"], row["weight_basis"]) == ("COLUMN_AS_PREFERRED",
+                                                             "IMPORTANCE")
+    assert column["request_criterion_id"] is None and row["request_criterion_id"] is not None
+    assert run["soft"].soft_score == Decimal("0.928571")
+
+
+@pytest.mark.parametrize("budget_importance", ["REQUIRED", "PREFERRED", "FLEXIBLE"])
+def test_budget_importance_never_moves_to_the_target(session, ids, budget_importance):
+    """`budget_importance` stays the maximum's: the column target weighs 2
+    whatever it is."""
+    req, prop, offer = _world(session, ids, target_column=16_000_000, target_row=False,
+                              budget_importance=budget_importance)
+    run = _evaluate(session, req, prop, offer)
+    assert _targets(run) == [("COLUMN", 2, "3/4")]
+
+
+def test_the_column_target_gives_no_score_when_the_hard_gate_fails(session, ids):
+    req, prop, offer = _world(session, ids, document="POSSESSION_CERTIFICATE",
+                              target_column=16_000_000)
+    run = _evaluate(session, req, prop, offer)
+    assert run["eligibility"].eligibility == "REJECTED"
+    assert (run["soft"].soft_score, run["soft"].basis) == (None, "HARD_GATE_NOT_PASS")
+
+
+def test_version_1_of_the_score_stays_registered_and_version_2_is_used():
+    """G4-2: `score.soft@1` keeps its pin; the decision is a new version."""
+    assert registry.REGISTRY.versions("score.soft") == ("1", "2")
+    assert soft.SOFT_SCORE == ("score.soft", "2")
+    v1 = registry.REGISTRY.resolve("score.soft", "1")
+    assert registry.load_pins()["score.soft@1"] == v1.source_sha256()
 
 
 def test_scoring_writes_nothing(session, ids):

@@ -1,0 +1,49 @@
+TURAB — Slice 4 step 6, review of 0cf6a7a: the column-target tests run on the 0cf6a7a code, BEFORE the fix
+============================================================
+Base commit       : 0cf6a7a89eae6443328dc3625d24d0fccbbba087
+Production code   : exactly as committed at 0cf6a7a (git diff --stat below shows the test file only)
+Recorded          : 2026-10-02 21:21:00 UTC
+PostgreSQL        : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+--- git diff --stat ---
+ tests/test_slice4_step6.py | 85 ++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 70 insertions(+), 15 deletions(-)
+
+--- pytest tests/test_slice4_step6.py -k <the review's tests> ---
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+E   turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+/home/user/habdne/src/turab/matching/soft.py:65: turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+E   turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+/home/user/habdne/src/turab/matching/soft.py:65: turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+E   turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+/home/user/habdne/src/turab/matching/soft.py:65: turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+E   turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+/home/user/habdne/src/turab/matching/soft.py:65: turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+E   turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+/home/user/habdne/src/turab/matching/soft.py:65: turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+E   turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+/home/user/habdne/src/turab/matching/soft.py:65: turab.matching.soft.SoftScoreUndecided: G4-12: the weight of the request's budget_target_dzd column is not decided (it has no importance of its own)
+E   AssertionError: assert ('1',) == ('1', '2')
+      
+      Right contains one more item: '2'
+      Use -v to get more diff
+/home/user/habdne/tests/test_slice4_step6.py:418: AssertionError: assert ('1',) == ('1', '2')
+=========================== short test summary info ============================
+FAILED tests/test_slice4_step6.py::test_the_target_column_alone_weighs_as_preferred
+FAILED tests/test_slice4_step6.py::test_the_target_column_and_a_target_row_are_two_separate_terms
+FAILED tests/test_slice4_step6.py::test_budget_importance_never_moves_to_the_target[REQUIRED]
+FAILED tests/test_slice4_step6.py::test_budget_importance_never_moves_to_the_target[PREFERRED]
+FAILED tests/test_slice4_step6.py::test_budget_importance_never_moves_to_the_target[FLEXIBLE]
+FAILED tests/test_slice4_step6.py::test_the_column_target_gives_no_score_when_the_hard_gate_fails
+FAILED tests/test_slice4_step6.py::test_version_1_of_the_score_stays_registered_and_version_2_is_used
+7 failed, 29 deselected in 2.77s
+
+Reading:
+- The six PostgreSQL cases fail with SoftScoreUndecided (G4-12): the 0cf6a7a code refuses
+  the request's budget_target_dzd column, as built until decision (a).
+- The seventh fails because score.soft@2 does not exist yet.
+- A first measurement was discarded, not recorded: its tests used a column target of
+  40,000,000 above the request's budget_max_dzd of 30,000,000, which the schema's CHECK
+  (budget_target_dzd <= budget_max_dzd) refuses. The failures were the fixture's, not the
+  defect's. The target is now 16,000,000.

@@ -1,5 +1,10 @@
 # Slice 4 · step 6 — the soft score, and the pinned gates
 
+**Status: NOT closed.** The review of 0cf6a7a decided the column target's
+weight (option (a)), and the step closes once it is applied. It is applied
+in **§9**, which supersedes §4, the S1 mutation of §6, and the remaining
+items of §7.
+
 **Authorised:** the review of a5ea6f5 closed step 5 and allowed step 6 under
 these decisions:
 - **Pin** the logic of the freshness and permission gates and the
@@ -184,3 +189,73 @@ fresh-interpreter test now kills it.
   - It must word PERMISSION_MISSING from its basis.
 - **The column target's weight** (§4) is open.
 - **G4-5R:** the rent period is open, and the refusal is in force.
+
+## 9. The review of 0cf6a7a: the column target weighs as PREFERRED
+
+**The decision, option (a).** This is an explicit product decision, not an
+inference from the contract.
+- **The request's `budget_target_dzd` column is a PREFERRED criterion, of
+  weight 2.**
+- **`budget_importance` stays the maximum's**, and is never carried over to
+  the target.
+- **The column is its own term** in the explanation (source COLUMN, weight
+  2).
+- **A BUDGET_TARGET row beside it stays a separate term**, with its own
+  weight. The two are never merged.
+
+### 9.1 Measured before the fix
+
+`evidence/SLICE4-STEP6-REVIEW-BEFORE-FIX.txt`, on the `0cf6a7a` production
+code:
+- **six PostgreSQL cases** fail with `SoftScoreUndecided` (G4-12), the
+  refusal the first round was built to give;
+- **the seventh** fails because `score.soft@2` does not exist yet.
+
+**A first measurement was discarded, and the record says so.** Its fixtures
+used a 40,000,000 column target above the request's 30,000,000
+`budget_max_dzd`. The schema's CHECK (`budget_target_dzd <= budget_max_dzd`,
+`schema_v0.2.3.sql:385`) refused those rows, so the failures were the
+fixture's, not the defect's. The target is now 16,000,000.
+
+### 9.2 Applied as `score.soft@2`, beside version 1
+
+`score.soft@1` is pinned, so it is not edited (G4-2). `score.soft@2`:
+- is version 1 with one change: a target whose source is COLUMN weighs 2,
+  whatever `budget_importance` says;
+- states `weight_basis` on every target term: `COLUMN_AS_PREFERRED` for the
+  column, `IMPORTANCE` for a row.
+
+Around it:
+- `soft.py` runs version 2, and the refusal is removed.
+- Version 1 stays registered with its pin unchanged. It never received a
+  column: the first round refused one before calling it.
+- Both versions' digests enter the registry digest, and so the input hash.
+  The pins number 19.
+
+| Case | Test |
+|---|---|
+| the column alone: (2 + 1 + 2 × 3/4) / 5 = 0.900000, one COLUMN term of weight 2 | `test_the_target_column_alone_weighs_as_preferred` |
+| the column and a row: two separate terms (COLUMN 2 × 3/4, ROW 2 × 1), 13/14 = 0.928571, each with its own source, id and weight basis | `test_the_target_column_and_a_target_row_are_two_separate_terms` |
+| `budget_importance` REQUIRED, PREFERRED or FLEXIBLE: the column still weighs 2 | `test_budget_importance_never_moves_to_the_target` (3) |
+| a hard FAIL: no score, column or not | `test_the_column_target_gives_no_score_when_the_hard_gate_fails` |
+| version 1 registered with its pin; version 2 used | `test_version_1_of_the_score_stays_registered_and_version_2_is_used` |
+
+### 9.3 Mutations
+
+- **Retired:** S1 (the refusal is gone).
+- **Added:**
+  - **S1:** version 1 run again;
+  - **G14:** the column weighs 1;
+  - **G15:** the column dropped;
+  - **G16:** its weight basis not stated.
+- **G13** is re-anchored on version 2. Its old text now exists only in
+  version 1, where a mutation would prove nothing.
+  `tests/test_slice4_mutation_anchors.py` now guards every `gates.py`
+  mutation of steps 5 and 6, as it already guarded the step-4 rules. It was
+  shown to flag G13's old anchor, which reaches only `soft_score_v1`.
+- The clean-tree result is in `evidence/SLICE4-STEP6-MUTATIONS.txt`.
+
+### 9.4 What remains
+
+- **Step 7 waits on G4-15.**
+- **G4-5R:** the RENT refusal stays in force.

@@ -51,3 +51,31 @@ def test_every_rule_mutation_reaches_the_version_in_use():
         if not reached & used_functions:
             problems.append((name, sorted(reached)))
     assert problems == []
+
+
+def test_every_gate_mutation_reaches_the_version_in_use():
+    """The same guard for `gates.py` (steps 5 and 6): since the review of
+    0cf6a7a, `score.soft@1` and `@2` share most of their text, and a mutation
+    reaching only version 1 would prove nothing."""
+    sys.path.insert(0, str(ROOT / "db" / "dev"))
+    try:
+        import mutate_slice4_step5 as step5
+        import mutate_slice4_step6 as step6
+    finally:
+        sys.path.pop(0)
+    from turab.matching import eligibility, registry, snapshots, soft
+
+    in_use = set(eligibility.ENGINE.values()) | {soft.SOFT_SCORE, snapshots.FRESHNESS_STATE,
+                                                 snapshots.BINDING_STATE}
+    function_of = {(r.rule_id, r.rule_version): r.evaluate.__name__
+                   for r in registry.REGISTRY.rules()}
+    used_functions = {function_of[key] for key in in_use}
+    bodies = _functions(ROOT / "src" / "turab" / "matching" / "gates.py")
+    problems = []
+    for name, rel, anchor, _ in step5.MUTATIONS + step6.MUTATIONS:
+        if not rel.endswith("gates.py"):
+            continue
+        reached = {f for f, body in bodies.items() if anchor in body}
+        if not reached & used_functions:
+            problems.append((name, sorted(reached)))
+    assert problems == []

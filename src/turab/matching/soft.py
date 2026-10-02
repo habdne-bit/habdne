@@ -5,20 +5,16 @@ G4-7 (a soft criterion without a deterministic rule carries no weight);
 G4-3's table (BUDGET_TARGET is soft only); Developer Spec §12.1 ("no soft
 score or semantic similarity overrides a hard FAIL"), §12.2; plan §3.2.
 
-The formula is the pinned `score.soft@1` (`gates.py`). Its docstring states
-the decision in full. This module gathers the formula's inputs and records
+The formula is the pinned `score.soft@2` (`gates.py`). Its docstring states
+the decisions in full. This module gathers the formula's inputs and records
 the version it ran.
 
-**One case is not decided, and is refused.** The request's own
-`budget_target_dzd` COLUMN has no importance of its own: `budget_importance`
-is the maximum's. G4-12 gives weights by importance (PREFERRED = 2,
-FLEXIBLE = 1), so the column's weight is undecided. Acceptance condition 1
-applies: anything undecided refuses with a typed error naming the rule
-(`SoftScoreUndecided`, "G4-12").
-- The refusal holds whatever the hard gate says, so it is per request, not
-  per candidate.
-- A BUDGET_TARGET ROW carries its own importance (PREFERRED or FLEXIBLE; a
-  REQUIRED one is refused by `criteria`, G4-7), and is scored.
+**The request's `budget_target_dzd` column** was refused in the first round
+(0cf6a7a), its weight being undecided. The review of 0cf6a7a decided (a):
+it weighs 2, as PREFERRED, as its own term (source COLUMN). That decision is
+`score.soft@2`. Version 1 stays registered and pinned (G4-2): it never
+received a column. A BUDGET_TARGET ROW carries its own importance, and is a
+separate term.
 
 **Pure.** Nothing here reads the database or writes.
 """
@@ -33,17 +29,7 @@ from turab.matching.criteria import CriteriaPlan
 from turab.matching.hard_gate import HardGate
 from turab.matching.registry import REGISTRY
 
-SOFT_SCORE = ("score.soft", "1")
-
-
-class SoftScoreUndecided(ValueError):
-    """G4-12 does not decide the weight of the request's `budget_target_dzd`
-    column."""
-
-    def __init__(self) -> None:
-        super().__init__("G4-12: the weight of the request's budget_target_dzd column is not "
-                         "decided (it has no importance of its own)")
-        self.decision = "G4-12"
+SOFT_SCORE = ("score.soft", "2")
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +37,8 @@ class SoftScore:
     soft_score: Decimal | None
     basis: str
     #: Each term, for `explanation` (G4-12): kind, criterion or source,
-    #: weight, contribution as an exact fraction "n/d".
+    #: weight (and, for a target, its basis), contribution as an exact
+    #: fraction "n/d". The column target and a target row are separate.
     terms: tuple[Mapping[str, Any], ...]
     engine: str
 
@@ -61,8 +48,6 @@ def soft_score(plan: CriteriaPlan, hard: HardGate,
     """G4-12 for one candidate. `plan` is the request's `criteria_of`, `hard`
     the candidate's `hard_gate.evaluate`, `offer` its commercial snapshot."""
     targets = [d for d in plan.deferred if d["code"] == "BUDGET_TARGET"]
-    if any(t["source"] == "COLUMN" for t in targets):
-        raise SoftScoreUndecided()
     criteria = [{"criterion_code": r.criterion_code, "ordinal": r.ordinal,
                  "importance": r.importance, "compatibility": r.compatibility,
                  "rule_id": r.rule_id} for r in hard.results]

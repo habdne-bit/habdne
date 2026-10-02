@@ -5,8 +5,9 @@
 Each mutation reintroduces one defect:
 - G: the soft score of G4-12, as decided in the review of a5ea6f5 (weights,
   contributions, edge cases, rounding, the expectation, RENT);
-- S: what `soft.py` gives the formula, or the refusal of the undecided
-  column target;
+- S: what `soft.py` gives the formula, and which version it runs (the
+  review of 0cf6a7a replaced the first round's column refusal with
+  `score.soft@2`, decision (a));
 - K: the pinning of the gates (versions run, versions recorded, the
   registry).
 
@@ -54,11 +55,21 @@ MUTATIONS = [
   '        return {"soft_score": Decimal(0), "basis": "NO_SOFT_CRITERION", "terms": []}'),
  ("G12 a RENT target compared (G4-5R)", G,
   '        if offer is None or offer.get("transaction_type") != "SALE":', "        if False:"),
- ("G13 a target's importance ignored", G,
-  '"weight": weight_of[t["importance"]], "contribution": proximity,',
-  '"weight": 1, "contribution": proximity,'),
- ("S1 the undecided column target scored", S,
-  '    if any(t["source"] == "COLUMN" for t in targets):', "    if False:"),
+ ("G13 a target row's importance ignored", G,
+  '"weight": 2 if column else weight_of[t["importance"]],', '"weight": 2 if column else 1,'),
+ # review of 0cf6a7a: the column target, decision (a), in score.soft@2
+ ("G14 the column target weighs 1, not 2", G,
+  '"weight": 2 if column else weight_of[t["importance"]],',
+  '"weight": 1 if column else weight_of[t["importance"]],'),
+ ("G15 the column target dropped", G,
+  '        column = t["source"] == "COLUMN"\n        terms.append(',
+  '        column = t["source"] == "COLUMN"\n        if column:\n            continue\n'
+  '        terms.append('),
+ ("G16 the column's weight basis not stated", G,
+  '"weight_basis": "COLUMN_AS_PREFERRED" if column else "IMPORTANCE",',
+  '"weight_basis": "IMPORTANCE",'),
+ ("S1 version 1 of the score run", S,
+  'SOFT_SCORE = ("score.soft", "2")', 'SOFT_SCORE = ("score.soft", "1")'),
  ("S2 deferred targets not given to the formula", S,
   '    targets = [d for d in plan.deferred if d["code"] == "BUDGET_TARGET"]',
   "    targets = []"),

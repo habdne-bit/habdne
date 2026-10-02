@@ -26,4 +26,5 @@ PINS: dict[str, str] = {
     'permission.binding_state@1': 'ce73e9484e4206c14d3eec82c1e02d7ea9cdaedd60692facd935dc02705ce415',
     'permission.gate@1': 'a15387909c35b23cbb165a8b438352024ff001b5ffce0e60714c65f7903ef61e',
     'score.soft@1': '321c97ab9c290614539ae4a0524808065ba45835e30f791a0b8389a4eaf002c5',
+    'score.soft@2': '199e8a7e867d512774a1c27deea3ba823379c9770d741d0b8fb71931323dffb1',
 }

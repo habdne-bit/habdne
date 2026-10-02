@@ -17,7 +17,8 @@ the same `REGISTRY`, under its own namespace:
 - `permission.binding_state`: one binding's state;
 - `permission.gate`;
 - `eligibility.precedence`;
-- `score.soft`: G4-12.
+- `score.soft`: G4-12. Version 2 (review of 0cf6a7a) adds the weight of the
+  request's `budget_target_dzd` column; version 1 stays registered.
 
 `REGISTRY.digest()` therefore covers them, and that digest is an input of
 the match hash (G4-13). A change to any of them changes the hash. A changed
@@ -223,6 +224,80 @@ def soft_score_v1(hard_gate_status, criteria, targets, offer):
                       "request_criterion_id": t["request_criterion_id"],
                       "weight": weight_of[t["importance"]], "contribution": proximity,
                       "basis": basis})
+    total = sum(term["weight"] for term in terms)
+    if total == 0:
+        return {"soft_score": None, "basis": "NO_SOFT_CRITERION", "terms": []}
+    share = sum(term["weight"] * term["contribution"] for term in terms) / total
+    millionths = (2 * share.numerator * 1_000_000 + share.denominator) // (2 * share.denominator)
+    for term in terms:
+        term["contribution"] = (f"{term['contribution'].numerator}/"
+                                f"{term['contribution'].denominator}")
+    return {"soft_score": Decimal(millionths).scaleb(-6), "basis": "WEIGHTED_SHARE",
+            "terms": terms}
+
+
+@REGISTRY.register("score.soft", "2")
+def soft_score_v2(hard_gate_status, criteria, targets, offer):
+    """G4-12, as decided in the review of a5ea6f5, AND the weight of the
+    request's `budget_target_dzd` COLUMN, decided in the review of 0cf6a7a
+    (option (a)): it weighs 2, as a PREFERRED criterion, whatever
+    `budget_importance` says (that importance stays the maximum's). The
+    column is its own term (source COLUMN). A BUDGET_TARGET row beside it is
+    another term, with its own weight; the two are never merged. Version 1
+    never received a column (it was refused); everything else is version 1's.
+
+    **Null cases:**
+    - **null** unless the hard gate is PASS;
+    - **null** when there is no soft term at all.
+
+    **Terms:**
+    - every PREFERRED or FLEXIBLE criterion that a deterministic rule
+      evaluated. A soft criterion without one carries no weight (G4-7);
+    - every deferred BUDGET_TARGET.
+
+    **Weights:** PREFERRED = 2, FLEXIBLE = 1.
+
+    **Contribution:**
+    - a criterion: 1 if PASS; 0 if FAIL or UNKNOWN;
+    - a BUDGET_TARGET: its proximity `1 − min(1, |ask − target| / target)`,
+      on the offer's ASKING price. `seller_expectation_dzd` is never read. A
+      zero target gives 1 for a zero ask and 0 for a positive one. A missing
+      ask gives 0.
+
+    **Score:** the weighted share `Σ weight × contribution / Σ weight`. It is
+    computed exactly, as a fraction, and rounded once to six decimal places,
+    half up, which is how PostgreSQL rounds into `numeric(7,6)`. No decimal
+    context is involved.
+
+    RENT is G4-5R: a target on a non-SALE offer is refused."""
+    if hard_gate_status != "PASS":
+        return {"soft_score": None, "basis": "HARD_GATE_NOT_PASS", "terms": []}
+    weight_of = {"PREFERRED": 2, "FLEXIBLE": 1}
+    terms = []
+    for c in criteria:
+        if c["importance"] in weight_of and c["rule_id"] != "criterion.no_deterministic_rule":
+            terms.append({"kind": "CRITERION", "criterion": c["criterion_code"],
+                          "ordinal": c["ordinal"], "weight": weight_of[c["importance"]],
+                          "contribution": Fraction(1 if c["compatibility"] == "PASS" else 0)})
+    for t in targets:
+        if offer is None or offer.get("transaction_type") != "SALE":
+            raise RuntimeError("score.soft compares a target with SALE prices only; a RENT "
+                               "price has no approved rule (G4-5R is open)")
+        target = int(t["value"])
+        ask = offer.get("asking_price_dzd")
+        if ask is None:
+            proximity, basis = Fraction(0), "PRICE_NOT_KNOWN"
+        elif target == 0:
+            proximity, basis = Fraction(1 if int(ask) == 0 else 0), "ZERO_TARGET"
+        else:
+            distance = abs(int(ask) - target)
+            proximity, basis = Fraction(target - min(target, distance), target), "PROXIMITY"
+        column = t["source"] == "COLUMN"
+        terms.append({"kind": "BUDGET_TARGET", "source": t["source"],
+                      "request_criterion_id": t["request_criterion_id"],
+                      "weight": 2 if column else weight_of[t["importance"]],
+                      "weight_basis": "COLUMN_AS_PREFERRED" if column else "IMPORTANCE",
+                      "contribution": proximity, "basis": basis})
     total = sum(term["weight"] for term in terms)
     if total == 0:
         return {"soft_score": None, "basis": "NO_SOFT_CRITERION", "terms": []}
