@@ -343,7 +343,18 @@ No winner-and-loser outcome appeared.
 The anchor guard (`tests/test_slice4_mutation_anchors.py`) now covers
 step 7's mutations of `gates.py`.
 
-RESULT_PLACEHOLDER
+The trial run, on the uncommitted tree, killed all 38. **Two tests were
+added BEFORE the trial**, because the existing tests could not tell these
+mutations apart from correct code:
+- `test_a_refusal_is_decided_before_any_write`: R3 claims the key before
+  the refusal, and the rollback then erases the claim, so counting rows
+  after the call cannot see it;
+- `test_a_soft_unknown_that_does_not_block_gives_no_information_action`: A8.
+
+**Clean-tree result: 38 of 38 fail, and none survives.**
+- Recorded at `7a223d7`, source fingerprint `e8d48071…5709a`, baseline 76
+  passed (`evidence/SLICE4-STEP7-MUTATIONS.txt`).
+- Every mutated file was restored and verified by sha256.
 
 ---
 

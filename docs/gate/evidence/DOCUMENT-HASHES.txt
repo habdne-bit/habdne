@@ -518,3 +518,24 @@ SLICE_4_PLAN.md changed revision: 11 -> 12 (column target weight decided (a), ap
 docs/gate/SLICE_4_PLAN.md                                      rev13 dcca31ea75b5d747f94aee8aeaaf776655264e2edd88da7e8ed9e5c694bf2fb4
 docs/gate/SLICE_4_STEP6_DELIVERY.md                            --    54695de77862d4102b77638386d1a55791fe00160b4b25817cad901541013b6e
 SLICE_4_PLAN.md changed revision: 12 -> 13 (step 6 closed; G4-15 detailed; no decision taken).
+
+--- Slice 4 step 7: the matching run (G4-15 D1-D6 decided, review of b3246b0) ---
+src/turab/services/matching_run.py                             --    ad766a7c24bace84c9f525e5a675209fd7d00f7c93215f57195861f5c4362e2e
+src/turab/matching/explain.py                                  --    012dc8c198f00cdf16220a131afb19642748eeb567865df166fdd4393149f7a0
+src/turab/matching/gates.py                                    --    b136ea3bbe1b2cc6ae68ebed41f174561414c6353ba6a22defefc2a2b002871d
+src/turab/matching/rule_pins.py                                --    2f5fac5ac13fea5bbd8d4cedcd0657aeb8e467896b1a6a85edd58438a00addac
+src/turab/api/routes/matching.py                               --    d03fd1e9357cf5741046f86b518293824c7f83c26a89c5fbf28f6ab781ed5549
+src/turab/services/command.py                                  --    0fa6f7ab6658a9d7d59e7e8ae2de0ee62060a229e793366d0cd0170c578ff4ba
+src/turab/services/idempotency.py                              --    6119895c56c0c5a2ed1b97b5ad59888600242423824ed0572679287d947b66ce
+src/turab/db/session.py                                        --    4e26d713bcbbe3d8567b695235a1a83964e9897aafe8b7045af777cb62afe423
+src/turab/services/audit_rows.py                               --    4e1bcab0a2eaa4f4fd937dab0b60f9573f3c877a53fc2f76ff3ccff4134b5004
+src/turab/api/problems.py                                      --    581dd3aa71a7618f4a61428a44cecf933e8a4506d4c41a36213cbcac0a7eb037
+db/gate/stop_gate_c_evidence.py                                --    f0a2312f61ebb186884c4f5927ffac4f3058eab814ba76f82890baec8db39950
+tests/test_slice4_step7.py                                     --    50cfdd133c4f3267012446df0c7e23213ded260332c68445d02b963f5edb534e
+tests/test_slice4_mutation_anchors.py                          --    ad3ccb240b67c7822e48fc71a77dc64e088b5b65cc75679412ba0d76b4f8b747
+db/dev/mutate_slice4_step7.py                                  --    0b70eed6e7fbd8bbf60761fc5ea5e35f267ee78afb94a105cef662fe3f392e22
+docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    6c66213d0103fd8d980e451415623b5d28e0cd96e50b823309bf34cb12bc2fe6
+docs/gate/SLICE_4_PLAN.md                                      rev14 31769292c5581f9786b2a2209daba4188777925b39ccac67ee78fb38516fd218
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    8428fab55bf699490836fe92643542b9b5d90a77ce0e472738174527b3ac2e0e
+docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  new   fb375516b8e7883a2f778e49484f3535ac88024cd6d82f06a71d9da6537fdfd4
+SLICE_4_PLAN.md changed revision: 13 -> 14 (G4-15 decided with D1-D6 constraints; step 7 delivered).
