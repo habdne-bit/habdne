@@ -137,14 +137,18 @@ def _globals_read(code: types.CodeType) -> set[str]:
 def test_every_rule_is_self_contained():
     """A rule's pin covers its own source only (G4-2), so a rule may read no
     module-level name but `Decimal` and the builtins."""
+    criterion_rules = [r for r in registry.REGISTRY.rules()
+                       if r.rule_id.startswith("criterion.")]
     offenders = {}
-    for rule in registry.REGISTRY.rules():
+    for rule in criterion_rules:
         extra = {n for n in _globals_read(rule.evaluate.__code__)
                  if n != "Decimal" and not hasattr(builtins, n)}
         if extra:
             offenders[rule.key] = sorted(extra)
     assert offenders == {}
-    assert len(registry.REGISTRY.rules()) == 12
+    # The pinned gates and the soft score (review of a5ea6f5) are checked by
+    # step 6's `test_every_registered_function_is_self_contained`.
+    assert len(criterion_rules) == 12
 
 
 def test_the_detector_sees_a_module_constant():

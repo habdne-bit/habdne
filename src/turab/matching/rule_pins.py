@@ -20,4 +20,10 @@ PINS: dict[str, str] = {
     'criterion.no_deterministic_rule@1': '9a1ccd3eb39c8c1c6eeecb9cc45fd9cb1fbc4e29b7dfda66f3629c7a4c451be2',
     'criterion.property_type@1': 'a6f0b7c1ba2af9eadf4d5be065bb0a4e00afdf43d01389a1dc0b6b46dd698a7a',
     'criterion.transaction_intent@1': '5c3cff88be4d0f447f018d4571cec571dbbe1c36294f4a31af870dcc1ec4c4f0',
+    'eligibility.precedence@1': '8ee5d2a7ff056988702dada7a0b3c6cb0e37ac629ac124826ca10d3b7f67f320',
+    'freshness.gate@1': '5a919b0976924dac98833eebce283acce4a532e1b915b2409e135a8445437d69',
+    'freshness.state@1': '4a9c5d0f8923f61c355b9aae1023661a6f816b578fd01bd887b2df5155066a72',
+    'permission.binding_state@1': 'ce73e9484e4206c14d3eec82c1e02d7ea9cdaedd60692facd935dc02705ce415',
+    'permission.gate@1': 'a15387909c35b23cbb165a8b438352024ff001b5ffce0e60714c65f7903ef61e',
+    'score.soft@1': '321c97ab9c290614539ae4a0524808065ba45835e30f791a0b8389a4eaf002c5',
 }

@@ -50,6 +50,11 @@ state the fact:
 A never-confirmed state has no seeded code. Its reason is null, and its
 basis is NEVER_CONFIRMED.
 
+**Pinned (review of a5ea6f5).** The gates and the precedence are the pinned
+functions of `gates.py` (`freshness.gate@1`, `permission.gate@1`,
+`eligibility.precedence@1`). This module only wires them, and records
+their versions in `Eligibility.engine`.
+
 **Pure.** Nothing here reads the database or writes.
 """
 from __future__ import annotations
@@ -58,11 +63,19 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from turab.matching.hard_gate import HardGate
+from turab.matching.registry import REGISTRY
 
+#: The pinned functions this module runs (review of a5ea6f5), `id@version`.
+#: The logic lives in `gates.py`; this module wires their inputs together.
+ENGINE = {"freshness_gate": ("freshness.gate", "1"),
+          "permission_gate": ("permission.gate", "1"),
+          "precedence": ("eligibility.precedence", "1")}
+
+#: The FRESHNESS codes `freshness.gate@1` emits, per subject; read by tests
+#: that check them against the seed (`gates.freshness_gate_v1` holds its own
+#: copy, being self-contained).
 FRESHNESS_SUBJECTS = (("request", "REQUEST_STALE"), ("property", "PROPERTY_STALE"),
                       ("offer", "OFFER_STALE"))
-#: Binding states that are not this party's valid consent: they do not count.
-NOT_COUNTED = ("OTHER_PARTY", "SCOPE_MISMATCH")
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,68 +89,50 @@ class Eligibility:
     property_freshness: str
     offer_freshness: str
     reasons: tuple[Mapping[str, Any], ...]
+    #: The pinned functions that decided, `name -> "id@version"`. Step 7
+    #: stores them with the match, so that a replay runs the same versions.
+    engine: Mapping[str, str]
+
+
+def _run(name: str, *args: Any) -> Any:
+    return REGISTRY.resolve(*ENGINE[name]).evaluate(*args)
 
 
 def freshness_gate(freshness: Mapping[str, Any]) -> tuple[str, list[dict]]:
-    states = {subject: freshness[subject]["state"] for subject, _ in FRESHNESS_SUBJECTS}
-    if any(state == "STALE" for state in states.values()):
-        status = "FAIL"
-    elif all(state in ("FRESH", "NOT_APPLICABLE") for state in states.values()):
-        status = "PASS"
-    else:
-        status = "UNKNOWN"
-    reasons = []
-    for subject, stale_code in FRESHNESS_SUBJECTS:
-        entry = freshness[subject]
-        if entry["state"] == "STALE":
-            reasons.append({"gate": "FRESHNESS", "subject": subject.upper(),
-                            "reason_code": stale_code, "basis": "STALE"})
-        elif entry["state"] == "UNKNOWN":
-            reasons.append({"gate": "FRESHNESS", "subject": subject.upper(),
-                            "reason_code": None, "basis": entry["basis"]})
-    return status, reasons
+    out = _run("freshness_gate", freshness)
+    return out["status"], out["reasons"]
 
 
 def permission_gate(permission: Mapping[str, Any]) -> tuple[str, list[dict]]:
-    counted = [b for b in permission["bindings"] if b["state"] not in NOT_COUNTED]
-    current = [b for b in counted if b["state"] == "CURRENT"]
-    if current:
-        return "PASS", []
-    if counted and all(b["state"] == "REVOKED" for b in counted):
-        return "FAIL", [{"gate": "PERMISSION", "subject": "OFFER",
-                         "reason_code": "CONSENT_REVOKED", "basis": "ONLY_REVOKED_BINDINGS"}]
-    return "UNKNOWN", [{"gate": "PERMISSION", "subject": "OFFER",
-                        "reason_code": "PERMISSION_MISSING",
-                        "basis": "NO_CURRENT_BINDING" if not counted else "NOT_STARTED",
-                        "next_action": "CONFIRM_PERMISSION"}]
+    out = _run("permission_gate", permission)
+    return out["status"], out["reasons"]
+
+
+def hard_summary(hard: HardGate) -> dict:
+    """What the precedence reads from the hard gate."""
+    by_key = {(r.criterion_code, r.ordinal): r for r in hard.results}
+
+    def entries(keys):
+        return [{"criterion": code, "ordinal": ordinal,
+                 "reason_code": by_key[(code, ordinal)].reason_code} for code, ordinal in keys]
+    return {"hard_gate_status": hard.hard_gate_status,
+            "information_gate_status": hard.information_gate_status,
+            "required_failures": entries(hard.required_failures),
+            "blocking_unknowns": entries(hard.blocking_unknowns)}
 
 
 def eligibility_of(hard: HardGate, freshness: Mapping[str, Any],
                    permission: Mapping[str, Any]) -> Eligibility:
-    """G4-11's precedence over the four gates, with every reason kept."""
-    fresh_status, fresh_reasons = freshness_gate(freshness)
-    perm_status, perm_reasons = permission_gate(permission)
-    by_key = {(r.criterion_code, r.ordinal): r for r in hard.results}
-    reasons = [{"gate": "HARD", "criterion": code, "ordinal": ordinal,
-                "reason_code": by_key[(code, ordinal)].reason_code, "basis": "REQUIRED_FAIL"}
-               for code, ordinal in hard.required_failures]
-    reasons += [{"gate": "INFORMATION", "criterion": code, "ordinal": ordinal,
-                 "reason_code": by_key[(code, ordinal)].reason_code,
-                 "basis": "BLOCKING_UNKNOWN"}
-                for code, ordinal in hard.blocking_unknowns]
-    reasons += fresh_reasons + perm_reasons
-    if hard.hard_gate_status == "FAIL":
-        verdict = "REJECTED"
-    elif hard.information_gate_status != "PASS":
-        verdict = "NEED_MORE_INFORMATION"
-    elif fresh_status != "PASS" or perm_status != "PASS":
-        verdict = "NEEDS_CONFIRMATION"
-    else:
-        verdict = "ELIGIBLE"
+    """G4-11's precedence over the four gates, with every reason kept, each
+    decision taken by a pinned function."""
+    fresh = _run("freshness_gate", freshness)
+    perm = _run("permission_gate", permission)
+    verdict = _run("precedence", hard_summary(hard), fresh, perm)
     return Eligibility(
-        eligibility=verdict, hard_gate_status=hard.hard_gate_status,
+        eligibility=verdict["eligibility"], hard_gate_status=hard.hard_gate_status,
         information_gate_status=hard.information_gate_status,
-        freshness_gate_status=fresh_status, permission_gate_status=perm_status,
+        freshness_gate_status=fresh["status"], permission_gate_status=perm["status"],
         request_freshness=freshness["request"]["state"],
         property_freshness=freshness["property"]["state"],
-        offer_freshness=freshness["offer"]["state"], reasons=tuple(reasons))
+        offer_freshness=freshness["offer"]["state"], reasons=tuple(verdict["reasons"]),
+        engine={name: "@".join(key) for name, key in ENGINE.items()})

@@ -1,5 +1,10 @@
 # Slice 4 · step 5 — the freshness gate, the permission gate, and eligibility
 
+**Status: CLOSED at `a5ea6f5`** (review of a5ea6f5). Choice 9 below was
+answered by that review: the gates are now pinned, in step 6. Their logic
+moved into `gates.py` unchanged, and this step's 122 tests and 32 mutations
+were re-run against the move (`SLICE_4_STEP6_DELIVERY.md` §1).
+
 **Authorised:** the review of 3c4816c allowed step 5 on **G4-10 and G4-11**,
 as decided in the review of f789a59. The decision carried two conditions:
 - a valid PUBLIC_LISTING_ALLOWED binding counts for internal matching of the

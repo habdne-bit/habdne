@@ -53,7 +53,7 @@ from __future__ import annotations
 import json
 import uuid
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Any, Mapping
 
 from sqlalchemy import text
@@ -68,8 +68,13 @@ REQUEST_FORMAT = "turab.request-snapshot/1"
 #: `count_min@2` reads (G4-18 (b)).
 PROPERTY_FORMAT = "turab.property-snapshot/3"
 COMMERCIAL_FORMAT = "turab.commercial-context-snapshot/1"
-FRESHNESS_FORMAT = "turab.freshness-snapshot/1"
-PERMISSION_FORMAT = "turab.permission-snapshot/1"
+#: Format 2 (review of a5ea6f5): the states are derived by pinned functions
+#: (`gates.py`), and each snapshot names the one it used in `derived_by`.
+FRESHNESS_FORMAT = "turab.freshness-snapshot/2"
+PERMISSION_FORMAT = "turab.permission-snapshot/2"
+#: The pinned functions that derive the states (`id`, `version`).
+FRESHNESS_STATE = ("freshness.state", "1")
+BINDING_STATE = ("permission.binding_state", "1")
 
 
 class SnapshotSubjectMissing(LookupError):
@@ -232,29 +237,20 @@ def commercial_context_snapshot(session: Session, offer_id: uuid.UUID) -> dict:
 MATCHING_PURPOSES = ("PRIVATE_MATCHING_ONLY", "PUBLIC_LISTING_ALLOWED")
 
 
-def _instant(value: Any) -> datetime | None:
-    """A timestamp in stored form (canonical string, UTC) or live form."""
-    if value is None or isinstance(value, datetime):
-        return value
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
-
-
 def _aware(as_of: datetime) -> datetime:
     if not isinstance(as_of, datetime) or as_of.tzinfo is None or as_of.utcoffset() is None:
         raise ValueError("as_of must be a timezone-aware instant")
     return as_of
 
 
+def _pinned(key: tuple[str, str]):
+    from turab.matching.registry import REGISTRY
+    return REGISTRY.resolve(*key)
+
+
 def _state(confirmed_at: Any, days: int, as_of: datetime) -> dict:
-    """G4-11: Slice 2's FRESH / STALE / NEVER_CONFIRMED, with NEVER_CONFIRMED
-    mapped to UNKNOWN. STALE exactly when `as_of - confirmed_at > days`, the
-    comparison of `services.freshness.evaluate`."""
-    last = _instant(confirmed_at)
-    if last is None:
-        return {"state": "UNKNOWN", "basis": "NEVER_CONFIRMED", "confirmed_at": None}
-    stale = as_of - last > timedelta(days=days)
-    return {"state": "STALE" if stale else "FRESH", "basis": "STALE" if stale else "FRESH",
-            "confirmed_at": last}
+    """One subject's freshness, by the pinned `freshness.state` (G4-11)."""
+    return _pinned(FRESHNESS_STATE).evaluate(stored_form(confirmed_at), days, as_of)
 
 
 def freshness_snapshot(request: Mapping[str, Any], prop: Mapping[str, Any],
@@ -268,12 +264,14 @@ def freshness_snapshot(request: Mapping[str, Any], prop: Mapping[str, Any],
       (plan §3.4 of Slice 3, `evaluate_offer`). It is NOT_APPLICABLE only
       when no offer is evaluated.
 
-    `as_of` is not recorded (see the module docstring)."""
+    `as_of` is not recorded (see the module docstring). `derived_by` names the
+    pinned function that derived the states."""
     as_of = _aware(as_of)
     request, prop, offer = stored_form(request), stored_form(prop), stored_form(offer)
     days = {key: threshold_days[key] for key in ("request", "property", "offer_terms")}
     return {
         "format": FRESHNESS_FORMAT,
+        "derived_by": "@".join(FRESHNESS_STATE),
         "policy_version": policy_version,
         "threshold_days": days,
         "request": _state(request["last_confirmed_at"], days["request"], as_of),
@@ -286,29 +284,10 @@ def freshness_snapshot(request: Mapping[str, Any], prop: Mapping[str, Any],
 
 
 def binding_state(binding: Mapping[str, Any], offer_party_id: Any, as_of: datetime) -> str:
-    """One binding's state at `as_of`, in this precedence (G4-10; the
-    currency conditions of Slice 3 step 6, `public_listing._LISTABLE_OFFERS`):
-
-    1. OTHER_PARTY: the grant is not the offer's party. It does not count.
-    2. SCOPE_MISMATCH: the grant's scope is not the binding's purpose. The
-       trigger checks this only on write, so it is re-checked here. It does
-       not count.
-    3. REVOKED: the binding is revoked, the grant's status is REVOKED, or
-       the grant carries a revocation date. Any one marker is enough; a
-       future date is not guessed to be ineffective.
-    4. NOT_STARTED: the binding or the grant starts after `as_of`.
-    5. CURRENT."""
-    b = stored_form(binding)
-    if str(b["grant_party_id"]) != str(offer_party_id):
-        return "OTHER_PARTY"
-    if b["grant_scope"] != b["purpose"]:
-        return "SCOPE_MISMATCH"
-    if (b["binding_revoked_at"] is not None or b["grant_status"] != "GRANTED"
-            or b["grant_revoked_at"] is not None):
-        return "REVOKED"
-    if _instant(b["bound_at"]) > as_of or _instant(b["granted_at"]) > as_of:
-        return "NOT_STARTED"
-    return "CURRENT"
+    """One binding's state at `as_of`, by the pinned `permission.binding_state`
+    (G4-10; its docstring states the precedence)."""
+    return _pinned(BINDING_STATE).evaluate(stored_form(binding), offer_party_id,
+                                           _aware(as_of))
 
 
 def permission_snapshot(session: Session, offer_id: uuid.UUID, *, as_of: datetime) -> dict:
@@ -343,6 +322,7 @@ def permission_snapshot(session: Session, offer_id: uuid.UUID, *, as_of: datetim
         binding = dict(row)
         binding["state"] = binding_state(binding, offer["party_id"], as_of)
         bindings.append(binding)
-    return {"format": PERMISSION_FORMAT, "offer_id": offer["offer_id"],
+    return {"format": PERMISSION_FORMAT, "derived_by": "@".join(BINDING_STATE),
+            "offer_id": offer["offer_id"],
             "offer_party_id": offer["party_id"],
             "permission_scope": offer["permission_scope"], "bindings": bindings}

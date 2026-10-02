@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 10**
+## Implementation plan — **revision 11**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -19,7 +19,8 @@ for.
 | 7 | `3391c86` | **Step 3 CLOSED at `6b833fb`** (review of 6b833fb); step 4 authorised on G4-3, G4-4, G4-6, G4-7 and the SALE table of G4-5 only. §3.4 corrected: `match_criterion_results` has no `explanation` column. The property snapshot gains `location_ancestry` (format 2), so that G4-6 replays. G4-5R: the step-4 behaviour, a typed refusal, is stated for review. **G4-18** raised (open) |
 | 8 | `1805eef` | Step 4 **not closed**: three defects fixed (a value no property can pass; a deferred row not validated; reason codes naming another importance). **Decided:** the G4-5R interim refusal (the period stays open); **G4-18 (b)**; **G4-10** as proposed, with PUBLIC_LISTING_ALLOWED; **G4-11** as proposed, with the permission reason kept visible. Step 4's §6 choices recorded. Step 5 starts only after step 4 is closed |
 | 9 | `99ffbaf` | Step 4 **not closed**: the pre-check "no property value can pass" judged the option domain from the ACTIVE options, while the rule compares any held value. Unified on the rule's domain; the meaning of `active` is stated under G4-7. A limit is stated under G4-2: version 1 of three rules is registered and pinned, but not a proof of historical replay. **No new decision is taken** |
-| 10 | the commit that delivers step 5 | **Step 4 CLOSED at `3c4816c`**: the review of 3c4816c authorised step 5, which by §8 follows step 4's closure. Step 5 delivered on G4-10 and G4-11. G4-5R's period stays open, and its interim refusal stays in force. The G4-2 limit stands. Step 6 waits on **G4-12** |
+| 10 | `02b9898` | **Step 4 CLOSED at `3c4816c`**: the review of 3c4816c authorised step 5, which by §8 follows step 4's closure. Step 5 delivered on G4-10 and G4-11. G4-5R's period stays open, and its interim refusal stays in force. The G4-2 limit stands. Step 6 waits on **G4-12** |
+| 11 | the commit that delivers step 6 | **Step 5 CLOSED at `a5ea6f5`** (review of a5ea6f5, which also confirmed step 4's closure as intended). **Decided:** pin the freshness and permission gates and the eligibility precedence before step 7 (done in step 6, under their own ids); **G4-12** with its edge cases; PERMISSION_MISSING displayed from its basis. G4-5R unchanged. **Raised (open):** the weight of the request's `budget_target_dzd` column, which G4-12's decision does not give |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -296,7 +297,7 @@ accept a recommendation by number.
 | G4-9 | POTENTIAL without an offer | **APPROVED, (a)** (review of 4538a2d): not evaluated, the reason reported; mandatory test 6 narrowed to its refusal | step 3 |
 | G4-10 | Permission | **APPROVED as proposed** (review of f789a59); a valid PUBLIC_LISTING_ALLOWED binding counts for internal matching of the same bound resource, and grants no new sharing | step 5 |
 | G4-11 | Freshness mapping and eligibility precedence | **APPROVED as proposed** (review of f789a59); a missing or revoked permission stays visible in the diagnostic, even under NEEDS_CONFIRMATION | step 5 |
-| G4-12 | Soft score | Weighted share of passing soft criteria | step 6 |
+| G4-12 | Soft score | **APPROVED** (review of a5ea6f5), with its edge cases; the weight of the `budget_target_dzd` COLUMN is open (refused until decided) | step 6 |
 | G4-13 | Input hash; an identical re-run | **APPROVED** (review of aad9f34): canonical JSON; the existing match is returned; `evaluated_offer_id` is named in the input | step 2 |
 | G4-14 | Migration `0005` (immutability) | **APPROVED** (2026-09-26), delivered in step 1 | step 1 |
 | G4-15 | The boundary with Slices 5 and 6; "near match" | As §0; one REQUIRED FAIL | step 7 |
@@ -359,6 +360,17 @@ that cannot start without it.
 >   to its implementation.
 > - Removing a version is refused unless no match cites it, and even then
 >   it needs a Design Ledger entry.
+>
+> **Extended in revision 11 (review of a5ea6f5): the gates are pinned too.**
+> - The freshness and permission gates, the two state derivations and the
+>   eligibility precedence are registered under their own ids
+>   (`freshness.*`, `permission.*`, `eligibility.*`), as is the soft score
+>   (`score.soft`). They are not criterion rules.
+> - They are pinned, and `REGISTRY.digest()`, which is an input of the hash,
+>   covers them.
+> - A changed one is a new version beside the old.
+> - The snapshots record the derivation they used (`derived_by`), and
+>   eligibility records its versions (`engine`), for step 7 to store.
 >
 > **A limit, stated in revision 9 (review of ba5f25e):** registered and
 > pinned does not mean replayable today.
@@ -625,6 +637,12 @@ These are the step-6 currency conditions.
   private matching?
 - **Blocks:** step 5.
 
+> **Display, decided in the review of a5ea6f5:** PERMISSION_MISSING is
+> kept, with its basis. Its seeded label ("Permission scope insufficient")
+> is NOT presented as an exact explanation of a missing binding. A displayed
+> diagnostic words the explanation from the basis (`NO_CURRENT_BINDING`,
+> `NOT_STARTED`). This binds steps 7 and 8.
+
 > **DECIDED (review of f789a59): as proposed.**
 > - A valid `PUBLIC_LISTING_ALLOWED` binding is accepted for INTERNAL
 >   matching of the same bound resource.
@@ -672,6 +690,30 @@ enum is FRESH, STALE, UNKNOWN or NOT_APPLICABLE. **Proposal:**
 - The formula is itself a registry rule (G4-2), and each candidate's terms
   are stored in `explanation`.
 - **Blocks:** step 6.
+
+> **DECIDED (review of a5ea6f5): the plan's model, with its edge cases
+> settled.**
+> - **Weights:** PREFERRED = 2, FLEXIBLE = 1.
+> - **Criteria:** a PASS contributes its full weight; a FAIL or an UNKNOWN
+>   contributes 0.
+> - **BUDGET_TARGET** contributes its proximity, as above:
+>   - a zero target gives 1 for a zero price, and 0 for a positive one;
+>   - a missing asking price gives 0.
+> - **Null cases:** the score is null when there is no soft criterion, and
+>   null unless the hard gate is PASS.
+> - **Otherwise** the weighted share, rounded to six places.
+> - `seller_expectation_dzd` stays out of the calculation.
+>
+> **Implemented in step 6** as `score.soft@1`. The share is computed exactly
+> (as a fraction) and rounded once, half up, as PostgreSQL rounds into
+> `numeric(7,6)`. G4-7 still holds: a soft criterion without a deterministic
+> rule carries no weight.
+>
+> **Open, raised in step 6:** the request's own `budget_target_dzd` COLUMN
+> has no importance of its own, so the decision gives it no weight. Until
+> that weight is decided, a request carrying it is refused, naming G4-12
+> (acceptance condition 1). A BUDGET_TARGET ROW carries its own importance,
+> and is scored.
 
 ### G4-13 · The canonical input hash, and what an identical re-run does
 **The hash is proposed as:**

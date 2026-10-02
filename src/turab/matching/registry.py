@@ -176,5 +176,7 @@ def render_pins(pins: dict[str, str]) -> str:
 #: The production registry. The criterion rules register themselves on import.
 REGISTRY = RuleRegistry()
 
-# Last, after REGISTRY exists: `rules` registers into it (step 4).
+# Last, after REGISTRY exists: `rules` (step 4) and `gates` (review of
+# a5ea6f5: freshness, permission, eligibility, soft score) register into it.
+from turab.matching import gates as _gates  # noqa: E402,F401
 from turab.matching import rules as _rules  # noqa: E402,F401
