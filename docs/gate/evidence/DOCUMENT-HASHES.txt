@@ -478,3 +478,23 @@ docs/gate/SLICE_4_PLAN.md                                      rev10 346d9fac09a
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    a93d6bc115b24d6a26d53e176d2eb758a9510156503132609445f3239a96b209
 docs/gate/evidence/SLICE4-STEP5-MUTATIONS.txt                  new   11c949c28c687f52a602cc14359ced9499c7f319eb53335767b82c3c7928dd26
 SLICE_4_PLAN.md changed revision: 9 -> 10 (step 4 closed at 3c4816c; step 5 delivered; step 6 waits on G4-12).
+
+--- Slice 4 step 6 (G4-12; gates pinned): soft score and pinned gates; step 5 closed at a5ea6f5 ---
+src/turab/matching/gates.py                                    new   e2c16141b4b2ffab4312041c29330d7eabeb673b6e8a5c9617e6f0b908a6da58
+src/turab/matching/soft.py                                     new   6515735e28aa25061c773efc515c1217b6e1c39f692ab451bcc40abd99491ebb
+src/turab/matching/eligibility.py                              --    b5af3dba0e72539249fa558eddd5d85fc61479bba866541ada32b5d5fd153d91
+src/turab/matching/snapshots.py                                --    8e154d27e0d680688fae94e58d5ab2a6ad7f5bd9e3a16ae499413dea320ce963
+src/turab/matching/registry.py                                 --    fde241022898c2c45ded9a60b9cac509b2239c0dd06975c97ef95580196c07ac
+src/turab/matching/rule_pins.py                                --    1804d3b1d4e391e20da7c0ae9b3f54e22521835a168a57088c8a442bcc0f93b7
+src/turab/matching/__init__.py                                 --    132f6e0608a4f01e8bfe264c08d94ecd0152237be8c3c7c048308e5420856902
+tests/test_slice4_step6.py                                     new   2a5615b45c2f6d8bec204ffc1c25c8b7fc866f10b3ea2ce3b3d8b151492da39a
+tests/test_slice4_step4.py                                     --    f42d18fd21254c3a7d77ec8fa197afb772def0570f8c3e9b2d929438bc56db5d
+db/dev/mutate_slice4_step6.py                                  new   2dfba00892deceae4062bea84004525d04c8b7ff7cd7e961614949ffd5b705d4
+db/dev/mutate_slice4_step5.py                                  --    91ff0ea868088e49910024a62312c620b763a9777af24f23df9ceaae27598629
+docs/gate/SLICE_4_STEP6_DELIVERY.md                            new   fcaf460debdec32ded045973470c5cbc30e68b530ca7ff252c4df97b859816c3
+docs/gate/SLICE_4_STEP5_DELIVERY.md                            --    0f1dbe25be4bd9e0741fc3e77931f7162b9ead9c8fe03a5881262765f630f606
+docs/gate/SLICE_4_PLAN.md                                      rev11 d31526c0d2caf8982c7d5f75b6922c646ea6d895512f0f04e5dc40de5507bd4b
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    3aafb2bae1c72006ced47cd38d8bf94ee6b63dac47b77c227e0fd6d533695b3e
+docs/gate/evidence/SLICE4-STEP6-MUTATIONS.txt                  new   7cafdca4d1c051104dffef0d79d4d2bb1b27bd0106e1b65bdaa77bf5c2d0b902
+docs/gate/evidence/SLICE4-STEP5-MUTATIONS.txt                  --    917ef012adc3d80df265bfff2feea19244e8baee115624143358e2b3da4df2f7
+SLICE_4_PLAN.md changed revision: 10 -> 11 (step 5 closed; gates pinned; G4-12 decided; column target weight open).

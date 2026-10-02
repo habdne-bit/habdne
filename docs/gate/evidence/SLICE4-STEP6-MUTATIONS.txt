@@ -1,0 +1,187 @@
+TURAB — Slice 4 step 6: which soft-score decision, refusal or pin fails which test
+============================================================
+Base commit       : bb55a672899759edc24f3671910ab80004fe003d
+Source fingerprint: 336180a344a5ee3e4558cd1b1345dbcf8f2bfc289ef2e44da763a50ce112582a
+Working tree      : CLEAN
+Recorded          : 2026-10-02 20:48:42 UTC
+Test file         : tests/test_slice4_step6.py
+
+=== baseline (no mutation) ===
+   30 passed in 3.19s
+== G1 PREFERRED weighs like FLEXIBLE [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   7 failed, 23 passed in 3.09s
+   FAILED test_a_hard_fail_is_rejected_whatever_the_soft_score
+   FAILED test_a_target_is_weighted_by_its_importance
+   FAILED test_rounding_is_half_up_like_postgresql_numeric
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   FAILED test_weights_and_contributions[criteria_in1-0.666667]
+   FAILED test_weights_and_contributions[criteria_in2-0.333333]
+   cause: AssertionError: ([{'kind': 'CRITERION', 'criterion': 'X', 'ordinal': 1, 'weight': 1, ...}, {'kind': 'CRITERION', 'criterion': 'Y', 'ordinal': 1, 'weight': 1, ...}], Decim
+   cause: AssertionError: assert (Decimal('0.500000') == Decimal('0.333333'))
+   cause: AssertionError: assert (Decimal('0.500000') == Decimal('0.666667'))
+   cause: AssertionError: assert Decimal('0.250000') == Decimal('0.333333')
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: AssertionError: assert [('CRITERION'...T', 1, '1/1')] == [('CRITERION'...T', 2, '1/1')]
+== G2 UNKNOWN contributes like PASS [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   4 failed, 26 passed in 3.16s
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   FAILED test_weights_and_contributions[criteria_in2-0.333333]
+   FAILED test_weights_and_contributions[criteria_in3-0.000000]
+   cause: AssertionError: assert (Decimal('0.333333') == Decimal('0.000000'))
+   cause: AssertionError: assert (Decimal('1.000000') == Decimal('0.333333'))
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert (Decimal('0.333333') == Decimal('0.000000'))
+   cause: E   AssertionError: assert (Decimal('1.000000') == Decimal('0.333333'))
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G3 a soft criterion without a rule carries weight (G4-7) [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   4 failed, 26 passed in 3.61s
+   FAILED test_no_score_without_a_soft_term
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   FAILED test_weights_and_contributions[criteria_in5-1.000000]
+   cause: AssertionError: assert (Decimal('0.0...IGHTED_SHARE') == (None, 'NO_SOFT_CRITERION')
+   cause: AssertionError: assert (Decimal('0.500000') == Decimal('1.000000'))
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert (Decimal('0.0...IGHTED_SHARE') == (None, 'NO_SOFT_CRITERION')
+   cause: E   AssertionError: assert (Decimal('0.500000') == Decimal('1.000000'))
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G4 REQUIRED criteria counted as terms [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   5 failed, 25 passed in 3.36s
+   FAILED test_a_hard_fail_is_rejected_whatever_the_soft_score
+   FAILED test_no_score_without_a_soft_term
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   FAILED test_weights_and_contributions[criteria_in4-0.000000]
+   cause: AssertionError: assert (Decimal('0.750000') == Decimal('0.000000'))
+   cause: AssertionError: assert (Decimal('1.0...IGHTED_SHARE') == (None, 'NO_SOFT_CRITERION')
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: AssertionError: assert [('CRITERION'...T', 2, '1/1')] == [('CRITERION'...T', 2, '1/1')]
+   cause: E   AssertionError: assert (Decimal('0.750000') == Decimal('0.000000'))
+   cause: E   AssertionError: assert (Decimal('1.0...IGHTED_SHARE') == (None, 'NO_SOFT_CRITERION')
+== G5 a score despite a hard gate that is not PASS [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   5 failed, 25 passed in 3.04s
+   FAILED test_a_hard_fail_is_rejected_whatever_the_soft_score
+   FAILED test_no_score_unless_the_hard_gate_passes[FAIL]
+   FAILED test_no_score_unless_the_hard_gate_passes[UNKNOWN]
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: assert (Decimal('1.0...IGHTED_SHARE') == (None, 'HARD_GATE_NOT_PASS')
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert (Decimal('1.0...IGHTED_SHARE') == (None, 'HARD_GATE_NOT_PASS')
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G6 the distance not capped by min(1, ...) [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   3 failed, 27 passed in 3.06s
+   FAILED test_a_budget_target_contributes_its_proximity[20000000-50000000-proximity3]
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: assert '-1/2' == '0/1'
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert '-1/2' == '0/1'
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G7 a zero target always contributes 1 [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   3 failed, 27 passed in 3.06s
+   FAILED test_a_budget_target_contributes_its_proximity[0-1-proximity5]
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: assert '1/1' == '0/1'
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert '1/1' == '0/1'
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G8 a missing ask contributes 1 [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   3 failed, 27 passed in 3.00s
+   FAILED test_a_budget_target_contributes_its_proximity[20000000-None-proximity6]
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: assert '1/1' == '0/1'
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert '1/1' == '0/1'
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G9 the seller expectation read as the price [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   3 failed, 27 passed in 2.91s
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   FAILED test_the_seller_expectation_is_never_read
+   cause: AssertionError: assert ({'soft_score'...ht': 2, ...}]} == {'soft_score'...ht': 2, ...}]}
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert ({'soft_score'...ht': 2, ...}]} == {'soft_score'...ht': 2, ...}]}
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G10 rounding by truncation [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   4 failed, 26 passed in 2.88s
+   FAILED test_rounding_is_half_up_like_postgresql_numeric
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   FAILED test_weights_and_contributions[criteria_in1-0.666667]
+   cause: AssertionError: ([{'kind': 'BUDGET_TARGET', 'source': 'ROW', 'request_criterion_id': None, 'weight': 1, ...}], Decimal('0.000001'))
+   cause: AssertionError: assert (Decimal('0.666666') == Decimal('0.666667'))
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: ([{'kind': 'BUDGET_TARGET', 'source': 'ROW', 'request_criterion_id': None, 'weight': 1, ...}], Decimal('0.000001'))
+   cause: E   AssertionError: assert (Decimal('0.666666') == Decimal('0.666667'))
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G11 no soft term scored 0, not null [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   3 failed, 27 passed in 3.20s
+   FAILED test_no_score_without_a_soft_term
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: assert (Decimal('0')...FT_CRITERION') == (None, 'NO_SOFT_CRITERION')
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert (Decimal('0')...FT_CRITERION') == (None, 'NO_SOFT_CRITERION')
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+== G12 a RENT target compared (G4-5R) [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   3 failed, 27 passed in 2.98s
+   FAILED test_a_target_on_a_rent_offer_is_refused
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: E   Failed: DID NOT RAISE RuntimeError
+   cause: Failed: DID NOT RAISE RuntimeError
+== G13 a target's importance ignored [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 e2c16141b4b2ffab identical
+   5 failed, 25 passed in 3.03s
+   FAILED test_a_hard_fail_is_rejected_whatever_the_soft_score
+   FAILED test_a_target_is_weighted_by_its_importance
+   FAILED test_rounding_is_half_up_like_postgresql_numeric
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   FAILED test_the_gates_and_the_score_are_registered_and_pinned
+   cause: AssertionError: ([{'kind': 'CRITERION', 'criterion': 'X', 'ordinal': 1, 'weight': 1, ...}, {'kind': 'BUDGET_TARGET', 'source': 'ROW', 'request_criterion_id': None, 'weigh
+   cause: AssertionError: assert Decimal('0.250000') == Decimal('0.333333')
+   cause: AssertionError: assert ['score.soft@...sion instead'] == []
+   cause: AssertionError: assert [('CRITERION'...T', 1, '1/1')] == [('CRITERION'...T', 2, '1/1')]
+   cause: E   AssertionError: ([{'kind': 'CRITERION', 'criterion': 'X', 'ordinal': 1, 'weight': 1, ...}, {'kind': 'BUDGET_TARGET', 'source': 'ROW', 'request_criterion_id': None, 'w
+   cause: E   AssertionError: assert Decimal('0.250000') == Decimal('0.333333')
+== S1 the undecided column target scored [src/turab/matching/soft.py, 1 site(s)]  restored: sha256 6515735e28aa2506 identical
+   1 failed, 29 passed in 3.00s
+   FAILED test_the_request_target_column_is_refused_until_its_weight_is_decided
+   cause: E   KeyError: None
+   cause: KeyError: None
+== S2 deferred targets not given to the formula [src/turab/matching/soft.py, 1 site(s)]  restored: sha256 6515735e28aa2506 identical
+   2 failed, 28 passed in 3.00s
+   FAILED test_a_hard_fail_is_rejected_whatever_the_soft_score
+   FAILED test_the_request_target_column_is_refused_until_its_weight_is_decided
+   cause: AssertionError: assert [('CRITERION'...N', 1, '1/1')] == [('CRITERION'...T', 2, '1/1')]
+   cause: E   AssertionError: assert [('CRITERION'...N', 1, '1/1')] == [('CRITERION'...T', 2, '1/1')]
+   cause: E   Failed: DID NOT RAISE SoftScoreUndecided
+   cause: Failed: DID NOT RAISE SoftScoreUndecided
+== K1 the freshness snapshot does not name its version [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
+   1 failed, 29 passed in 2.98s
+   FAILED test_each_result_names_the_versions_that_decided_it
+   cause: E   KeyError: 'derived_by'
+   cause: KeyError: 'derived_by'
+== K2 the permission snapshot does not name its version [src/turab/matching/snapshots.py, 1 site(s)]  restored: sha256 8e154d27e0d68068 identical
+   1 failed, 29 passed in 2.82s
+   FAILED test_each_result_names_the_versions_that_decided_it
+   cause: E   KeyError: 'derived_by'
+   cause: KeyError: 'derived_by'
+== K3 eligibility does not record its versions [src/turab/matching/eligibility.py, 1 site(s)]  restored: sha256 b5af3dba0e725392 identical
+   1 failed, 29 passed in 2.82s
+   FAILED test_each_result_names_the_versions_that_decided_it
+   cause: AssertionError: assert {} == {'freshness_g...precedence@1'}
+   cause: E   AssertionError: assert {} == {'freshness_g...precedence@1'}
+== K4 the gates not registered [src/turab/matching/registry.py, 1 site(s)]  restored: sha256 fde241022898c2c4 identical
+   1 failed, 29 passed in 3.13s
+   FAILED test_the_engine_registers_every_pinned_function_on_its_own
+   cause: AssertionError: assert {'eligibility...score.soft@1'} <= {'criterion.a...t_min@1', ...}
+   cause: E   AssertionError: assert {'eligibility...score.soft@1'} <= {'criterion.a...t_min@1', ...}
+
+SURVIVING MUTATIONS: none

@@ -167,7 +167,14 @@ The decision binds the display, which comes in steps 7 and 8.
 The trial run killed 18. **K4 survived**, for the reason in §1, and the
 fresh-interpreter test now kills it.
 
-The clean-tree result is in `evidence/SLICE4-STEP6-MUTATIONS.txt`.
+**Clean-tree result: 19 of 19 fail, and none survives.**
+- Recorded at `bb55a67`, source fingerprint `336180a3…2582a`, baseline 30
+  passed (`evidence/SLICE4-STEP6-MUTATIONS.txt`).
+- Every mutated file was restored and verified by sha256.
+
+**Step 5's 32 mutations, re-anchored, were run on the same clean tree:
+32 of 32 fail.** That record replaces step 5's file, and the earlier record
+(at `02b9898`) stays in git history.
 
 ## 7. What remains
 
