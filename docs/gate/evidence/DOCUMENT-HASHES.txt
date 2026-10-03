@@ -539,3 +539,7 @@ docs/gate/SLICE_4_PLAN.md                                      rev14 31769292c55
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    8428fab55bf699490836fe92643542b9b5d90a77ce0e472738174527b3ac2e0e
 docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  new   fb375516b8e7883a2f778e49484f3535ac88024cd6d82f06a71d9da6537fdfd4
 SLICE_4_PLAN.md changed revision: 13 -> 14 (G4-15 decided with D1-D6 constraints; step 7 delivered).
+
+--- Slice 4 step 7: D2 recorded as a narrower operational reading (approval text of G4-15); docs only, no source change ---
+docs/gate/SLICE_4_PLAN.md                                      rev14 b86574f88e8d6fa2423820ba88fc37ebfef75790eaa3e7f50b38011ae559dd87
+docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    af1d8e4cc59f76e70f77c75a5cf7b5cd69f43f9151de128344a381b272162cef

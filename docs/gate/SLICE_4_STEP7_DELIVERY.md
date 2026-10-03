@@ -166,6 +166,11 @@ with `G4-5R`. This holds with or without a budget, and nothing is written
 ### D2 — the near match
 - **Rule:** REJECTED, exactly one REQUIRED FAIL, and every other REQUIRED
   criterion PASS.
+- **Scope, as approved.** This is a narrower, conservative operational
+  reading of Spec §13's "fails one or two conditions". It does not claim to
+  cover every form of that phrase: a candidate failing two conditions, for
+  one, is not counted. A near match is counted only; no task and no
+  opportunity is proposed from it.
 - **Tests** (`test_a_near_match_is_one_required_fail_and_every_other_required_pass`):
   - six cases, among them one FAIL with one REQUIRED UNKNOWN, which is not a
     near match;

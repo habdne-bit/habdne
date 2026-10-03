@@ -866,7 +866,11 @@ The contract does not give how they are filled.
 >   `next_action` is a recommendation stored on the candidate, not a task.
 > - **D2 (near match).** A REJECTED candidate with **exactly one** REQUIRED
 >   FAIL, **and every other REQUIRED criterion PASS** (no REQUIRED UNKNOWN).
->   It is counted only; nothing is suggested from it.
+>   It is counted only; no task and no opportunity is proposed from it.
+>   **It is a narrower, conservative operational reading** of the spec's
+>   "fails one or two conditions" (§13). It does not claim to cover every
+>   form of that phrase: a candidate failing two conditions, for one, is
+>   not counted.
 > - **D3.** Each candidate is counted at most once in each count:
 >   ELIGIBLE → `ready_opportunity_count`; NEED_MORE_INFORMATION →
 >   `actionable_unknown_count`; D2 → `near_match_count`.
