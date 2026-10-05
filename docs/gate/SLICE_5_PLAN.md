@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 3**
+## Implementation plan — **revision 4**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Slice 4 kept `match_reviews` and
@@ -45,13 +45,35 @@ Revision 2 answered each at its decision, marked **[review point n]**.
   tests, with no code. After it, G5-12 can be approved, and `0006` started
   on a precise, checkable text (§5, G5-12).
 
+**The review of revision 3 (`3a797d8`).** The reviewer matched both
+digests and reviewed the text and the available sources, without re-running
+PostgreSQL.
+- **Accepted:**
+  - [R3-1], the review-ordering rule (§3.1);
+  - §3.7, adopted as the basis of G5-2 and G5-9. Its proof is still the
+    implementation and the planned tests;
+  - [R3-5], LOCATION removed from the customer display;
+  - **G5-13 (b), option (ii), decided:** the role is remedied in a separate,
+    cross-cutting step, mandatory before any release gate. Until a test
+    under a non-superuser, non-owner role passes, K06 stays UNPROVEN, and
+    STOP GATE E's document states it so.
+- **Not approved: G5-12 as written, and `0006` does not start.** The
+  stamp rules 5 and 6 forced an invented `shared_at` on NEW → CLOSED, and
+  an invented `engaged_at` on SHARED → CLOSED. Answered at G5-12 as
+  **[R4-1]**.
+- **A point for G5-5,** before the customer view is implemented: the key
+  test does not prove derivability from THIS response when the type or an
+  area changed after the evaluation. Answered at G5-5 as **[R4-2]**.
+- **Still not approved:** G5-3, G5-5 and G5-10.
+
 **Revision history**
 
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `658a86d` | first plan |
 | 2 | `288bfdb` | step 0 measured (§6.4, record above); §2 restated from the measurements; §3.1 gains the review-ordering rule (measured A3, A5, A6); the five review points answered at G5-2, G5-4, G5-5, G5-8, G5-11; G5-12 widened by the measurement; G5-13 added (the application role, measured D) |
-| 3 | the commit that adds this revision | the review of `288bfdb` recorded; [R3-1] a strictly increasing review stamp (§3.1); [R3-2] one currency table, §3.7, used by approval, revalidate and share; [R3-3] the exact text of `0006` and the B-case attribution (G5-12); [R3-4] G5-13 split into (a) documentation, done as EN-02, and (b) remedy and enforcement point, with K06 UNPROVEN; [R3-5] LOCATION removed from the display list (G5-5) |
+| 3 | `3a797d8` | the review of `288bfdb` recorded; [R3-1] a strictly increasing review stamp (§3.1); [R3-2] one currency table, §3.7, used by approval, revalidate and share; [R3-3] the exact text of `0006` and the B-case attribution (G5-12); [R3-4] G5-13 split into (a) documentation, done as EN-02, and (b) remedy and enforcement point, with K06 UNPROVEN; [R3-5] LOCATION removed from the display list (G5-5) |
+| 4 | the commit that adds this revision | the review of `3a797d8` recorded, and its acceptances marked in place; [R4-1] G5-12 rules 5 and 6 rewritten as event stamps, set only on their own edge, with a test table for both closing edges; [R4-2] G5-5: an entry is withheld at render when its field's current value differs from the snapshot's |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -305,6 +327,7 @@ are the record's sections):
 - **The latest review is the last decision taken.** This follows from
   ADR-08: the sequence IS the history. §2 item 5 measured that the default
   `reviewed_at` does not guarantee it.
+- **Accepted in the review of `3a797d8`.** The rule below is accepted.
 - **[R3-1] What A6 proved, and what it did not.** A6 proved two things:
   - the lock serializes the writers;
   - under the lock, `clock_timestamp()` is later than the waiting
@@ -434,6 +457,10 @@ Sources: ADR-04, R7.3, `API_CONTRACTS` §4.2, B03, H05.
 - A denied attempt is recorded for every actor (R6.3a).
 
 ### 3.7 [R3-2] The currency check: one table, three users
+
+> **Adopted in the review of `3a797d8`** as the basis of G5-2 and G5-9.
+> Its proof is the implementation and the planned tests below.
+
 **Why one table.** Revision 2 stated currency twice, and the two did not
 agree:
 - G5-2 required an ACTIVE offer, and accepted any request status a run
@@ -820,7 +847,7 @@ they could not read in the same response. Concretely, under G5-6 (a):
 | PROPERTY_DETAILS_ALLOWED, CONTACT_AFTER_CONFIRMATION | the above, plus LAND_AREA_MIN and BUILT_AREA_MIN |
 | never, at any scope | **LOCATION** [R3-5], DOCUMENT_TYPE, RIGHT_TYPE, ROOMS_MIN, BEDROOMS_MIN, BUDGET_MAX, BUDGET_TARGET, TRANSACTION_INTENT, and any code with no deterministic rule |
 
-**[R3-5] Why LOCATION is removed.** `criterion.location@2` decides PASS when
+**[R3-5] Why LOCATION is removed (accepted in the review of `3a797d8`).** `criterion.location@2` decides PASS when
 a requested location is the property's location OR ONE OF ITS ANCESTORS.
 It reads `location_ancestry` from the property snapshot (`rules.py`,
 `location_v2`). The customer view renders `canonical_location_id`, never
@@ -850,6 +877,51 @@ Both read their field from the snapshot, which is the field's value at
 evaluation. A pinned-rule test asserts, for each shown code, the exact set
 of snapshot keys its rule reads. A later version that reads another key
 fails that test.
+
+**[R4-2] When the field has changed since the evaluation.** The key test
+above proves only WHICH field a rule reads. It does not prove that the
+customer can derive the result from THIS response. The rule read the
+snapshot's value, while `CustomerPropertyView` renders the property's
+current row. An example:
+- the area was 137.5 m² at evaluation, and LAND_AREA_MIN 120 was PASS;
+- it was later corrected to 110 m²;
+- the response would then show a PASS that its own `property` contradicts.
+
+The PASS also states a fact, "at least 120 then", that nothing rendered
+shows. There are two ways out:
+- **(a) Recommended: withhold the result when the value differs.** At
+  render time, the customer view compares each shown entry's field in the
+  match's `property_snapshot` with the property's current value, at the
+  same scope. The fields are `property_type`, `land_area_m2` and
+  `built_area_m2`, compared exactly (Decimal, as `exact_json`). When they
+  differ, the entry is dropped from that response's `why_real.criteria` or
+  `known_differences`.
+  - **Where the filter applies.** The stored row is not touched: `why_real`
+    is written once (G5-12, rule 2). The internal view shows the stored
+    entries unfiltered.
+  - **The comparison is on the value, not on the outcome.** A change that
+    would leave the result unchanged (150 → 160 against a minimum of 120)
+    still withholds the entry. The response therefore never rests on a
+    re-evaluation the engine did not make.
+  - **What remains visible is stated.** An absent entry tells the customer
+    that a field shown to them has changed since evaluation. It reveals no
+    value they cannot see, and nothing private.
+- **(b) Render the historical value with the result.** Rejected:
+  - it puts snapshot content into a customer DTO, which R9.2 forbids
+    ("match and permission snapshots");
+  - the frozen `CustomerPropertyView` has no field for a value other than
+    the current one.
+
+**Planned tests under (a), over HTTP at PROPERTY_DETAILS_ALLOWED:**
+- **unchanged area:** LAND_AREA_MIN is present;
+- **area corrected after creation, outcome flipped (137.5 → 110):** absent
+  from the customer body, and present in the internal view's `why_real`;
+- **area changed with the outcome unchanged (137.5 → 150):** absent;
+- **the area changed back to 137.5:** present again, because the
+  comparison is made at each render;
+- **`property_type` changed:** PROPERTY_TYPE is absent at every scope;
+- **at SUMMARY_ONLY:** an area change cannot show, since LAND_AREA_MIN is
+  never shown there.
 
 **Why the rule is a fixed list by code, and not a filter on
 `evidence_claim_id`.** A filter that hid a result only when it is
@@ -1194,13 +1266,13 @@ one is needed:
 
 The permitted edges are exactly these five:
 
-| from | to | required on the same UPDATE |
-|---|---|---|
-| NEW | SHARED | `shared_at` set (not null) |
-| NEW | CLOSED | `closed_at` AND `close_reason_code` set |
-| SHARED | ENGAGED | `engaged_at` set |
-| SHARED | CLOSED | `closed_at` AND `close_reason_code` set |
-| ENGAGED | CLOSED | `closed_at` AND `close_reason_code` set |
+| from | to | required on the same UPDATE | event stamps after the UPDATE [R4-1] |
+|---|---|---|---|
+| NEW | SHARED | `shared_at` set (not null) | `shared_at` set; `engaged_at` null |
+| NEW | CLOSED | `closed_at` AND `close_reason_code` set | `shared_at` AND `engaged_at` both **null** |
+| SHARED | ENGAGED | `engaged_at` set | `shared_at` unchanged; `engaged_at` set |
+| SHARED | CLOSED | `closed_at` AND `close_reason_code` set | `shared_at` unchanged; `engaged_at` **null** |
+| ENGAGED | CLOSED | `closed_at` AND `close_reason_code` set | `shared_at` and `engaged_at` unchanged |
 
 No other change of `status` is permitted. CLOSED has no outgoing edge.
 ENGAGED is in the graph although no Slice 5 path reaches it (G5-1).
@@ -1220,10 +1292,34 @@ ENGAGED is in the graph although no Slice 5 path reaches it (G5-1).
   4. **The closing fields.** `NEW.closed_at IS NOT NULL`, and also
      `NEW.close_reason_code IS NOT NULL`, each exactly when
      `NEW.status = 'CLOSED'`.
-  5. **`shared_at` is set once.** It is null exactly while `NEW.status =
-     'NEW'`. Once OLD's is set, NEW's is not DISTINCT FROM it.
-  6. **`engaged_at` is set once.** It is null exactly while `NEW.status` is
-     NEW or SHARED. Once OLD's is set, NEW's is not DISTINCT FROM it.
+  5. **`shared_at` records an event that happened [R4-1].** Exactly one of
+     three cases applies:
+     - **once set, fixed:** if `OLD.shared_at` is not null, `NEW.shared_at`
+       is not DISTINCT FROM it;
+     - **set on its own edge:** otherwise, if `(OLD.status, NEW.status) =
+       ('NEW', 'SHARED')`, `NEW.shared_at` is not null;
+     - **otherwise, it stays null.**
+  6. **`engaged_at` records an event that happened [R4-1].** The same three
+     cases, with the edge `('SHARED', 'ENGAGED')`:
+     - **once set, fixed:** if `OLD.engaged_at` is not null,
+       `NEW.engaged_at` is not DISTINCT FROM it;
+     - **set on its own edge:** otherwise, if the edge is taken,
+       `NEW.engaged_at` is not null;
+     - **otherwise, it stays null.**
+
+  **[R4-1] Why the rules changed.** Revision 3 wrote rule 5 as "null
+  exactly while NEW". That required a `shared_at` on every non-NEW row, so
+  NEW → CLOSED could pass only with an invented sharing time. Rule 6 forced
+  an invented `engaged_at` on SHARED → CLOSED in the same way. Both closing
+  edges the graph permits would have passed their guards only by
+  fabricating history.
+
+  Now a stamp can be set ONLY on the edge of its own event, and never
+  afterwards. So:
+  - an event that did not happen has no stamp, however the opportunity
+    ends;
+  - no UPDATE can write a stamp for an event that did not happen, whether
+    it closes the row or leaves it NEW.
 - **`enforce_opportunity_birth()`, BEFORE INSERT.** A new row has
   `status = 'NEW'`, `validity_status = 'VALID'`, and null `shared_at`,
   `engaged_at`, `closed_at` and `close_reason_code`.
@@ -1281,9 +1377,38 @@ under `trg_opportunity_offer_context`. In Slice 5, no command writes
   when they are not. NEW → CLOSED is included.
 - **The writable columns:** accepted.
 - **The INSERT shape:** refused for any other status, validity or time.
-- **The mutation record:** each of rules 1–6, and the birth trigger,
-  removed one at a time. Each removal must let its own B case, or edge
-  case, through, and so fail its test.
+- **[R4-1] The event stamps, case by case:**
+
+  | UPDATE from a row in | change | expected |
+  |---|---|---|
+  | NEW | → CLOSED, `shared_at` and `engaged_at` null | **accepted** |
+  | NEW | → CLOSED, `shared_at` supplied | refused (rule 5, third case) |
+  | NEW | → CLOSED, `engaged_at` supplied | refused (rule 6, third case) |
+  | SHARED | → CLOSED, `engaged_at` null | **accepted**; `shared_at` unchanged |
+  | SHARED | → CLOSED, `engaged_at` supplied | refused (rule 6, third case) |
+  | ENGAGED | → CLOSED | **accepted**; both stamps unchanged |
+  | NEW | → SHARED without `shared_at` | refused (rule 5, second case) |
+  | NEW | → SHARED with `shared_at` | **accepted** |
+  | NEW | → SHARED, `engaged_at` also supplied | refused (rule 6, third case) |
+  | SHARED | → ENGAGED without `engaged_at` | refused (rule 6, second case) |
+  | SHARED | → ENGAGED with `engaged_at` | **accepted** |
+  | NEW | status unchanged, `shared_at` supplied | refused (rule 5, third case) |
+  | SHARED | status unchanged, `engaged_at` supplied | refused (rule 6, third case) |
+  | SHARED | `shared_at` moved or cleared (B17) | refused (rule 5, first case) |
+  | ENGAGED | `engaged_at` moved or cleared | refused (rule 6, first case) |
+
+  These are the "closing frees the pair" path's own preconditions: test 6
+  of §6.1 closes a NEW opportunity, with both stamps null.
+- **The mutation record:** each removal must let its own case through, and
+  so fail its test. The removals, one at a time:
+  - each of rules 1–4;
+  - each of the three cases of rule 5;
+  - each of the three cases of rule 6;
+  - the birth trigger.
+
+  Removing the third case of rule 5 must let "NEW → CLOSED, `shared_at`
+  supplied" through. Removing the second case must let "NEW → SHARED
+  without `shared_at`" through.
 - **B10:** stays ACCEPTED by the schema after `0006`, recorded as such, and
   is attributed to the service guard above.
 
@@ -1323,8 +1448,8 @@ The review allowed the note to be recorded now. It is
 - **No document under `docs/gate` declared K06 PASS** at the time of the
   note. This was checked by search.
 
-**G5-13 (b) — the remedy, and the point at which it is binding. Not
-decided.**
+**G5-13 (b) — the remedy, and the point at which it is binding. DECIDED
+in the review of `3a797d8`: option (ii).**
 - **The remedy, proposed.** Two roles:
   - the **owner role** runs migrations and owns the schema;
   - the **application role** (`turab_app`) is `NOSUPERUSER`, owns nothing,
@@ -1362,7 +1487,8 @@ decided.**
     STOP GATE E is the core-hypothesis gate. It is not a release gate and
     does not rest on K06, but its generated document lists K06 as UNPROVEN,
     with EN-02.
-- **Decision asked:** the remedy's shape, and (i) or (ii).
+- **Decided: (ii).** The remedy's exact shape belongs to that step's own
+  plan. The shape above is a proposal for it, not a decision.
 
 ---
 
@@ -1504,6 +1630,11 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
+
+**Outside this sequence (G5-13 (b), decided as (ii)).** The remedy of the
+application role is a separate, cross-cutting step, with its own plan. It is
+mandatory before any release gate. It is not a step of Slice 5. K06 stays
+UNPROVEN until that step's test passes.
 
 ---
 

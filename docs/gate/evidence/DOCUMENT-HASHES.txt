@@ -644,3 +644,8 @@ SLICE_5_PLAN.md changed revision: 1 -> 2 (step 0 measured; the five review point
 docs/gate/SLICE_5_PLAN.md                                      rev3  c50cfbaeaa041f749dfc214d29642bd98daae280cedf8a1d576ccc97c7fbcd50
 docs/gate/ENVIRONMENT_NOTES.md                                 EN-02 fa15ded6060d10a7f9a6e7ef31c958301936e4e1b501be84b6e890bd8e9a3bf1
 SLICE_5_PLAN.md changed revision: 2 -> 3 ([R3-1]..[R3-5]); ENVIRONMENT_NOTES.md gains EN-02 (the application role; K06 UNPROVEN).
+
+--- Slice 5 plan revision 4 (review of 3a797d8); EN-02 records G5-13 (b)(ii); no code ---
+docs/gate/SLICE_5_PLAN.md                                      rev4  c14d65fab2a7d9ccd986ffac8e74f6ba216619050cfdfd8729fc6330bbafc309
+docs/gate/ENVIRONMENT_NOTES.md                                 EN-02 5da011ca3529d7dc5017da794700937d7cb1bcb04bc35e597447562da0147358
+SLICE_5_PLAN.md changed revision: 3 -> 4 ([R4-1] event stamps in 0006 rules 5-6; [R4-2] withhold on changed field).

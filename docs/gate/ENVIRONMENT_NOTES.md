@@ -113,3 +113,8 @@ unable to get past the guards:
 
 The remedy, and the point at which it becomes mandatory, are decided under
 the Slice 5 plan, G5-13 (b). They are not decided here.
+
+**Decided in the review of `3a797d8`:** G5-13 (b), option (ii). The remedy
+is a separate, cross-cutting step, mandatory before any release gate. Until
+a test under a non-superuser, non-owner application role passes, K06 stays
+UNPROVEN, and STOP GATE E's document states it so.
