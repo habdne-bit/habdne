@@ -594,3 +594,7 @@ docs/gate/SLICE_4_PLAN.md                                      rev18 7aa5ac21f26
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    ab4cd52105c8bdeb369be51fdf5f448d28e813fb8d0ff981ed299c590ddd5111
 docs/gate/evidence/SLICE4-STEP8-MUTATIONS.txt                  new   dcdb74535a00e2c670a12de03e5ba8361080bdce51f39b1d64d38e532d73d0b9
 SLICE_4_PLAN.md changed revision: 17 -> 18 (step 8 delivered; G4-19 raised, open).
+
+--- Slice 4 step 8: STOP GATE D generated from the bound run at 4446375; --check exits 0 ---
+docs/gate/SLICE_4_STOP_GATE_D.md                               new   b9d2fa060b3af80aa1734b2ce87a06d21d408601072f8b01d4d71c4fa0073245
+docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    a39637583643e37291380b7979e07472171f4a2e2057dcd98fac3baff1dd1be7

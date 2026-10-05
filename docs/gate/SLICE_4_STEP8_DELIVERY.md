@@ -154,7 +154,12 @@ a negotiation unknown, an expectation PASS and a stale property.
   run's format.
 - **Counts:** both counts are recorded in the JUnit report (xunit1
   properties), and the document shows them.
-- **In the bound run of this delivery:** COUNTS_PLACEHOLDER.
+- **In the bound run of this delivery** (`junit-run.xml` at `4446375`):
+  - reconstruction checked **82** engine matches, 8 of them written by the
+    test itself;
+  - replay checked **90**, since it runs after reconstruction and writes 8
+    more;
+  - **9** hand-made fixture rows were excluded from each.
 
 **Neither proof is vacuous.** Each tamper test alters a copy of the rows,
 since the stored rows cannot change, and each alteration must be reported:
@@ -258,6 +263,6 @@ clean-tree run.
 - **The review of step 8.** Slice 4 closes on it.
 - **G4-19** (§6).
 - **G4-5R:** the period is open, and the RENT refusal is in force.
-- **The generated document:** `docs/gate/SLICE_4_STOP_GATE_D.md` is
-  produced from the bound run of this delivery, and `--check` must exit 0
-  (plan §7, condition 3).
+- **The generated document:** `docs/gate/SLICE_4_STOP_GATE_D.md` was
+  generated from the bound run (`4446375`, 1945/1945), and
+  `stop_gate_d_evidence.py --check` exits 0 (plan §7, condition 3).
