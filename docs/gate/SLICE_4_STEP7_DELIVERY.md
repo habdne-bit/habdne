@@ -1,11 +1,18 @@
 # Slice 4 · step 7 — the matching run: persistence, audit, the diagnostic row, concurrency
 
-**Status: NOT closed** (review of 48588a0). The review of bf052f4's three
-findings are fixed in **§11**, and the review of 48588a0 accepted them. The
-typed 500 was applied incompletely in §11.4. It is completed in **§12**,
-which supersedes §11.4, as §11 supersedes §4's body description, §6's
-numbers statement, and §9. Slice 4 is not closed, and G4-5R is not decided: the RENT
-refusal stays in force.
+**Status: CLOSED at `dcf834a`** (review of dcf834a). That review accepted
+R-S4-7-04 and the race witness (§12), and found no remaining obstacle in
+its scope. It authorised step 8 under the approved plan. Slice 4 stays open
+until step 8 is reviewed, and G4-5R stays open: the RENT refusal is in
+force. The review's own checks were the bundle and manifest digests, the
+source fingerprint with `run_binding` (`bound`), the five policy-fault cases
+over HTTP with a read stub, 26 PostgreSQL-free tests, and contract,
+inventory and policy parity at 67 operations. The 1887 tests, the 51
+mutations and the gate's 8/8 remain our recorded runs; they were not re-run
+by the reviewer.
+
+The history below is kept as delivered. §11 fixed the three findings of the
+review of bf052f4; §12 completed the typed 500 and superseded §11.4.
 
 **Authorised:** the review of b3246b0 approved G4-15 with the constraints
 D1–D6, and allowed step 7 on them, "with its seven earlier conditions as

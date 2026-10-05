@@ -574,3 +574,8 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    5b3ed858a5f
 docs/gate/evidence/SLICE4-STEP7-REVIEW2-BEFORE-FIX.txt         new   0a2ab9199502b8413cc353a057ee95d46ff045049d7c5072e15b96063957b69e
 docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  --    d6bb162c5b9498348ecff6a91b6ff1278703d9d59083f0160ed929f73a22ebe9
 SLICE_4_PLAN.md changed revision: 15 -> 16 (review of 48588a0: typed 500 completed as two codes).
+
+--- Slice 4: step 7 closed at dcf834a (review of dcf834a); step 8 authorised; no code change ---
+docs/gate/SLICE_4_PLAN.md                                      rev17 fe39e6dfe07ecbd6f6b7ddc8afed4aaa8f92b3b061e74bb1ca487e5ab32295a2
+docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    3740100d0b57561173d4f2716e3fb9a67a88ec6e835ebedfce8f1c4e9e487205
+SLICE_4_PLAN.md changed revision: 16 -> 17 (step 7 closed at dcf834a; step 8 authorised).

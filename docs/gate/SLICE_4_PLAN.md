@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 16**
+## Implementation plan — **revision 17**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -25,7 +25,8 @@ for.
 | 13 | `b3246b0` | **Step 6 CLOSED at `ee7fbc0`.** G4-15 detailed for decision, D1–D6, with the conditions that already bind step 7. **No decision is taken; no code changes** |
 | 14 | `7a223d7` | **G4-15 DECIDED** (review of b3246b0), D1–D6 with the reviewer's constraints, recorded under G4-15. Step 7 authorised on them, with the seven conditions already recorded. Slice 4 is not closed; G4-5R is not decided, and the RENT refusal stays |
 | 15 | `e9f4ead` | Step 7 **not closed** (review of bf052f4): three findings fixed after being measured (R-S4-7-01 the body model against the contract; R-S4-7-02 one Idempotency-Key in two concurrent calls; R-S4-7-03 exact numbers in the response and the replay). **Decided:** the two policy configuration faults of §3.1 are a TYPED 500. Step 8 waits on the review of the fixes |
-| 16 | the commit that answers the review of 48588a0 | Step 7 **not closed** (review of 48588a0): the three fixes of revision 15 accepted; the typed 500 completed (R-S4-7-04): **two codes**, both 500, a **fixed detail**, the cause **logged under the trace id**. The race witnesses bind B's wait to A's backend (`pg_blocking_pids`). Step 8 waits on this review |
+| 16 | `18db48d` | Step 7 **not closed** (review of 48588a0): the three fixes of revision 15 accepted; the typed 500 completed (R-S4-7-04): **two codes**, both 500, a **fixed detail**, the cause **logged under the trace id**. The race witnesses bind B's wait to A's backend (`pg_blocking_pids`). Step 8 waits on this review |
+| 17 | the commit that records the review of dcf834a | **Step 7 CLOSED at `dcf834a`** (review of dcf834a). Step 8 authorised under the approved plan. Slice 4 stays open until step 8 is reviewed; G4-5R stays open, and the RENT refusal stays in force. **No decision is taken; no code changes** |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
