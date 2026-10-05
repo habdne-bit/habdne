@@ -543,3 +543,21 @@ SLICE_4_PLAN.md changed revision: 13 -> 14 (G4-15 decided with D1-D6 constraints
 --- Slice 4 step 7: D2 recorded as a narrower operational reading (approval text of G4-15); docs only, no source change ---
 docs/gate/SLICE_4_PLAN.md                                      rev14 b86574f88e8d6fa2423820ba88fc37ebfef75790eaa3e7f50b38011ae559dd87
 docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    af1d8e4cc59f76e70f77c75a5cf7b5cd69f43f9151de128344a381b272162cef
+
+--- Slice 4 step 7, review of bf052f4: R-S4-7-01/02/03 fixed after measurement; typed 500 for the policy faults ---
+src/turab/api/routes/matching.py                               --    babebba54dbd775716c244538420c4018e5bfcedd64ddc6031c5ffaec1774bb6
+src/turab/services/command.py                                  --    4b99e85bb086b13b62792f701a24196ad9eb57657ed681534903551b8cfb99b4
+src/turab/services/idempotency.py                              --    bd0494042c4ee95e1ef3661b6e4f5885018e074c8cb47ad3c0b01ffe85e76697
+src/turab/services/matching_run.py                             --    854a72c73e7d3f494d31736f598fcc0a7bd0c7b3b107802518ea4b2bc8775489
+src/turab/exact_json.py                                        --    3d524a156e50e0ba476ca4aeb3b2ea8869f3f1d3331885042229fe2aab6d2811
+src/turab/api/responses.py                                     --    501e9fbc0e37fe0fdf6fe592c2d5cbe6a25789a310ffab294bea99c935f3acc9
+src/turab/api/routes/parties.py                                --    0e2eabfe1666063dca11a4f61839544ef5164d4e77abb756ead76401641e3bb5
+src/turab/api/problems.py                                      --    d53a286970f3d0619a70c542ed713bcb8e43e8df1981096fa23bd020f1d22f19
+tests/test_slice4_step7.py                                     --    058dfbf54eccabb2a910cf13d4480ce4bd9f1283085325477be1e69024dc839d
+db/dev/mutate_slice4_step7.py                                  --    68e28699cb09dfea187e8ee0dc30aaf2bc002dacc9cddfc864a12a29a4018acb
+docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    25bec7105af7f0b049c63890adf496070b0e6abf37e8060324c83a6c0e5b0124
+docs/gate/SLICE_4_PLAN.md                                      rev15 4d34d9c61ca6a54e030f276d47782f220e0f896f41af0ffd151c799526bc9184
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    fc5befbcffff7564c35365e778237d45f6d4092c0479f425eaeeaa32b6916a9c
+docs/gate/evidence/SLICE4-STEP7-REVIEW-BEFORE-FIX.txt          new   10ef08e3532a1a3abdf8b5fc7e39b2f5ed9128ca62e728b5399b7029382ba392
+docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  --    27ac6f45f7bcfd52ac7654c6963ec97f880a3efd7b179c47a40b79685fce98c7
+SLICE_4_PLAN.md changed revision: 14 -> 15 (review of bf052f4: step 7 not closed; typed 500 decided).

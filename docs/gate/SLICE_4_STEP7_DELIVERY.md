@@ -544,7 +544,11 @@ Recorded in the plan, revision 15. §9 is answered by this decision.
   - E1–E3: exact numbers;
   - P1: the typed 500.
 
-RESULT_PLACEHOLDER_11
+**Clean-tree result: 48 of 48 fail, and none survives.**
+- Recorded at `e9f4ead`, source fingerprint `f384bf74…07387`, baseline 88
+  passed (`evidence/SLICE4-STEP7-MUTATIONS.txt`, which replaces the
+  `7a223d7` record; that one stays in git history).
+- Every mutated file was restored and verified by sha256.
 
 ### 11.6 What remains
 
