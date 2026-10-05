@@ -634,7 +634,11 @@ policy faults:
 - **P3:** the detail built from the exception;
 - **P4:** the cause not logged.
 
-RESULT_PLACEHOLDER_12
+**Clean-tree result: 51 of 51 fail, and none survives.**
+- Recorded at `18db48d`, source fingerprint `4e56b077…9c132f`, baseline 90
+  passed (`evidence/SLICE4-STEP7-MUTATIONS.txt`, which replaces the
+  `e9f4ead` record; that one stays in git history).
+- Every mutated file was restored and verified by sha256.
 
 ### 12.4 What remains
 

@@ -561,3 +561,16 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    fc5befbcfff
 docs/gate/evidence/SLICE4-STEP7-REVIEW-BEFORE-FIX.txt          new   10ef08e3532a1a3abdf8b5fc7e39b2f5ed9128ca62e728b5399b7029382ba392
 docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  --    27ac6f45f7bcfd52ac7654c6963ec97f880a3efd7b179c47a40b79685fce98c7
 SLICE_4_PLAN.md changed revision: 14 -> 15 (review of bf052f4: step 7 not closed; typed 500 decided).
+
+--- Slice 4 step 7, review of 48588a0: R-S4-7-04 (two typed 500s, fixed detail, cause logged); race witness bound to backends ---
+src/turab/services/matching_run.py                             --    3b025f2d2eb19d5efd3fa0204b879028e9444a947618bdd2138eb13fc4104453
+src/turab/api/problems.py                                      --    0c65ec7f649ce3c107989fef0b959fdd75826d6a384c1bcfdd1db2cbb7c1c3e4
+src/turab/api/routes/parties.py                                --    85c2b1f615d3dc0628775bd78a4de7d95fa160a3e28ac030e55e41f0535ea080
+tests/test_slice4_step7.py                                     --    041275540de394e7d71ed24bdbf12a8ada31f4feec20e1cd774a89f161ff1e89
+db/dev/mutate_slice4_step7.py                                  --    14f239cf9cc2b43351cf32a89509f21c2503f64d7601cacdb6c5a4a713389cb0
+docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    a82a5e1cfe7596224adbd6fda44d66431b831121195a1b8fdec382489ad31ce2
+docs/gate/SLICE_4_PLAN.md                                      rev16 d0384648b9e8db7e54e38fd15f407aeb6613c1569fb3a80e91126440c75526fc
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    5b3ed858a5fe659680f86ee8b2a3ebeb5d69621dfb408a2bf6404f86b7cc9c80
+docs/gate/evidence/SLICE4-STEP7-REVIEW2-BEFORE-FIX.txt         new   0a2ab9199502b8413cc353a057ee95d46ff045049d7c5072e15b96063957b69e
+docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  --    d6bb162c5b9498348ecff6a91b6ff1278703d9d59083f0160ed929f73a22ebe9
+SLICE_4_PLAN.md changed revision: 15 -> 16 (review of 48588a0: typed 500 completed as two codes).

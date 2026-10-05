@@ -1,26 +1,27 @@
 TURAB — Slice 4 step 7: which run decision, refusal or record fails which test
 ============================================================
-Base commit       : e9f4eadfd6ed46d34b54cf83af5191020d94fcaa
-Source fingerprint: f384bf741def7a93fdd3da4786a311cd9e76a238a7aa7698b83764ffe0807387
+Base commit       : 18db48d31a0cdba2b09db5e7e825437a953b430c
+Source fingerprint: 4e56b0779b36fcae9b5a461b8ab75b28ba6a1713973c5a370a2b76c71a9c132f
 Working tree      : CLEAN
-Recorded          : 2026-10-05 11:22:56 UTC
+Recorded          : 2026-10-05 13:15:38 UTC
 Test file         : tests/test_slice4_step7.py
 
 === baseline (no mutation) ===
-   88 passed, 2 warnings in 18.86s
-== T1 the run accepts a Read Committed transaction [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 19.16s
+   90 passed, 2 warnings in 18.61s
+== T1 the run accepts a Read Committed transaction [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 18.90s
    FAILED test_the_run_refuses_a_transaction_that_is_not_repeatable_read
    cause: E   Failed: DID NOT RAISE NotRepeatableRead
    cause: Failed: DID NOT RAISE NotRepeatableRead
 == T2 the route asks for no isolation [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 babebba54dbd7757 identical
-   54 failed, 34 passed, 2 warnings in 75.95s (0:01:15)
+   56 failed, 34 passed, 2 warnings in 74.71s (0:01:14)
    FAILED test_a_changed_input_is_a_new_match
    FAILED test_a_criterion_the_run_cannot_take_is_422[G4-3
    FAILED test_a_criterion_the_run_cannot_take_is_422[G4-7:
    FAILED test_a_missing_document_gives_verify_document_on_the_property
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[no
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[relaxes
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes
    FAILED test_a_refusal_is_decided_before_any_write[RENT-rent-body2-422]
    FAILED test_a_refusal_is_decided_before_any_write[not
    FAILED test_a_refusal_is_decided_before_any_write[unknown
@@ -50,7 +51,7 @@ Test file         : tests/test_slice4_step7.py
    FAILED test_each_staff_role_of_the_contract_may_run[ACC_OPERATOR]
    FAILED test_each_staff_role_of_the_contract_may_run[ACC_REVIEWER]
    FAILED test_every_version_used_is_stored_and_no_version_1_rule_is_cited
-   FAILED test_no_active_policy_is_a_typed_500_and_writes_nothing
+   FAILED test_no_active_policy_is_its_own_typed_500
    FAILED test_no_candidate_is_a_valid_run
    FAILED test_no_review_opportunity_or_task_is_written
    FAILED test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result
@@ -73,13 +74,14 @@ Test file         : tests/test_slice4_step7.py
    cause: assert False
    cause: turab.services.matching_run.NotRepeatableRead: the matching run needs REPEATABLE READ, not read committed
 == T3 the session ignores the isolation asked [src/turab/db/session.py, 1 site(s)]  restored: sha256 4e26d713bcbbe3d8 identical
-   56 failed, 32 passed, 2 warnings in 136.09s (0:02:16)
+   58 failed, 32 passed, 2 warnings in 134.75s (0:02:14)
    FAILED test_a_changed_input_is_a_new_match
    FAILED test_a_criterion_the_run_cannot_take_is_422[G4-3
    FAILED test_a_criterion_the_run_cannot_take_is_422[G4-7:
    FAILED test_a_missing_document_gives_verify_document_on_the_property
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[no
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[relaxes
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes
    FAILED test_a_refusal_is_decided_before_any_write[RENT-rent-body2-422]
    FAILED test_a_refusal_is_decided_before_any_write[not
    FAILED test_a_refusal_is_decided_before_any_write[unknown
@@ -110,7 +112,7 @@ Test file         : tests/test_slice4_step7.py
    FAILED test_each_staff_role_of_the_contract_may_run[ACC_OPERATOR]
    FAILED test_each_staff_role_of_the_contract_may_run[ACC_REVIEWER]
    FAILED test_every_version_used_is_stored_and_no_version_1_rule_is_cited
-   FAILED test_no_active_policy_is_a_typed_500_and_writes_nothing
+   FAILED test_no_active_policy_is_its_own_typed_500
    FAILED test_no_candidate_is_a_valid_run
    FAILED test_no_review_opportunity_or_task_is_written
    FAILED test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result
@@ -133,84 +135,84 @@ Test file         : tests/test_slice4_step7.py
    cause: E   turab.services.matching_run.NotRepeatableRead: the matching run needs REPEATABLE READ, not read committed
    cause: assert False
    cause: turab.services.matching_run.NotRepeatableRead: the matching run needs REPEATABLE READ, not read committed
-== T4 a unique violation is never taken for an identical input [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   4 failed, 84 passed, 2 warnings in 18.93s
+== T4 a unique violation is never taken for an identical input [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   4 failed, 86 passed, 2 warnings in 19.85s
    FAILED test_a_unique_violation_on_another_constraint_is_not_taken_for_an_identical_input
    FAILED test_an_identical_rerun_returns_the_existing_match_and_writes_no_second
    FAILED test_an_undeclared_body_field_is_accepted_and_changes_nothing
    FAILED test_two_identical_runs_race_and_store_one_match
-   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "match_candidates_requ...2c6d64-de13-464a-a4ba-354d7afb28c
-   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "match_candidates_requ...2c6d64-de13-464a-a4ba-354d7af
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "match_candidates_requ...099941-ddaf-4ea4-95a8-33fe301e9b9
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "match_candidates_requ...099941-ddaf-4ea4-95a8-33fe301
    cause: E   assert False
    cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "match_candidates_request_id_property_id_matching_policy_id__key"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "match_candidates_request_id_property_id_matching_polic
    cause: assert False
-== T5 any unique violation is taken for an identical input [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 18.31s
+== T5 any unique violation is taken for an identical input [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 17.41s
    FAILED test_a_unique_violation_on_another_constraint_is_not_taken_for_an_identical_input
    cause: E   assert not True
    cause: assert not True
-== T6 the invisible row is read in the run's own snapshot [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 18.72s
+== T6 the invisible row is read in the run's own snapshot [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 18.71s
    FAILED test_two_identical_runs_race_and_store_one_match
    cause: AssertionError: NoResultFound('No row was found when one was required')
    cause: E   AssertionError: NoResultFound('No row was found when one was required')
-== T7 the evaluated offer left out of the hash [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 17.83s
+== T7 the evaluated offer left out of the hash [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 17.90s
    FAILED test_the_stored_hash_is_recomputed_from_the_stored_snapshots
-   cause: AssertionError: assert 'eac98f58da2b...c51b31589ab2b' == '84706f52b057...11980e2bf134b'
-   cause: E   AssertionError: assert 'eac98f58da2b...c51b31589ab2b' == '84706f52b057...11980e2bf134b'
-== T8 the match's instant is not the run's [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 18.39s
+   cause: AssertionError: assert '15ea25043f3b...c08e011ea36ab' == 'd2306ef1b482...4a7c77d6d9579'
+   cause: E   AssertionError: assert '15ea25043f3b...c08e011ea36ab' == 'd2306ef1b482...4a7c77d6d9579'
+== T8 the match's instant is not the run's [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 17.81s
    FAILED test_a_run_stores_each_match_with_its_criteria_audit_and_one_diagnostic
-   cause: AssertionError: assert datetime.datetime(2026, 10, 5, 11, 28, 51, 677096, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 5, 11, 28, 51, 617476, t
-   cause: E   AssertionError: assert datetime.datetime(2026, 10, 5, 11, 28, 51, 677096, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 5, 11, 28, 51, 61747
-== W1 ai_trace_ref filled [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 18.72s
+   cause: AssertionError: assert datetime.datetime(2026, 10, 5, 13, 21, 28, 913566, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 5, 13, 21, 28, 856703, t
+   cause: E   AssertionError: assert datetime.datetime(2026, 10, 5, 13, 21, 28, 913566, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 5, 13, 21, 28, 85670
+== W1 ai_trace_ref filled [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 18.88s
    FAILED test_a_run_stores_each_match_with_its_criteria_audit_and_one_diagnostic
-   cause: AssertionError: assert [('6373d6a4-b...NE', 'trace')] == [('6373d6a4-b...NGINE', None)]
-   cause: E   AssertionError: assert [('6373d6a4-b...NE', 'trace')] == [('6373d6a4-b...NGINE', None)]
-== W2 the criterion rows not audited [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 17.95s
+   cause: AssertionError: assert [('b00499b2-1...NE', 'trace')] == [('b00499b2-1...NGINE', None)]
+   cause: E   AssertionError: assert [('b00499b2-1...NE', 'trace')] == [('b00499b2-1...NGINE', None)]
+== W2 the criterion rows not audited [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 17.58s
    FAILED test_a_run_stores_each_match_with_its_criteria_audit_and_one_diagnostic
    cause: AssertionError: assert ['match_candi...gnostic_runs'] == ['match_candi...gnostic_runs']
    cause: E   AssertionError: assert ['match_candi...gnostic_runs'] == ['match_candi...gnostic_runs']
-== W3 the diagnostic row not audited [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   2 failed, 86 passed, 2 warnings in 18.21s
+== W3 the diagnostic row not audited [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   2 failed, 88 passed, 2 warnings in 17.63s
    FAILED test_a_run_stores_each_match_with_its_criteria_audit_and_one_diagnostic
    FAILED test_an_identical_rerun_returns_the_existing_match_and_writes_no_second
    cause: AssertionError: assert ['match_candi...rion_results'] == ['match_candi...gnostic_runs']
    cause: AssertionError: assert [] == ['match_diagnostic_runs']
    cause: E   AssertionError: assert ['match_candi...rion_results'] == ['match_candi...gnostic_runs']
    cause: E   AssertionError: assert [] == ['match_diagnostic_runs']
-== W4 suggested actions written (D1) [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   2 failed, 86 passed, 2 warnings in 18.03s
+== W4 suggested actions written (D1) [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   2 failed, 88 passed, 2 warnings in 18.34s
    FAILED test_a_run_stores_each_match_with_its_criteria_audit_and_one_diagnostic
    FAILED test_no_review_opportunity_or_task_is_written
    cause: E   assert ([{}], []) == ([], [])
    cause: assert ([{}], []) == ([], [])
 == W5 the next action's version not recorded (condition 3) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 17.92s
+   1 failed, 89 passed, 2 warnings in 18.98s
    FAILED test_every_version_used_is_stored_and_no_version_1_rule_is_cited
    cause: AssertionError: assert {'precedence'...state@1', ...} == {'freshness_s....gate@1', ...}
    cause: E   AssertionError: assert {'precedence'...state@1', ...} == {'freshness_s....gate@1', ...}
 == W6 the score's version not recorded (condition 3) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 18.18s
+   1 failed, 89 passed, 2 warnings in 17.81s
    FAILED test_every_version_used_is_stored_and_no_version_1_rule_is_cited
    cause: AssertionError: assert {'precedence'...state@1', ...} == {'freshness_s....gate@1', ...}
    cause: E   AssertionError: assert {'precedence'...state@1', ...} == {'freshness_s....gate@1', ...}
 == W7 the explanation cites the claim (D4) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 18.58s
+   1 failed, 89 passed, 2 warnings in 18.08s
    FAILED test_the_explanation_carries_nothing_taken_from_a_claim
-   cause: E   assert ('78f58a7d-00...953a5b69b976' not in '[{"criteria...":[]}},null]'
-   cause: assert ('78f58a7d-00...953a5b69b976' not in '[{"criteria...":[]}},null]'
-== W8 the explanation carries the commercial snapshot (D4, R9.3) [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   1 failed, 87 passed, 2 warnings in 18.56s
+   cause: E   assert ('97e198f0-db...b450bc1bb590' not in '[{"criteria...":[]}},null]'
+   cause: assert ('97e198f0-db...b450bc1bb590' not in '[{"criteria...":[]}},null]'
+== W8 the explanation carries the commercial snapshot (D4, R9.3) [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 18.68s
    FAILED test_the_explanation_never_states_the_seller_expectation
    cause: E   assert ('seller_expectation' not in '[{"criteria...ctions":[]}]'
    cause: assert ('seller_expectation' not in '[{"criteria...ctions":[]}]'
-== W9 the response is computed, not read from the rows [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   6 failed, 82 passed, 2 warnings in 17.80s
+== W9 the response is computed, not read from the rows [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   6 failed, 84 passed, 2 warnings in 17.56s
    FAILED test_a_changed_input_is_a_new_match
    FAILED test_a_run_racing_a_price_change_stores_the_state_it_read
    FAILED test_the_response_and_its_replay_carry_the_stored_numbers_exactly
@@ -218,13 +220,13 @@ Test file         : tests/test_slice4_step7.py
    FAILED test_two_identical_runs_race_and_store_one_match
    FAILED test_two_offers_on_identical_terms_are_two_matches
    cause: AssertionError: assert '' != ''
-   cause: AssertionError: assert ('401da2e8-1555-4eaa-a10a-b95e200b62cd' != '7d94ddf0-8d71-4ae5-a574-4e6f4f2a29b6' and '' != '')
+   cause: AssertionError: assert ('be2922e6-8a1e-4973-a0ae-c0c8c1069996' != '5aa66631-1666-43e3-a9f1-ab7e32f2b08b' and '' != '')
    cause: AssertionError: assert 1 == 2
    cause: AssertionError: assert [{'match_id':...': None, ...}] == [{'match_id':...': None, ...}]
    cause: AssertionError: assert {'match_id': ...e': None, ...} == {'match_id': ...e': None, ...}
    cause: E   AssertionError: assert '' != ''
-== R1 the policy version not checked (CORRECTION-004) [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   8 failed, 80 passed, 2 warnings in 26.41s
+== R1 the policy version not checked (CORRECTION-004) [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   8 failed, 82 passed, 2 warnings in 25.35s
    FAILED test_a_refusal_is_decided_before_any_write[unknown
    FAILED test_correction_004_refuses_an_inactive_policys_version
    FAILED test_correction_004_refuses_any_version_but_the_active_one[not
@@ -233,18 +235,19 @@ Test file         : tests/test_slice4_step7.py
    FAILED test_correction_004_refuses_any_version_but_the_active_one[the
    FAILED test_correction_004_refuses_any_version_but_the_active_one[unknown-body2]
    FAILED test_the_version_is_checked_before_the_request
-   cause: AssertionError: {"matches":[{"match_id":"f527d75a-1870-42a1-bf2c-9f218476a645","input_hash":"c3d03f1176866b1732928493a129307b372e86a70fcc3bdf37e1dfbc41585981","request_id
-   cause: AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"f5146c1c0dca47d0b2e754ac066a7c5e","detail":"
-   cause: E   AssertionError: {"matches":[{"match_id":"f527d75a-1870-42a1-bf2c-9f218476a645","input_hash":"c3d03f1176866b1732928493a129307b372e86a70fcc3bdf37e1dfbc41585981","reques
-   cause: E   AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"f5146c1c0dca47d0b2e754ac066a7c5e","detai
+   cause: AssertionError: {"matches":[{"match_id":"f0086c3b-a7d4-48b0-8850-0a0765cb45f1","input_hash":"8bb014148dc2fae7c856a4a6ee95cb02ddb316c9e80e706ff8ac393817e7cf25","request_id
+   cause: AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"5038765f9671416a9d2e82136a2b8c53","detail":"
+   cause: E   AssertionError: {"matches":[{"match_id":"f0086c3b-a7d4-48b0-8850-0a0765cb45f1","input_hash":"8bb014148dc2fae7c856a4a6ee95cb02ddb316c9e80e706ff8ac393817e7cf25","reques
+   cause: E   AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"5038765f9671416a9d2e82136a2b8c53","detai
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == R2 the refusals mapped to a generic 422 [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 babebba54dbd7757 identical
-   19 failed, 69 passed, 2 warnings in 18.01s
+   21 failed, 69 passed, 2 warnings in 17.11s
    FAILED test_a_criterion_the_run_cannot_take_is_422[G4-3
    FAILED test_a_criterion_the_run_cannot_take_is_422[G4-7:
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[no
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[relaxes
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes
    FAILED test_a_refusal_is_decided_before_any_write[not
    FAILED test_a_rent_request_is_refused
    FAILED test_a_request_status_a_run_does_not_accept_is_409[CLOSED]
@@ -257,31 +260,31 @@ Test file         : tests/test_slice4_step7.py
    FAILED test_correction_004_refuses_any_version_but_the_active_one[omitted-body0]
    FAILED test_correction_004_refuses_any_version_but_the_active_one[the
    FAILED test_correction_004_refuses_any_version_but_the_active_one[unknown-body2]
-   FAILED test_no_active_policy_is_a_typed_500_and_writes_nothing
+   FAILED test_no_active_policy_is_its_own_typed_500
    FAILED test_the_version_is_checked_before_the_request
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"0a1b600e12d645d497060ee9237112e1","detail":"G4-8: a 
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"0f1ded76b06c43af9c921d97c59778e9","detail":"G4-3: PR
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"11ee6a40c3b040b991755abf190173dd","detail":"G4-7: DO
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"368ffac64e4f4f3c8a1bfc18c9dab0ea","detail":"CORRECTI
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"3d508c9a092c4bc2864298e33abace0a","detail":"G4-5R: B
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"405c597e745d4894b55f159358706801","detail":"G4-8: a 
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"0c4fb17868164f7595c40fd80d361bee","detail":"G4-8: a 
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"1524df7e7138403898007d335ee0e61f","detail":"G4-8: a 
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"3bf992e54ff74944956a8ae1999fec38","detail":"CORRECTI
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"44f50af7639241a899c81849d5538a62","detail":"G4-5R: B
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"5e607d0b8e364b99ace9251f9f3ae9dd","detail":"plan §3.
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"7692d3bbe504463ca9cd407723fef3ff","detail":"CORRECTI
 == R3 the key claimed before the refusals are decided [src/turab/services/command.py, 1 site(s)]  restored: sha256 4b99e85bb086b13b identical
-   3 failed, 85 passed, 2 warnings in 18.36s
+   3 failed, 87 passed, 2 warnings in 17.84s
    FAILED test_a_refusal_is_decided_before_any_write[RENT-rent-body2-422]
    FAILED test_a_refusal_is_decided_before_any_write[not
    FAILED test_a_refusal_is_decided_before_any_write[unknown
    cause: AssertionError: ['SET', 'SELECT', 'SET', 'SELECT', 'SELECT', 'SET', ...]
    cause: E   AssertionError: ['SET', 'SELECT', 'SET', 'SELECT', 'SELECT', 'SET', ...]
 == R4 the refusals decided before the replay lookup [src/turab/services/command.py, 1 site(s)]  restored: sha256 4b99e85bb086b13b identical
-   2 failed, 86 passed, 2 warnings in 18.72s
+   2 failed, 88 passed, 2 warnings in 18.61s
    FAILED test_a_replay_is_returned_even_after_the_request_stopped_being_matchable
    FAILED test_property_ids_null_is_refused_and_absent_or_empty_keep_their_meaning
-   cause: AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"c99feb7601c542798e056a31e33fd6fc","detail":"
-   cause: E   AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"c99feb7601c542798e056a31e33fd6fc","detai
+   cause: AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"828a11b2fcdc4b97af645b47de4f77d8","detail":"
+   cause: E   AssertionError: {"type":"about:blank","title":"Request not matchable","status":409,"code":"REQUEST_NOT_MATCHABLE","trace_id":"828a11b2fcdc4b97af645b47de4f77d8","detai
    cause: E   assert [None, None, [], []] == [None, []]
    cause: assert [None, None, [], []] == [None, []]
-== R5 the request checked before the version [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   7 failed, 81 passed, 2 warnings in 19.32s
+== R5 the request checked before the version [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   7 failed, 83 passed, 2 warnings in 18.50s
    FAILED test_a_refusal_is_decided_before_any_write[not
    FAILED test_a_request_status_a_run_does_not_accept_is_409[CLOSED]
    FAILED test_a_request_status_a_run_does_not_accept_is_409[PAUSED]
@@ -289,14 +292,14 @@ Test file         : tests/test_slice4_step7.py
    FAILED test_a_request_status_a_run_does_not_accept_is_409[RAW]
    FAILED test_an_unknown_request_is_404_and_writes_nothing
    FAILED test_the_version_is_checked_before_the_request
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"1157283a8cd4491499b8c3f657142bb0","detail":"a reques
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"1f07fb25605d48fd85f82673697da304","detail":"a reques
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"2e0c33da196e4233b1119609f400c995","detail":"a reques
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"89acfd1456b84d03b700a8e9aa0ee39f","detail":"a reques
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"8eb1c02b29c147558034f7c76a93dc35","detail":"a reques
-   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"a91ea108878b46369de9c8cf6d4009b5","detail":"a reques
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"10037b792ec74ceaaad2cf4a9f6b2ac1","detail":"a reques
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"36f7372a19ec4d269fb2aba21e293902","detail":"a reques
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"45bde99629ce4056be3f4ee3394671a6","detail":"a reques
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"d2dc7d8c7df6423a8e540cc1f014c9f1","detail":"a reques
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"df8b9b5e8033444fb82a3a83fc14dd86","detail":"a reques
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"f7978c873fb94485ae8b8dc5590df04e","detail":"a reques
 == D1 a near match may have a REQUIRED UNKNOWN (D2) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   2 failed, 86 passed, 2 warnings in 18.28s
+   2 failed, 88 passed, 2 warnings in 18.54s
    FAILED test_a_near_match_is_one_required_fail_and_every_other_required_pass[required2-REJECTED-False]
    FAILED test_the_counts_take_each_candidate_once_in_each
    cause: AssertionError: assert True is False
@@ -304,7 +307,7 @@ Test file         : tests/test_slice4_step7.py
    cause: E   assert (1, 1, 2) == (1, 1, 1)
    cause: assert (1, 1, 2) == (1, 1, 1)
 == D2 a near match may have several FAILs (D2) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   2 failed, 86 passed, 2 warnings in 19.52s
+   2 failed, 88 passed, 2 warnings in 19.71s
    FAILED test_a_near_match_is_one_required_fail_and_every_other_required_pass[required3-REJECTED-False]
    FAILED test_the_counts_take_each_candidate_once_in_each
    cause: AssertionError: assert True is False
@@ -312,51 +315,51 @@ Test file         : tests/test_slice4_step7.py
    cause: E   assert (1, 1, 2) == (1, 1, 1)
    cause: assert (1, 1, 2) == (1, 1, 1)
 == D3 the actionable count read from the information gate [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 18.80s
+   1 failed, 89 passed, 2 warnings in 18.03s
    FAILED test_the_counts_take_each_candidate_once_in_each
    cause: E   assert (1, 2, 1) == (1, 1, 1)
    cause: assert (1, 2, 1) == (1, 1, 1)
 == D4 a candidate counted once per reason, not per key (D3b) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 18.92s
+   1 failed, 89 passed, 2 warnings in 18.61s
    FAILED test_the_blocker_summary_counts_a_candidate_once_per_key
    cause: AssertionError: assert Decimal('3') == 2
    cause: E   AssertionError: assert Decimal('3') == 2
 == D5 a null code keyed by its gate alone (D3b) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 18.72s
+   1 failed, 89 passed, 2 warnings in 18.92s
    FAILED test_the_blocker_summary_counts_a_candidate_once_per_key
    cause: E   KeyError: 'HARD:REQUIRED_FAIL'
    cause: KeyError: 'HARD:REQUIRED_FAIL'
 == D6 the exclusions not listed (G4-8) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   2 failed, 86 passed, 2 warnings in 19.36s
+   2 failed, 88 passed, 2 warnings in 19.17s
    FAILED test_the_blocker_summary_counts_a_candidate_once_per_key
    FAILED test_the_run_reports_its_exclusions_with_ids
-   cause: AssertionError: assert [] == [{'property_i...8c8cee6f65'}}]
-   cause: AssertionError: assert {} == {'2d5ef82f-f2...TY_NOT_FOUND'}
-   cause: E   AssertionError: assert [] == [{'property_i...8c8cee6f65'}}]
-   cause: E   AssertionError: assert {} == {'2d5ef82f-f2...TY_NOT_FOUND'}
+   cause: AssertionError: assert [] == [{'property_i...befd0b73ee'}}]
+   cause: AssertionError: assert {} == {'694ff7be-49...TY_NOT_FOUND'}
+   cause: E   AssertionError: assert [] == [{'property_i...befd0b73ee'}}]
+   cause: E   AssertionError: assert {} == {'694ff7be-49...TY_NOT_FOUND'}
 == D7 PERMISSION_MISSING worded from its seeded label (condition 4) [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 19.13s
+   1 failed, 89 passed, 2 warnings in 18.44s
    FAILED test_permission_missing_is_worded_from_its_basis
    cause: E   assert 'Permission s... insufficient' == "The offer's ... its property"
    cause: assert 'Permission s... insufficient' == "The offer's ... its property"
 == D8 the summary carries no wording for the permission basis [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   2 failed, 86 passed, 2 warnings in 19.17s
+   2 failed, 88 passed, 2 warnings in 18.31s
    FAILED test_permission_missing_is_worded_from_its_basis
    FAILED test_the_blocker_summary_counts_a_candidate_once_per_key
    cause: E   KeyError: 'wording'
    cause: KeyError: 'wording'
 == A1 a next action for REJECTED [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   1 failed, 87 passed, 2 warnings in 18.77s
+   1 failed, 89 passed, 2 warnings in 18.76s
    FAILED test_there_is_no_next_action_for_eligible_or_rejected[REJECTED]
    cause: AssertionError: assert {'type': 'VERIFY_DOCUMENT', 'priority': 'HIGH', 'subject': {'entity': 'PROPERTY', 'id': 'p', 'gate': 'INFORMATION', 'criterion': 'DOCUMENT_TYPE', .
    cause: E   AssertionError: assert {'type': 'VERIFY_DOCUMENT', 'priority': 'HIGH', 'subject': {'entity': 'PROPERTY', 'id': 'p', 'gate': 'INFORMATION', 'criterion': 'DOCUMENT_TYPE
 == A2 no tie-break: REQUIRED not first [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   1 failed, 87 passed, 2 warnings in 19.71s
+   1 failed, 89 passed, 2 warnings in 17.71s
    FAILED test_the_information_tie_break_is_required_first_then_evaluation_order
    cause: AssertionError: assert 'BEDROOMS_MIN' == 'RIGHT_TYPE'
    cause: E   AssertionError: assert 'BEDROOMS_MIN' == 'RIGHT_TYPE'
 == A3 an information action at NORMAL priority [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   8 failed, 80 passed, 2 warnings in 18.41s
+   8 failed, 82 passed, 2 warnings in 17.59s
    FAILED test_a_missing_document_gives_verify_document_on_the_property
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown0-VERIFY_DOCUMENT-PROPERTY]
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown1-VERIFY_DOCUMENT-PROPERTY]
@@ -372,7 +375,7 @@ Test file         : tests/test_slice4_step7.py
    cause: AssertionError: assert {'type': 'VER...ty': 'NORMAL'} == {'type': 'VER...T_TYPE', ...}}
    cause: E   AssertionError: assert {'type': 'CON...ET_MAX', ...}} == {'type': 'CON...ET_MAX', ...}}
 == A4 the offer reconfirmed before the request [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   2 failed, 86 passed, 2 warnings in 18.16s
+   2 failed, 88 passed, 2 warnings in 17.38s
    FAILED test_reconfirmation_comes_before_permission_in_a_fixed_order[freshness0-RECONFIRM_REQUEST-REQUEST]
    FAILED test_reconfirmation_comes_before_permission_in_a_fixed_order[freshness1-RECONFIRM_PROPERTY-PROPERTY]
    cause: AssertionError: assert ('CONFIRM_PRI...Y_OFFER', 'o') == ('RECONFIRM_P...ROPERTY', 'p')
@@ -380,7 +383,7 @@ Test file         : tests/test_slice4_step7.py
    cause: E   AssertionError: assert ('CONFIRM_PRI...Y_OFFER', 'o') == ('RECONFIRM_P...ROPERTY', 'p')
    cause: E   AssertionError: assert ('CONFIRM_PRI...Y_OFFER', 'o') == ('RECONFIRM_R...REQUEST', 'r')
 == A5 permission before reconfirmation [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   3 failed, 85 passed, 2 warnings in 18.55s
+   3 failed, 87 passed, 2 warnings in 18.51s
    FAILED test_reconfirmation_comes_before_permission_in_a_fixed_order[freshness0-RECONFIRM_REQUEST-REQUEST]
    FAILED test_reconfirmation_comes_before_permission_in_a_fixed_order[freshness1-RECONFIRM_PROPERTY-PROPERTY]
    FAILED test_reconfirmation_comes_before_permission_in_a_fixed_order[freshness2-CONFIRM_PRICE-PROPERTY_OFFER]
@@ -391,7 +394,7 @@ Test file         : tests/test_slice4_step7.py
    cause: E   AssertionError: assert ('CONFIRM_PER...Y_OFFER', 'o') == ('RECONFIRM_P...ROPERTY', 'p')
    cause: E   AssertionError: assert ('CONFIRM_PER...Y_OFFER', 'o') == ('RECONFIRM_R...REQUEST', 'r')
 == A6 every unknown on the property [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   2 failed, 86 passed, 2 warnings in 18.61s
+   2 failed, 88 passed, 2 warnings in 17.21s
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown2-CONFIRM_PRICE-REQUEST]
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown6-OTHER-REQUEST]
    cause: AssertionError: assert {'type': 'CON...ET_MAX', ...}} == {'type': 'CON...ET_MAX', ...}}
@@ -399,55 +402,55 @@ Test file         : tests/test_slice4_step7.py
    cause: E   AssertionError: assert {'type': 'CON...ET_MAX', ...}} == {'type': 'CON...ET_MAX', ...}}
    cause: E   AssertionError: assert {'type': 'OTH...RIBUTE', ...}} == {'type': 'OTH...RIBUTE', ...}}
 == A7 a budget unknown typed OTHER [src/turab/matching/gates.py, 1 site(s)]  restored: sha256 b136ea3bbe1b2cc6 identical
-   3 failed, 85 passed, 2 warnings in 18.86s
+   3 failed, 87 passed, 2 warnings in 17.08s
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown2-CONFIRM_PRICE-REQUEST]
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown3-CONFIRM_PRICE-PROPERTY_OFFER]
    FAILED test_an_actionable_unknown_gives_a_high_priority_information_action[unknown4-CONFIRM_PRICE-PROPERTY_OFFER]
    cause: AssertionError: assert {'type': 'OTH...ET_MAX', ...}} == {'type': 'CON...ET_MAX', ...}}
    cause: E   AssertionError: assert {'type': 'OTH...ET_MAX', ...}} == {'type': 'CON...ET_MAX', ...}}
 == A8 an information action for any unknown, actionable or not [src/turab/matching/explain.py, 1 site(s)]  restored: sha256 012dc8c198f00cdf identical
-   1 failed, 87 passed, 2 warnings in 16.66s
+   1 failed, 89 passed, 2 warnings in 17.66s
    FAILED test_a_soft_unknown_that_does_not_block_gives_no_information_action
    cause: AssertionError: assert 'OTHER' == 'CONFIRM_PERMISSION'
    cause: E   AssertionError: assert 'OTHER' == 'CONFIRM_PERMISSION'
 == B1 property_ids: null accepted [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 babebba54dbd7757 identical
-   1 failed, 87 passed, 2 warnings in 19.13s
+   1 failed, 89 passed, 2 warnings in 20.27s
    FAILED test_property_ids_null_is_refused_and_absent_or_empty_keep_their_meaning
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == B2 the body closed [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 babebba54dbd7757 identical
-   2 failed, 86 passed, 2 warnings in 17.90s
+   2 failed, 88 passed, 2 warnings in 18.34s
    FAILED test_an_undeclared_body_field_is_accepted_and_changes_nothing
    FAILED test_an_undeclared_field_is_part_of_the_body_for_idempotency
    cause: AssertionError: assert (422, 'VALIDATION_FAILED') == (409, 'IDEMPO...KEY_CONFLICT')
    cause: E   AssertionError: assert (422, 'VALIDATION_FAILED') == (409, 'IDEMPO...KEY_CONFLICT')
    cause: HTTP 422 field error: Extra inputs are not permitted
 == B3 an undeclared field dropped before the idempotency hash [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 babebba54dbd7757 identical
-   1 failed, 87 passed, 2 warnings in 17.86s
+   1 failed, 89 passed, 2 warnings in 18.70s
    FAILED test_an_undeclared_field_is_part_of_the_body_for_idempotency
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == C1 a taken key not handled [src/turab/services/command.py, 1 site(s)]  restored: sha256 4b99e85bb086b13b identical
-   2 failed, 86 passed, 2 warnings in 18.78s
+   2 failed, 88 passed, 2 warnings in 18.44s
    FAILED test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result
    FAILED test_one_key_with_another_body_in_a_concurrent_call_is_409
-   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/9bc12819-d6a0-4fe6-b
-   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/b53bd1d4-8232-469f-a
-   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/9bc12819-d6a0-4f
-   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/b53bd1d4-8232-46
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/27d606fa-c3d1-4a7b-a
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/57269290-c09b-499d-9
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/27d606fa-c3d1-4a
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/57269290-c09b-49
 == C2 the competitor's record read in this snapshot [src/turab/services/idempotency.py, 1 site(s)]  restored: sha256 bd0494042c4ee95e identical
-   1 failed, 87 passed, 2 warnings in 17.57s
+   1 failed, 89 passed, 2 warnings in 18.08s
    FAILED test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result
-   cause: AssertionError: {"type":"about:blank","title":"Idempotency key conflict","status":409,"code":"IDEMPOTENCY_KEY_CONFLICT","trace_id":"14d46c053d8a43169b04c8b91c84f7c8","det
-   cause: E   AssertionError: {"type":"about:blank","title":"Idempotency key conflict","status":409,"code":"IDEMPOTENCY_KEY_CONFLICT","trace_id":"14d46c053d8a43169b04c8b91c84f7c8",
+   cause: AssertionError: {"type":"about:blank","title":"Idempotency key conflict","status":409,"code":"IDEMPOTENCY_KEY_CONFLICT","trace_id":"5e15b3f1c5cd417aa544dcbd73482be5","det
+   cause: E   AssertionError: {"type":"about:blank","title":"Idempotency key conflict","status":409,"code":"IDEMPOTENCY_KEY_CONFLICT","trace_id":"5e15b3f1c5cd417aa544dcbd73482be5",
 == C3 another body under the same key replayed [src/turab/services/idempotency.py, 1 site(s)]  restored: sha256 bd0494042c4ee95e identical
-   2 failed, 86 passed, 2 warnings in 19.17s
+   2 failed, 88 passed, 2 warnings in 18.39s
    FAILED test_an_undeclared_field_is_part_of_the_body_for_idempotency
    FAILED test_one_key_with_another_body_in_a_concurrent_call_is_409
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == E1 stored numbers read as floats [src/turab/exact_json.py, 1 site(s)]  restored: sha256 3d524a156e50e0ba identical
-   2 failed, 86 passed, 2 warnings in 19.02s
+   2 failed, 88 passed, 2 warnings in 17.32s
    FAILED test_the_exact_writer_keeps_decimals_and_renders_everything_else_as_json_does
    FAILED test_the_response_and_its_replay_carry_the_stored_numbers_exactly
    cause: AssertionError: assert {'m2': 400.12...877, 's': 1.0} == {'m2': Decima...l('1.000000')}
@@ -455,7 +458,7 @@ Test file         : tests/test_slice4_step7.py
    cause: E   AssertionError: assert {'m2': 400.12...877, 's': 1.0} == {'m2': Decima...l('1.000000')}
    cause: E   AssertionError: assert {'m2': Decima...65432109877')} == {'m2': Decima...21098765432')}
 == E2 a Decimal written through a float [src/turab/exact_json.py, 1 site(s)]  restored: sha256 3d524a156e50e0ba identical
-   2 failed, 86 passed, 2 warnings in 17.66s
+   2 failed, 88 passed, 2 warnings in 18.18s
    FAILED test_the_exact_writer_keeps_decimals_and_renders_everything_else_as_json_does
    FAILED test_the_response_and_its_replay_carry_the_stored_numbers_exactly
    cause: AssertionError: assert {'m2': Decima...65432109877')} == {'m2': Decima...21098765432')}
@@ -463,20 +466,46 @@ Test file         : tests/test_slice4_step7.py
    cause: E   assert '{"m2":400.12...9877,"s":1.0}' == '{"m2":400.12..."s":1.000000}'
    cause: assert '{"m2":400.12...9877,"s":1.0}' == '{"m2":400.12..."s":1.000000}'
 == E3 a replayed body read as floats [src/turab/services/idempotency.py, 1 site(s)]  restored: sha256 bd0494042c4ee95e identical
-   1 failed, 87 passed, 2 warnings in 18.14s
+   1 failed, 89 passed, 2 warnings in 16.51s
    FAILED test_the_response_and_its_replay_carry_the_stored_numbers_exactly
    cause: AssertionError: assert {'matches': [...unt': 0, ...}} == {'matches': [...unt': 0, ...}}
    cause: E   AssertionError: assert {'matches': [...unt': 0, ...}} == {'matches': [...unt': 0, ...}}
-== P1 a policy fault left untyped [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 854a72c73e7d3f49 identical
-   3 failed, 85 passed, 2 warnings in 17.98s
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[no
-   FAILED test_a_policy_this_engine_does_not_implement_is_a_typed_500[relaxes
-   FAILED test_no_active_policy_is_a_typed_500_and_writes_nothing
-   cause: E   turab.matching.policy.PolicyNotImplemented: policy 0.0.191753754-unimplemented: human_review_required_for_opportunity must be true (Master §5.2, ADR-08)
-   cause: E   turab.matching.policy.PolicyNotImplemented: policy 0.0.552780012-unimplemented: automatic_request_relaxation must be false; this engine never changes a request (Spec 
+== P1 a policy fault left untyped [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   5 failed, 85 passed, 2 warnings in 17.23s
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes
+   FAILED test_no_active_policy_is_its_own_typed_500
+   cause: E   turab.matching.policy.PolicyNotImplemented: policy 0.0.118060477-otp-secretmarker: hard_gate must be {'unknown_required': 'NEED_MORE_INFORMATION', 'confirmed_fail_req
+   cause: E   turab.matching.policy.PolicyNotImplemented: policy 0.0.403580134-otp-secretmarker: automatic_request_relaxation must be false; this engine never changes a request (Sp
+   cause: E   turab.matching.policy.PolicyNotImplemented: policy 0.0.504578889-otp-secretmarker: human_review_required_for_opportunity must be true (Master §5.2, ADR-08)
    cause: E   turab.services.freshness.NoActiveFreshnessPolicy: no active matching policy
-   cause: turab.matching.policy.PolicyNotImplemented: policy 0.0.191753754-unimplemented: human_review_required_for_opportunity must be true (Master §5.2, ADR-08)
-   cause: turab.matching.policy.PolicyNotImplemented: policy 0.0.552780012-unimplemented: automatic_request_relaxation must be false; this engine never changes a request (Spec §14,
-   cause: turab.services.freshness.NoActiveFreshnessPolicy: no active matching policy
+   cause: E   turab.services.freshness.NoActiveFreshnessPolicy: policy 0.0.36965070-otp-secretmarker carries no usable rules.freshness_threshold_days.request; refusing to assume on
+   cause: turab.matching.policy.PolicyNotImplemented: policy 0.0.118060477-otp-secretmarker: hard_gate must be {'unknown_required': 'NEED_MORE_INFORMATION', 'confirmed_fail_require
+== P2 one code for both policy faults [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   1 failed, 89 passed, 2 warnings in 17.60s
+   FAILED test_no_active_policy_is_its_own_typed_500
+   cause: AssertionError: assert 'MATCHING_POL...NOT_SUPPORTED' == 'MATCHING_POLICY_NOT_ACTIVE'
+   cause: E   AssertionError: assert 'MATCHING_POL...NOT_SUPPORTED' == 'MATCHING_POLICY_NOT_ACTIVE'
+== P3 the detail built from the exception [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 3b025f2d2eb19d5e identical
+   5 failed, 85 passed, 2 warnings in 17.55s
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes
+   FAILED test_no_active_policy_is_its_own_typed_500
+   cause: AssertionError: assert 'plan §3.1: n...tching policy' == 'plan §3.1: n... be evaluated'
+   cause: E   AssertionError: assert 'plan §3.1: n...tching policy' == 'plan §3.1: n... be evaluated'
+   cause: E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+   cause: E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.191561544-otp-secretmarker: automatic_request_relaxation must be false; this engine never changes a requ
+   cause: E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.291418464-otp-secretmarker: hard_gate must be {'unknown_required': 'NEED_MORE_INFORMATION', 'confirmed_f
+   cause: E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.327168373-otp-secretmarker carries no usable rules.freshness_threshold_days.request; refusing to assume 
+== P4 the cause not logged under the trace id [src/turab/api/routes/parties.py, 1 site(s)]  restored: sha256 85c2b1f615d3dc06 identical
+   5 failed, 85 passed, 2 warnings in 17.84s
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no
+   FAILED test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes
+   FAILED test_no_active_policy_is_its_own_typed_500
+   cause: AssertionError: []
+   cause: E   AssertionError: []
 
 SURVIVING MUTATIONS: none
