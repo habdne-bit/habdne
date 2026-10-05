@@ -598,3 +598,25 @@ SLICE_4_PLAN.md changed revision: 17 -> 18 (step 8 delivered; G4-19 raised, open
 --- Slice 4 step 8: STOP GATE D generated from the bound run at 4446375; --check exits 0 ---
 docs/gate/SLICE_4_STOP_GATE_D.md                               new   b9d2fa060b3af80aa1734b2ce87a06d21d408601072f8b01d4d71c4fa0073245
 docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    a39637583643e37291380b7979e07472171f4a2e2057dcd98fac3baff1dd1be7
+
+--- Slice 4 step 8, review of c657bd9: R-S4-8-01 fixed after measurement; G4-19 decided (a), applied with its history ---
+src/turab/matching/reconstruct.py                              --    b5a79b7501ee278736693c4f5aeca1dfb0f0bce135cc299742802a4d8c55f393
+src/turab/matching/registry_history.py                         --    a7f822d24b5ee055b59a897bf71865122fc78edebfaa53bdbc2d94d1d0e4b3f4
+src/turab/matching/explain.py                                  --    f3d77aa1729ba7c2a9aa869b998e9cd38d4629189e800eb1c5d846e50c075baf
+src/turab/services/matching_run.py                             --    f8656e368820f7eea9ff0f7b6a107f3d95780f3c1d74c9367285ebe59176662d
+db/gate/stop_gate_d_evidence.py                                --    e85153672b5d3307a6d067cfb7930340b7389462938d1449b0e8bcfa1a4de21a
+db/dev/registry_history_evidence.py                            --    f1b5f40f35abe7af6b19882c80603475a6d682d838fc287bc1801733022acf3b
+tests/test_slice4_step8.py                                     --    32cc28e2454176bb36ce7bc4cf7d1057bbd20fb7a0398750670b44154c9786fe
+tests/test_slice4_registry_history.py                          --    79bb1610655f0c48d7879cd787d0153b04df170bff10b04be80e60caf077b808
+tests/test_slice4_stop_gate_d.py                               --    2329042d86ddb308dcce186bc152939c1637802df8934fbc28a173d3a5df7ca6
+tests/test_slice4_step7.py                                     --    3e2add90ee9ef4e495635ad80bd7cfa4d97e788626f279210183702709910f36
+db/dev/mutate_slice4_step8.py                                  --    2b20ef2faf4bd7cdac882ae7a46649130b99fed3f90560799c03b44208121cfa
+db/dev/mutate_slice4_step7.py                                  --    2673bb977ca932a17508993264ec1c4f030f1ac1ac365ad435f8db1dfe2f9cfe
+docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    55179cbcd19e9bc16647c9f546fb40ebf36a42b59d5d5f233beed595facb45c1
+docs/gate/SLICE_4_PLAN.md                                      rev19 8da0db9ee9aadadecd08265193d5dbbff6c8088be88d0c1639833a6cabcabfef
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    bfa78e2e954aaf525bee27e98df6d2bed2bf72f49d1197519b8c9afd62e22a29
+docs/gate/evidence/SLICE4-STEP8-REVIEW-BEFORE-FIX.txt          new   26b3a94156ae4fa0281b5d5e2c1f540a2c15c0b075cec66e17c00d0fb4d9b147
+docs/gate/evidence/REGISTRY-HISTORY.txt                        new   7bfa898df6649878ad5abe373d7986357d3989d790ad20a229ea6b1ae9e5e66c
+docs/gate/evidence/SLICE4-STEP8-MUTATIONS.txt                  --    e326217d47b0b73661f43016fbd21a0a46ab78236650f6ac00fed6165ef2ac39
+docs/gate/evidence/SLICE4-STEP7-MUTATIONS.txt                  --    0f4f455b706c18e6eacc7d646131978c0d3c2238f408b81eefeb6dfd57cc99b9
+SLICE_4_PLAN.md changed revision: 18 -> 19 (review of c657bd9: R-S4-8-01 fixed; G4-19 decided (a)).

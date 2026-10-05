@@ -1,0 +1,15 @@
+TURAB — the registry history's first entry, from git (G4-19)
+============================================================
+HEAD                          : 1981f3aea99eed2dc47eb04330669f052da1d455
+entry 'since'                 : 7a223d7 (7a223d7def84309398eb56c566de60d0ac8be1c1)
+rule_pins.py at 7a223d7 sha256: 2f5fac5ac13fea5bbd8d4cedcd0657aeb8e467896b1a6a85edd58438a00addac
+pins at 7a223d7              : 20
+digest of those pins          : 7ddf47478a44a14aab4c81412da26ca200413ca9c5ad84ee86b21845b0b17298
+digest recorded in HISTORY[0] : 7ddf47478a44a14aab4c81412da26ca200413ca9c5ad84ee86b21845b0b17298
+digest of the live registry   : 7ddf47478a44a14aab4c81412da26ca200413ca9c5ad84ee86b21845b0b17298
+HISTORY[0] pairs == pins at 7a223d7: True
+
+--- commits touching the registry's files, 7a223d7~1..HEAD ---
+7a223d7 Slice 4 step 7: the matching run (G4-15 D1-D6), plan revision 14
+
+RESULT: the entry is the registry of 7a223d7

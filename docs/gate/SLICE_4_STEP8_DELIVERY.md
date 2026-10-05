@@ -374,7 +374,14 @@ snapshots as recorded, and are not re-derived:
   digest.
 - **Step 7's 51 are re-run,** since the run's code changed.
 
-RESULT_PLACEHOLDER_9
+**Clean-tree results at `1981f3a`, source fingerprint `5906ae50…ba4012`:**
+- **step 8:** 25 of 25 fail, none survives, baseline 56 passed
+  (`evidence/SLICE4-STEP8-MUTATIONS.txt`);
+- **step 7:** 51 of 51 fail, none survives, baseline 90 passed
+  (`evidence/SLICE4-STEP7-MUTATIONS.txt`).
+
+Each record replaces the earlier one, which stays in git history. Every
+mutated file was restored and verified by sha256.
 
 ### 9.4 What remains
 
