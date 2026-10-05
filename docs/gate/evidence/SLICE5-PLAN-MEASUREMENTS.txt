@@ -1,0 +1,899 @@
+TURAB — Slice 5 plan: the facts its decisions rest on, measured before any code
+===============================================================================
+Recorded : 2026-10-05 18:53:12 UTC
+Tree     : commit 658a86d93b5e5e5553313082dc7f2bc44008de36 (plan revision 1); working
+           tree CLEAN before the run, CLEAN after it
+Source fingerprint: 5906ae50ff1a21667f3c012dbfbb960e46f56b960020b4ed0851a7edb7ba4012
+Database : a SCRATCH database, turab_s5_probe, rebuilt just before the run by
+           `db/dev/reset_db.sh --fixtures` (frozen schema v0.2.3, master seed,
+           migrations 0002-0005, dev fixtures).
+Server   : PostgreSQL 16.13
+
+What this is. Step 0 of Slice 5, authorized in the review of plan revision 1:
+the measurements of plan §6.4, and those the review's five points need. No
+Slice 5 code exists and no repository file was changed. Matches come from the
+DELIVERED Slice 4 route; reviews and opportunities are written by plain SQL to
+observe what the SCHEMA permits. Writes a section does not keep are rolled
+back. Two earlier runs on the same tree, each on a freshly rebuilt database,
+gave the same results (ids, timestamps and the A3 counts aside: A3 is random
+by construction). These results are ours; nobody else has re-run them.
+
+Findings, per section:
+  H  Review point 1 CONFIRMED. One run over one property with two offers
+     stores two matches with the SAME (request, property, policy) and the
+     SAME evaluated_at and created_at. "Latest per (request, property,
+     policy)" therefore ties, falls to match_id (a random uuid), and keeps
+     ONE of the two arbitrarily. After one offer's price changes and a new
+     run, that rule keeps only the changed offer's match: the other offer's
+     only (still current) match is excluded. Per (request, property, policy,
+     offer) both are kept.
+  A  §6.4.1. APPROVED, then NMI in a later transaction: the opportunity is
+     refused; APPROVED again: accepted; all three rows kept.
+     A3: APPROVED then NMI in ONE transaction share reviewed_at (now()) in
+     20/20 trials; which one the trigger reads as latest is decided by the
+     random match_review_id (see the counts), not by the insertion order.
+     A5: the ordering is by TRANSACTION START, not by commit. A transaction
+     that started first and committed APPROVED last is read as older than an
+     NMI committed in between: the opportunity is refused.
+     A6: SELECT ... FOR UPDATE on the immutable match row is accepted, and a
+     second locker waits; once it holds the lock, clock_timestamp() > now().
+     A4: APPROVED on a NEED_MORE_INFORMATION match is refused by
+     trg_match_review_gate.
+  B  §6.4.2 CONFIRMED, and WIDER than the plan stated. Refused: a change of
+     request_id, property_id or approved_match_id (trg_opportunity_gate),
+     DELETE of an opportunity, DELETE of a review. ACCEPTED: rewriting
+     commercial_context_snapshot, permission_snapshot, why_real,
+     sharing_scope, created_by_account_id, created_at, current_offer_id (to
+     another offer of the property: the initial-offer check is INSERT only),
+     and every status move tried: NEW->ENGAGED, NEW->CLOSED without closed_at,
+     closed_at while NEW, CLOSED->NEW, CLOSED->SHARED, SHARED->NEW, clearing
+     shared_at.
+  C  §6.4.3. Under READ COMMITTED and under REPEATABLE READ, a second insert
+     for the same pair waits on the uncommitted first (pg_blocking_pids), and
+     fails 23505 on ux_one_open_opportunity_per_pair once the first commits.
+  D  §6.4.4. The application connects as `turab`, a SUPERUSER that owns
+     every table. GRANTs restrict nothing; only triggers stand in the way,
+     and a superuser can disable them. Not stated anywhere in docs/gate before.
+  E  §6.4.5. match_reviews and opportunities carry audit triggers (rows with
+     the actor). tasks, interactions, task_completion_events and
+     opportunity_responses carry NO trigger at all. A review inserted with
+     app.account_id unset is ACCEPTED and audited with a NULL actor.
+  F  §6.4.6. A closed opportunity frees the pair for the pair's other match
+     (F2); the first match can never yield a second opportunity (23505 on
+     opportunities_approved_match_id_key, F3).
+  I  Review point 2. A DOCUMENT_TYPE PASS carries evidence_claim_id when the
+     attribute was resolved from a claim, and none otherwise; both PASS. No
+     column marks a claim private. No frozen customer or public type renders
+     ROOMS, BEDROOMS, DOCUMENT_TYPE, RIGHT_TYPE or any offer field; both
+     render property_type, canonical_location_id and the two areas.
+  J  Review points 4 and 5. tasks has no column naming a review. Policy 0.2.0
+     (active, immutable) holds freshness thresholds 30/30/14 and NO key for an
+     opportunity revalidation interval.
+  G  §6.4.7. Every trigger refusal is P0001 with NO constraint name; two
+     messages carry a match id. Only the two unique violations carry a
+     constraint name.
+
+The run's output, verbatim:
+----------------------------------------------------------------------
+/home/user/habdne/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+Database : turab_s5_probe | PostgreSQL 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu
+Commit   : 658a86d93b5e5e5553313082dc7f2bc44008de36
+Migrations: 0005_match_history_immutability
+
+==============================================================================
+H  Review point 1 (G5-2, G5-11): two offers of one property, one run
+==============================================================================
+  one run, one property, two offers -> 2 matches returned, 2 stored
+    offer O2: eligibility=ELIGIBLE evaluated_at=2026-10-05 18:53:14.442942+00:00 created_at=2026-10-05 18:53:14.442942+00:00 hash=0556d63d1746...
+    offer O1: eligibility=ELIGIBLE evaluated_at=2026-10-05 18:53:14.442942+00:00 created_at=2026-10-05 18:53:14.442942+00:00 hash=6409819495c1...
+  same (request, property, policy): True
+  evaluated_at equal: True | created_at equal: True
+  after O2's price changes and a second run: 3 matches
+  'latest per (request, property, policy)' keeps: ['O2'] -> O1's only match is excluded
+  'latest per (request, property, policy, offer)' keeps: ['O1', 'O2']
+  run ONCE on two offers, latest-per-pair ordering ties on evaluated_at and
+  falls to match_id, a random uuid: the survivor is arbitrary.
+
+==============================================================================
+A  §6.4.1: the latest-review ordering of trg_opportunity_gate
+==============================================================================
+  match 54651a8e: eligibility=ELIGIBLE
+  A1 APPROVED, then NMI (later transaction): insert opportunity      REFUSED P0001: Opportunity requires the latest human review to be APPROVED
+  A2 ... then APPROVED again: insert opportunity                     ACCEPTED
+  reviews on the match: ['APPROVED', 'NEED_MORE_INFORMATION', 'APPROVED'] (append-only, all kept)
+
+  A3 APPROVED then NMI inserted in ONE transaction (same now()), 20 trials,
+     each rolled back; the trigger's 'latest' is reviewed_at DESC,
+     match_review_id DESC:
+     both reviews had the same reviewed_at in 20/20 trials
+     opportunity ACCEPTED (APPROVED read as latest): 8/20
+     opportunity REFUSED (NMI read as latest): 12/20
+     The NMI was always inserted SECOND. Which one the trigger reads as
+     latest is decided by the random uuid, not by the insertion order.
+
+  A5 two review transactions on one match: B STARTS first, A inserts NMI and
+     commits, THEN B inserts APPROVED and commits (B is the last decision):
+     committed order: NMI, then APPROVED; the trigger's order (latest first): ['NEED_MORE_INFORMATION', 'APPROVED']
+  A5 insert opportunity after APPROVED was committed last            REFUSED P0001: Opportunity requires the latest human review to be APPROVED
+
+  A6 a row lock on the immutable match row:
+  A6 SELECT ... FOR UPDATE on match_candidates                       ACCEPTED
+     a second FOR UPDATE waits on the first: True; once it holds the lock, clock_timestamp() > now(): True
+  A4 APPROVED on a NEED_MORE_INFORMATION match (trg_match_review_gate) REFUSED P0001: Cannot approve match 27b26fae-d447-41bc-aedc-d9f1cf43e350 before all opportunity gates pass
+
+==============================================================================
+B  §6.4.2: what the schema lets an UPDATE do to an opportunity
+==============================================================================
+  opportunity f298b145 on match b6e226e7 (offer O), status NEW, open
+  B1 request_id -> another request                                   REFUSED P0001: Opportunity request/property must match approved candidate
+  B2 property_id -> another property                                 REFUSED P0001: Opportunity request/property must match approved candidate
+  B3 approved_match_id -> the pair's other (unapproved) match        REFUSED P0001: Opportunity requires the latest human review to be APPROVED
+  B4 commercial_context_snapshot rewritten                           ACCEPTED
+  B5 permission_snapshot rewritten                                   ACCEPTED
+  B6 why_real rewritten                                              ACCEPTED
+  B7 sharing_scope SUMMARY_ONLY -> CONTACT_AFTER_CONFIRMATION        ACCEPTED
+  B8 created_by_account_id -> the operator                           ACCEPTED
+  B9 created_at moved a year back                                    ACCEPTED
+  B10 current_offer_id -> the property's other offer                 ACCEPTED
+  B11 status NEW -> ENGAGED (skips SHARED)                           ACCEPTED
+  B12 status NEW -> CLOSED with no closed_at                         ACCEPTED
+  B13 closed_at set while NEW                                        ACCEPTED
+  B14 CLOSED -> NEW (reopened)                                       ACCEPTED
+  B15 CLOSED -> SHARED                                               ACCEPTED
+  B16 SHARED -> NEW (backwards)                                      ACCEPTED
+  B17 shared_at cleared after sharing                                ACCEPTED
+  B18 DELETE the opportunity                                         REFUSED P0001: Hard delete prohibited for core TURAB records; close/supersede instead
+  B19 DELETE a review (prevent_match_review_update)                  REFUSED P0001: Historical TURAB record is immutable; append a new decision/event instead
+  (each case alone, from the same NEW row, rolled back)
+
+==============================================================================
+C  §6.4.3: two concurrent inserts for one pair
+==============================================================================
+  READ COMMITTED: second insert waited on the first (pg_blocking_pids(1097) contains 1096): True
+  READ COMMITTED: after the first commits, the second: REFUSED 23505 [ux_one_open_opportunity_per_pair]: duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+  REPEATABLE READ: second insert waited on the first (pg_blocking_pids(1104) contains 1103): True
+  REPEATABLE READ: after the first commits, the second: REFUSED 23505 [ux_one_open_opportunity_per_pair]: duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+
+==============================================================================
+F  §6.4.6: a closed opportunity frees the pair, not its match
+==============================================================================
+  F1 second match of the pair while the first is open                REFUSED 23505 [ux_one_open_opportunity_per_pair]: duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+  F2 second match of the pair after the first is CLOSED              ACCEPTED
+  F3 the FIRST match again, both closed                              REFUSED 23505 [opportunities_approved_match_id_key]: duplicate key value violates unique constraint "opportunities_approved_match_id_key"
+
+==============================================================================
+D  §6.4.4: the application role and its privileges
+==============================================================================
+  application connects as: turab | rolsuper: True | rolbypassrls: False
+  match_reviews            owner=turab INSERT=True UPDATE=True DELETE=True TRUNCATE=True
+  opportunities            owner=turab INSERT=True UPDATE=True DELETE=True TRUNCATE=True
+  tasks                    owner=turab INSERT=True UPDATE=True DELETE=True TRUNCATE=True
+  interactions             owner=turab INSERT=True UPDATE=True DELETE=True TRUNCATE=True
+  task_completion_events   owner=turab INSERT=True UPDATE=True DELETE=True TRUNCATE=True
+  opportunity_responses    owner=turab INSERT=True UPDATE=True DELETE=True TRUNCATE=True
+  A superuser bypasses every GRANT. Only triggers stand between the role
+  and these tables (and a superuser can disable triggers).
+
+==============================================================================
+E  §6.4.5: audit rows, and the triggers on each table
+==============================================================================
+  match_reviews            triggers: ['audit_match_reviews', 'prevent_match_review_update', 'trg_match_review_gate']
+  opportunities            triggers: ['audit_opportunities', 'prevent_delete_opportunities', 'trg_opportunity_gate', 'trg_opportunity_offer_context']
+  tasks                    triggers: []
+  interactions             triggers: []
+  task_completion_events   triggers: []
+  opportunity_responses    triggers: []
+  audit_log match_reviews: [{'action': 'INSERT', 'n': 12, 'with_actor': 12}]
+  audit_log opportunities: [{'action': 'INSERT', 'n': 5, 'with_actor': 5}, {'action': 'UPDATE', 'n': 2, 'with_actor': 2}]
+  E1 review inserted with app.account_id UNSET                       ACCEPTED
+     its audit row's actor_account_id: None
+
+==============================================================================
+I  Review point 2 (G5-5): what a criterion result rests on, and what the
+==============================================================================
+   customer can otherwise see
+  property with claim-backed DOCUMENT_TYPE: eligibility=ELIGIBLE
+    BUDGET_MAX     PASS    evidence_claim_id=None evidence_level=None rule=criterion.budget_max_sale@1
+    DOCUMENT_TYPE  PASS    evidence_claim_id=set evidence_level=DOCUMENT_SEEN rule=criterion.attribute_option@2
+    LAND_AREA_MIN  PASS    evidence_claim_id=None evidence_level=None rule=criterion.area_min@2
+    ROOMS_MIN      FAIL    evidence_claim_id=None evidence_level=None rule=criterion.count_min@2
+    TRANSACTION_INTENT PASS    evidence_claim_id=None evidence_level=None rule=criterion.transaction_intent@1
+  property with DOCUMENT_TYPE with no claim: eligibility=ELIGIBLE
+    BUDGET_MAX     PASS    evidence_claim_id=None evidence_level=None rule=criterion.budget_max_sale@1
+    DOCUMENT_TYPE  PASS    evidence_claim_id=None evidence_level=None rule=criterion.attribute_option@2
+    LAND_AREA_MIN  PASS    evidence_claim_id=None evidence_level=None rule=criterion.area_min@2
+    ROOMS_MIN      FAIL    evidence_claim_id=None evidence_level=None rule=criterion.count_min@2
+    TRANSACTION_INTENT PASS    evidence_claim_id=None evidence_level=None rule=criterion.transaction_intent@1
+  claims columns: ['claim_id', 'party_id', 'request_id', 'property_id', 'offer_id', 'attribute_code', 'claimed_value', 'asserted_by_party_id', 'source_id', 'observation_id', 'extracted_by', 'extraction_model_version', 'extraction_confidence', 'observed_at', 'recorded_at', 'valid_from', 'valid_to', 'effective_verification_level', 'status', 'supersedes_claim_id', 'recorded_by_account_id']
+  a column marking a claim private or public: none
+  what each rule reads, and whether a frozen customer type renders it:
+    PROPERTY_TYPE      reads property_type                                  in CustomerPropertyView: True  in PublicPropertySummary: True
+    LOCATION           reads canonical_location_id                          in CustomerPropertyView: True  in PublicPropertySummary: True
+    LAND_AREA_MIN      reads land_area_m2                                   in CustomerPropertyView: True  in PublicPropertySummary: True
+    BUILT_AREA_MIN     reads built_area_m2                                  in CustomerPropertyView: True  in PublicPropertySummary: True
+    ROOMS_MIN          reads attribute ROOMS                                in CustomerPropertyView: False  in PublicPropertySummary: False
+    BEDROOMS_MIN       reads attribute BEDROOMS                             in CustomerPropertyView: False  in PublicPropertySummary: False
+    DOCUMENT_TYPE      reads attribute DOCUMENT_TYPE                        in CustomerPropertyView: False  in PublicPropertySummary: False
+    RIGHT_TYPE         reads attribute RIGHT_TYPE                           in CustomerPropertyView: False  in PublicPropertySummary: False
+    BUDGET_MAX         reads offer asking_price_dzd / seller_expectation_dzd in CustomerPropertyView: False  in PublicPropertySummary: False
+    TRANSACTION_INTENT reads offer transaction_type                         in CustomerPropertyView: False  in PublicPropertySummary: False
+
+==============================================================================
+J  Review points 4 and 5: the task row, and the policy's thresholds
+==============================================================================
+  tasks columns: ['task_id', 'task_type', 'priority', 'status', 'title', 'reason_code', 'party_id', 'request_id', 'property_id', 'match_id', 'assigned_account_id', 'due_at', 'payload', 'created_at', 'completed_at']
+  a column naming a review: none
+  policy 0.2.0: active=True immutable=True freshness_threshold_days={'request': 30, 'property': 30, 'offer_terms': 14} opportunity revalidation key: False
+
+==============================================================================
+G  §6.4.7: every refusal's SQLSTATE and message, as the database gives them
+==============================================================================
+  P0001 [-] Opportunity requires the latest human review to be APPROVED
+        raised in: PL/pgSQL function enforce_opportunity_gate() line 18 at RAISE
+  P0001 [-] Cannot approve match 27b26fae-d447-41bc-aedc-d9f1cf43e350 before all opportunity gates pass
+        raised in: PL/pgSQL function enforce_approved_review_gate() line 11 at RAISE
+  P0001 [-] Opportunity request/property must match approved candidate
+        raised in: PL/pgSQL function enforce_opportunity_gate() line 22 at RAISE
+  P0001 [-] Hard delete prohibited for core TURAB records; close/supersede instead
+        raised in: PL/pgSQL function prevent_core_delete() line 3 at RAISE
+  P0001 [-] Historical TURAB record is immutable; append a new decision/event instead
+        raised in: PL/pgSQL function prevent_immutable_history_change() line 3 at RAISE
+  23505 [ux_one_open_opportunity_per_pair] duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+  23505 [opportunities_approved_match_id_key] duplicate key value violates unique constraint "opportunities_approved_match_id_key"
+  Several messages carry a match id. None may reach a response body.
+----------------------------------------------------------------------
+
+The harness, verbatim (run: s5_probe.py <repo root>, with PG* variables and
+PGDATABASE=turab_s5_probe):
+----------------------------------------------------------------------
+"""Slice 5 plan, revision 2: measure the facts its decisions rest on, before
+any Slice 5 code exists.
+
+Runs against a SCRATCH database built by `db/dev/reset_db.sh --fixtures`
+(frozen schema + seed + migrations 0002-0005 + dev fixtures). It is not a
+test and it changes no file of the repository.
+
+Matches are produced by the DELIVERED Slice 4 route
+(`POST /requests/{id}/matching/run`), so every match is a real engine output.
+There is no review or opportunity code: reviews and opportunities are written
+here by plain SQL, to observe what the SCHEMA permits. Every write a section
+does not need to keep is made inside a savepoint and rolled back.
+
+Usage: s5_probe.py <repo root>   (PG* variables and PGDATABASE set)
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+import uuid
+
+import psycopg
+
+ROOT = sys.argv[1]
+sys.path.insert(0, os.path.join(ROOT, "src"))
+DB = os.environ["PGDATABASE"]
+CONNINFO = (f"host={os.environ['PGHOST']} user={os.environ['PGUSER']} "
+            f"password={os.environ['PGPASSWORD']} dbname={DB}")
+URL = (f"postgresql+psycopg://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}"
+       f"@{os.environ['PGHOST']}/{DB}")
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from turab.app import create_app  # noqa: E402
+from turab.auth.audit import AccessAuditor, RecordingAuditSink  # noqa: E402
+from turab.db.session import create_app_engine  # noqa: E402
+
+BRAHIM = "f1000000-0000-4000-8000-000000000002"
+ACC_OPERATOR = "f3000000-0000-4000-8000-000000000002"
+ACC_REVIEWER = "f3000000-0000-4000-8000-000000000003"
+POLICY = "0.2.0"
+
+client = TestClient(create_app(engine=create_app_engine(URL),
+                               auditor=AccessAuditor(RecordingAuditSink())))
+MESSAGES: list[tuple[str, str, str, str | None, str]] = []
+
+
+def connect(autocommit=False) -> psycopg.Connection:
+    c = psycopg.connect(CONNINFO, autocommit=autocommit)
+    c.execute("SET search_path = turab, public")
+    if not autocommit:
+        c.commit()
+    return c
+
+
+SETUP = connect(autocommit=True)
+
+
+def one(sql, **p):
+    return SETUP.execute(sql, p).fetchone()[0]
+
+
+def rows(sql, **p):
+    cur = SETUP.execute(sql, p)
+    names = [d.name for d in cur.description]
+    return [dict(zip(names, r)) for r in cur.fetchall()]
+
+
+def section(title):
+    print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
+
+
+def attempt(c, label, sql, params=None, keep=False):
+    """Run one statement in a savepoint. Rolled back unless `keep`."""
+    c.execute("SAVEPOINT probe")
+    try:
+        c.execute(sql, params or {})
+        if keep:
+            c.execute("RELEASE SAVEPOINT probe")
+        else:
+            c.execute("ROLLBACK TO SAVEPOINT probe")
+        print(f"  {label:66} ACCEPTED")
+        return "ACCEPTED"
+    except psycopg.Error as e:
+        c.execute("ROLLBACK TO SAVEPOINT probe")
+        d = e.diag
+        print(f"  {label:66} REFUSED {e.sqlstate}"
+              + (f" [{d.constraint_name}]" if d.constraint_name else "")
+              + f": {d.message_primary}")
+        MESSAGES.append((label, e.sqlstate, d.message_primary, d.constraint_name,
+                         d.context.splitlines()[0] if d.context else ""))
+        return "REFUSED"
+
+
+# --- the world, as the Slice 4 tests build it -----------------------------------
+
+def request(*, criteria=(("DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED"),)):
+    req = one("""
+        INSERT INTO requests (party_id, transaction_intent, status, management_mode,
+                              claim_status, budget_max_dzd, budget_importance,
+                              property_type_importance, last_confirmed_at)
+        VALUES (%(p)s, 'BUY', 'ACTIVE', 'ASSISTED', 'UNCLAIMED', 30000000, 'REQUIRED',
+                'REQUIRED', now() - interval '1 day')
+        RETURNING request_id""", p=BRAHIM)
+    for i, (code, op, value, importance) in enumerate(criteria):
+        SETUP.execute("""
+            INSERT INTO request_criteria (request_id, criterion_code, importance, operator,
+                                          value, blocking_if_unknown, sort_order)
+            VALUES (%(r)s, %(c)s, %(i)s, %(o)s, %(v)s, false, %(s)s)""",
+                      {"r": req, "c": code, "i": importance, "o": op,
+                       "v": json.dumps(value), "s": i})
+    return req
+
+
+def prop(*, document="LAND_BOOK", claim=False, rooms=None):
+    p = one("""
+        INSERT INTO properties (property_type, supply_mode, management_mode, claim_status,
+                                land_area_m2, availability_last_confirmed_at,
+                                current_availability)
+        VALUES ('LAND', 'PUBLIC', 'ASSISTED', 'UNCLAIMED', 400, now() - interval '1 day',
+                'AVAILABLE')
+        RETURNING property_id""")
+    if document is not None:
+        claim_id = None
+        if claim:
+            claim_id = one("""
+                INSERT INTO claims (property_id, attribute_code, claimed_value,
+                                    effective_verification_level)
+                VALUES (%(p)s, 'DOCUMENT_TYPE', %(v)s, 'DOCUMENT_SEEN')
+                RETURNING claim_id""", p=p, v=json.dumps(document))
+        SETUP.execute("""
+            INSERT INTO property_attributes (property_id, attribute_definition_id, value,
+                                             resolved_claim_id)
+            SELECT %(p)s, attribute_definition_id, %(v)s, %(c)s
+              FROM attribute_definitions WHERE code = 'DOCUMENT_TYPE'""",
+                      {"p": p, "v": json.dumps(document), "c": claim_id})
+    if rooms is not None:
+        SETUP.execute("""
+            INSERT INTO property_attributes (property_id, attribute_definition_id, value)
+            SELECT %(p)s, attribute_definition_id, %(v)s
+              FROM attribute_definitions WHERE code = 'ROOMS'""",
+                      {"p": p, "v": json.dumps(rooms)})
+    return p
+
+
+def offer(p, *, price=20_000_000, scope="SUMMARY_ONLY"):
+    o = one("""
+        INSERT INTO property_offers (property_id, party_id, transaction_type, status,
+                                     asking_price_dzd, price_negotiable, permission_scope,
+                                     commercial_terms_last_confirmed_at)
+        VALUES (%(p)s, %(party)s, 'SALE', 'ACTIVE', %(price)s, 'NO', %(scope)s,
+                now() - interval '1 day')
+        RETURNING offer_id""", p=p, party=BRAHIM, price=price, scope=scope)
+    grant = one("""
+        INSERT INTO consent_grants (party_id, scope, channel, consent_version, granted_at)
+        VALUES (%(party)s, 'PRIVATE_MATCHING_ONLY', 'PHONE_CONFIRMED', 'v1',
+                now() - interval '2 days')
+        RETURNING consent_id""", party=BRAHIM)
+    SETUP.execute("""
+        INSERT INTO resource_consent_bindings (consent_id, purpose, offer_id, bound_at)
+        VALUES (%(c)s, 'PRIVATE_MATCHING_ONLY', %(o)s, now() - interval '1 day')""",
+                  {"c": grant, "o": o})
+    return o
+
+
+def run(req, props):
+    r = client.post(f"/requests/{req}/matching/run",
+                    headers={"Authorization": f"Bearer {ACC_OPERATOR}",
+                             "Idempotency-Key": str(uuid.uuid4())},
+                    json={"matching_policy_version": POLICY,
+                          "property_ids": [str(p) for p in props]})
+    assert r.status_code == 201, r.text
+    return r.json()["matches"]
+
+
+def as_reviewer(c):
+    c.execute("SELECT set_config('app.account_id', %s, true)", (ACC_REVIEWER,))
+
+
+REVIEW = """INSERT INTO match_reviews (match_id, decision, reason_code, reviewer_account_id)
+            VALUES (%(m)s, %(d)s, %(r)s, %(a)s) RETURNING match_review_id"""
+OPPORTUNITY = """
+    INSERT INTO opportunities (request_id, property_id, approved_match_id, current_offer_id,
+                               sharing_scope, why_real, created_by_account_id)
+    SELECT request_id, property_id, match_id, evaluated_offer_id, 'SUMMARY_ONLY',
+           '{}'::jsonb, %(a)s
+      FROM match_candidates WHERE match_id = %(m)s"""
+
+
+def review(match_id, decision, reason=None):
+    with connect() as c:
+        as_reviewer(c)
+        rid = c.execute(REVIEW, {"m": match_id, "d": decision, "r": reason,
+                                 "a": ACC_REVIEWER}).fetchone()[0]
+        c.commit()
+    return rid
+
+
+def open_opportunity(match_id):
+    with connect() as c:
+        as_reviewer(c)
+        c.execute(OPPORTUNITY + " RETURNING opportunity_id",
+                  {"m": match_id, "a": ACC_REVIEWER})
+        oid = c.execute("SELECT opportunity_id FROM opportunities "
+                        "WHERE approved_match_id = %s", (match_id,)).fetchone()[0]
+        c.commit()
+    return oid
+
+
+def main():
+    git = lambda *a: subprocess.run(["git", "-C", ROOT, *a], capture_output=True,
+                                    text=True).stdout.strip()
+    print("Database :", DB, "|", one("SELECT version()").split(",")[0])
+    print("Commit   :", git("rev-parse", "HEAD"))
+    print("Migrations:", one("SELECT version_num FROM alembic_version"))
+
+    # ===================================================================== H
+    section("H  Review point 1 (G5-2, G5-11): two offers of one property, one run")
+    req = request()
+    p = prop()
+    o1, o2 = offer(p), offer(p)
+    first = run(req, [p])
+    ms = rows("""SELECT match_id, evaluated_offer_id, matching_policy_id, evaluated_at,
+                        created_at, input_hash, eligibility::text AS eligibility
+                   FROM match_candidates WHERE request_id = %(r)s
+                  ORDER BY evaluated_offer_id""", r=req)
+    print(f"  one run, one property, two offers -> {len(first)} matches returned, "
+          f"{len(ms)} stored")
+    for m in ms:
+        print(f"    offer {'O1' if m['evaluated_offer_id'] == o1 else 'O2'}: "
+              f"eligibility={m['eligibility']} evaluated_at={m['evaluated_at']} "
+              f"created_at={m['created_at']} hash={m['input_hash'][:12]}...")
+    print("  same (request, property, policy):",
+          len({(req, p, m["matching_policy_id"]) for m in ms}) == 1)
+    print("  evaluated_at equal:", ms[0]["evaluated_at"] == ms[1]["evaluated_at"],
+          "| created_at equal:", ms[0]["created_at"] == ms[1]["created_at"])
+    SETUP.execute("UPDATE property_offers SET asking_price_dzd = 21000000 "
+                  "WHERE offer_id = %s", (o2,))
+    time.sleep(0.01)
+    run(req, [p])
+    ms = rows("""SELECT match_id, evaluated_offer_id, evaluated_at
+                   FROM match_candidates WHERE request_id = %(r)s
+                  ORDER BY evaluated_at, match_id""", r=req)
+    print(f"  after O2's price changes and a second run: {len(ms)} matches")
+    latest_pair = rows("""SELECT DISTINCT ON (request_id, property_id, matching_policy_id)
+                                 match_id, evaluated_offer_id
+                            FROM match_candidates WHERE request_id = %(r)s
+                           ORDER BY request_id, property_id, matching_policy_id,
+                                    evaluated_at DESC, match_id DESC""", r=req)
+    latest_offer = rows("""SELECT DISTINCT ON (evaluated_offer_id) match_id,
+                                  evaluated_offer_id
+                             FROM match_candidates WHERE request_id = %(r)s
+                            ORDER BY evaluated_offer_id, evaluated_at DESC,
+                                     match_id DESC""", r=req)
+    name = lambda o: "O1" if o == o1 else "O2"
+    print("  'latest per (request, property, policy)' keeps:",
+          [name(m["evaluated_offer_id"]) for m in latest_pair],
+          "-> O1's only match is excluded")
+    print("  'latest per (request, property, policy, offer)' keeps:",
+          sorted(name(m["evaluated_offer_id"]) for m in latest_offer))
+    print("  run ONCE on two offers, latest-per-pair ordering ties on evaluated_at and")
+    print("  falls to match_id, a random uuid: the survivor is arbitrary.")
+
+    # ===================================================================== A
+    section("A  §6.4.1: the latest-review ordering of trg_opportunity_gate")
+    req = request()
+    p = prop()
+    offer(p)
+    [m] = run(req, [p])
+    mid = m["match_id"]
+    print(f"  match {mid[:8]}: eligibility={m['eligibility']}")
+    review(mid, "APPROVED")
+    time.sleep(0.01)
+    review(mid, "NEED_MORE_INFORMATION", "DOCUMENT_NOT_KNOWN")
+    with connect() as c:
+        as_reviewer(c)
+        attempt(c, "A1 APPROVED, then NMI (later transaction): insert opportunity",
+                OPPORTUNITY, {"m": mid, "a": ACC_REVIEWER})
+        c.rollback()
+    time.sleep(0.01)
+    review(mid, "APPROVED")
+    with connect() as c:
+        as_reviewer(c)
+        attempt(c, "A2 ... then APPROVED again: insert opportunity",
+                OPPORTUNITY, {"m": mid, "a": ACC_REVIEWER})
+        c.rollback()
+    print("  reviews on the match:", [r["decision"] for r in rows(
+        "SELECT decision::text AS decision FROM match_reviews WHERE match_id = %(m)s "
+        "ORDER BY reviewed_at, match_review_id", m=mid)], "(append-only, all kept)")
+
+    print("\n  A3 APPROVED then NMI inserted in ONE transaction (same now()), 20 trials,")
+    print("     each rolled back; the trigger's 'latest' is reviewed_at DESC,")
+    print("     match_review_id DESC:")
+    req = request()
+    p = prop()
+    offer(p)
+    [m] = run(req, [p])
+    mid = m["match_id"]
+    outcome = {"opportunity ACCEPTED (APPROVED read as latest)": 0,
+               "opportunity REFUSED (NMI read as latest)": 0}
+    same_time = 0
+    for _ in range(20):
+        with connect() as c:
+            as_reviewer(c)
+            a = c.execute(REVIEW, {"m": mid, "d": "APPROVED", "r": None,
+                                   "a": ACC_REVIEWER}).fetchone()[0]
+            n = c.execute(REVIEW, {"m": mid, "d": "NEED_MORE_INFORMATION",
+                                   "r": "DOCUMENT_NOT_KNOWN", "a": ACC_REVIEWER}).fetchone()[0]
+            t = c.execute("SELECT count(DISTINCT reviewed_at) FROM match_reviews "
+                          "WHERE match_review_id IN (%s, %s)", (a, n)).fetchone()[0]
+            same_time += t == 1
+            c.execute("SAVEPOINT s")
+            try:
+                c.execute(OPPORTUNITY, {"m": mid, "a": ACC_REVIEWER})
+                outcome["opportunity ACCEPTED (APPROVED read as latest)"] += 1
+            except psycopg.Error:
+                c.execute("ROLLBACK TO SAVEPOINT s")
+                outcome["opportunity REFUSED (NMI read as latest)"] += 1
+            c.rollback()
+    print(f"     both reviews had the same reviewed_at in {same_time}/20 trials")
+    for k, v in outcome.items():
+        print(f"     {k}: {v}/20")
+    print("     The NMI was always inserted SECOND. Which one the trigger reads as")
+    print("     latest is decided by the random uuid, not by the insertion order.")
+
+    print("\n  A5 two review transactions on one match: B STARTS first, A inserts NMI and")
+    print("     commits, THEN B inserts APPROVED and commits (B is the last decision):")
+    req = request()
+    p = prop()
+    offer(p)
+    [m] = run(req, [p])
+    mid = m["match_id"]
+    cb, ca = connect(), connect()
+    as_reviewer(cb)
+    cb.execute("SELECT now()")
+    time.sleep(0.05)
+    as_reviewer(ca)
+    ca.execute(REVIEW, {"m": mid, "d": "NEED_MORE_INFORMATION", "r": "DOCUMENT_NOT_KNOWN",
+                        "a": ACC_REVIEWER})
+    ca.commit()
+    cb.execute(REVIEW, {"m": mid, "d": "APPROVED", "r": None, "a": ACC_REVIEWER})
+    cb.commit()
+    ca.close()
+    cb.close()
+    order = rows("""SELECT decision::text AS decision, reviewed_at FROM match_reviews
+                     WHERE match_id = %(m)s ORDER BY reviewed_at DESC, match_review_id DESC""",
+                 m=mid)
+    print(f"     committed order: NMI, then APPROVED; the trigger's order (latest first): "
+          f"{[r['decision'] for r in order]}")
+    with connect() as c:
+        as_reviewer(c)
+        attempt(c, "A5 insert opportunity after APPROVED was committed last", OPPORTUNITY,
+                {"m": mid, "a": ACC_REVIEWER})
+        c.rollback()
+
+    print("\n  A6 a row lock on the immutable match row:")
+    c1, c2 = connect(), connect()
+    attempt(c1, "A6 SELECT ... FOR UPDATE on match_candidates",
+            "SELECT match_id FROM match_candidates WHERE match_id = %(m)s FOR UPDATE",
+            {"m": mid}, keep=True)
+    pid1 = c1.execute("SELECT pg_backend_pid()").fetchone()[0]
+    pid2 = c2.execute("SELECT pg_backend_pid()").fetchone()[0]
+    got = {}
+
+    def lock2():
+        c2.execute("SELECT match_id FROM match_candidates WHERE match_id = %s FOR UPDATE",
+                   (mid,))
+        got["t"] = c2.execute("SELECT clock_timestamp() > now()").fetchone()[0]
+
+    t = threading.Thread(target=lock2)
+    t.start()
+    waited = False
+    for _ in range(100):
+        time.sleep(0.02)
+        if pid1 in one("SELECT pg_blocking_pids(%(p)s)", p=pid2):
+            waited = True
+            break
+    c1.rollback()
+    t.join(10)
+    print(f"     a second FOR UPDATE waits on the first: {waited}; once it holds the lock,"
+          f" clock_timestamp() > now(): {got.get('t')}")
+    c2.rollback()
+    c1.close()
+    c2.close()
+
+    req = request()
+    p = prop(document=None)
+    offer(p)
+    [m] = run(req, [p])
+    with connect() as c:
+        as_reviewer(c)
+        attempt(c, f"A4 APPROVED on a {m['eligibility']} match (trg_match_review_gate)",
+                REVIEW, {"m": m["match_id"], "d": "APPROVED", "r": None, "a": ACC_REVIEWER})
+        c.rollback()
+
+    # ===================================================================== B
+    section("B  §6.4.2: what the schema lets an UPDATE do to an opportunity")
+    req = request()
+    p = prop()
+    o = offer(p)
+    o_other = offer(p)
+    [ma, mb] = sorted(run(req, [p]), key=lambda m: m["evaluated_offer_id"] != str(o))
+    review(ma["match_id"], "APPROVED")
+    opp = open_opportunity(ma["match_id"])
+    other_req = request()
+    print(f"  opportunity {str(opp)[:8]} on match {ma['match_id'][:8]} (offer O), "
+          "status NEW, open")
+    cases = [
+        ("B1 request_id -> another request", "request_id = %(x)s", other_req),
+        ("B2 property_id -> another property", "property_id = %(x)s", prop()),
+        ("B3 approved_match_id -> the pair's other (unapproved) match",
+         "approved_match_id = %(x)s", mb["match_id"]),
+        ("B4 commercial_context_snapshot rewritten",
+         "commercial_context_snapshot = '{\"rewritten\": true}'::jsonb", None),
+        ("B5 permission_snapshot rewritten",
+         "permission_snapshot = '{\"rewritten\": true}'::jsonb", None),
+        ("B6 why_real rewritten", "why_real = '{\"rewritten\": true}'::jsonb", None),
+        ("B7 sharing_scope SUMMARY_ONLY -> CONTACT_AFTER_CONFIRMATION",
+         "sharing_scope = 'CONTACT_AFTER_CONFIRMATION'", None),
+        ("B8 created_by_account_id -> the operator", "created_by_account_id = %(x)s",
+         ACC_OPERATOR),
+        ("B9 created_at moved a year back", "created_at = created_at - interval '1 year'",
+         None),
+        ("B10 current_offer_id -> the property's other offer", "current_offer_id = %(x)s",
+         o_other),
+        ("B11 status NEW -> ENGAGED (skips SHARED)", "status = 'ENGAGED'", None),
+        ("B12 status NEW -> CLOSED with no closed_at", "status = 'CLOSED'", None),
+        ("B13 closed_at set while NEW", "closed_at = now()", None),
+    ]
+    with connect() as c:
+        as_reviewer(c)
+        for label, assignment, x in cases:
+            attempt(c, label, f"UPDATE opportunities SET {assignment} "
+                              "WHERE opportunity_id = %(o)s", {"o": opp, "x": x})
+        c.execute("SAVEPOINT closed")
+        c.execute("UPDATE opportunities SET status = 'CLOSED', closed_at = now(), "
+                  "close_reason_code = 'BUYER_REJECTED' WHERE opportunity_id = %s", (opp,))
+        attempt(c, "B14 CLOSED -> NEW (reopened)", "UPDATE opportunities SET status = 'NEW', "
+                "closed_at = NULL WHERE opportunity_id = %(o)s", {"o": opp})
+        attempt(c, "B15 CLOSED -> SHARED", "UPDATE opportunities SET status = 'SHARED' "
+                "WHERE opportunity_id = %(o)s", {"o": opp})
+        c.execute("ROLLBACK TO SAVEPOINT closed")
+        c.execute("UPDATE opportunities SET status = 'SHARED', shared_at = now() "
+                  "WHERE opportunity_id = %s", (opp,))
+        attempt(c, "B16 SHARED -> NEW (backwards)", "UPDATE opportunities SET status = 'NEW' "
+                "WHERE opportunity_id = %(o)s", {"o": opp})
+        attempt(c, "B17 shared_at cleared after sharing", "UPDATE opportunities "
+                "SET shared_at = NULL WHERE opportunity_id = %(o)s", {"o": opp})
+        attempt(c, "B18 DELETE the opportunity", "DELETE FROM opportunities "
+                "WHERE opportunity_id = %(o)s", {"o": opp})
+        attempt(c, "B19 DELETE a review (prevent_match_review_update)",
+                "DELETE FROM match_reviews WHERE match_id = %(m)s", {"m": ma["match_id"]})
+        c.rollback()
+    print("  (each case alone, from the same NEW row, rolled back)")
+
+    # ===================================================================== C
+    section("C  §6.4.3: two concurrent inserts for one pair")
+    for isolation in ("READ COMMITTED", "REPEATABLE READ"):
+        req = request()
+        p = prop()
+        offer(p)
+        offer(p)
+        m1, m2 = run(req, [p])
+        review(m1["match_id"], "APPROVED")
+        review(m2["match_id"], "APPROVED")
+        c1, c2 = connect(), connect()
+        for c in (c1, c2):
+            c.execute(f"SET TRANSACTION ISOLATION LEVEL {isolation}")
+            as_reviewer(c)
+        pid1 = c1.execute("SELECT pg_backend_pid()").fetchone()[0]
+        pid2 = c2.execute("SELECT pg_backend_pid()").fetchone()[0]
+        c2.execute("SELECT 1")  # take the snapshot before c1 inserts (RR)
+        c1.execute(OPPORTUNITY, {"m": m1["match_id"], "a": ACC_REVIEWER})
+        result = {}
+
+        def second():
+            try:
+                c2.execute(OPPORTUNITY, {"m": m2["match_id"], "a": ACC_REVIEWER})
+                result["r"] = "ACCEPTED"
+            except psycopg.Error as e:
+                result["r"] = f"REFUSED {e.sqlstate} [{e.diag.constraint_name}]: " \
+                              f"{e.diag.message_primary}"
+                MESSAGES.append((f"C {isolation} second insert", e.sqlstate,
+                                 e.diag.message_primary, e.diag.constraint_name, ""))
+
+        t = threading.Thread(target=second)
+        t.start()
+        blocked = False
+        for _ in range(100):
+            time.sleep(0.02)
+            bp = one("SELECT pg_blocking_pids(%(p)s)", p=pid2)
+            if pid1 in bp:
+                blocked = True
+                break
+        c1.commit()
+        t.join(10)
+        c2.rollback()
+        print(f"  {isolation}: second insert waited on the first "
+              f"(pg_blocking_pids({pid2}) contains {pid1}): {blocked}")
+        print(f"  {isolation}: after the first commits, the second: {result.get('r')}")
+        c1.close()
+        c2.close()
+
+    # ===================================================================== F
+    section("F  §6.4.6: a closed opportunity frees the pair, not its match")
+    req = request()
+    p = prop()
+    offer(p)
+    offer(p)
+    m1, m2 = run(req, [p])
+    review(m1["match_id"], "APPROVED")
+    review(m2["match_id"], "APPROVED")
+    opp1 = open_opportunity(m1["match_id"])
+    with connect() as c:
+        as_reviewer(c)
+        attempt(c, "F1 second match of the pair while the first is open", OPPORTUNITY,
+                {"m": m2["match_id"], "a": ACC_REVIEWER})
+        c.execute("UPDATE opportunities SET status = 'CLOSED', closed_at = now(), "
+                  "close_reason_code = 'BUYER_REJECTED' WHERE opportunity_id = %s", (opp1,))
+        attempt(c, "F2 second match of the pair after the first is CLOSED", OPPORTUNITY,
+                {"m": m2["match_id"], "a": ACC_REVIEWER}, keep=True)
+        c.execute("UPDATE opportunities SET status = 'CLOSED', closed_at = now(), "
+                  "close_reason_code = 'OTHER' WHERE approved_match_id = %s",
+                  (m2["match_id"],))
+        attempt(c, "F3 the FIRST match again, both closed", OPPORTUNITY,
+                {"m": m1["match_id"], "a": ACC_REVIEWER})
+        c.commit()
+
+    # ===================================================================== D
+    section("D  §6.4.4: the application role and its privileges")
+    print("  application connects as:", one("SELECT current_user"),
+          "| rolsuper:", one("SELECT rolsuper FROM pg_roles WHERE rolname = current_user"),
+          "| rolbypassrls:", one("SELECT rolbypassrls FROM pg_roles "
+                                 "WHERE rolname = current_user"))
+    for t in ("match_reviews", "opportunities", "tasks", "interactions",
+              "task_completion_events", "opportunity_responses"):
+        privs = {pv: one("SELECT has_table_privilege(%(t)s, %(p)s)", t=f"turab.{t}", p=pv)
+                 for pv in ("INSERT", "UPDATE", "DELETE", "TRUNCATE")}
+        print(f"  {t:24} owner={one('SELECT tableowner FROM pg_tables WHERE schemaname = %(s)s AND tablename = %(t)s', s='turab', t=t)} "
+              + " ".join(f"{k}={v}" for k, v in privs.items()))
+    print("  A superuser bypasses every GRANT. Only triggers stand between the role")
+    print("  and these tables (and a superuser can disable triggers).")
+
+    # ===================================================================== E
+    section("E  §6.4.5: audit rows, and the triggers on each table")
+    for t in ("match_reviews", "opportunities", "tasks", "interactions",
+              "task_completion_events", "opportunity_responses"):
+        trg = [r["tgname"] for r in rows("""
+            SELECT tgname FROM pg_trigger
+             WHERE tgrelid = %(t)s::regclass AND NOT tgisinternal ORDER BY tgname""",
+                                         t=f"turab.{t}")]
+        print(f"  {t:24} triggers: {trg}")
+    for t in ("match_reviews", "opportunities"):
+        a = rows("""SELECT action, count(*) AS n, count(actor_account_id) AS with_actor
+                      FROM audit_log WHERE entity_table = %(t)s
+                     GROUP BY action ORDER BY action""", t=t)
+        print(f"  audit_log {t}: {a}")
+    req = request()
+    p = prop()
+    offer(p)
+    [m] = run(req, [p])
+    with connect() as c:
+        attempt(c, "E1 review inserted with app.account_id UNSET", REVIEW,
+                {"m": m["match_id"], "d": "NEED_MORE_INFORMATION", "r": "DOCUMENT_NOT_KNOWN",
+                 "a": ACC_REVIEWER}, keep=True)
+        actor = c.execute("""SELECT actor_account_id FROM audit_log
+                              WHERE entity_table = 'match_reviews'
+                              ORDER BY audit_id DESC LIMIT 1""").fetchone()[0]
+        print(f"     its audit row's actor_account_id: {actor}")
+        c.rollback()
+
+    # ===================================================================== I
+    section("I  Review point 2 (G5-5): what a criterion result rests on, and what the")
+    print("   customer can otherwise see")
+    req = request(criteria=(("DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED"),
+                            ("ROOMS_MIN", "GTE", 3, "PREFERRED"),
+                            ("LAND_AREA_MIN", "GTE", 300, "PREFERRED")))
+    p_claim = prop(claim=True, rooms=4)
+    p_plain = prop(claim=False, rooms=4)
+    offer(p_claim)
+    offer(p_plain)
+    for m in sorted(run(req, [p_claim, p_plain]),
+                    key=lambda m: m["property_id"] != str(p_claim)):
+        label = "claim-backed DOCUMENT_TYPE" if m["property_id"] == str(p_claim) else \
+            "DOCUMENT_TYPE with no claim"
+        print(f"  property with {label}: eligibility={m['eligibility']}")
+        for cr in m["criteria"]:
+            print(f"    {cr['criterion_code']:14} {cr['compatibility']:7} "
+                  f"evidence_claim_id={'set' if cr['evidence_claim_id'] else None} "
+                  f"evidence_level={cr['evidence_level']} rule={cr['rule_id']}@"
+                  f"{cr['rule_version']}")
+    cols = [r["column_name"] for r in rows("""
+        SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'turab' AND table_name = 'claims' ORDER BY ordinal_position""")]
+    print("  claims columns:", cols)
+    print("  a column marking a claim private or public:",
+          [c for c in cols if any(w in c for w in ("private", "visib", "public", "share"))]
+          or "none")
+    import yaml
+    S = yaml.safe_load(open(os.path.join(ROOT, "docs/handoff/05_API/openapi_v0.2.3.yaml")))[
+        "components"]["schemas"]
+    cpv = set(S["CustomerPropertyView"]["properties"])
+    pps = set(S["PublicPropertySummary"]["properties"])
+    reads = {"PROPERTY_TYPE": "property_type", "LOCATION": "canonical_location_id",
+             "LAND_AREA_MIN": "land_area_m2", "BUILT_AREA_MIN": "built_area_m2",
+             "ROOMS_MIN": "attribute ROOMS", "BEDROOMS_MIN": "attribute BEDROOMS",
+             "DOCUMENT_TYPE": "attribute DOCUMENT_TYPE", "RIGHT_TYPE": "attribute RIGHT_TYPE",
+             "BUDGET_MAX": "offer asking_price_dzd / seller_expectation_dzd",
+             "TRANSACTION_INTENT": "offer transaction_type"}
+    print("  what each rule reads, and whether a frozen customer type renders it:")
+    for code, field in reads.items():
+        print(f"    {code:18} reads {field:46} in CustomerPropertyView: "
+              f"{field in cpv}  in PublicPropertySummary: {field in pps}")
+
+    # ===================================================================== J
+    section("J  Review points 4 and 5: the task row, and the policy's thresholds")
+    cols = [r["column_name"] for r in rows("""
+        SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'turab' AND table_name = 'tasks' ORDER BY ordinal_position""")]
+    print("  tasks columns:", cols)
+    print("  a column naming a review:", [c for c in cols if "review" in c] or "none")
+    for r in rows("""SELECT version, active, immutable,
+                            rules -> 'freshness_threshold_days' AS thresholds,
+                            rules ? 'opportunity_revalidation_days' AS has_revalidation_key
+                       FROM matching_policies ORDER BY version"""):
+        print(f"  policy {r['version']}: active={r['active']} immutable={r['immutable']} "
+              f"freshness_threshold_days={r['thresholds']} "
+              f"opportunity revalidation key: {r['has_revalidation_key']}")
+
+    # ===================================================================== G
+    section("G  §6.4.7: every refusal's SQLSTATE and message, as the database gives them")
+    seen = set()
+    for label, state, msg, constraint, ctx in MESSAGES:
+        key = (state, msg, constraint)
+        if key in seen:
+            continue
+        seen.add(key)
+        print(f"  {state} [{constraint or '-'}] {msg}")
+        if ctx:
+            print(f"        raised in: {ctx}")
+    print("  Several messages carry a match id. None may reach a response body.")
+
+
+if __name__ == "__main__":
+    main()
+----------------------------------------------------------------------

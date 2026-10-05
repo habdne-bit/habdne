@@ -634,3 +634,8 @@ SLICE_4_PLAN.md changed revision: 19 -> 20 (Slice 4 closed at 58368d1; final rev
 --- Slice 5 plan, revision 1, for review; no code ---
 docs/gate/SLICE_5_PLAN.md                                      rev1  c7bcbc569a28619c675160ce5567bfa03fa89bd667d0c1e549e24e3fe985f989
 docs/gate/evidence/SLICE5-PLAN-FINDINGS.txt                    new   1a78e89e830a908d14bfc6be9a4f1d23b9639a1bfc2d76caebfaa22aac7a7dc3
+
+--- Slice 5 step 0 (review of plan revision 1): measurements on PostgreSQL, no code; plan revision 2 ---
+docs/gate/SLICE_5_PLAN.md                                      rev2  5f1c407a02bd834e7dd172f1e6c35ff11bcc22949274bbdde16577027882e207
+docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt                new   bd06c6ac07edfcba0b1fbce6daf2feb8d82f692c79a53af233ff524b2c72e883
+SLICE_5_PLAN.md changed revision: 1 -> 2 (step 0 measured; the five review points answered).

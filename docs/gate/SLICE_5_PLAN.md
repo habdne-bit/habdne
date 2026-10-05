@@ -1,16 +1,31 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 1**
+## Implementation plan — **revision 2**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Slice 4 kept `match_reviews` and
 `opportunities` closed by an approved boundary (G4-15 D1). Opening them is
 the decision this plan asks for.
 
+**The review of revision 1** authorized step 0 only: the PostgreSQL
+measurements of §6.4, with no code change. It approved none of the twelve
+decisions and not the sequence. It asked revision 2 to settle five points
+before implementation is approved:
+1. two offers of one property (G5-2, G5-11);
+2. the inference of a private claim (G5-5);
+3. the atomicity of a refused share (G5-8);
+4. the number of tasks (G5-4);
+5. the queue's interval (G5-11).
+
+Each is answered at its decision, marked **[review point n]**. The
+measurements are in §6.4, and their record is
+`docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt`.
+
 **Revision history**
 
 | rev | commit | what changed |
 |---|---|---|
-| 1 | the commit that adds this file | first plan |
+| 1 | `658a86d` | first plan |
+| 2 | the commit that adds this revision | step 0 measured (§6.4, record above); §2 restated from the measurements; §3.1 gains the review-ordering rule (measured A3, A5, A6); the five review points answered at G5-2, G5-4, G5-5, G5-8, G5-11; G5-12 widened by the measurement; G5-13 added (the application role, measured D) |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -175,20 +190,74 @@ re-implement:**
   status <> 'CLOSED'` (mandatory test 6, H04).
 - `prevent_delete_opportunities` (ADR-10, K06).
 
-**What the schema leaves open.** Each item is to be measured in revision 2
-(§6.4) before any fix is proposed:
+**What the schema leaves open, as measured in step 0** (§6.4; the letters
+are the record's sections):
 1. **The index keys on `property_id`, not the canonical property.** Two
    records that later become alias and canonical can each hold an open
-   opportunity for one request. The index cannot see it (E04).
-2. **Nothing visible protects an opportunity's history.** No trigger is
-   visible on UPDATE of `commercial_context_snapshot`, `permission_snapshot`,
-   `why_real`, `created_by_account_id` or `created_at`. `API_CONTRACTS` §4.2
-   says: "Historical match/opportunity snapshots remain immutable."
-3. **Nothing visible orders `status`.** A CLOSED opportunity could be set
-   back to NEW or SHARED by an UPDATE. That the index then catches a second
-   open row is a side effect, not a rule.
+   opportunity for one request. The index cannot see it (E04). This follows
+   from the index definition, and needs no run.
+2. **An opportunity's history is not protected (B4–B10, measured).** UPDATE
+   was ACCEPTED on each of these columns:
+   - `commercial_context_snapshot`;
+   - `permission_snapshot`;
+   - `why_real`;
+   - `sharing_scope`;
+   - `created_by_account_id`;
+   - `created_at`;
+   - `current_offer_id`, moved to another offer of the property. The
+     initial-offer check of `trg_opportunity_gate` runs on INSERT only.
+
+   `API_CONTRACTS` §4.2 says: "Historical match/opportunity snapshots remain
+   immutable." Only `request_id`, `property_id` and `approved_match_id` are
+   refused (B1–B3).
+3. **Nothing orders `status` (B11–B17, measured).** Every move tried was
+   ACCEPTED:
+   - NEW → ENGAGED;
+   - NEW → CLOSED without `closed_at`;
+   - `closed_at` set while NEW;
+   - CLOSED → NEW and CLOSED → SHARED;
+   - SHARED → NEW;
+   - clearing `shared_at`.
 4. **`opportunity_responses` cascades on delete.** The rows are protected
-   only because opportunities themselves cannot be deleted.
+   only because opportunities themselves cannot be deleted (B18: DELETE is
+   refused).
+5. **The "latest review" is the latest TRANSACTION START, not the latest
+   decision (A3, A5, measured).** `reviewed_at` defaults to `now()`, the
+   transaction's start time:
+   - Two reviews in one transaction tie, and the random `match_review_id`
+     decides. In 20 trials of APPROVED then NMI in one transaction, the
+     trigger read APPROVED as the latest in 8 of the 20.
+   - A transaction that starts first and commits APPROVED last is read as
+     OLDER than an NMI committed in between. The opportunity is then
+     refused, although the last decision taken was APPROVED.
+
+   §3.1 states the rule this requires.
+6. **The four tables Slice 5 might write besides these have no trigger at
+   all (E).** They are `tasks`, `interactions`, `task_completion_events` and
+   `opportunity_responses`. A review written with `app.account_id` unset is
+   accepted, and audited with a NULL actor (E1). Only the application's
+   `audited_transaction` (S23) refuses such a write.
+7. **Every trigger refusal is P0001, with no constraint name (G).** Two
+   messages carry a match id. Only the two unique violations name their
+   constraint (`ux_one_open_opportunity_per_pair`,
+   `opportunities_approved_match_id_key`). So every typed refusal must come
+   from a pre-check made under lock, before the write, as Slice 3 did for
+   the alias triggers. The trigger stays the backstop, and its text never
+   reaches a response.
+8. **The application role is a superuser (D).** It owns every table, so
+   GRANTs restrict nothing. G5-13 addresses this.
+
+**What the measurements confirmed:**
+- A1: APPROVED, then NMI in a later transaction, refuses the opportunity.
+- A2: APPROVED again accepts it. All three reviews are kept.
+- A4: APPROVED on a NEED_MORE_INFORMATION match is refused by
+  `trg_match_review_gate`.
+- C: under READ COMMITTED and under REPEATABLE READ, the second concurrent
+  insert for a pair waits on the first, then fails 23505 on
+  `ux_one_open_opportunity_per_pair`.
+- F2: closing frees the pair for the pair's other match.
+- F3: the first match never yields a second opportunity
+  (`opportunities_approved_match_id_key`).
 
 ---
 
@@ -206,6 +275,22 @@ re-implement:**
 - **The review, its task and its opportunity are written in one
   transaction** (`API_CONTRACTS` §2.6). A refused review writes nothing and
   consumes no idempotency key (as Slice 4 D6).
+- **The latest review is the last decision taken.** This follows from
+  ADR-08: the sequence IS the history. §2 item 5 measured that the default
+  `reviewed_at` does not guarantee it. So a review command:
+  1. takes `SELECT … FOR UPDATE` on the match row as its first statement on
+     the match. A6 measured that the immutable row accepts the lock and that
+     a second locker waits;
+  2. writes `reviewed_at = clock_timestamp()`, read after the lock is held.
+     A6 measured `clock_timestamp() > now()` at that point;
+  3. writes exactly one review per transaction.
+
+  Two reviews of one match then serialize. Each is stamped after the
+  previous one committed, so the schema's ordering equals the order of the
+  decisions. The column is written, not changed: it keeps its type and its
+  default, and no migration is needed.
+- **The test reproduces A5 against the command and must find the order
+  right:** a second command starts first and is held at the lock.
 
 ### 3.2 Where H01 can happen, and where it cannot
 A match row is immutable (Slice 4, migration `0005`), and so are its gates.
@@ -348,8 +433,8 @@ enough". M-05 and M-06 tie freshness to the opportunity.
   at approval time, all of the following. Each is checked with the **same
   pinned rules** Slice 4 recorded on the match (`freshness.state`,
   `permission.binding_state`, `permission.gate`), on snapshots taken now:
-  1. the match is the latest for its (request, property, policy). Otherwise
-     409, superseded;
+  1. the match is not superseded, in the sense defined below. Otherwise 409
+     `MATCH_SUPERSEDED`;
   2. the request status is one a run accepts (G4-8). Otherwise 409
      `REQUEST_NOT_MATCHABLE`, the existing code;
   3. the property is canonical. Otherwise 409
@@ -363,8 +448,50 @@ enough". M-05 and M-06 tie freshness to the opportunity.
 - **(b)** The stored gates only. The opportunity is created VALID, and
   currency is left to revalidate and share.
 
-**Decision asked:** (a) or (b). Under (a), does item 1 compare within the
-same policy only, or across policies?
+**[review point 1] Supersession is per offer.** Revision 1 proposed "the
+latest for its (request, property, policy)". Measurement H shows two things
+that make this wrong:
+- One run over a property with two offers stores two matches with the same
+  request, property, policy, `evaluated_at` and `created_at`. The rule ties,
+  falls to the random `match_id`, and keeps one of the two arbitrarily.
+- After one offer's price changes and a new run, the rule keeps only that
+  offer's match. The other offer's match is excluded, though it is still
+  that offer's current evaluation.
+
+The commercial context is part of a match's identity: it is ADR-01's
+evaluated offer, an input of the hash (G4-13). The revised definition
+follows from that:
+- **Match M is superseded** when another match M′ exists with the same
+  `request_id`, `property_id`, `matching_policy_id` AND `evaluated_offer_id`,
+  and `(M′.evaluated_at, M′.created_at)` is strictly greater than M's.
+  Every match has an evaluated offer under G4-9 (a).
+- **A strict tie on both times is not supersession.** Measurement H found
+  `evaluated_at` and `created_at` equal to each other, and equal for every
+  match of one run: both are the run transaction's start. A run evaluates
+  each offer once. So a tie for one offer can arise only between two runs
+  whose transactions start in the same microsecond, with different inputs.
+  An identical input is the same match (G4-13). Both
+  matches stay current. No order is invented between them. Both remain
+  reviewable, and §3.3 still lets at most one become an open opportunity.
+  `match_id` is never used as a tie-break: it is random, so H's arbitrary
+  survivor would return.
+- **Matches of two different offers never supersede one another.** Each
+  offer's latest match is current, and each is approvable. Only §3.3 limits
+  the pair to one OPEN opportunity.
+
+**Tests:**
+- **Two offers, one run:** both matches are in the queue, and both are
+  current.
+- **Approving the first offer's match** creates the opportunity.
+- **Approving the second offer's match while that is open** is 409
+  `OPPORTUNITY_ALREADY_OPEN`.
+- **After the first is closed,** approving the second creates the pair's
+  new opportunity.
+- **A price change on one offer and a new run** supersedes that offer's old
+  match only.
+
+**Decision asked:** (a) or (b); under (a), supersession per offer as
+defined, compared within one policy.
 
 ### G5-3 · The sequence of reviews on one match, and the input
 **Sequence.** Slice 3's `_OPEN_MATCHES` (`services/identity.py`) already
@@ -414,8 +541,8 @@ rank 4, above the contract, rank 5):**
 `postMatchesMatchIdReview` says: "NEED_MORE_INFORMATION should create a
 focused task where applicable". O-03 says: "Create task; candidate remains
 non-opportunity". The input carries a `reason_code` and nothing else.
-- **The proposal: exactly one task per NMI review, typed from the
-  reviewer's `reason_code`:**
+- **The proposal: each NMI review's task is typed from the reviewer's
+  `reason_code`** (how many tasks, below):
 
   | `reason_code` | `task_type` |
   |---|---|
@@ -439,10 +566,33 @@ non-opportunity". The input carries a `reason_code` and nothing else.
     reference;
   - `title`: a fixed text per type, never the reviewer's free text;
   - no `assigned_account_id`, and no `due_at`.
-- **The proposal on repetition:** when the match already has an OPEN or
-  IN_PROGRESS task of the same type, no second task is written. The review
-  returns the existing one.
-- **Decision asked:** the mapping; one task per review; the repetition rule.
+- **[review point 4] One semantics, not two.** Revision 1 said both "one
+  task per NMI review" and "reuse an OPEN task". The two contradict each
+  other. Measurement J shows `tasks` has no column naming a review, and
+  `match_reviews` has no column naming a task. So the link between a review
+  and its task can live only in the task's `payload`.
+  - **(a) Recommended: exactly one NEW task per NMI review, never reused.**
+    - The task is inserted in the review's transaction.
+    - Its `payload.match_review_id` is the review's id, written once at
+      insert and never updated.
+    - The review's response returns that task.
+    - The link is therefore 1:1 and immutable, in both directions:
+      - a review's task is the one task whose `payload.match_review_id` is
+        the review's id;
+      - a task's review is the review that id names.
+    - A repeated NMI on one match yields a second open task. That is the
+      faithful record of a second request for information. Listing tasks,
+      and any grouping of them, is Slice 6's.
+  - **(b) At most one open task per (match, type), reused.** The review's
+    id is appended to `payload.match_review_ids` by an UPDATE of the task,
+    audited as an UPDATE by `audit_rows`. The link then rests on a mutable
+    JSON array, on a table with no trigger (§2, item 6). The reused task's
+    `title`, `priority` and `reason_code` are those of the first review.
+  - **Tests under (a):**
+    - two NMI reviews give two tasks;
+    - each task's `payload.match_review_id` names its own review;
+    - a refused NMI review (422) writes neither a review nor a task.
+- **Decision asked:** the mapping, and (a) or (b).
 
 ### G5-5 · What a created opportunity contains
 `sharing_scope` and `why_real` are NOT NULL. `MatchReviewInput` carries
@@ -455,21 +605,73 @@ neither.
 - (b) always SUMMARY_ONLY at creation; widening it is a later, separate
   decision.
 
-**`why_real`** (customer-visible, §3.4), built deterministically from the
-match's stored criterion rows:
-- `{"format": "turab.why-real/1", "criteria": [...]}`;
-- one entry per REQUIRED or PREFERRED criterion that is PASS: its code, its
-  seeded Arabic label and its importance. No value, no delta, no evidence;
-- **BUDGET_MAX is never listed, whatever its result.** `criterion.budget_max@1`
-  may decide a PASS on `seller_expectation_dzd` while the asking price is
-  above the maximum (`rules.py`, R9.3). Listing the PASS only when the asking
-  price decided it would make the absence itself a signal. S36 asks that the
-  expectation be "not stated or inferable".
+**[review point 2] Which criterion results may be shown to the customer.**
+Revision 1 excluded the claim's id and value, and BUDGET_MAX. That is not
+enough. A DOCUMENT_TYPE PASS states the property's document, and the
+document may be known only from a private claim. Measurement I confirms the
+facts:
+- A DOCUMENT_TYPE PASS carries `evidence_claim_id` when the attribute was
+  resolved from a claim, and none otherwise. Both are PASS, under the same
+  rule `criterion.attribute_option@2`.
+- No column of `claims` marks a claim private or public. "Private claim"
+  (R8.2a, `API_CONTRACTS` §3) is therefore not a property the data can
+  test.
+- No frozen customer or public type renders ROOMS, BEDROOMS, DOCUMENT_TYPE,
+  RIGHT_TYPE, or any offer field. Both render `property_type`,
+  `canonical_location_id`, `land_area_m2` and `built_area_m2`.
 
-**`known_differences`:**
-- the PREFERRED or FLEXIBLE criteria that are FAIL or non-blocking UNKNOWN,
-  under the same exclusions;
-- each entry carries a code and a compatibility only.
+**The proposed rule: render-derivability.** A criterion result may appear
+in `why_real` or `known_differences` only when every value its rule reads
+is itself rendered to that customer, at that opportunity's `sharing_scope`,
+by the customer view of G5-6. The result then tells the customer nothing
+they could not read in the same response. Concretely, under G5-6 (a):
+
+| scope | codes whose results may be shown |
+|---|---|
+| SUMMARY_ONLY | PROPERTY_TYPE, LOCATION (if G5-6 (a) renders the four fields; none if `property` is omitted) |
+| PROPERTY_DETAILS_ALLOWED, CONTACT_AFTER_CONFIRMATION | the above, plus LAND_AREA_MIN and BUILT_AREA_MIN |
+| never, at any scope | DOCUMENT_TYPE, RIGHT_TYPE, ROOMS_MIN, BEDROOMS_MIN, BUDGET_MAX, BUDGET_TARGET, TRANSACTION_INTENT, and any code with no deterministic rule |
+
+**Why the rule is a fixed list by code, and not a filter on
+`evidence_claim_id`.** A filter that hid a result only when it is
+claim-backed would make the ABSENCE depend on a claim. A customer would then
+learn from a missing DOCUMENT_TYPE that a claim stands behind it. Under the
+fixed list:
+- what is shown depends only on the request's criteria, the scope and the
+  results of shown codes;
+- it never depends on whether a claim exists.
+
+This also settles BUDGET_MAX (S36): it is never shown, whatever its result
+and whatever decided it.
+
+**A guard for later rule versions.** The rules of the shown codes link no
+claim today, on two grounds:
+- in `rules.py`, `evidence_claim_id` is set from a resolved claim only by
+  `count_min` and `attribute_option`;
+- measurement I records `evidence_claim_id=None` for LAND_AREA_MIN. A test asserts that the rule pinned for each shown code
+returns no `evidence_claim_id`. A future rule version that links a claim to
+a shown code fails that test, and so forces a decision instead of shipping
+silently.
+
+**The shapes.**
+- **`why_real`:** `{"format": "turab.why-real/1", "criteria": [...]}`, one
+  entry per shown REQUIRED or PREFERRED criterion that is PASS. Each entry
+  carries its code, its seeded Arabic label and its importance. No value,
+  no delta, no evidence. `criteria` may be empty: no shown code means
+  nothing to say, and nothing is said.
+- **`known_differences`:** the shown PREFERRED or FLEXIBLE criteria that are
+  FAIL or non-blocking UNKNOWN. Each entry carries a code and a
+  compatibility only.
+
+**Tests (the customer body, compared whole):**
+- a DOCUMENT_TYPE PASS backed by a claim, and one backed by no claim, on
+  two otherwise identical opportunities. The two customer bodies are
+  identical apart from ids and times, and neither names DOCUMENT_TYPE;
+- the same pair for ROOMS_MIN;
+- a BUDGET_MAX PASS decided by the asking price, and one decided by the
+  seller expectation. The bodies are identical apart from ids and times;
+- LAND_AREA_MIN is shown at PROPERTY_DETAILS_ALLOWED and not at
+  SUMMARY_ONLY.
 
 **The rest:**
 - `commercial_context_snapshot`: the match's, copied. The initial context is
@@ -483,8 +685,8 @@ match's stored criterion rows:
 - `created_by_account_id`: the reviewer.
 - `last_confirmed_at`: the approval time under (a); null under (b).
 
-**Decision asked:** the scope's source; the content and exclusions of
-`why_real` and `known_differences`.
+**Decision asked:** the scope's source; the render-derivability rule and its
+table; the shapes of `why_real` and `known_differences`.
 
 ### G5-6 · The customer view against the frozen contract (F5-1, F5-2, F5-3)
 - **(a) Recommended: conform to the frozen contract.** The overlay may only
@@ -522,16 +724,46 @@ says whether a NEW, not yet shared, opportunity is visible.
 `API_CONTRACTS` §4.11 and R8.4: "Before every share, revalidate current
 permission/consent and field-level sharing scope." H05 and B03 apply.
 
-**The proposal.** Share runs the revalidation of G5-9 inside its own
-transaction. It proceeds only when:
-- the opportunity is open;
-- the result is VALID;
-- the offer's current `permission_scope` is not narrower than the
-  opportunity's `sharing_scope`. Otherwise 409 `SHARING_SCOPE_NARROWED`.
+**[review point 3] Two different things, kept apart.** Revision 1 said both
+that share "runs the revalidation inside its own transaction" and that a
+refused share "writes nothing". Those contradict each other. The two
+operations are separated as follows:
+- **The currency CHECK** is a read-only function. It applies the checks of
+  G5-9 (the same pinned rules, on snapshots taken now) and RETURNS a
+  validity and its reasons. It writes nothing.
+- **`revalidate`** is the only command that PERSISTS a check's result:
+  `validity_status`, `last_confirmed_at`, `current_permission_binding_id`
+  and `last_activity_at`.
+- **`share` calls the check. It never persists the check's result.** It
+  proceeds only when all of the following hold:
+  1. the opportunity is open;
+  2. its STORED `validity_status` is VALID. A NEEDS_CONFIRMATION or INVALID
+     opportunity must first be revalidated, by the command that records it;
+  3. the check made now returns VALID;
+  4. the offer's current `permission_scope` is not narrower than the
+     opportunity's `sharing_scope`.
 
-A refused share writes nothing (409 `CONSENT_REVOKED` when permission is
-FAIL; `OPPORTUNITY_NOT_VALID` otherwise). The validity change is recorded by
-calling revalidate itself, not as a side effect of a refusal.
+**A refused share, and what it leaves behind:**
+
+| item | on a refused share |
+|---|---|
+| response | 409, with a typed code: `OPPORTUNITY_CLOSED`, `OPPORTUNITY_NOT_VALID` (item 2, or item 3 other than permission), `CONSENT_REVOKED` (item 3, permission FAIL), `SHARING_SCOPE_NARROWED` (item 4). The body names the failing checks by code |
+| `opportunities` row | unchanged: no validity, status, time or binding is written |
+| `audit_log` | no row: nothing changed, so the frozen `audit_opportunities` trigger does not fire |
+| access record (R6.3) | the staff read of the object is recorded as for any command; the refusal is a domain refusal, not an authorization denial |
+| `interactions` | no row |
+| idempotency key | NOT consumed. The refusal comes before the claim of the key, as in Slice 4 D6. The same key may be retried once the facts change, and is then evaluated afresh |
+
+The validity downgrade that the check found is NOT stored by the refusal.
+It is stored when an operator calls `revalidate`, which the refusal's body
+names as the remedy.
+
+**Tests:**
+- a share refused after a revocation (H05, B03). The opportunity row, the
+  audit log's high-water mark and the idempotency table are unchanged;
+- `revalidate` then records INVALID;
+- a share with a stored NEEDS_CONFIRMATION and current facts that pass is
+  refused until `revalidate` records VALID.
 
 **On success:**
 - NEW → SHARED, and `shared_at` is set the first time;
@@ -564,8 +796,12 @@ request/property/offer freshness and permission without rewriting historical
 match snapshots. It may update current offer context or move validity to
 NEEDS_CONFIRMATION/INVALID."
 
-**The proposal.** It takes the same checks as G5-2 (a), with the same pinned
-rules, on snapshots taken now.
+**The proposal.** It runs the currency CHECK of G5-8, which takes items 2–6
+of G5-2 (a), with the same pinned rules, on snapshots taken now.
+Supersession (item 1) concerns a match not yet approved, and plays no part
+here. It
+then persists the result. Revalidate is the only command that writes
+validity.
 
 | validity | when |
 |---|---|
@@ -626,7 +862,11 @@ information." `QueueItem` requires `id`, `kind`, `priority` and
 
 **Matches, proposed.**
 - **Membership:**
-  - only the latest match per (request, canonical property, policy);
+  - only matches not superseded, PER OFFER, as G5-2 defines it **[review
+    point 1]**. Two offers of one property are two items. A strict tie
+    keeps both;
+  - the property is canonical now. An alias's matches are left to Slice 3's
+    `RESOLVE_IDENTITY` work;
   - eligibility other than REJECTED;
   - no opportunity;
   - latest review absent or NEED_MORE_INFORMATION.
@@ -644,9 +884,35 @@ information." `QueueItem` requires `id`, `kind`, `priority` and
 - **Order:** priority, then `evaluated_at`, then `match_id`.
 
 **Opportunities, proposed.**
-- **Membership:** open opportunities that are not VALID, or NEW and not yet
-  shared, or whose `last_confirmed_at` is older than the policy's shortest
-  freshness threshold (14 days, `offer_terms`).
+- **[review point 5] No borrowed interval.** Revision 1 used 14 days, the
+  seeded policy's `offer_terms` freshness threshold, as the interval after
+  which an opportunity needs revalidation. That conflates two different
+  quantities:
+  - **14 days is the age** at which an offer's commercial terms count as
+    stale. It applies to the terms' last confirmation.
+  - **`opportunities.last_confirmed_at`** is the time of the opportunity's
+    approval or last revalidation.
+
+  Measurement J records that policy `0.2.0` has no key for an opportunity
+  revalidation interval. It is also immutable (migration `0005`), so no key
+  can be added to it. No document of the pack names such an interval.
+  Spec §15.1 forbids hard-coding a freshness duration.
+  - **(a) Recommended: no time-based membership in Slice 5.** The queue
+    holds only states that are stored. A time-based "revalidation due"
+    waits until a source for its interval is decided. The engine's own
+    freshness thresholds still apply wherever revalidate or share check
+    currency; they simply do not schedule queue entries.
+  - **(b) A new policy version carrying a named key**
+    (`opportunity_revalidation_days`). A new version is a new row, since
+    `0.2.0` is immutable. The queue reads the key from the ACTIVE policy at
+    query time, and each item records the policy version it was computed
+    under. When the policy changes, membership follows the new active
+    policy at the next read; nothing stored changes. This is a policy and
+    data change. It needs its own approval, and the value its own source.
+- **Membership under (a):** open opportunities that are:
+  - INVALID;
+  - NEEDS_CONFIRMATION;
+  - or VALID, NEW and not yet shared.
 - **`kind`:** `OPPORTUNITY`.
 - **`priority` and `reason`:**
 
@@ -655,34 +921,73 @@ information." `QueueItem` requires `id`, `kind`, `priority` and
   | INVALID | HIGH | `VALIDITY_INVALID` |
   | NEEDS_CONFIRMATION | NORMAL | `VALIDITY_NEEDS_CONFIRMATION` |
   | not yet shared | NORMAL | `NOT_YET_SHARED` |
-  | revalidation due | LOW | `REVALIDATION_DUE` |
 
-- **No engine call per row.** "Revalidation due" reads a stored time.
+- **No engine call per row.** Every membership condition reads a stored
+  column.
 
 **Paging** follows the Slice 3 queues.
 
-**Decision asked:** membership, priority and reason vocabulary for both
-queues.
+**Decision asked:**
+- membership, priority and reason vocabulary for both queues;
+- for the opportunity queue, (a) or (b).
 
-### G5-12 · Opportunity history in the schema (migration `0006`), after measurement
-§2 lists what the schema leaves open. The proposal follows G4-14's
-precedent:
-1. measure each gap on PostgreSQL in revision 2, with nothing changed;
-2. then propose a structural migration `0006`, with no table, column, reason
-   code or data, covering:
-   - **(i)** the immutability of `request_id`, `property_id`,
-     `approved_match_id`, `commercial_context_snapshot`,
-     `permission_snapshot`, `why_real`, `sharing_scope`,
-     `created_by_account_id` and `created_at`;
-   - **(ii)** the status order NEW → SHARED → ENGAGED → CLOSED, with CLOSED
-     terminal and `closed_at` set exactly on closing.
+### G5-12 · Opportunity history in the schema (migration `0006`)
+**Measured in step 0** (§2, items 2 and 3; sections B4–B17). The proposal
+follows G4-14's precedent: one structural migration `0006`, with no table,
+column, reason code or data. It reuses the frozen
+`prevent_immutable_history_change()` where it can.
+- **(i) Fields written once, at creation:**
+  - `request_id`, `property_id` and `approved_match_id`. These are already
+    refused today, but only through `trg_opportunity_gate`'s re-check, which
+    is a side effect and not a guard;
+  - `commercial_context_snapshot` and `permission_snapshot`;
+  - `why_real`, `known_differences` and `sharing_scope`. `why_real` and
+    `known_differences` are computed against the creation-time scope
+    (G5-5), so a later scope change would make them wrong;
+  - `created_by_account_id` and `created_at`.
+- **(ii) Status order:**
+  - NEW → SHARED → ENGAGED → CLOSED, never backwards; CLOSED is terminal;
+  - `closed_at` and `close_reason_code` are set exactly when, and only when,
+    the status becomes CLOSED;
+  - `shared_at` is set at the first move to SHARED, and never cleared or
+    moved;
+  - `engaged_at` follows the same rule at ENGAGED.
+- **(iii) `current_offer_id` stays out of `0006`.** `API_CONTRACTS` §4.11
+  lets revalidate "update current offer context". Slice 5 never does so
+  (G5-9), and the service enforces that. A later slice that does so keeps
+  `trg_opportunity_offer_context` as its guard.
 
-`sharing_scope` is in (i) only if G5-8 never narrows it after creation, as
-proposed. The canonical-property uniqueness (§2, item 1) is NOT proposed for
-the schema: an alias relation is not visible to a partial index. It stays
-the service check of §3.3, with E04's tasks as the after-the-fact net.
+**Every case of B4–B17 is the mutation record's starting point.** Each must
+be refused after `0006`, and each refusal is mapped by a pre-check, never by
+the P0001 text (§2, item 7).
 
-**Decision asked:** whether to measure, and then whether `0006` is in scope.
+**Not proposed for the schema:** the canonical-property uniqueness (§2,
+item 1). An alias relation is not visible to a partial index. It stays the
+service check of §3.3, with E04's tasks as the after-the-fact net.
+
+**Decision asked:** whether `0006` is in scope, with (i), (ii) and (iii) as
+listed.
+
+### G5-13 · The application role is a superuser (measured D), new in revision 2
+The application connects as `turab`. That role is a superuser and owns every
+table: `has_table_privilege` is true for INSERT, UPDATE, DELETE and TRUNCATE
+on all six tables measured. Consequences:
+- **GRANTs restrict nothing.** K06 ("application role cannot hard-delete")
+  holds only through triggers. Every ordinary statement fires them, as
+  B18, B19 and Slices 3–4 measured.
+- **A superuser can disable triggers.** `session_replication_role`, or
+  `ALTER TABLE … DISABLE TRIGGER`, would bypass every backstop this plan
+  relies on.
+
+No document under `docs/gate` stated this before. It predates Slice 5.
+- **(a) Recommended: record it as an environment finding.** It goes in
+  `docs/gate/ENVIRONMENT_NOTES.md`, and Slice 5 states its limit: K06 and
+  the history guards hold against the application's statements, not
+  against a superuser who disables them. Separating a non-owner,
+  non-superuser application role is a deployment change. It touches every
+  slice's tests and is decided outside Slice 5.
+- **(b) Make it part of Slice 5.**
+- **Decision asked:** (a) or (b).
 
 ---
 
@@ -730,22 +1035,37 @@ It shows the reconstruction of the match's decision (STOP GATE D's
 
 **Its stated limit:** SALE only. G4-5R is open.
 
-### 6.4 Measurements for revision 2 (PostgreSQL, no code)
-These are the plan facts this revision states from reading. Revision 2
-measures them on PostgreSQL 16.13, on a clean tree, into
-`docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt`:
-1. the latest-review ordering of `trg_opportunity_gate`: APPROVED then NMI
-   on the same match refuses an opportunity;
-2. §2 items 2 and 3: an UPDATE of each historical column, and CLOSED → NEW,
-   on an opportunity;
-3. the index under two concurrent inserts for one pair (23505 and its
-   constraint name);
-4. the application role's privileges on `match_reviews`, `opportunities`,
-   `tasks` and `interactions`;
-5. the audit rows written by `audit_match_reviews` and
-   `audit_opportunities`;
-6. that a closed opportunity frees the pair for a different match;
-7. the trigger message texts, which must never reach a response.
+### 6.4 Step 0: the measurements (done)
+**The run.**
+- **Record:** `docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt`. It carries
+  the summary, the full output and the harness verbatim.
+- **Tree:** commit `658a86d`, clean before and after the run; source
+  fingerprint `5906ae50…4012`.
+- **Database:** a scratch database rebuilt by `db/dev/reset_db.sh
+  --fixtures`, on PostgreSQL 16.13.
+- **How the rows were made:** matches by the delivered Slice 4 route;
+  reviews and opportunities by plain SQL.
+- **Reproducibility:** two earlier runs on fresh databases gave the same
+  results, ids, times and the random A3 counts aside.
+- **No repository file was changed.**
+- **These results are ours.**
+
+| §6.4 item, or review point | Section | Result |
+|---|---|---|
+| 1. latest-review ordering | A1, A2, A3, A5, A6 | confirmed, and WIDER: the ordering is by transaction start, and two reviews in one transaction tie at random (§2, item 5; the rule of §3.1) |
+| 2. history columns, status order | B1–B19 | confirmed, and WIDER: seven columns and every status move are accepted (§2, items 2 and 3; G5-12) |
+| 3. concurrent inserts for a pair | C | the second waits, then 23505 `ux_one_open_opportunity_per_pair`, under READ COMMITTED and REPEATABLE READ |
+| 4. the application role | D | superuser and owner of every table (G5-13) |
+| 5. audit rows | E | written, with actor, for `match_reviews` and `opportunities`; no trigger on four other tables; a NULL actor is accepted (§2, item 6) |
+| 6. closing frees the pair | F | for the pair's other match, yes; for the same match, never |
+| 7. trigger messages | G | all P0001 with no constraint name; two carry a match id (§2, item 7) |
+| review point 1 | H | two offers, one run: identical (request, property, policy, times); answered at G5-2 |
+| review point 2 | I | claim-backed and plain DOCUMENT_TYPE PASS alike; no privacy column; the rendered fields; answered at G5-5 |
+| review points 4, 5 | J | no review column on `tasks`; no revalidation key in the policy; answered at G5-4, G5-11 |
+
+The HTTP 200 of the customer view (F5-1, F5-2) cannot be measured before
+Slice 5 code exists: no path creates an opportunity. §4's limit stands, and
+the conformance test of G5-6 is written over HTTP in step 4.
 
 ---
 
@@ -755,7 +1075,10 @@ measures them on PostgreSQL 16.13, on a clean tree, into
 2. STOP GATE E: the generated document's `--check` exits 0 on the bound run.
 3. **No path writes an opportunity except the APPROVED review.** The writer
    check of §6.1 test 3 enforces this.
-4. **No path writes `match_reviews` except the review command.**
+4. **No path writes `match_reviews` except the review command.** That
+   command locks the match row first and stamps `reviewed_at` with
+   `clock_timestamp()` under the lock (§3.1). The A5 case, reproduced
+   against the command, reads the last decision as the latest.
 5. No contract change, unless G5-6 (b) is approved as an explicit exception.
    No migration other than `0006`, if G5-12 approves it.
 6. **No change to Slice 4's engine, rules, pins or registry.** The approval
@@ -784,9 +1107,9 @@ Each step is delivered, evidenced and reviewed before the next starts.
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | revision 2: the measurements of §6.4, folded in; no code | this review |
+| 0 | the measurements of §6.4, folded into revision 2; no code | **done** (this revision) |
 | 1 | migration `0006`, with its mutation record | G5-12 |
-| 2 | the review: REJECTED and NMI, with its task. APPROVED stays refused. | G5-3, G5-4 |
+| 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3, G5-4 |
 | 3 | APPROVED: the currency check, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
 | 5 | revalidate, share, close, and the opportunity queue | G5-1, G5-8, G5-9, G5-10, G5-11 |
