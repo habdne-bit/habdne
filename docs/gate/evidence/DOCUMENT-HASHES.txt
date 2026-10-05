@@ -624,3 +624,9 @@ SLICE_4_PLAN.md changed revision: 18 -> 19 (review of c657bd9: R-S4-8-01 fixed; 
 --- Slice 4 step 8: STOP GATE D regenerated from the bound run at 333b5f7; --check exits 0 ---
 docs/gate/SLICE_4_STOP_GATE_D.md                               --    de4d8c5c03bd8836c045f54d56a539a60c6f51f1b7468c5a3c2c155424b13101
 docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    037abb3b476f5af601894d281ed762a2f4c6cc7b24921c66c6c009b6b68cd54a
+
+--- Slice 4 CLOSED at 58368d1 (review of 58368d1); step 8 closed; no code change ---
+docs/gate/SLICE_4_CLOSURE.md                                   new   8442b18de48ef317f38ac15cb175fe4db7579fb37ce6e560272f8d8d7b7663fe
+docs/gate/SLICE_4_PLAN.md                                      rev20 20b58a4f4f10028a4f0fede02745e5a3a7b7e5ab15b2f82a35bb098f83338e68
+docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    76e69003214fe552e6887afa2f753b31d95735c8a9e55c430635ff00781a66d8
+SLICE_4_PLAN.md changed revision: 19 -> 20 (Slice 4 closed at 58368d1; final revision).

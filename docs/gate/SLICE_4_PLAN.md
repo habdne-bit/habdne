@@ -1,10 +1,10 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 19**
+## Implementation plan — **revision 20**
 
-**Status:** submitted for review. **No code for this slice exists, and none
-is written until this plan is approved.** Matching stayed closed through
-Slices 0–3 by a standing limit. Opening it is the decision this plan asks
-for.
+**Status: Slice 4 CLOSED at `58368d1`, within the approved scope** (review
+of 58368d1; `docs/gate/SLICE_4_CLOSURE.md`). G4-5R stays open, and a RENT
+run stays refused. This is the plan's final revision. The text below is kept
+as it was decided, step by step.
 
 **Revision history**
 
@@ -28,7 +28,8 @@ for.
 | 16 | `18db48d` | Step 7 **not closed** (review of 48588a0): the three fixes of revision 15 accepted; the typed 500 completed (R-S4-7-04): **two codes**, both 500, a **fixed detail**, the cause **logged under the trace id**. The race witnesses bind B's wait to A's backend (`pg_blocking_pids`). Step 8 waits on this review |
 | 17 | `13f71bf` | **Step 7 CLOSED at `dcf834a`** (review of dcf834a). Step 8 authorised under the approved plan. Slice 4 stays open until step 8 is reviewed; G4-5R stays open, and the RENT refusal stays in force. **No decision is taken; no code changes** |
 | 18 | `af6ae0e` | Step 8 delivered for review: the two staff reads, the ten mandatory tests under their planned names, the reference scenarios, STOP GATE D (reconstruction and replay) and its generator. **Raised (open): G4-19**, the registry digest at evaluation time is not stored, so a match's input hash replays only while the registry is unchanged. No decision is taken |
-| 19 | the commit that answers the review of c657bd9 | Step 8 **not closed** (review of c657bd9): R-S4-8-01, the freshness and binding states read rather than re-derived, fixed after measurement. **G4-19 DECIDED, (a)**, with the reviewer's historical conditions: the digest is recorded from explanation format 2, and format 1 is attributed by a pinned history with git evidence; an unattributable row is UNPROVEN |
+| 19 | `1981f3a` | Step 8 **not closed** (review of c657bd9): R-S4-8-01, the freshness and binding states read rather than re-derived, fixed after measurement. **G4-19 DECIDED, (a)**, with the reviewer's historical conditions: the digest is recorded from explanation format 2, and format 1 is attributed by a pinned history with git evidence; an unattributable row is UNPROVEN |
+| 20 | the commit that records the review of 58368d1 | **Step 8 CLOSED and Slice 4 CLOSED at `58368d1`, within the approved scope** (review of 58368d1). G4-5R stays open; a RENT run stays refused. **No decision is taken; no code changes** |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.

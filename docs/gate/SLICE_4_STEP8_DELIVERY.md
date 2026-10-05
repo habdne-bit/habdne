@@ -1,13 +1,14 @@
 # Slice 4 · step 8 — the staff reads, the mandatory tests, STOP GATE D
 
-**Status: NOT closed** (review of c657bd9). The review found STOP GATE D's
-reconstruction reading two kinds of decision rather than re-deriving them
-(R-S4-8-01), and decided G4-19 (a) with conditions on history. Both are
-applied in **§9**, which supersedes §6 (G4-19 open) and the "limit"
-paragraph of §4.
-- Slice 4 closes only on the review of this step.
-- G4-5R is open, and the RENT refusal is in force.
-- **G4-19 is raised (§6), open.**
+**Status: CLOSED at `58368d1`, and Slice 4 with it, within the approved
+scope** (review of 58368d1; `docs/gate/SLICE_4_CLOSURE.md`). The review
+accepted R-S4-8-01's correction and G4-19 (a). It ran both cases of
+R-S4-8-01 directly, and checked the bundle, `run_binding` and STOP GATE D's
+`--check`. The 1957 tests, the 76 mutations and the gate's 8/8 remain our
+bound runs; it did not re-run them. G4-5R stays open.
+
+The history below is kept as delivered. §9 answered the review of c657bd9
+and superseded §6 and the "limit" paragraph of §4.
 
 **Authorised:** the review of dcf834a closed step 7 at `dcf834a`, and
 allowed step 8 "under the approved plan". The plan, revision 18, names step
