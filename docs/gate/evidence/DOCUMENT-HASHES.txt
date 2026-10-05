@@ -639,3 +639,8 @@ docs/gate/evidence/SLICE5-PLAN-FINDINGS.txt                    new   1a78e89e830
 docs/gate/SLICE_5_PLAN.md                                      rev2  5f1c407a02bd834e7dd172f1e6c35ff11bcc22949274bbdde16577027882e207
 docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt                new   bd06c6ac07edfcba0b1fbce6daf2feb8d82f692c79a53af233ff524b2c72e883
 SLICE_5_PLAN.md changed revision: 1 -> 2 (step 0 measured; the five review points answered).
+
+--- Slice 5 plan revision 3 (review of 288bfdb); EN-02 recorded; no code ---
+docs/gate/SLICE_5_PLAN.md                                      rev3  c50cfbaeaa041f749dfc214d29642bd98daae280cedf8a1d576ccc97c7fbcd50
+docs/gate/ENVIRONMENT_NOTES.md                                 EN-02 fa15ded6060d10a7f9a6e7ef31c958301936e4e1b501be84b6e890bd8e9a3bf1
+SLICE_5_PLAN.md changed revision: 2 -> 3 ([R3-1]..[R3-5]); ENVIRONMENT_NOTES.md gains EN-02 (the application role; K06 UNPROVEN).

@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 2**
+## Implementation plan — **revision 3**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Slice 4 kept `match_reviews` and
@@ -7,25 +7,51 @@ is written until this plan is approved.** Slice 4 kept `match_reviews` and
 the decision this plan asks for.
 
 **The review of revision 1** authorized step 0 only: the PostgreSQL
-measurements of §6.4, with no code change. It approved none of the twelve
-decisions and not the sequence. It asked revision 2 to settle five points
-before implementation is approved:
+measurements of §6.4, with no code change. It asked revision 2 to settle
+five points:
 1. two offers of one property (G5-2, G5-11);
 2. the inference of a private claim (G5-5);
 3. the atomicity of a refused share (G5-8);
 4. the number of tasks (G5-4);
 5. the queue's interval (G5-11).
 
-Each is answered at its decision, marked **[review point n]**. The
-measurements are in §6.4, and their record is
-`docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt`.
+Revision 2 answered each at its decision, marked **[review point n]**.
+
+**The review of revision 2 (`288bfdb`)**
+- **Step 0 is accepted** as a documented measurement round. The reviewer
+  checked both files' digests, and the harness and its output in the
+  record. The reviewer re-ran no PostgreSQL: the results A–J are ours.
+- **Directions accepted.** These do not authorize code:
+  - G5-1, the proposed scope;
+  - G5-2, supersession per offer;
+  - G5-4 (a), a new task linked to each NMI review;
+  - G5-6 (a), the frozen contract first, with an explicit addendum;
+  - G5-7 (a), no visibility before sharing;
+  - G5-8, a share check that refuses without changing the row or consuming
+    the key;
+  - G5-11 (a), no time-based queue condition.
+- **Four places block step 1.** Each is answered at its decision, marked
+  **[R3-n]**:
+  1. §3.1: the review stamp must exceed the previous one explicitly;
+  2. G5-2 and G5-9: one table covering every request, offer and
+     availability state, with creation consistent with the next
+     revalidation;
+  3. G5-12: B10 attributed to a service guard; closing a NEW opportunity
+     directly;
+  4. G5-13: documenting the role is separate from remedying it; K06 is not
+     PASS until a non-superuser role is tested.
+- **A smaller point:** LOCATION in G5-5's display list, marked **[R3-5]**.
+- **The next step it names** is this revision: the plan and its planned
+  tests, with no code. After it, G5-12 can be approved, and `0006` started
+  on a precise, checkable text (§5, G5-12).
 
 **Revision history**
 
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `658a86d` | first plan |
-| 2 | the commit that adds this revision | step 0 measured (§6.4, record above); §2 restated from the measurements; §3.1 gains the review-ordering rule (measured A3, A5, A6); the five review points answered at G5-2, G5-4, G5-5, G5-8, G5-11; G5-12 widened by the measurement; G5-13 added (the application role, measured D) |
+| 2 | `288bfdb` | step 0 measured (§6.4, record above); §2 restated from the measurements; §3.1 gains the review-ordering rule (measured A3, A5, A6); the five review points answered at G5-2, G5-4, G5-5, G5-8, G5-11; G5-12 widened by the measurement; G5-13 added (the application role, measured D) |
+| 3 | the commit that adds this revision | the review of `288bfdb` recorded; [R3-1] a strictly increasing review stamp (§3.1); [R3-2] one currency table, §3.7, used by approval, revalidate and share; [R3-3] the exact text of `0006` and the B-case attribution (G5-12); [R3-4] G5-13 split into (a) documentation, done as EN-02, and (b) remedy and enforcement point, with K06 UNPROVEN; [R3-5] LOCATION removed from the display list (G5-5) |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -188,7 +214,8 @@ re-implement:**
 - `approved_match_id UNIQUE`: one opportunity per match, ever.
 - `ux_one_open_opportunity_per_pair` on `(request_id, property_id) WHERE
   status <> 'CLOSED'` (mandatory test 6, H04).
-- `prevent_delete_opportunities` (ADR-10, K06).
+- `prevent_delete_opportunities` (ADR-10). It is the trigger level of K06
+  only: K06 itself is UNPROVEN under the current role (EN-02, G5-13).
 
 **What the schema leaves open, as measured in step 0** (§6.4; the letters
 are the record's sections):
@@ -277,20 +304,70 @@ are the record's sections):
   consumes no idempotency key (as Slice 4 D6).
 - **The latest review is the last decision taken.** This follows from
   ADR-08: the sequence IS the history. §2 item 5 measured that the default
-  `reviewed_at` does not guarantee it. So a review command:
-  1. takes `SELECT … FOR UPDATE` on the match row as its first statement on
-     the match. A6 measured that the immutable row accepts the lock and that
-     a second locker waits;
-  2. writes `reviewed_at = clock_timestamp()`, read after the lock is held.
-     A6 measured `clock_timestamp() > now()` at that point;
-  3. writes exactly one review per transaction.
+  `reviewed_at` does not guarantee it.
+- **[R3-1] What A6 proved, and what it did not.** A6 proved two things:
+  - the lock serializes the writers;
+  - under the lock, `clock_timestamp()` is later than the waiting
+    transaction's own start, `now()`.
 
-  Two reviews of one match then serialize. Each is stamped after the
-  previous one committed, so the schema's ordering equals the order of the
-  decisions. The column is written, not changed: it keeps its type and its
-  default, and no migration is needed.
-- **The test reproduces A5 against the command and must find the order
-  right:** a second command starts first and is held at the lock.
+  It did NOT prove that `clock_timestamp()` is later than the PREVIOUS
+  review's `reviewed_at`. Two cases can defeat that:
+  1. **Equal readings.** Two readings of the clock can be equal at
+     `timestamptz`'s resolution of one microsecond. The stamps then tie, and
+     the trigger falls back to the random `match_review_id`, which is A3's
+     defect.
+  2. **A previous stamp in the future.** A previous `reviewed_at` can lie
+     later than the clock reads now, after a clock step backwards on the
+     server. The new review would then read as OLDER than one already
+     recorded.
+
+  The rule therefore makes the order explicit, not assumed.
+- **The rule.** A review command:
+  1. takes `SELECT … FOR UPDATE` on the match row as its first statement on
+     the match (A6: accepted on the immutable row; a second locker waits);
+  2. under the lock, computes its stamp in ONE statement, from the match's
+     existing reviews:
+
+         SELECT GREATEST(COALESCE(CAST(:clock AS timestamptz), clock_timestamp()),
+                         max(reviewed_at) + interval '1 microsecond')
+           FROM turab.match_reviews WHERE match_id = :m
+
+     `max(…)` over no row is NULL, and `GREATEST` ignores NULL. So the first
+     review takes the clock, and every later one takes a stamp STRICTLY
+     greater than every stamp before it. One microsecond is the type's
+     resolution;
+  3. inserts the review with `reviewed_at` set to that stamp, in the same
+     transaction, under the same lock;
+  4. writes exactly one review per transaction.
+
+  The stamps of one match then increase strictly, in the order the
+  decisions were taken. No two can tie, so the trigger's order never
+  reaches `match_review_id`.
+- **What it costs.** In case 2, the new stamp is the future stamp plus one
+  microsecond, not the clock. Order is kept, and wall-clock accuracy is not.
+  `reviewed_at` is an ordering key here, and the audit log keeps its own
+  `occurred_at`. The column keeps its type and its default; no migration is
+  needed.
+- **How tests reach the two cases.** Neither can be produced on demand from
+  a real clock. So the stamp statement takes its clock reading as a bound
+  parameter, `:clock`. Production binds NULL, and the statement reads
+  `clock_timestamp()`; a test binds a fixed value. The seam is the
+  parameter only: the `GREATEST` and the `max(…) + 1 µs` are the same
+  statement in both. The planned tests:
+  1. **equal reading:** a previous review at T, and the new reading bound
+     to T. The new stamp is T + 1 µs, and the trigger reads the new review
+     as the latest;
+  2. **future previous stamp:** a previous review at the clock + 1 day, and
+     the real clock. The new stamp is that + 1 µs, and the new review is
+     the latest;
+  3. **A5 against the command:** a second command starts first and is held
+     at the lock. Its review, committed last, is the latest;
+  4. **A3 against the command:** two reviews of one match in one command
+     transaction are impossible, because the command writes one.
+     Separately, twenty APPROVED → NMI sequences by the command each end
+     with NMI as the latest, 20/20, not about half;
+  5. **the mutation record** includes dropping the `+ 1 µs` term, and
+     dropping the `max(…)` term. Tests 1 and 2 must fail under each.
 
 ### 3.2 Where H01 can happen, and where it cannot
 A match row is immutable (Slice 4, migration `0005`), and so are its gates.
@@ -311,8 +388,9 @@ Master §6.1 states the rule ("REQUEST × canonical PROPERTY, not
 REQUEST × OFFER"), as do Spec §15.3, invariant 6, H04 and M-08. Three layers
 enforce it:
 1. **The service, at approval.** No opportunity is created on a property
-   that is an alias now. That is 409 `IDENTITY_ALIAS_NOT_CANONICAL`, a
-   code that already exists.
+   that is an alias now. The identity row of §3.7 classes an alias
+   INVALID, so the answer is 409 `MATCH_CONTEXT_NOT_VALID`, and its reason
+   names the alias.
 2. **The service, at approval.** No opportunity is created when an open one
    exists for the same request and the same canonical property, counting the
    property's aliases. That is a 409; its code is in G5-3.
@@ -355,6 +433,98 @@ Sources: ADR-04, R7.3, `API_CONTRACTS` §4.2, B03, H05.
 - A queue read is recorded once, with its count, not its ids (R6.3c).
 - A denied attempt is recorded for every actor (R6.3a).
 
+### 3.7 [R3-2] The currency check: one table, three users
+**Why one table.** Revision 2 stated currency twice, and the two did not
+agree:
+- G5-2 required an ACTIVE offer, and accepted any request status a run
+  accepts, including NEEDS_CONFIRMATION;
+- G5-9 classed that same request NEEDS_CONFIRMATION at once, and never
+  named PAUSED offers. An opportunity could therefore be VALID with a
+  PAUSED offer.
+
+There is now ONE read-only function, the **currency check**. It applies the
+table below to the facts as they are now, and returns a validity and every
+reason. Three operations use it, and only it:
+
+| Operation | Requires | Writes the result |
+|---|---|---|
+| APPROVED review (G5-2 (a)) | the check returns **VALID**. Otherwise 409 `MATCH_CONTEXT_NOT_VALID`, with the reasons | no: a refusal writes nothing |
+| `revalidate` (G5-9) | — | yes: the only writer of `validity_status` |
+| `share` (G5-8) | the stored validity is VALID, AND the check returns VALID | no |
+
+**The consequence is consistency by construction.** An opportunity is
+created only when the check returns VALID, and the opportunity is created
+VALID. A `revalidate` run straight after creation applies the same function
+to the same facts, so it returns VALID. The only exception is time itself:
+a freshness threshold crossed between the two calls. The test pins the
+clock for that reason (below).
+
+**The table.** Each fact is classed independently. The validity is the
+worst class found, in the order INVALID > NEEDS_CONFIRMATION > VALID. Every
+class other than VALID adds a reason, by code, so the reasons name every
+failing fact, not only the worst.
+
+| Fact | VALID | NEEDS_CONFIRMATION | INVALID |
+|---|---|---|---|
+| **request status** (7 values) | ACTIVE | NEEDS_CONFIRMATION, PAUSED | CLOSED; RAW, CONTACTED, QUALIFIED |
+| **offer status** (6 values; the opportunity's `current_offer_id`) | ACTIVE | PENDING_INFO, PAUSED | WITHDRAWN, CLOSED; DRAFT |
+| **property availability** (7 values) | AVAILABLE, POTENTIALLY_AVAILABLE | UNDER_DISCUSSION, TEMPORARILY_UNAVAILABLE, NEEDS_CONFIRMATION, UNKNOWN | UNAVAILABLE |
+| **property identity** | canonical | — | an alias now |
+| **request freshness** (`freshness.state@1`) | FRESH | STALE, UNKNOWN | — |
+| **property freshness** (`freshness.state@1`) | FRESH | STALE, UNKNOWN | — |
+| **offer freshness** (`freshness.state@1`) | FRESH | STALE, UNKNOWN | — |
+| **permission** (`permission.gate@1` over `permission.binding_state@1`) | PASS | UNKNOWN | FAIL (only revoked bindings) |
+
+**Where each row comes from, and why each class:**
+- **Request.**
+  - ACTIVE is Spec §15.3's "Active".
+  - NEEDS_CONFIRMATION and PAUSED can return to ACTIVE by reconfirmation
+    or reactivation (`REQUEST_STATE_TRANSITIONS.md`).
+  - CLOSED can return only by "explicit reactivation" (Spec §5.2). It is
+    INVALID now, and validity is not monotonic (G5-9).
+  - RAW, CONTACTED and QUALIFIED are unreachable after ACTIVE: no edge of
+    the adopted table leads back to them. They are classed INVALID, so that
+    an unreachable state fails closed.
+- **Offer.**
+  - PENDING_INFO and PAUSED can return to ACTIVE (`services/offers.py`,
+    `TRANSITIONS`).
+  - WITHDRAWN and CLOSED are terminal there.
+  - DRAFT is unreachable after ACTIVE, and is INVALID.
+- **Availability.**
+  - The two VALID values are Spec §15.3's "available, or Potential that
+    can be confirmed".
+  - UNAVAILABLE is the one value Slice 4's candidate set excludes (G4-8).
+  - Every other value is a question to settle, not an end.
+- **Freshness and permission** are the Slice 4 rules, as pinned, on
+  snapshots taken now. So a fact Slice 4 called FRESH or PASS is called the
+  same here.
+
+**What a run accepts versus what approval accepts.** Approval is now
+STRICTER than a run, and this is deliberate. A run still evaluates a
+NEEDS_CONFIRMATION request (G4-8), and the match may be ELIGIBLE. Approving
+it is refused until the request is reconfirmed, because the opportunity
+would be born NEEDS_CONFIRMATION. Spec §15.3 asks for an "Active" request at
+creation. Revision 2's G5-2 (a), item 2, admitted it; this revision does
+not.
+
+**Planned tests:**
+- **The table, exhaustively, without PostgreSQL.** Every combination of
+  request status (7) × offer status (6) × availability (7) × identity (2) ×
+  each freshness (3 × 3 values) × permission (3): the check's validity
+  equals the table's worst class, and its reasons list every
+  non-VALID fact.
+- **For the same combinations,** "approval accepted" ⇔ "check returns
+  VALID" ⇔ "revalidate immediately after returns VALID", with the clock
+  pinned between the calls.
+- **Over HTTP:**
+  - a NEEDS_CONFIRMATION request whose match is ELIGIBLE: approval is 409,
+    and nothing is written;
+  - a PAUSED offer: approval is 409; after creation, revalidate gives
+    NEEDS_CONFIRMATION;
+  - an UNAVAILABLE property after creation: revalidate gives INVALID;
+  - approval, then an immediate revalidate: VALID, with no change of
+    `validity_status`.
+
 ---
 
 ## 4. Findings measured while planning (not fixed)
@@ -388,6 +558,11 @@ one of the two readings.**" G5-6 opens that decision.
 ## 5. Decisions needed — none is taken by this plan
 
 ### G5-1 · Scope: which operations are Slice 5's
+
+> **Direction accepted in the review of `288bfdb`:** G5-1, the proposed scope. This does
+> not authorize code: the approval rules, the transitions and the
+> database guards are tied to [R3-1]–[R3-4].
+
 **The proposal** is the "Proposed" column of §1:
 - **In Slice 5:**
   - the review;
@@ -429,22 +604,30 @@ ago passes `trg_match_review_gate` today, even if, since then:
 Spec §15.3 asks, at creation, for a request that is "Active … and fresh
 enough". M-05 and M-06 tie freshness to the opportunity.
 
-- **(a) Recommended.** APPROVED requires the stored gates (the schema) AND,
-  at approval time, all of the following. Each is checked with the **same
-  pinned rules** Slice 4 recorded on the match (`freshness.state`,
-  `permission.binding_state`, `permission.gate`), on snapshots taken now:
+- **(a) Recommended; supersession per offer accepted in the review of
+  `288bfdb`.** APPROVED requires the stored gates (the schema) AND, at
+  approval time, both of the following:
   1. the match is not superseded, in the sense defined below. Otherwise 409
      `MATCH_SUPERSEDED`;
-  2. the request status is one a run accepts (G4-8). Otherwise 409
-     `REQUEST_NOT_MATCHABLE`, the existing code;
-  3. the property is canonical. Otherwise 409
-     `IDENTITY_ALIAS_NOT_CANONICAL`;
-  4. the evaluated offer is still ACTIVE;
-  5. request, property and offer freshness are each FRESH;
-  6. the permission gate is PASS.
+  2. **[R3-2]** the currency check of §3.7 returns VALID. Otherwise 409
+     `MATCH_CONTEXT_NOT_VALID`, with every reason by code.
 
-  A failure is a 409 that names what changed. The remedy is a new run.
-  Nothing is written.
+  The check applies the **same pinned rules** Slice 4 recorded on the match
+  (`freshness.state`, `permission.binding_state`, `permission.gate`), on
+  snapshots taken now. It covers:
+  - the request status;
+  - the offer status;
+  - the availability;
+  - the identity;
+  - the three freshness states;
+  - the permission.
+
+  Revision 2's six items are its rows. `REQUEST_NOT_MATCHABLE` and
+  `IDENTITY_ALIAS_NOT_CANONICAL` are no longer used at approval; the
+  check's reasons name the same facts.
+
+  A failure is a 409 that names what changed. The remedy is a
+  reconfirmation, or a new run. Nothing is written.
 - **(b)** The stored gates only. The opportunity is created VALID, and
   currency is left to revalidate and share.
 
@@ -528,16 +711,21 @@ rank 4, above the contract, rank 5):**
   - `MATCH_GATES_NOT_PASS` (the schema gate, named before the trigger
     fires);
   - `MATCH_REVIEW_DECIDED`;
-  - `MATCH_SUPERSEDED`, `MATCH_CONTEXT_CHANGED` (G5-2 (a));
+  - `MATCH_SUPERSEDED`, and `MATCH_CONTEXT_NOT_VALID` with the reasons of
+    §3.7 (G5-2 (a));
   - `OPPORTUNITY_ALREADY_OPEN` (§3.3);
-  - the existing `REQUEST_NOT_MATCHABLE`, `IDENTITY_ALIAS_NOT_CANONICAL` and
-    `CONSENT_REVOKED`.
+  - the existing `CONSENT_REVOKED`, for a share (G5-8).
 - **Unknown match id:** 403 `OBJECT_NOT_AUTHORIZED`, the staff convention of
   Slice 4.
 
 **Decision asked:** (a) or (b); the narrowing of the input; the codes.
 
 ### G5-4 · The focused task on NEED_MORE_INFORMATION
+
+> **Direction accepted in the review of `288bfdb`:** G5-4 (a), one new task linked to each NMI review. This does
+> not authorize code: the approval rules, the transitions and the
+> database guards are tied to [R3-1]–[R3-4].
+
 `postMatchesMatchIdReview` says: "NEED_MORE_INFORMATION should create a
 focused task where applicable". O-03 says: "Create task; candidate remains
 non-opportunity". The input carries a `reason_code` and nothing else.
@@ -628,9 +816,40 @@ they could not read in the same response. Concretely, under G5-6 (a):
 
 | scope | codes whose results may be shown |
 |---|---|
-| SUMMARY_ONLY | PROPERTY_TYPE, LOCATION (if G5-6 (a) renders the four fields; none if `property` is omitted) |
+| SUMMARY_ONLY | PROPERTY_TYPE (if G5-6 (a) renders the four fields; none if `property` is omitted) |
 | PROPERTY_DETAILS_ALLOWED, CONTACT_AFTER_CONFIRMATION | the above, plus LAND_AREA_MIN and BUILT_AREA_MIN |
-| never, at any scope | DOCUMENT_TYPE, RIGHT_TYPE, ROOMS_MIN, BEDROOMS_MIN, BUDGET_MAX, BUDGET_TARGET, TRANSACTION_INTENT, and any code with no deterministic rule |
+| never, at any scope | **LOCATION** [R3-5], DOCUMENT_TYPE, RIGHT_TYPE, ROOMS_MIN, BEDROOMS_MIN, BUDGET_MAX, BUDGET_TARGET, TRANSACTION_INTENT, and any code with no deterministic rule |
+
+**[R3-5] Why LOCATION is removed.** `criterion.location@2` decides PASS when
+a requested location is the property's location OR ONE OF ITS ANCESTORS.
+It reads `location_ancestry` from the property snapshot (`rules.py`,
+`location_v2`). The customer view renders `canonical_location_id`, never
+the ancestry. So LOCATION does not satisfy the rule literally:
+- **Deriving the ancestry now** from the public location tree
+  (`/locations`) would not preserve the snapshot's historical meaning.
+  The tree is master data, and the snapshot records the ancestry as it
+  stood at evaluation.
+- **No customer field carries that historical ancestry.**
+
+LOCATION is therefore never shown in this slice. Showing it would need a
+proof that the customer can derive the same result from data available to
+them. That proof is a later decision, not assumed here.
+
+**The rule, stated at field level.** "Every value its rule reads is
+rendered" means three things:
+- every FIELD the rule reads is a field the customer view renders at that
+  scope;
+- the request's own criterion value is the customer's own data;
+- the value used is that field's value in the snapshot at evaluation.
+
+The rules that remain qualify by reading their code:
+- `criterion.property_type@1` reads `property_type` only;
+- `criterion.area_min@2` reads `land_area_m2` or `built_area_m2` only.
+
+Both read their field from the snapshot, which is the field's value at
+evaluation. A pinned-rule test asserts, for each shown code, the exact set
+of snapshot keys its rule reads. A later version that reads another key
+fails that test.
 
 **Why the rule is a fixed list by code, and not a filter on
 `evidence_claim_id`.** A filter that hid a result only when it is
@@ -672,6 +891,10 @@ silently.
   seller expectation. The bodies are identical apart from ids and times;
 - LAND_AREA_MIN is shown at PROPERTY_DETAILS_ALLOWED and not at
   SUMMARY_ONLY.
+- **[R3-5]** a REQUIRED LOCATION that is PASS by an ANCESTOR, and one that
+  is PASS by the property's own location: neither customer body names
+  LOCATION, at any scope.
+- the pinned-rule key test above, for PROPERTY_TYPE and the two area codes.
 
 **The rest:**
 - `commercial_context_snapshot`: the match's, copied. The initial context is
@@ -689,6 +912,11 @@ silently.
 table; the shapes of `why_real` and `known_differences`.
 
 ### G5-6 · The customer view against the frozen contract (F5-1, F5-2, F5-3)
+
+> **Direction accepted in the review of `288bfdb`:** G5-6 (a), the frozen contract first, with an explicit addendum for R8. This does
+> not authorize code: the approval rules, the transitions and the
+> database guards are tied to [R3-1]–[R3-4].
+
 - **(a) Recommended: conform to the frozen contract.** The overlay may only
   narrow.
   - The customer type loses `contact`. R8.3 then holds without exception: no
@@ -711,6 +939,11 @@ table; the shapes of `why_real` and `known_differences`.
   or render the four fields?
 
 ### G5-7 · When a customer can see an opportunity
+
+> **Direction accepted in the review of `288bfdb`:** G5-7 (a), no visibility before the opportunity is shared. This does
+> not authorize code: the approval rules, the transitions and the
+> database guards are tied to [R3-1]–[R3-4].
+
 RFC-001 §4 makes the opportunity readable by the requester's party. Nothing
 says whether a NEW, not yet shared, opportunity is visible.
 - **(a) Recommended:** the customer sees an opportunity only once
@@ -721,6 +954,11 @@ says whether a NEW, not yet shared, opportunity is visible.
 - **Decision asked:** (a) or (b).
 
 ### G5-8 · Share
+
+> **Direction accepted in the review of `288bfdb`:** G5-8, a share check that refuses without changing the row or consuming the key. This does
+> not authorize code: the approval rules, the transitions and the
+> database guards are tied to [R3-1]–[R3-4].
+
 `API_CONTRACTS` §4.11 and R8.4: "Before every share, revalidate current
 permission/consent and field-level sharing scope." H05 and B03 apply.
 
@@ -728,9 +966,9 @@ permission/consent and field-level sharing scope." H05 and B03 apply.
 that share "runs the revalidation inside its own transaction" and that a
 refused share "writes nothing". Those contradict each other. The two
 operations are separated as follows:
-- **The currency CHECK** is a read-only function. It applies the checks of
-  G5-9 (the same pinned rules, on snapshots taken now) and RETURNS a
-  validity and its reasons. It writes nothing.
+- **The currency check** is a read-only function, defined once in §3.7
+  **[R3-2]**. It uses the same pinned rules, on snapshots taken now. It
+  RETURNS a validity and its reasons, and writes nothing.
 - **`revalidate`** is the only command that PERSISTS a check's result:
   `validity_status`, `last_confirmed_at`, `current_permission_binding_id`
   and `last_activity_at`.
@@ -796,18 +1034,14 @@ request/property/offer freshness and permission without rewriting historical
 match snapshots. It may update current offer context or move validity to
 NEEDS_CONFIRMATION/INVALID."
 
-**The proposal.** It runs the currency CHECK of G5-8, which takes items 2–6
-of G5-2 (a), with the same pinned rules, on snapshots taken now.
-Supersession (item 1) concerns a match not yet approved, and plays no part
-here. It
-then persists the result. Revalidate is the only command that writes
-validity.
+**The proposal.** It runs the currency check of §3.7 **[R3-2]**, the same
+function approval and share use, and persists its result. Revalidate is the
+only command that writes validity. Supersession concerns a match not yet
+approved, and plays no part here.
 
-| validity | when |
-|---|---|
-| **INVALID** | any of the following: the request is CLOSED; the offer is WITHDRAWN or CLOSED; the property is UNAVAILABLE; the property is now an alias; the permission gate is FAIL (only revoked bindings) |
-| **NEEDS_CONFIRMATION** | otherwise, any of the following: any freshness is STALE or UNKNOWN; the permission gate is UNKNOWN; the request is PAUSED or NEEDS_CONFIRMATION; the availability is anything other than AVAILABLE or POTENTIALLY_AVAILABLE |
-| **VALID** | otherwise |
+Revision 2's own mapping table is withdrawn. It named no PAUSED offer, and
+it disagreed with G5-2 on a NEEDS_CONFIRMATION request. §3.7 replaces it,
+for revalidate as for approval.
 
 **What it writes:**
 - `validity_status` and `last_activity_at`;
@@ -827,8 +1061,8 @@ do.
 **The result's reasons** name the failing checks, by code, in the response.
 There is no column for them.
 
-**Decision asked:** the mapping, and whether the offer is never switched in
-this slice.
+**Decision asked:** the table of §3.7, and whether the offer is never
+switched in this slice.
 
 ### G5-10 · Close
 - **`CloseCommand.reason_code` is required** by the contract. The proposal
@@ -845,16 +1079,29 @@ this slice.
   Spec §28 lists `DEAL_REPORTED` as a suggestion. The seed has
   `DEAL_CONFIRMED`, and the seed is what exists.
 - **What close writes:** CLOSED, `closed_at`, `close_reason_code`,
-  `last_activity_at`. The note follows G5-8 (i).
+  `last_activity_at`, all in one UPDATE, as rule 4 of `0006` requires. The
+  note follows G5-8 (i).
+- **From which status [R3-3].** Close is permitted from NEW, SHARED and
+  ENGAGED: these are the three closing edges of G5-12. A never-shared
+  opportunity is closed directly, and the "closing frees the pair" test
+  closes a NEW one.
 - **CLOSED is terminal.** Any later command on the opportunity gives 409
   `OPPORTUNITY_CLOSED`.
 - **A consequence to confirm.** `approved_match_id` is UNIQUE, so a closed
   opportunity's match can never yield another. Identical facts return the
-  same match (G4-13), so the pair gets a new opportunity only after its
-  facts change and a new match is approved.
+  same match (G4-13). The pair therefore gets a new opportunity only in
+  one of two ways:
+  - its facts change, and the new match is approved;
+  - another offer's current match is approved (G5-2, per offer; measured
+    F2).
 - **Decision asked:** the narrowing; the terminal state; the consequence.
 
 ### G5-11 · The two queues
+
+> **Direction accepted in the review of `288bfdb`:** G5-11 (a) for the opportunity queue, no time-based condition. This does
+> not authorize code: the approval rules, the transitions and the
+> database guards are tied to [R3-1]–[R3-4].
+
 `API_CONTRACTS` §5: "Queues are not generic search endpoints. Each item must
 state why it is actionable now and expose stable priority/reason
 information." `QueueItem` requires `id`, `kind`, `priority` and
@@ -932,62 +1179,190 @@ information." `QueueItem` requires `id`, `kind`, `priority` and
 - for the opportunity queue, (a) or (b).
 
 ### G5-12 · Opportunity history in the schema (migration `0006`)
-**Measured in step 0** (§2, items 2 and 3; sections B4–B17). The proposal
+**Measured in step 0** (§2, items 2 and 3; sections B1–B19). The proposal
 follows G4-14's precedent: one structural migration `0006`, with no table,
-column, reason code or data. It reuses the frozen
-`prevent_immutable_history_change()` where it can.
-- **(i) Fields written once, at creation:**
-  - `request_id`, `property_id` and `approved_match_id`. These are already
-    refused today, but only through `trg_opportunity_gate`'s re-check, which
-    is a side effect and not a guard;
-  - `commercial_context_snapshot` and `permission_snapshot`;
-  - `why_real`, `known_differences` and `sharing_scope`. `why_real` and
-    `known_differences` are computed against the creation-time scope
-    (G5-5), so a later scope change would make them wrong;
-  - `created_by_account_id` and `created_at`.
-- **(ii) Status order:**
-  - NEW → SHARED → ENGAGED → CLOSED, never backwards; CLOSED is terminal;
-  - `closed_at` and `close_reason_code` are set exactly when, and only when,
-    the status becomes CLOSED;
-  - `shared_at` is set at the first move to SHARED, and never cleared or
-    moved;
-  - `engaged_at` follows the same rule at ENGAGED.
-- **(iii) `current_offer_id` stays out of `0006`.** `API_CONTRACTS` §4.11
-  lets revalidate "update current offer context". Slice 5 never does so
-  (G5-9), and the service enforces that. A later slice that does so keeps
-  `trg_opportunity_offer_context` as its guard.
+column, reason code or data. Revision 3 gives its exact content **[R3-3]**,
+so that the approval names a checkable text.
 
-**Every case of B4–B17 is the mutation record's starting point.** Each must
-be refused after `0006`, and each refusal is mapped by a pre-check, never by
-the P0001 text (§2, item 7).
+**The transition graph [R3-3].** Revision 2 wrote "NEW → SHARED → ENGAGED →
+CLOSED". Read literally, that forbids closing a NEW opportunity. Closing
+one is needed:
+- a never-shared opportunity can be closed, for instance after
+  `PROPERTY_UNAVAILABLE`;
+- the test "closing frees the pair" (§6.1, test 6; measured F2) closes a NEW
+  one.
+
+The permitted edges are exactly these five:
+
+| from | to | required on the same UPDATE |
+|---|---|---|
+| NEW | SHARED | `shared_at` set (not null) |
+| NEW | CLOSED | `closed_at` AND `close_reason_code` set |
+| SHARED | ENGAGED | `engaged_at` set |
+| SHARED | CLOSED | `closed_at` AND `close_reason_code` set |
+| ENGAGED | CLOSED | `closed_at` AND `close_reason_code` set |
+
+No other change of `status` is permitted. CLOSED has no outgoing edge.
+ENGAGED is in the graph although no Slice 5 path reaches it (G5-1).
+
+**The exact content of `0006`.** It adds one function and two triggers on
+`turab.opportunities`.
+- **`enforce_opportunity_history()`, BEFORE UPDATE, in this order:**
+  1. **A CLOSED row is final.** If `OLD.status = 'CLOSED'`, any UPDATE is
+     refused.
+  2. **Written once.** The row
+     `(request_id, property_id, approved_match_id,
+     commercial_context_snapshot, permission_snapshot, why_real,
+     known_differences, sharing_scope, created_by_account_id, created_at)`
+     of NEW must not be DISTINCT FROM that of OLD.
+  3. **The status edge.** If `NEW.status IS DISTINCT FROM OLD.status`, the
+     pair `(OLD.status, NEW.status)` must be one of the five edges above.
+  4. **The closing fields.** `NEW.closed_at IS NOT NULL`, and also
+     `NEW.close_reason_code IS NOT NULL`, each exactly when
+     `NEW.status = 'CLOSED'`.
+  5. **`shared_at` is set once.** It is null exactly while `NEW.status =
+     'NEW'`. Once OLD's is set, NEW's is not DISTINCT FROM it.
+  6. **`engaged_at` is set once.** It is null exactly while `NEW.status` is
+     NEW or SHARED. Once OLD's is set, NEW's is not DISTINCT FROM it.
+- **`enforce_opportunity_birth()`, BEFORE INSERT.** A new row has
+  `status = 'NEW'`, `validity_status = 'VALID'`, and null `shared_at`,
+  `engaged_at`, `closed_at` and `close_reason_code`.
+
+**The columns left writable** by an UPDATE that passes 1–6:
+- `validity_status`;
+- `last_confirmed_at`;
+- `last_activity_at`;
+- `current_permission_binding_id`;
+- `current_offer_id`, under a service guard (B10, below);
+- the status fields, along the graph.
+
+**The error texts.** Each refusal raises P0001, with a fixed text per rule
+that names no id. The service maps none of them: every typed answer comes
+from a pre-check (§2, item 7).
+
+**Each measured case, and what refuses it after `0006` [R3-3]:**
+
+| case (step 0) | today | after `0006` | refused by |
+|---|---|---|---|
+| B1 request_id, B2 property_id, B3 approved_match_id | refused | refused | `trg_opportunity_gate` (unchanged), and rule 2 |
+| B4 commercial_context_snapshot | accepted | refused | rule 2 |
+| B5 permission_snapshot | accepted | refused | rule 2 |
+| B6 why_real | accepted | refused | rule 2 |
+| B7 sharing_scope | accepted | refused | rule 2 |
+| B8 created_by_account_id | accepted | refused | rule 2 |
+| B9 created_at | accepted | refused | rule 2 |
+| **B10 current_offer_id → another offer** | accepted | **still accepted by the schema** | **the service guard, not `0006`** |
+| B11 NEW → ENGAGED | accepted | refused | rule 3 |
+| B12 NEW → CLOSED without `closed_at` | accepted | refused | rule 4 (NEW → CLOSED WITH both fields is permitted) |
+| B13 `closed_at` while NEW | accepted | refused | rule 4 |
+| B14 CLOSED → NEW, B15 CLOSED → SHARED | accepted | refused | rule 1 |
+| B16 SHARED → NEW | accepted | refused | rule 3 |
+| B17 clearing `shared_at` | accepted | refused | rule 5 |
+| B18 DELETE | refused | refused | `prevent_delete_opportunities` (unchanged) |
+
+**B10 belongs to the service, and is tested there [R3-3].**
+`API_CONTRACTS` §4.11 lets revalidate "update current offer context".
+`0006` therefore does not freeze the column, and a later slice may use it
+under `trg_opportunity_offer_context`. In Slice 5, no command writes
+`current_offer_id` after the insert (G5-9). The guard is proven three ways:
+1. **A static check.** No UPDATE statement in the Slice 5 services names
+   `current_offer_id`. This is checked like STOP GATE C's writer check, and
+   a new writer fails it.
+2. **An HTTP test.** The evaluated offer is withdrawn while another ACTIVE
+   SALE offer exists on the property. Revalidate, share and close each
+   leave `current_offer_id` equal to `evaluated_offer_id`, and revalidate
+   gives INVALID (§3.7).
+3. **A mutation.** An injected `current_offer_id` update in revalidate must
+   fail test 2.
+
+**Planned tests and mutations of `0006`:**
+- **Every refused row of the table:** refused after `0006`, under its rule.
+- **Every permitted edge:** accepted when the fields are supplied, refused
+  when they are not. NEW → CLOSED is included.
+- **The writable columns:** accepted.
+- **The INSERT shape:** refused for any other status, validity or time.
+- **The mutation record:** each of rules 1–6, and the birth trigger,
+  removed one at a time. Each removal must let its own B case, or edge
+  case, through, and so fail its test.
+- **B10:** stays ACCEPTED by the schema after `0006`, recorded as such, and
+  is attributed to the service guard above.
 
 **Not proposed for the schema:** the canonical-property uniqueness (§2,
 item 1). An alias relation is not visible to a partial index. It stays the
 service check of §3.3, with E04's tasks as the after-the-fact net.
 
-**Decision asked:** whether `0006` is in scope, with (i), (ii) and (iii) as
-listed.
+**Decision asked:** whether `0006` is approved with exactly this content:
+- the two functions and their rules 1–6 and birth rule;
+- the edge table;
+- B10 left to the service.
 
-### G5-13 · The application role is a superuser (measured D), new in revision 2
-The application connects as `turab`. That role is a superuser and owns every
-table: `has_table_privilege` is true for INSERT, UPDATE, DELETE and TRUNCATE
-on all six tables measured. Consequences:
-- **GRANTs restrict nothing.** K06 ("application role cannot hard-delete")
-  holds only through triggers. Every ordinary statement fires them, as
-  B18, B19 and Slices 3–4 measured.
-- **A superuser can disable triggers.** `session_replication_role`, or
-  `ALTER TABLE … DISABLE TRIGGER`, would bypass every backstop this plan
-  relies on.
+### G5-13 · The application role is a superuser (measured D) **[R3-4]**
+Revision 2 asked one question: document the role, or fix it in Slice 5.
+The review of `288bfdb` separated the two, and so does this revision.
 
-No document under `docs/gate` stated this before. It predates Slice 5.
-- **(a) Recommended: record it as an environment finding.** It goes in
-  `docs/gate/ENVIRONMENT_NOTES.md`, and Slice 5 states its limit: K06 and
-  the history guards hold against the application's statements, not
-  against a superuser who disables them. Separating a non-owner,
-  non-superuser application role is a deployment change. It touches every
-  slice's tests and is decided outside Slice 5.
-- **(b) Make it part of Slice 5.**
-- **Decision asked:** (a) or (b).
+**The facts (D):**
+- the application connects as `turab`, a superuser that owns every table;
+- `has_table_privilege` is true for INSERT, UPDATE, DELETE and TRUNCATE on
+  all six tables measured;
+- every protection of market history is therefore a trigger.
+
+As the owner and a superuser, this role can avoid the triggers. Each of the
+following would bypass them. This is reasoned from the PostgreSQL 16
+documentation, not measured:
+- `ALTER TABLE … DISABLE TRIGGER`;
+- `SET session_replication_role = replica`;
+- `TRUNCATE`, which "will not fire any ON DELETE triggers that might exist for the tables" (*TRUNCATE*, Notes).
+
+**G5-13 (a) — documentation of the current state. Done in this revision.**
+The review allowed the note to be recorded now. It is
+`docs/gate/ENVIRONMENT_NOTES.md`, **EN-02**, and it states:
+- **K06 is UNPROVEN.** K06 reads: "Application role cannot hard-delete
+  protected REQUEST/PROPERTY/OFFER/CLAIM/RESOLUTION/OPPORTUNITY history".
+- **Gate T9 is narrower than K06.** T9 proves that triggers refuse an
+  ordinary DELETE. It is labelled as such and is not cited as K06.
+- **No document under `docs/gate` declared K06 PASS** at the time of the
+  note. This was checked by search.
+
+**G5-13 (b) — the remedy, and the point at which it is binding. Not
+decided.**
+- **The remedy, proposed.** Two roles:
+  - the **owner role** runs migrations and owns the schema;
+  - the **application role** (`turab_app`) is `NOSUPERUSER`, owns nothing,
+    and holds only the privileges the application uses:
+    - SELECT, INSERT and UPDATE where a command needs them;
+    - DELETE only on the technical tables that ADR-10 allows to cascade or
+      be deleted;
+    - no TRUNCATE anywhere;
+    - no SET privilege on `session_replication_role`.
+  - Default privileges cover tables added later.
+  - The application, the test suite's HTTP tests and the gate's application
+    probes connect as `turab_app`. Migrations and fixture loading run as the
+    owner.
+- **The K06 test, under `turab_app`**, for each of the six protected tables
+  (`requests`, `properties`, `property_offers`, `claims`, `resolved_values`,
+  `opportunities`):
+  - `DELETE` is refused;
+  - `TRUNCATE` is refused (42501);
+  - `ALTER TABLE … DISABLE TRIGGER` is refused (42501, not the owner);
+  - `SET session_replication_role = replica` is refused (42501);
+  - and the full suite passes as `turab_app`, which shows the application
+    needs nothing more.
+
+  Only that test may report K06 PASS.
+- **The enforcement point. Options:**
+  - **(i) Inside Slice 5**, as a step before STOP GATE E. It touches every
+    slice's fixtures, `conftest.py`, the gate scripts and the run binding.
+  - **(ii) Recommended: a separate cross-cutting step with its own plan,**
+    mandatory before ANY release gate. Until it is done:
+    - K06 is reported UNPROVEN everywhere, including the Slice 5 closure and
+      the authorization matrix;
+    - every guard result in this slice states "against the application's
+      ordinary statements".
+
+    STOP GATE E is the core-hypothesis gate. It is not a release gate and
+    does not rest on K06, but its generated document lists K06 as UNPROVEN,
+    with EN-02.
+- **Decision asked:** the remedy's shape, and (i) or (ii).
 
 ---
 
@@ -1011,7 +1386,8 @@ No document under `docs/gate` stated this before. It predates Slice 5.
 - E04: identity consolidation with an open opportunity on the alias gives
   one `RESOLVE_IDENTITY` task, listing the duplicate. Nothing is closed.
 - K05: replay of each POST.
-- K06: delete refused.
+- K06: **UNPROVEN** (EN-02, G5-13). The trigger's refusal of an ordinary
+  DELETE is tested, and is labelled trigger-level, never K06.
 - S33–S36a, re-proved on the real route, not only on the function.
 
 ### 6.3 STOP GATE E, generated and bound
@@ -1076,9 +1452,12 @@ the conformance test of G5-6 is written over HTTP in step 4.
 3. **No path writes an opportunity except the APPROVED review.** The writer
    check of §6.1 test 3 enforces this.
 4. **No path writes `match_reviews` except the review command.** That
-   command locks the match row first and stamps `reviewed_at` with
-   `clock_timestamp()` under the lock (§3.1). The A5 case, reproduced
-   against the command, reads the last decision as the latest.
+   command locks the match row first. Under the lock, it stamps
+   `reviewed_at` strictly above every earlier stamp of the match (§3.1,
+   [R3-1]). The planned tests of §3.1 pass:
+   - the equal reading;
+   - the future previous stamp;
+   - A5 and A3 against the command.
 5. No contract change, unless G5-6 (b) is approved as an explicit exception.
    No migration other than `0006`, if G5-12 approves it.
 6. **No change to Slice 4's engine, rules, pins or registry.** The approval
@@ -1091,6 +1470,17 @@ the conformance test of G5-6 is written over HTTP in step 4.
    requests.party_id` only (RFC-001 §4).
 9. Every refusal is typed, and is written before any write. No database
    message text reaches a response.
+9a. **One currency check** (§3.7, [R3-2]) is the only source of validity, for
+    approval, revalidate and share. Its exhaustive table test passes, and so
+    does "approval accepted ⇔ immediate revalidate VALID".
+9b. **`0006` is exactly G5-12's text.** Every refused case of its table is
+    refused, and every permitted edge is accepted. B10 is refused by the
+    service guard and its three proofs, and is recorded as still accepted
+    by the schema.
+9c. **K06 is reported UNPROVEN** in every Slice 5 document, matrix and gate
+    output (EN-02, G5-13), unless G5-13 (b)'s test under a non-superuser
+    role has passed first. A trigger-level DELETE refusal is never labelled
+    K06.
 10. The authorization matrix gains a row per rule of this plan; PASS for
     each, or UNPROVEN stated.
 11. **The evidence discipline of Slices 3 and 4:**
@@ -1107,13 +1497,13 @@ Each step is delivered, evidenced and reviewed before the next starts.
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | the measurements of §6.4, folded into revision 2; no code | **done** (this revision) |
-| 1 | migration `0006`, with its mutation record | G5-12 |
+| 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
+| 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12 |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3, G5-4 |
-| 3 | APPROVED: the currency check, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 |
+| 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5, §3.7 |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
-| 5 | revalidate, share, close, and the opportunity queue | G5-1, G5-8, G5-9, G5-10, G5-11 |
-| 6 | the mandatory and red-team tests, mutations, STOP GATE E, and the closure evidence | all |
+| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
+| 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
 
 ---
 

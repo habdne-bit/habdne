@@ -51,3 +51,65 @@ reproducibly, that is a new observation and this note is wrong.
 - Every result reported in the engineering records was produced by a run that
   completed against a live server. Where a run was interrupted, it was re-run
   and the re-run is what is reported.
+
+---
+
+## EN-02 · The application connects as a superuser that owns every table
+
+**Observed:** 2026-10-05, Slice 5 step 0, measurement D
+(`docs/gate/evidence/SLICE5-PLAN-MEASUREMENTS.txt`, at `658a86d`).
+**Recorded:** in the review of `288bfdb`, which allowed this note to be
+recorded now and kept the decision on the role separate (Slice 5 plan,
+G5-13).
+
+### Evidence
+- **The role.** The application, the test suite and the gate all connect as
+  `turab`, with `rolsuper = true`.
+- **Ownership.** `turab` owns every table of the `turab` schema.
+- **Privileges.** `has_table_privilege` is true for INSERT, UPDATE, DELETE
+  and TRUNCATE on each of the six tables measured:
+  - `match_reviews`;
+  - `opportunities`;
+  - `tasks`;
+  - `interactions`;
+  - `task_completion_events`;
+  - `opportunity_responses`.
+
+### What the evidence supports
+- **No GRANT restricts the application.** Every protection of market history
+  is a trigger:
+  - `prevent_core_delete`;
+  - `prevent_immutable_history_change`;
+  - the gate triggers.
+- **An ordinary statement fires those triggers.** Gate T9 and Slice 5's B18
+  and B19 measured a refused DELETE.
+- **A superuser, or the owner, is not bound by them.** Each of the following
+  would avoid them. This is reasoned from the PostgreSQL 16 documentation,
+  not measured here:
+  - `ALTER TABLE … DISABLE TRIGGER`, which the owner may run (*ALTER TABLE*);
+  - `SET session_replication_role = replica`, which a superuser may set
+    (*Server Configuration — Client Connection Defaults*);
+  - `TRUNCATE`, which "will not fire any ON DELETE triggers that might exist for the tables" (*TRUNCATE*, Notes).
+
+### What is deliberately NOT concluded
+- **This note is not a K06 result.** K06 reads: "Application role cannot
+  hard-delete protected REQUEST/PROPERTY/OFFER/CLAIM/RESOLUTION/OPPORTUNITY
+  history". Under this role, that has not been shown.
+- **T9 is narrower than K06.** It proves that the triggers refuse an
+  ordinary DELETE, and is labelled as such. It is not evidence for K06, and
+  it is not cited as K06.
+- **No document under `docs/gate` declares K06 PASS** at the time of this
+  note.
+- **No harm is claimed.** No path of the application issues TRUNCATE,
+  DISABLE TRIGGER or `session_replication_role`.
+
+### Handling
+Until a non-superuser, non-owner application role has been tested and shown
+unable to get past the guards:
+- K06, and any release gate that depends on it, is reported **UNPROVEN**,
+  never PASS;
+- every result that rests on a trigger states that it holds against the
+  application's ordinary statements only.
+
+The remedy, and the point at which it becomes mandatory, are decided under
+the Slice 5 plan, G5-13 (b). They are not decided here.
