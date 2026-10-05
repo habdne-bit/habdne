@@ -383,7 +383,23 @@ snapshots as recorded, and are not re-derived:
 Each record replaces the earlier one, which stays in git history. Every
 mutated file was restored and verified by sha256.
 
-### 9.4 What remains
+### 9.4 The bound run of this round
+
+- **The run:** `junit-run.xml` at `333b5f7`, 1957/1957, source fingerprint
+  `5906ae50…ba4012`.
+- **The document:** `SLICE_4_STOP_GATE_D.md` was regenerated from it, and
+  `--check` exits 0.
+- **What the proofs checked:**
+  - reconstruction: **82** engine matches;
+  - replay: **90** engine matches;
+  - **9** hand-made fixture rows excluded from each.
+- **Stated: format 1 meets no real row here.** The test database is built
+  anew for every run, so every match in it is written by the current code,
+  in format 2. Format-1 replay is proven on a COPY of a match rewritten to
+  format 1, together with the git evidence for the history entry. No real
+  format-1 row exists in any database this project has.
+
+### 9.5 What remains
 
 - **The review of these fixes.** Slice 4 closes on it.
 - **G4-5R:** the period is open, and the RENT refusal is in force.

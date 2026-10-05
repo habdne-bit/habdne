@@ -4,8 +4,8 @@
 
 > STOP GATE D: "A human reviewer must be able to read a candidate and reconstruct every eligibility decision without an LLM." (`IMPLEMENTATION_SLICES_v0.2.md`, Slice 4; plan §6.2)
 
-- The JUnit run is recorded at commit `4446375322bc09617c3dfa2a87cc8c2d065fec0a`, source fingerprint `b72de094fc590ab6c7d3efaff8f05404167c1b0f154b3d1d90690fa37e16cba1`, report sha256 `1d9739095c36ba7eb59a2099335d82a2ab23f5312ac358404b9e10238e5eb76b` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
-- Counted in the report: 1945 test cases, 0 failures, 0 errors, 0 skipped.
+- The JUnit run is recorded at commit `333b5f7b9b86b95e5b15535f7ac26045d141913c`, source fingerprint `5906ae50ff1a21667f3c012dbfbb960e46f56b960020b4ed0851a7edb7ba4012`, report sha256 `7c96959dada7e16058197d4a9cbc58d8919d0c12734b1e47011ab96250d19f4b` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
+- Counted in the report: 1957 test cases, 0 failures, 0 errors, 0 skipped.
 - Binding (`db/gate/run_binding.py`): the report's digest and counts are the recorded ones, and the current tree's source fingerprint is the run's and the gate run's.
 - Tests are named `module::name`.
 - These are our runs; nobody else has re-run them.
@@ -14,16 +14,27 @@
 
 | Proof | Test | Re-derives | Matches checked | Status |
 |---|---|---|---|---|
-| Reconstruction | `test_slice4_step8::test_every_stored_match_is_reconstructed_from_its_rows_alone` | from the match row and its criterion rows only: each criterion's `blocking`, the hard and information gates, the freshness and permission gates and the precedence by the versions the match names, every reason, the soft score, the next action, the three freshness states | 82 (of which 8 written by the test itself; 9 hand-made fixture rows, not engine output, excluded) | PASS |
-| Replay | `test_slice4_step8::test_every_stored_match_replays_its_criterion_results_and_input_hash` | each criterion re-run by the rule version its row names on the stored snapshots; the input hash recomputed from the five stored snapshots | 90 (of which 8 written by the test itself; 9 hand-made fixture rows, not engine output, excluded) | PASS |
+| Reconstruction | `test_slice4_step8::test_every_stored_match_is_reconstructed_from_its_rows_alone` | from the match row and its criterion rows only: each criterion's `blocking`; the three freshness states and every binding's state, re-derived from their raw fields and `evaluated_at` by the versions the snapshots name; the hard and information gates; the freshness and permission gates on the re-derived states, and the precedence, by the versions the match names; every reason; the soft score; the next action | 82 (of which 8 written by the test itself; 9 hand-made fixture rows, not engine output, excluded) | PASS |
+| Replay | `test_slice4_step8::test_every_stored_match_replays_its_criterion_results_and_input_hash` | each criterion re-run by the rule version its row names on the stored snapshots; the input hash recomputed from the five stored snapshots and the registry digest the match was evaluated under (recorded, or attributed by the history; otherwise UNPROVEN) | 90 (of which 8 written by the test itself; 9 hand-made fixture rows, not engine output, excluded) | PASS |
 
 **Each proof can fail** (a stored decision or result altered in a copy of the rows is reported):
 
 - `test_slice4_step8::test_reconstruction_detects_a_stored_decision_that_was_not_derived` PASS
 - `test_slice4_step8::test_reconstruction_detects_a_blocking_flag_that_was_not_derived` PASS
 - `test_slice4_step8::test_replay_detects_a_result_its_snapshots_do_not_give` PASS
+- `test_slice4_step8::test_a_freshness_state_derived_wrongly_is_reported` PASS
+- `test_slice4_step8::test_a_binding_state_derived_wrongly_is_reported` PASS
 
-**The replay proof's limit.** The input hash covers `REGISTRY.digest()` (G4-13), and the digest at evaluation time is not stored. Replay recomputes the hash with the CURRENT registry, the one every match in this run was evaluated under. Once a new rule version is registered, an older match's hash can no longer be recomputed from the database alone; its criterion results still replay, since each row names its own version. Raised for decision in `SLICE_4_STEP8_DELIVERY.md`.
+**The digest each match was evaluated under (G4-19).** The input hash covers the rule-registry digest (G4-13). From explanation format 2, each match records the digest that entered its hash, computed once per run. Format-1 matches, written from `7a223d7` until format 2, carry none: the registry did not change in that range, and `registry_history.FORMAT_DIGESTS` attributes its one digest to them, with git evidence (`docs/gate/evidence/REGISTRY-HISTORY.txt`). A match whose digest can be neither read nor attributed is reported UNPROVEN; the current digest is never substituted.
+
+- `test_slice4_step8::test_a_new_match_records_the_digest_that_entered_its_hash` PASS
+- `test_slice4_step8::test_a_stored_match_still_replays_after_a_rule_version_is_added` PASS
+- `test_slice4_step8::test_an_old_match_without_the_digest_and_a_new_one_replay_after_a_version_is_added` PASS
+- `test_slice4_step8::test_a_digest_that_cannot_be_attributed_is_reported_unproven` PASS
+- `test_slice4_registry_history::test_each_recorded_digest_is_the_sha256_of_its_recorded_pairs` PASS
+- `test_slice4_registry_history::test_every_recorded_pair_is_still_pinned_with_the_same_source` PASS
+- `test_slice4_registry_history::test_the_current_registry_is_recorded_in_the_history` PASS
+- `test_slice4_registry_history::test_format_1_is_attributed_to_the_registry_of_7a223d7_alone` PASS
 
 ## 2. The ten mandatory tests (plan §6.1)
 
