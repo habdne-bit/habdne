@@ -107,8 +107,10 @@ MUTATIONS = [
   '            "rule_explanation": dict(r.explanation)}',
   '            "rule_explanation": dict(r.explanation), "claim": r.evidence_claim_id}'),
  ("W8 the explanation carries the commercial snapshot (D4, R9.3)", RUN,
-  "        explain.explanation(prepared.plan, hard, verdict, score, freshness, permission),\n",
-  "        {**explain.explanation(prepared.plan, hard, verdict, score, freshness, permission),"
+  "        explain.explanation(prepared.plan, hard, verdict, score, freshness, permission,\n"
+  "                            prepared.registry_digest),\n",
+  "        {**explain.explanation(prepared.plan, hard, verdict, score, freshness, permission,\n"
+  "                            prepared.registry_digest),"
   ' "offer": snapshots.stored_form(offer)},\n'),
  ("W9 the response is computed, not read from the rows", RUN,
   "        if visible:\n            matches.append(match_view(session, match_id))",

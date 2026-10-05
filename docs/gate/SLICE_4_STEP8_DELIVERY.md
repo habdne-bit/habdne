@@ -1,6 +1,10 @@
 # Slice 4 · step 8 — the staff reads, the mandatory tests, STOP GATE D
 
-**Status: delivered for review. Not closed.**
+**Status: NOT closed** (review of c657bd9). The review found STOP GATE D's
+reconstruction reading two kinds of decision rather than re-deriving them
+(R-S4-8-01), and decided G4-19 (a) with conditions on history. Both are
+applied in **§9**, which supersedes §6 (G4-19 open) and the "limit"
+paragraph of §4.
 - Slice 4 closes only on the review of this step.
 - G4-5R is open, and the RENT refusal is in force.
 - **G4-19 is raised (§6), open.**
@@ -266,3 +270,113 @@ clean-tree run.
 - **The generated document:** `docs/gate/SLICE_4_STOP_GATE_D.md` was
   generated from the bound run (`4446375`, 1945/1945), and
   `stop_gate_d_evidence.py --check` exits 0 (plan §7, condition 3).
+
+---
+
+## 9. The review of c657bd9
+
+### 9.1 R-S4-8-01 — the freshness and binding states were read, not re-derived
+
+**The finding.** `reconstruct` ran the freshness gate on the stored
+freshness snapshot's states, and the permission gate on the stored binding
+states. It never re-ran `freshness.state` or `permission.binding_state` on
+their raw fields.
+- **Replay cannot see such a state.** The hash covers the wrong state, as it
+  was written.
+- **Neither could reconstruction,** so the first proof's claim was wider
+  than its code.
+
+**Measured before the fix** (`evidence/SLICE4-STEP8-REVIEW-BEFORE-FIX.txt`):
+- **How the rows were made.** The REAL run, with one derivation made wrong,
+  inside a transaction that is rolled back, so nothing is kept. Each row is
+  consistent with its wrong state:
+  - a property confirmed yesterday, stored STALE;
+  - a binding whose grant is REVOKED, stored CURRENT.
+- **What the proofs said.** `replay` returned `[]` for both, and
+  `reconstruct` returned `[]` for both.
+
+**Fixed** (`matching/reconstruct.py`):
+- **The three freshness states are re-derived:**
+  - **from:** the confirmation time each stored snapshot holds, the
+    threshold the freshness snapshot holds, and the match's `evaluated_at`;
+  - **by:** the version `freshness_snapshot.derived_by` names;
+  - **compared:** state, basis and confirmation time, per subject.
+- **Every binding's state is re-derived:**
+  - **from:** the grant and binding fields, the offer's party and
+    `evaluated_at`;
+  - **by:** the version `permission_snapshot.derived_by` names;
+  - **compared:** the state, per binding.
+- **The gates run on the RE-DERIVED states,** never on the stored ones.
+- **Both of the review's cases are now tests:**
+  - `test_a_freshness_state_derived_wrongly_is_reported`;
+  - `test_a_binding_state_derived_wrongly_is_reported`.
+
+  Each requires `replay` to find nothing and `reconstruct` to report. Both
+  failed on `c657bd9`, as measured.
+
+**What remains outside the rows, stated.** Two things are read from the
+snapshots as recorded, and are not re-derived:
+- **The thresholds.** They are the policy's at the time; the policy row is
+  immutable once cited (migration 0005).
+- **Which bindings exist.** They are the result of a query, not of a
+  derivation.
+
+### 9.2 G4-19, decided (a), applied with the review's conditions
+
+1. **The digest is recorded.**
+   - The run computes `REGISTRY.digest()` ONCE (`Prepared.registry_digest`).
+   - That one value enters every match's input hash and the diagnostic's
+     hash, and is stored in `explanation.engine.registry_digest`.
+   - The explanation format is `turab.match-explanation/2`.
+   - Test: `test_a_new_match_records_the_digest_that_entered_its_hash`.
+2. **The historical registry is pinned before any new version.**
+   - `matching/registry_history.py` records the registry of `7a223d7`:
+     20 pairs `(id, version, source sha256)`, digest `7ddf4747…7298`.
+   - It attributes that digest to explanation format 1, and only to it.
+   - **Evidence, from git**
+     (`evidence/REGISTRY-HISTORY.txt`, `db/dev/registry_history_evidence.py`):
+     - `rule_pins.py` at `7a223d7` gives this digest;
+     - the entry's pairs are those pins;
+     - no commit since `7a223d7` touched the registry's four files. Format 1
+       was written only in that range, so every format-1 row was evaluated
+       under that one registry.
+   - **Pure tests** (`test_slice4_registry_history.py`):
+     - each recorded digest is the sha256 of its pairs;
+     - every recorded pair is still pinned with the same source;
+     - **the live registry must be recorded in the history.** Registering a
+       version without a history entry fails.
+3. **An old match and a new one replay after a version is added.** A copy of
+   the registry with one new version stands in for a later slice:
+   - a format-1 copy of a match (no field) replays by the attributed digest;
+   - the format-2 match replays by its recorded digest;
+   - before the fix, the replay used the current digest and failed
+     (measured).
+   - Tests: `test_a_stored_match_still_replays_after_a_rule_version_is_added`,
+     `test_an_old_match_without_the_digest_and_a_new_one_replay_after_a_version_is_added`.
+4. **Unattributable means UNPROVEN.** A row whose digest can be neither read
+   nor attributed is reported `input_hash: UNPROVEN`, and the replay stops
+   there. Three cases:
+   - an unknown format;
+   - a format-2 row without its digest;
+   - a digest in no recorded registry.
+
+   The current digest is never substituted, even where it would give the
+   stored hash, and the test is built so that it would
+   (`test_a_digest_that_cannot_be_attributed_is_reported_unproven`).
+
+### 9.3 Mutations
+
+- **`mutate_slice4_step8.py`: 25.** Eight are added:
+  - X8, X9: the states read instead of re-derived;
+  - Y5–Y9: the current digest substituted, or the history check skipped;
+  - R1: the explanation recording another digest than the hash used.
+- **Step 7's W8** is re-anchored. The explanation call now passes the
+  digest.
+- **Step 7's 51 are re-run,** since the run's code changed.
+
+RESULT_PLACEHOLDER_9
+
+### 9.4 What remains
+
+- **The review of these fixes.** Slice 4 closes on it.
+- **G4-5R:** the period is open, and the RENT refusal is in force.

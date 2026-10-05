@@ -1,0 +1,32 @@
+TURAB — Slice 4 step 8, review of c657bd9: the review's tests run on the c657bd9 code, BEFORE the fix
+============================================================
+Base commit       : c657bd96c73d1c280b2ad6fc7d7534c2bf7c0695
+Production code   : exactly as committed at c657bd9 (git diff --stat below shows the test file only)
+Recorded          : 2026-10-05 16:24:06 UTC
+PostgreSQL        : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+--- git diff --stat ---
+ tests/test_slice4_step8.py | 129 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 129 insertions(+)
+
+--- pytest tests/test_slice4_step8.py -k <the review's tests> -rA ---
+E   AssertionError: []
+E   AssertionError: []
+E   AssertionError: assert ['input_hash:...ed snapshots'] == []
+FAILED tests/test_slice4_step8.py::test_a_freshness_state_derived_wrongly_is_reported
+FAILED tests/test_slice4_step8.py::test_a_binding_state_derived_wrongly_is_reported
+FAILED tests/test_slice4_step8.py::test_a_stored_match_still_replays_after_a_rule_version_is_added
+3 failed, 48 deselected in 15.90s
+
+--- reading ---
+R-S4-8-01  Two rows written by the REAL run, in a transaction rolled back (nothing kept), each
+           with one derivation made wrong: (1) a property confirmed yesterday stored STALE;
+           (2) a binding whose grant is REVOKED stored CURRENT. Each row is consistent with
+           its wrong state: gates, eligibility, reasons, next action and input hash were all
+           computed from it. replay() returned [] for both (the hash covers the wrong input);
+           reconstruct() returned [] for both ("AssertionError: []"): it read the stored
+           states instead of re-deriving them. The test reaches that assertion only after
+           checking replay() == [].
+G4-19      A match written by the run, replayed after one new rule version is registered
+           (a grown copy of the registry): replay() reported "input_hash: not recomputed
+           from the stored snapshots", because it used the CURRENT digest.

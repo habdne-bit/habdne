@@ -374,6 +374,8 @@ def test_every_version_used_is_stored_and_no_version_1_rule_is_cited(client, ids
     req, prop, _ = _world(engine, ids)
     _criterion(engine, req, "LAND_AREA_MIN", "GTE", 300, "PREFERRED", sort_order=1)
     [match] = _ok(_run(client, ids, req, [prop]))["matches"]
+    from turab.matching.registry import REGISTRY
+    registry_digest = REGISTRY.digest
     expected = {code: f"{rid}@{ver}" for code, (rid, ver, _) in criteria.RULES.items()}
     for c in match["criteria"]:
         assert f"{c['rule_id']}@{c['rule_version']}" == expected[c["criterion_code"]]
@@ -381,7 +383,8 @@ def test_every_version_used_is_stored_and_no_version_1_rule_is_cited(client, ids
         "freshness_state": "freshness.state@1", "permission_binding_state":
         "permission.binding_state@1", "freshness_gate": "freshness.gate@1",
         "permission_gate": "permission.gate@1", "precedence": "eligibility.precedence@1",
-        "soft_score": "score.soft@2", "next_action": "action.next@1"}
+        "soft_score": "score.soft@2", "next_action": "action.next@1",
+        "registry_digest": registry_digest()}
     assert _one(engine, """SELECT count(*) FROM turab.match_criterion_results
                             WHERE rule_version = '1' AND rule_id IN (
                                 'criterion.location', 'criterion.area_min',

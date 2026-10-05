@@ -46,7 +46,9 @@ from turab.matching.registry import REGISTRY
 from turab.matching.soft import SoftScore
 
 NEXT_ACTION = ("action.next", "1")
-EXPLANATION_FORMAT = "turab.match-explanation/1"
+#: Format 2 (G4-19, decided (a) in the review of c657bd9) adds
+#: `engine.registry_digest`, the digest that entered the match's input hash.
+EXPLANATION_FORMAT = "turab.match-explanation/2"
 SUMMARY_FORMAT = "turab.blocker-summary/1"
 
 #: How a permission reason is worded, from its BASIS (review of a5ea6f5: the
@@ -93,8 +95,11 @@ def next_action(hard: HardGate, verdict: Eligibility,
 
 
 def explanation(plan: CriteriaPlan, hard: HardGate, verdict: Eligibility, score: SoftScore,
-                freshness: Mapping[str, Any], permission: Mapping[str, Any]) -> dict:
-    """D4. Every version named here is one this run executed."""
+                freshness: Mapping[str, Any], permission: Mapping[str, Any],
+                registry_digest: str) -> dict:
+    """D4. Every version named here is one this run executed, and
+    `registry_digest` is the digest that entered the input hash: the run
+    computes it ONCE and passes the same value to both (G4-19)."""
     criteria = {}
     for r in hard.results:
         criteria[criterion_key(r.criterion_code, r.ordinal)] = {
@@ -117,6 +122,7 @@ def explanation(plan: CriteriaPlan, hard: HardGate, verdict: Eligibility, score:
                    "permission_binding_state": permission["derived_by"],
                    **dict(verdict.engine),
                    "soft_score": score.engine,
+                   "registry_digest": registry_digest,
                    "next_action": "@".join(NEXT_ACTION)},
     })
 

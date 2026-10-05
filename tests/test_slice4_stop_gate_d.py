@@ -89,7 +89,8 @@ def _regenerated_with(tree, cases, failures=0):
 def test_the_baseline_names_the_counts_the_run_recorded(tree):
     text = (tree / "docs/gate/SLICE_4_STOP_GATE_D.md").read_text()
     assert "| 101 (of which 8 written by the test itself; 9 hand-made fixture rows" in text
-    assert "The replay proof's limit." in text
+    assert "The digest each match was evaluated under (G4-19)." in text
+    assert "is never substituted" in text
 
 
 @pytest.mark.parametrize("victim", [

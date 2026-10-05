@@ -651,8 +651,8 @@ def _engine_matches(engine):
     identity tests seed matches by SQL) are not engine output."""
     return [r["match_id"] for r in _all(engine, """
         SELECT match_id FROM turab.match_candidates
-         WHERE explanation->>'format' = :f ORDER BY created_at, match_id""",
-                                       f=reconstruct.EXPLANATION_FORMAT)]
+         WHERE explanation->>'format' = ANY(:f) ORDER BY created_at, match_id""",
+                                       f=list(reconstruct.EXPLANATION_FORMATS))]
 
 
 def _record_counts(record_property, engine, made, every):
@@ -761,3 +761,201 @@ def test_replay_detects_a_result_its_snapshots_do_not_give(client, ids, engine, 
         assert problems == ["input_hash: not recomputed from the stored snapshots"]
     if where == "rule_explanation":
         assert problems == ["DOCUMENT_TYPE#1.explanation: stored differs from replayed"]
+
+
+# ======================================================================================
+# Review of c657bd9, R-S4-8-01: the states themselves are re-derived from their raw fields
+# ======================================================================================
+
+class _Rollback(Exception):
+    """Raised inside the run's transaction, so nothing it wrote is kept."""
+
+
+def _rows_of_a_wrong_run(engine, ids, req, prop, monkeypatch, wrong):
+    """The REAL engine runs, with one derivation made wrong by `wrong`, inside
+    a transaction that is rolled back. The rows it wrote, read inside that
+    transaction, are internally consistent: every gate, the eligibility and
+    the input hash were computed from the wrong state. Nothing is kept."""
+    from sqlalchemy.orm import Session
+
+    from turab.db.session import audited_transaction
+
+    wrong(monkeypatch)
+    out = {}
+    try:
+        with Session(bind=engine, future=True) as s:
+            with audited_transaction(s, ids.ACC_OPERATOR, {"operation": "test"},
+                                     isolation="REPEATABLE READ"):
+                prepared = matching_run.prepare(s, req, matching_policy_version=VERSION,
+                                                property_ids=[prop])
+                [m] = matching_run.execute(s, prepared)[1]["matches"]
+                out["match"] = _exact(s.execute(text(
+                    "SELECT to_jsonb(m)::text FROM turab.match_candidates m "
+                    "WHERE match_id = :m"), {"m": m["match_id"]}).scalar_one())
+                out["rows"] = [_exact(t) for t in s.execute(text(
+                    "SELECT to_jsonb(c)::text FROM turab.match_criterion_results c "
+                    "WHERE match_id = :m"), {"m": m["match_id"]}).scalars()]
+                raise _Rollback
+    except _Rollback:
+        pass
+    monkeypatch.undo()
+    assert _matches(engine, req) == []
+    return out["match"], out["rows"]
+
+
+def test_a_freshness_state_derived_wrongly_is_reported(client, ids, engine, monkeypatch):
+    """The review's first case: the property was confirmed yesterday, so it
+    is FRESH; the stored state says STALE, and the whole row (the gate, the
+    eligibility, the reasons, the next action, the hash) follows from it.
+    Replay finds nothing, since the hash was computed over that state.
+    Reconstruction must re-derive the state from `confirmed_at`, the
+    threshold and `evaluated_at`, and report it."""
+    from turab.matching import snapshots as snap
+
+    req, prop, _ = _world(engine, ids)
+    original = snap.freshness_snapshot
+
+    def wrong(mp):
+        def stale_property(*a, **kw):
+            out = original(*a, **kw)
+            out["property"] = {**out["property"], "state": "STALE", "basis": "STALE"}
+            return out
+        mp.setattr(snap, "freshness_snapshot", stale_property)
+
+    match, rows = _rows_of_a_wrong_run(engine, ids, req, prop, monkeypatch, wrong)
+    assert (match["property_freshness"], match["eligibility"]) == ("STALE",
+                                                                  "NEEDS_CONFIRMATION")
+    assert reconstruct.replay(match, rows) == []
+    problems = reconstruct.reconstruct(match, rows)
+    assert any(p.startswith("freshness.property") for p in problems), problems
+
+
+def test_a_binding_state_derived_wrongly_is_reported(client, ids, engine, monkeypatch):
+    """The review's second case: the grant is REVOKED, so the binding is
+    REVOKED; the stored binding says CURRENT, and the row follows from it
+    (permission PASS, ELIGIBLE). Replay finds nothing; reconstruction must
+    re-derive each binding's state from the grant and binding fields and
+    `evaluated_at`, and report it."""
+    from turab.matching import snapshots as snap
+
+    req, prop, offer = _world(engine, ids)
+    _exec(engine, """UPDATE turab.consent_grants SET status = 'REVOKED', revoked_at = now()
+                      WHERE consent_id IN (SELECT consent_id
+                                             FROM turab.resource_consent_bindings
+                                            WHERE offer_id = :o)""", o=offer)
+    original = snap.permission_snapshot
+
+    def wrong(mp):
+        def all_current(*a, **kw):
+            out = original(*a, **kw)
+            out["bindings"] = [{**b, "state": "CURRENT"} for b in out["bindings"]]
+            return out
+        mp.setattr(snap, "permission_snapshot", all_current)
+
+    match, rows = _rows_of_a_wrong_run(engine, ids, req, prop, monkeypatch, wrong)
+    assert (match["permission_gate_status"], match["eligibility"]) == ("PASS", "ELIGIBLE")
+    assert reconstruct.replay(match, rows) == []
+    problems = reconstruct.reconstruct(match, rows)
+    assert any(p.startswith("permission.binding") for p in problems), problems
+
+
+# ======================================================================================
+# G4-19, decided (a) in the review of c657bd9: a match replays after the registry grows
+# ======================================================================================
+
+def _grown_registry():
+    """The production registry plus one new version, as a later slice would
+    add it (G4-2: beside the old ones). Its digest differs."""
+    from turab.matching import registry
+
+    grown = registry.RuleRegistry()
+    for r in registry.REGISTRY.rules():
+        grown.register(r.rule_id, r.rule_version)(r.evaluate)
+
+    @grown.register("probe.added_later", "1")
+    def probe(x):
+        return x
+
+    assert grown.digest() != registry.REGISTRY.digest()
+    return grown
+
+
+def test_a_stored_match_still_replays_after_a_rule_version_is_added(client, ids, engine,
+                                                                    monkeypatch):
+    """After a new version is registered, an existing match's input hash is
+    recomputed with the digest it was EVALUATED under, not the current one."""
+    req, prop, _ = _world(engine, ids)
+    [m] = _matched(client, ids, req, [prop])["matches"]
+    match, rows = _rows(engine, m["match_id"])
+    assert reconstruct.replay(match, rows) == []
+    monkeypatch.setattr(reconstruct, "REGISTRY", _grown_registry())
+    assert reconstruct.replay(match, rows) == []
+
+
+def test_a_new_match_records_the_digest_that_entered_its_hash(client, ids, engine):
+    """G4-19 (a): the run computes the digest once; the stored hash is
+    recomputed with exactly the digest the match records."""
+    from turab.matching import canonical, registry
+
+    req, prop, _ = _world(engine, ids)
+    [m] = _matched(client, ids, req, [prop])["matches"]
+    match, _ = _rows(engine, m["match_id"])
+    engine_ = match["explanation"]["engine"]
+    assert match["explanation"]["format"] == "turab.match-explanation/2"
+    assert engine_["registry_digest"] == registry.REGISTRY.digest()
+    assert match["input_hash"] == canonical.input_hash(
+        matching_policy_id=match["matching_policy_id"],
+        matching_policy_version=match["matching_policy_version"],
+        rule_registry_digest=engine_["registry_digest"],
+        evaluated_offer_id=match["evaluated_offer_id"],
+        request_snapshot=match["request_snapshot"], property_snapshot=match["property_snapshot"],
+        commercial_context_snapshot=match["commercial_context_snapshot"],
+        permission_snapshot=match["permission_snapshot"],
+        freshness_snapshot=match["freshness_snapshot"])
+
+
+def _as_format_1(match):
+    """The row as the code from 7a223d7 wrote it: format 1, no digest."""
+    import copy
+    old = copy.deepcopy(match)
+    old["explanation"]["format"] = "turab.match-explanation/1"
+    del old["explanation"]["engine"]["registry_digest"]
+    return old
+
+
+def test_an_old_match_without_the_digest_and_a_new_one_replay_after_a_version_is_added(
+        client, ids, engine, monkeypatch):
+    """The review's two cases, after one new version is registered: a
+    format-1 match (no digest) replays by the digest the history attributes
+    to format 1; a format-2 match replays by the digest it records. Neither
+    uses the current digest."""
+    req, prop, _ = _world(engine, ids)
+    [m] = _matched(client, ids, req, [prop])["matches"]
+    new, rows = _rows(engine, m["match_id"])
+    old = _as_format_1(new)
+    monkeypatch.setattr(reconstruct, "REGISTRY", _grown_registry())
+    assert reconstruct.replay(old, rows) == []
+    assert reconstruct.replay(new, rows) == []
+    assert reconstruct.reconstruct(old, rows) == []
+
+
+@pytest.mark.parametrize("label, alter", [
+    ("an unknown explanation format",
+     lambda m: m["explanation"].__setitem__("format", "turab.match-explanation/0")),
+    ("a format-2 row without its digest",
+     lambda m: m["explanation"]["engine"].pop("registry_digest")),
+    ("a digest in no recorded registry",
+     lambda m: m["explanation"]["engine"].__setitem__("registry_digest", "0" * 64)),
+])
+def test_a_digest_that_cannot_be_attributed_is_reported_unproven(client, ids, engine, label,
+                                                                  alter):
+    """The review's condition: an unattributable row is reported UNPROVEN,
+    and the current digest is NOT used in its place, even where it would
+    give the stored hash (here it would: no version was added)."""
+    req, prop, _ = _world(engine, ids)
+    [m] = _matched(client, ids, req, [prop])["matches"]
+    match, rows = _rows(engine, m["match_id"])
+    alter(match)
+    problems = reconstruct.replay(match, rows)
+    assert [p for p in problems if p.startswith("input_hash")] and all(
+        "UNPROVEN" in p for p in problems if p.startswith("input_hash")), problems

@@ -59,7 +59,9 @@ No `ON CONFLICT`: under Repeatable Read it fails 40001 (measured D2, D4).
   evaluated offer named (condition 2);
 - every version used (condition 3): each criterion's `rule_id` and
   `rule_version`, and in `explanation.engine` the derivations, the gates,
-  the precedence, `score.soft@2` and `action.next@1`;
+  the precedence, `score.soft@2` and `action.next@1`; and the registry
+  digest that entered the input hash, computed once per run (G4-19,
+  explanation format 2);
 - `generated_by = 'RULE_ENGINE'`, `ai_trace_ref` null (condition 6);
 - the audit row of every row written, in the same transaction (§3.6,
   condition 6).
@@ -128,6 +130,10 @@ class Prepared:
     plan: criteria.CriteriaPlan
     candidate_set: candidates.CandidateSet
     as_of: datetime
+    #: `REGISTRY.digest()`, computed ONCE per run (G4-19): the input hash of
+    #: every match, the diagnostic's hash and each match's
+    #: `explanation.engine.registry_digest` all use this one value.
+    registry_digest: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,7 +190,8 @@ def prepare(session: Session, request_id: uuid.UUID, *, matching_policy_version:
         raise RunRefused("MATCHING_INPUT_REFUSED", exc.decision,
                          str(exc).removeprefix(f"{exc.decision}: ")) from None
     as_of = session.execute(text("SELECT transaction_timestamp()")).scalar_one()
-    return Prepared(active, request_id, request, plan, candidate_set, as_of)
+    return Prepared(active, request_id, request, plan, candidate_set, as_of,
+                    REGISTRY.digest())
 
 
 def evaluate(session: Session, prepared: Prepared,
@@ -205,11 +212,12 @@ def evaluate(session: Session, prepared: Prepared,
         "PROPERTY_OFFER": candidate.offer_id})
     return Evaluation(
         candidate, prop, offer, permission, freshness, hard, verdict, score, action,
-        explain.explanation(prepared.plan, hard, verdict, score, freshness, permission),
+        explain.explanation(prepared.plan, hard, verdict, score, freshness, permission,
+                            prepared.registry_digest),
         canonical.input_hash(
             matching_policy_id=active.matching_policy_id,
             matching_policy_version=active.version,
-            rule_registry_digest=REGISTRY.digest(),
+            rule_registry_digest=prepared.registry_digest,
             evaluated_offer_id=candidate.offer_id,
             request_snapshot=request, property_snapshot=prop,
             commercial_context_snapshot=offer, permission_snapshot=permission,
@@ -349,7 +357,7 @@ def diagnostic_input_hash(prepared: Prepared, evaluations: list[Evaluation]) -> 
         "format": DIAGNOSTIC_FORMAT,
         "matching_policy_id": prepared.policy.matching_policy_id,
         "matching_policy_version": prepared.policy.version,
-        "rule_registry_digest": REGISTRY.digest(),
+        "rule_registry_digest": prepared.registry_digest,
         "request_snapshot": prepared.request_snapshot,
         "candidates": [[ev.candidate.property_id, ev.candidate.offer_id, ev.input_hash]
                        for ev in evaluations],
