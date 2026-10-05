@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth.audit import AccessAuditor
@@ -349,14 +350,33 @@ class CommandService:
             prepared = prepare(session) if prepare is not None else None
 
             if use_idempotency:
-                idempotency.claim(
-                    session,
-                    actor_account_id=self._subject.account_id,
-                    route_key=route_key,
-                    idempotency_key=self._idempotency_key,
-                    payload=payload,
-                    expired_record_id=expired,
-                )
+                # Two calls with one key can both find no record, then both
+                # claim it. The second INSERT waits for the first transaction
+                # and, once that commits, fails 23505. Under its own savepoint
+                # that failure leaves this transaction usable, and the record
+                # the first call committed is replayed, or refused if the body
+                # differs (API_CONTRACTS §2.3; review of bf052f4, R-S4-7-02).
+                try:
+                    with session.begin_nested():
+                        idempotency.claim(
+                            session,
+                            actor_account_id=self._subject.account_id,
+                            route_key=route_key,
+                            idempotency_key=self._idempotency_key,
+                            payload=payload,
+                            expired_record_id=expired,
+                        )
+                except IntegrityError as exc:
+                    if not idempotency.key_taken(exc):
+                        raise
+                    replay = idempotency.committed(
+                        session,
+                        actor_account_id=self._subject.account_id,
+                        route_key=route_key,
+                        idempotency_key=self._idempotency_key,
+                        payload=payload,
+                    )
+                    return CommandResult(replay.status, replay.body, replayed=True)
 
             if version_guard is not None:
                 table, resource_id, expected = version_guard

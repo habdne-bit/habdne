@@ -228,11 +228,38 @@ def test_a_run_stores_each_match_with_its_criteria_audit_and_one_diagnostic(clie
                 m=match["match_id"]) == row["run_at"]
 
 
+def _exact(text_):
+    """JSON read with every non-integer number as Decimal (never a float)."""
+    return json.loads(text_, parse_float=Decimal)
+
+
+def _stored_match(engine, match_id):
+    """The stored match and its criterion rows, from their jsonb TEXT, read
+    independently of `match_view` (review of bf052f4, R-S4-7-03)."""
+    row = _one(engine, """SELECT (to_jsonb(m) - 'generated_by' - 'ai_trace_ref'
+                                  - 'created_at')::text
+                             FROM turab.match_candidates m WHERE match_id = :m""",
+               m=match_id)
+    criteria_rows = _all(engine, """
+        SELECT (to_jsonb(c) - 'match_id' - 'match_criterion_result_id' - 'created_at')::text
+               AS t
+          FROM turab.match_criterion_results c WHERE match_id = :m""", m=match_id)
+    stored = _exact(row)
+    stored["criteria"] = sorted((_exact(r["t"]) for r in criteria_rows),
+                                key=lambda c: (c["criterion_code"], c["ordinal"]))
+    return stored
+
+
 def test_the_response_is_the_stored_rows(client, ids, engine):
+    """The raw response body, read with Decimal, equals the stored rows'
+    jsonb text, read with Decimal. `match_view` is not used on either side."""
     req, prop, _ = _world(engine, ids)
-    [match] = _ok(_run(client, ids, req, [prop]))["matches"]
-    with engine.connect() as conn:
-        assert matching_run.match_view(conn, uuid.UUID(match["match_id"])) == match
+    raw = _run(client, ids, req, [prop])
+    assert raw.status_code == 201, raw.text
+    [match] = _exact(raw.text)["matches"]
+    match["criteria"] = sorted(match["criteria"],
+                               key=lambda c: (c["criterion_code"], c["ordinal"]))
+    assert match == _stored_match(engine, match["match_id"])
 
 
 def test_the_run_reads_one_repeatable_read_snapshot(client, ids, engine, monkeypatch):
@@ -867,12 +894,65 @@ def test_each_staff_role_of_the_contract_may_run(client, ids, engine, account):
     _ok(_run(client, ids, req, [prop], account=getattr(ids, account)))
 
 
-def test_an_unknown_body_field_is_refused(client, ids, engine):
+def test_an_undeclared_body_field_is_accepted_and_changes_nothing(client, ids, engine):
+    """R-S4-7-01 (review of bf052f4). The contract does not close this body
+    (no `additionalProperties: false`), and CORRECTION-004 narrows only
+    `matching_policy_version`. An undeclared field is accepted, and it
+    changes nothing the run computes: the same input, the same match."""
     req, prop, _ = _world(engine, ids)
-    r = _run(client, ids, req, [prop], body={"matching_policy_version": VERSION,
-                                            "relax": True})
-    assert r.status_code == 422
-    assert _matches(engine, req) == []
+    plain = _ok(_run(client, ids, req, [prop]))
+    hinted = _ok(_run(client, ids, req, [prop], body={
+        "matching_policy_version": VERSION, "property_ids": [str(prop)],
+        "future_hint": {"x": 1}}))
+    assert hinted["matches"] == plain["matches"]
+    assert len(_matches(engine, req)) == 1
+
+
+def test_an_undeclared_field_is_part_of_the_body_for_idempotency(client, ids, engine):
+    """API_CONTRACTS §2.3: the same key with a different body is 409. A body
+    that differs only by an undeclared field is a different body."""
+    req, prop, _ = _world(engine, ids)
+    key = str(uuid.uuid4())
+    _ok(_run(client, ids, req, [prop], key=key))
+    r = _run(client, ids, req, [prop], key=key, body={
+        "matching_policy_version": VERSION, "property_ids": [str(prop)], "future_hint": 1})
+    assert (r.status_code, r.json()["code"]) == (409, "IDEMPOTENCY_KEY_CONFLICT")
+
+
+def test_property_ids_null_is_refused_and_absent_or_empty_keep_their_meaning(
+        client, ids, engine, monkeypatch):
+    """R-S4-7-01. The contract types `property_ids` as an array, which null is
+    not: 422, nothing written. Absent means a full scan (None reaches the
+    run); [] means no candidate."""
+    req, prop, _ = _world(engine, ids)
+    seen = []
+    original = matching_run.prepare
+
+    def spy(session, request_id, *, matching_policy_version, property_ids):
+        seen.append(property_ids)
+        return original(session, request_id, matching_policy_version=matching_policy_version,
+                        property_ids=property_ids)
+
+    monkeypatch.setattr(matching_run, "prepare", spy)
+    key = str(uuid.uuid4())
+    before = _footprint(engine, req, key)
+    r = _run(client, ids, req, [], key=key,
+             body={"matching_policy_version": VERSION, "property_ids": None})
+    assert (r.status_code, r.json()["code"]) == (422, "VALIDATION_FAILED"), r.text
+    assert _footprint(engine, req, key) == before and seen == []
+
+    monkeypatch.setattr(matching_run, "execute", lambda session, prepared: (201, {}))
+    _ok(_run(client, ids, req, [], body={"matching_policy_version": VERSION}))
+    _ok(_run(client, ids, req, [], body={"matching_policy_version": VERSION,
+                                         "property_ids": []}))
+    assert seen == [None, []]
+
+
+def test_an_empty_property_list_evaluates_nothing(client, ids, engine):
+    req, prop, _ = _world(engine, ids)
+    body = _ok(_run(client, ids, req, [], body={"matching_policy_version": VERSION,
+                                                 "property_ids": []}))
+    assert body["matches"] == [] and _matches(engine, req) == []
 
 
 # ======================================================================================
@@ -1121,3 +1201,223 @@ def test_a_soft_unknown_that_does_not_block_gives_no_information_action(client, 
     assert (area["compatibility"], area["blocking"]) == ("UNKNOWN", False)
     assert match["eligibility"] == "NEEDS_CONFIRMATION"
     assert match["next_action"]["type"] == "CONFIRM_PERMISSION"
+
+
+# ======================================================================================
+# Review of bf052f4: R-S4-7-02, one Idempotency-Key in two concurrent calls (HTTP)
+# ======================================================================================
+
+def _same_key_race(client, ids, engine, monkeypatch, req, first_body, second_body):
+    """Call A claims the key and is held before it commits; call B, with the
+    SAME key, is shown WAITING on A's idempotency row (pg_stat_activity);
+    then A is released. Both go through the route, CommandService and
+    idempotency: nothing is called directly."""
+    from turab.services import idempotency
+
+    claimed, release = threading.Event(), threading.Event()
+    original = idempotency.claim
+    calls = []
+
+    def held(session, **kw):
+        original(session, **kw)
+        calls.append(kw["idempotency_key"])
+        if len(calls) == 1:
+            claimed.set()
+            assert release.wait(30)
+
+    monkeypatch.setattr(idempotency, "claim", held)
+    key, out = str(uuid.uuid4()), {}
+
+    def call(name, body):
+        try:
+            out[name] = client.post(f"/requests/{req}/matching/run",
+                                    headers=_headers(ids.ACC_OPERATOR, key), json=body)
+        except Exception as exc:  # reported by the assertions
+            out[name] = exc
+
+    a = threading.Thread(target=call, args=("a", first_body))
+    a.start()
+    assert claimed.wait(30)
+    b = threading.Thread(target=call, args=("b", second_body))
+    b.start()
+    deadline = time.monotonic() + 30
+    while _one(engine, """SELECT count(*) FROM pg_stat_activity
+                           WHERE wait_event_type = 'Lock'
+                             AND query LIKE '%INSERT INTO turab.idempotency_records%'""") == 0:
+        assert time.monotonic() < deadline, "call B never waited on call A's key"
+        time.sleep(0.05)
+    release.set()
+    a.join(60)
+    b.join(60)
+    return key, out
+
+
+def test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result(
+        client, ids, engine, monkeypatch):
+    """API_CONTRACTS §2.3 under a race: B's claim meets A's committed key,
+    which B's Repeatable Read snapshot cannot see. B returns A's stored result
+    and runs nothing: one diagnostic row, one idempotency record."""
+    req, prop, _ = _world(engine, ids)
+    body = {"matching_policy_version": VERSION, "property_ids": [str(prop)]}
+    key, out = _same_key_race(client, ids, engine, monkeypatch, req, body, body)
+    assert not isinstance(out["a"], Exception), out["a"]
+    assert not isinstance(out["b"], Exception), out["b"]
+    assert (out["a"].status_code, out["b"].status_code) == (201, 201), out["b"].text
+    assert _exact(out["b"].text) == _exact(out["a"].text)
+    assert _one(engine, "SELECT count(*) FROM turab.match_diagnostic_runs WHERE request_id = :r",
+                r=req) == 1
+    assert len(_matches(engine, req)) == 1
+    assert _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                        "WHERE idempotency_key = :k", k=key) == 1
+
+
+def test_one_key_with_another_body_in_a_concurrent_call_is_409(client, ids, engine,
+                                                               monkeypatch):
+    req, prop, _ = _world(engine, ids)
+    key, out = _same_key_race(
+        client, ids, engine, monkeypatch, req,
+        {"matching_policy_version": VERSION, "property_ids": [str(prop)]},
+        {"matching_policy_version": VERSION, "property_ids": []})
+    assert not isinstance(out["b"], Exception), out["b"]
+    assert out["a"].status_code == 201
+    assert (out["b"].status_code, out["b"].json()["code"]) == (409, "IDEMPOTENCY_KEY_CONFLICT")
+    assert _one(engine, "SELECT count(*) FROM turab.match_diagnostic_runs WHERE request_id = :r",
+                r=req) == 1
+    assert _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                        "WHERE idempotency_key = :k", k=key) == 1
+
+
+# ======================================================================================
+# Review of bf052f4: R-S4-7-03, the response and the replay carry the stored numbers
+# ======================================================================================
+
+def test_the_response_and_its_replay_carry_the_stored_numbers_exactly(client, ids, engine):
+    """The reviewer's case: area 400.25, minimum 0.12345678901234568. The
+    stored delta is 400.12654321098765432; a float gives 400.1265432109877.
+    The raw body and the replayed raw body, read with Decimal, equal the
+    stored jsonb text, read with Decimal; and the numbers stay JSON numbers."""
+    req = _request(engine, ids)
+    _exec(engine, """
+        INSERT INTO turab.request_criteria (request_id, criterion_code, importance, operator,
+                                            value, sort_order)
+        VALUES (:r, 'LAND_AREA_MIN', 'REQUIRED', 'GTE', '0.12345678901234568'::jsonb, 0)""",
+          r=req)
+    prop = _property(engine, land=Decimal("400.25"))
+    _offer(engine, ids, prop)
+    key = str(uuid.uuid4())
+    first = _run(client, ids, req, [prop], key=key)
+    assert first.status_code == 201, first.text
+    [match] = _exact(first.text)["matches"]
+    stored_delta = _one(engine, """SELECT delta::text FROM turab.match_criterion_results
+                                    WHERE match_id = :m AND criterion_code = 'LAND_AREA_MIN'""",
+                        m=match["match_id"])
+    assert _exact(stored_delta) == {"m2": Decimal("400.12654321098765432")}
+    [area] = [c for c in match["criteria"] if c["criterion_code"] == "LAND_AREA_MIN"]
+    assert area["delta"] == {"m2": Decimal("400.12654321098765432")}
+    assert '"m2":400.12654321098765432' in first.text.replace(" ", "")
+    match["criteria"] = sorted(match["criteria"],
+                               key=lambda c: (c["criterion_code"], c["ordinal"]))
+    assert match == _stored_match(engine, match["match_id"])
+    replay = _run(client, ids, req, [prop], key=key)
+    assert replay.status_code == 201
+    assert _exact(replay.text) == _exact(first.text)
+    assert "400.12654321098765432" in replay.text
+
+
+# ======================================================================================
+# Review of bf052f4: the policy configuration faults of §3.1 are a TYPED 500
+# ======================================================================================
+
+def _policy_fault(client, ids, engine, req):
+    key = str(uuid.uuid4())
+    before = _footprint(engine, req, key)
+    r = _run(client, ids, req, [], key=key, body={"matching_policy_version": VERSION})
+    assert (r.status_code, r.json()["code"]) == (500, "MATCHING_POLICY_MISCONFIGURED"), r.text
+    assert r.json()["detail"].startswith("plan §3.1")
+    assert _footprint(engine, req, key) == before and before["idempotency"] == 0
+
+
+def test_no_active_policy_is_a_typed_500_and_writes_nothing(client, ids, engine):
+    req = _request(engine, ids)
+    _exec(engine, "UPDATE turab.matching_policies SET active = false WHERE version = :v",
+          v=VERSION)
+    try:
+        _policy_fault(client, ids, engine, req)
+    finally:
+        _exec(engine, "UPDATE turab.matching_policies SET active = true WHERE version = :v",
+              v=VERSION)
+
+
+@pytest.mark.parametrize("label, rules", [
+    ("relaxes requests", {"automatic_request_relaxation": True,
+                          "human_review_required_for_opportunity": True}),
+    ("no human review", {"automatic_request_relaxation": False,
+                         "human_review_required_for_opportunity": False}),
+])
+def test_a_policy_this_engine_does_not_implement_is_a_typed_500(client, ids, engine, label,
+                                                                rules):
+    req = _request(engine, ids)
+    seeded = _one(engine, "SELECT rules::text FROM turab.matching_policies WHERE version = :v",
+                  v=VERSION)
+    test_rules = {**json.loads(seeded), **rules}
+    _exec(engine, "UPDATE turab.matching_policies SET active = false WHERE version = :v",
+          v=VERSION)
+    policy = None
+    try:
+        policy = _one(engine, """
+            INSERT INTO turab.matching_policies (version, name, rules, active)
+            VALUES (:v, 'unimplemented test policy', CAST(:r AS jsonb), true)
+            RETURNING matching_policy_id""",
+                      v=f"0.0.{uuid.uuid4().int % 10**9}-unimplemented", r=json.dumps(test_rules))
+        _policy_fault(client, ids, engine, req)
+    finally:
+        if policy is not None:
+            _exec(engine, "DELETE FROM turab.matching_policies WHERE matching_policy_id = :p",
+                  p=policy)
+        _exec(engine, "UPDATE turab.matching_policies SET active = true WHERE version = :v",
+              v=VERSION)
+
+
+def test_the_exact_writer_keeps_decimals_and_renders_everything_else_as_json_does():
+    from turab import exact_json
+
+    body = {"z": 1, "a": [True, None, "é", 2.5, 1e-07], "n": -3}
+    assert exact_json.dumps(body) == json.dumps(body, ensure_ascii=False,
+                                                separators=(",", ":"))
+    exact = {"m2": Decimal("400.12654321098765432"), "s": Decimal("1.000000")}
+    text_ = exact_json.dumps(exact)
+    assert text_ == '{"m2":400.12654321098765432,"s":1.000000}'
+    assert exact_json.loads(text_) == exact
+    assert json.loads(text_)["m2"] == 400.1265432109877  # still a JSON number
+    for bad in (Decimal("NaN"), float("inf")):
+        with pytest.raises(ValueError):
+            exact_json.dumps({"x": bad})
+
+
+def test_only_the_frozen_key_constraint_is_a_taken_key():
+    from sqlalchemy.exc import IntegrityError
+
+    from turab.services import idempotency
+
+    class Diag:
+        def __init__(self, name):
+            self.constraint_name = name
+
+    class Orig(Exception):
+        def __init__(self, state, name):
+            self.sqlstate, self.diag = state, Diag(name)
+
+    assert idempotency.key_taken(IntegrityError("s", {}, Orig("23505",
+                                                              idempotency.KEY_CONSTRAINT)))
+    assert not idempotency.key_taken(IntegrityError("s", {}, Orig("23505", "other_key")))
+    assert not idempotency.key_taken(IntegrityError("s", {}, Orig("23503",
+                                                                  idempotency.KEY_CONSTRAINT)))
+
+
+def test_the_key_constraint_is_named_as_postgresql_names_it(engine):
+    from turab.services import idempotency
+
+    names = [r["conname"] for r in _all(engine, """
+        SELECT conname FROM pg_constraint
+         WHERE conrelid = 'turab.idempotency_records'::regclass AND contype = 'u'""")]
+    assert names == [idempotency.KEY_CONSTRAINT]

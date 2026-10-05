@@ -16,6 +16,7 @@ and no idempotency record. The refusals:
 
 | refusal | rule | status |
 |---|---|---|
+| no active policy, or one whose promises this engine does not implement | plan §3.1 | 500 `MATCHING_POLICY_MISCONFIGURED`, typed (review of bf052f4) |
 | the version is not the ACTIVE policy's | CORRECTION-004 | 422 `MATCHING_POLICY_VERSION_REFUSED` |
 | no such request | — | 404 |
 | a request status a run does not accept | G4-8 | 409 `REQUEST_NOT_MATCHABLE` |
@@ -62,7 +63,6 @@ request, property, offer, consent or criterion is changed.
 from __future__ import annotations
 
 import hashlib
-import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -75,7 +75,8 @@ from sqlalchemy.orm import Session
 from turab.matching import (candidates, canonical, criteria, eligibility, explain, hard_gate,
                             policy, snapshots, soft)
 from turab.matching.registry import REGISTRY
-from turab.services import audit_rows
+from turab import exact_json
+from turab.services import audit_rows, freshness
 
 DIAGNOSTIC_FORMAT = "turab.diagnostic-input/1"
 #: The frozen UNIQUE(request_id, property_id, matching_policy_id, input_hash),
@@ -133,7 +134,13 @@ def prepare(session: Session, request_id: uuid.UUID, *, matching_policy_version:
         text("SELECT current_setting('transaction_isolation')")).scalar_one()
     if isolation != "repeatable read":
         raise NotRepeatableRead(f"the matching run needs REPEATABLE READ, not {isolation}")
-    active = policy.load_active_policy(session)
+    try:
+        active = policy.load_active_policy(session)
+    except (freshness.NoActiveFreshnessPolicy, policy.PolicyNotImplemented) as exc:
+        # A configuration fault, not the caller's input: a TYPED 500 (decided
+        # in the review of bf052f4), decided like every refusal before any
+        # write.
+        raise RunRefused("MATCHING_POLICY_MISCONFIGURED", "plan §3.1", str(exc)) from None
     try:
         policy.require_active_version(active, matching_policy_version)
     except policy.PolicyVersionRefused as exc:
@@ -293,14 +300,16 @@ def _store(session: Session, prepared: Prepared, ev: Evaluation) -> tuple[uuid.U
 
 def match_view(conn: Any, match_id: uuid.UUID) -> dict:
     """The stored match as the contract's `MatchCandidate` (staff only, R9.2),
-    read from its rows: what was written, not what was computed. Each
+    read from its rows: what was written, not what was computed. Every number
+    is read exactly (`exact_json`), never through a float (review of bf052f4,
+    R-S4-7-03). Each
     criterion also carries its `ordinal` and `request_criterion_id`, the key
     of `explanation.criteria`."""
     row = conn.execute(text("""
         SELECT (to_jsonb(m) - 'generated_by' - 'ai_trace_ref' - 'created_at')::text
           FROM turab.match_candidates m WHERE match_id = :m"""), {"m": match_id}).scalar_one()
-    view = json.loads(row)
-    view["criteria"] = [json.loads(c) for c in conn.execute(text("""
+    view = exact_json.loads(row)
+    view["criteria"] = [exact_json.loads(c) for c in conn.execute(text("""
         SELECT (to_jsonb(c) - 'match_id' - 'match_criterion_result_id' - 'created_at')::text
           FROM turab.match_criterion_results c WHERE match_id = :m
          ORDER BY criterion_code, ordinal"""), {"m": match_id}).scalars()]
@@ -359,7 +368,7 @@ def execute(session: Session, prepared: Prepared) -> tuple[int, dict]:
         else:
             with session.get_bind().engine.connect() as fresh:
                 matches.append(match_view(fresh, match_id))
-    diagnostic = json.loads(session.execute(text("""
+    diagnostic = exact_json.loads(session.execute(text("""
         SELECT jsonb_build_object(
                    'diagnostic_run_id', diagnostic_run_id, 'request_id', request_id,
                    'run_at', run_at,

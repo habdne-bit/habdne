@@ -319,6 +319,8 @@ def _run(request, command, operation_id, route_key, payload, handler,
             return coded(ProblemCode.VALIDATION_FAILED, trace, str(exc))
         raise
 
-    from fastapi.responses import JSONResponse
+    from ..responses import ExactJSONResponse
 
-    return JSONResponse(status_code=result.status, content=result.body)
+    # Exact: a stored number is returned, and replayed, as stored (review of
+    # bf052f4, R-S4-7-03). Bodies without a Decimal render as before.
+    return ExactJSONResponse(status_code=result.status, content=result.body)

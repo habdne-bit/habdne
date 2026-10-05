@@ -1,7 +1,10 @@
 # Slice 4 · step 7 — the matching run: persistence, audit, the diagnostic row, concurrency
 
-**Status: delivered for review. Not closed.** Slice 4 is not closed, and
-G4-5R is not decided: the RENT refusal stays in force.
+**Status: NOT closed** (review of bf052f4). Three findings are fixed in
+**§11**, after being measured. The typed 500 decided in the same review is
+applied there too. §11 supersedes §4's body description, §6's numbers
+statement, and §9. Slice 4 is not closed, and G4-5R is not decided: the RENT
+refusal stays in force.
 
 **Authorised:** the review of b3246b0 approved G4-15 with the constraints
 D1–D6, and allowed step 7 on them, "with its seven earlier conditions as
@@ -411,3 +414,139 @@ the seeded policy `0.2.0`, neither case can occur.
   - the matrix.
 - **G4-5R:** the period is open, and the RENT refusal is in force.
 - **§9:** the status of the two policy refusals.
+
+---
+
+## 11. The review of bf052f4
+
+The review did not close step 7. It found three defects and decided §9.
+Each defect was **measured on the `0cc7717` code before any fix**:
+`evidence/SLICE4-STEP7-REVIEW-BEFORE-FIX.txt`. The production code was as
+committed; only the test file differed. 6 of the review's tests failed and
+2 passed, each for the reason recorded there.
+
+### 11.1 R-S4-7-01 — the body model against the contract
+
+**Measured before the fix:**
+- `property_ids: null` was accepted (201) and reached the run as a full
+  scan;
+- an undeclared field was refused with 422 `UNKNOWN_FIELD`, although the
+  contract leaves the body open (no `additionalProperties: false`).
+  CORRECTION-004 narrows `matching_policy_version` only.
+
+**Fixed** (`api/routes/matching.py`):
+- **null is refused** with 422 `VALIDATION_FAILED`, before the route runs,
+  so nothing is written. Absent and `[]` keep their meanings: absent is a
+  full scan (the run receives `None`), and `[]` means no candidate. A spy on
+  `prepare` shows what reaches the run.
+- **The body is open** (`extra="allow"`). An undeclared field changes
+  nothing the run computes: the same input, the same match.
+- **An undeclared field is part of the body for idempotency.** The same key
+  with a body that differs only by such a field is 409
+  (API_CONTRACTS §2.3).
+- Closing the body would be a contract narrowing of its own, which no
+  correction approves. It is not done.
+
+**Stated, not changed:** `GenerateInput` (Slice 3 step 7) closes a body the
+contract leaves open. That was stated in Slice 3's step-7 note, and that
+slice is closed.
+
+### 11.2 R-S4-7-02 — one Idempotency-Key in two concurrent calls
+
+**Measured before the fix, over HTTP.**
+- Call A claimed the key and was held before it committed.
+- Call B, with the same key, was OBSERVED waiting on A's row
+  (`pg_stat_activity`).
+- When A committed, B raised `UniqueViolation` on
+  `idempotency_records_actor_account_id_route_key_idempotency__key`, an
+  unhandled error. This held for the same body and for another body alike.
+
+**Fixed** (`services/command.py`, `services/idempotency.py`):
+- **A savepoint.** The claim runs under its own SAVEPOINT. A 23505 on the
+  key constraint, checked by name, leaves the transaction usable.
+- **A read outside the snapshot.** The record the other call committed is
+  invisible in this Repeatable Read snapshot, so it is read on a NEW
+  connection (`idempotency.committed`).
+- **The outcome:**
+  - the same body replays the stored result;
+  - another body is 409 `IDEMPOTENCY_KEY_CONFLICT`;
+  - a record that is gone between the two reads is a conflict too, so the
+    command is never run twice.
+- **Nothing more is written.** The losing call never reaches the handler:
+  one diagnostic row and one idempotency record (HTTP tests below).
+
+**Scope, stated.** The fix is in `CommandService.run`, so it applies to
+every idempotent command. Every idempotent command took the same claim path,
+so the same race ended in an unhandled error on all of them. That is read
+from the code: the race was measured on this route only. Now the race ends
+as §2.3 promises. No other outcome changes.
+
+**Tests, through the route, `CommandService` and idempotency:**
+- `test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result`;
+- `test_one_key_with_another_body_in_a_concurrent_call_is_409`;
+- `test_only_the_frozen_key_constraint_is_a_taken_key`;
+- `test_the_key_constraint_is_named_as_postgresql_names_it`.
+
+### 11.3 R-S4-7-03 — exact numbers in the response and the replay
+
+**Measured before the fix:** with the review's case, the stored delta was
+`400.12654321098765432` and the response gave `400.1265432109877`.
+`test_the_response_is_the_stored_rows` passed, for two reasons:
+- it compared the response with `match_view`, which shared the conversion;
+- its world held only numbers a float represents exactly.
+
+**Fixed:**
+- **`turab/exact_json.py`:**
+  - `loads` reads every non-integer number as `Decimal`;
+  - `dumps` writes a `Decimal` by its own digits, still a JSON number, and
+    everything else as `json.dumps` does.
+- **`match_view` and the diagnostic** read with it.
+- **The idempotency store.** It writes the stored body exactly, and reads
+  `response_body::text` exactly. A replay therefore returns the numbers as
+  stored.
+- **`_run`**, the command plumbing shared by every command route, renders
+  with `ExactJSONResponse`. A body without a `Decimal` renders as before
+  (`test_the_exact_writer_keeps_decimals_and_renders_everything_else_as_json_does`).
+
+**The tests no longer use `match_view`.** They read the stored jsonb TEXT
+with `Decimal`, and the raw response body with `Decimal`:
+- `test_the_response_is_the_stored_rows`;
+- `test_the_response_and_its_replay_carry_the_stored_numbers_exactly`: the
+  review's case, the original call and its replay.
+
+### 11.4 The typed 500 (decided in the review of bf052f4)
+
+- **The code:** `MATCHING_POLICY_MISCONFIGURED`, 500, for both cases:
+  - no active policy;
+  - an active policy whose promises this engine does not implement (plan
+    §3.1).
+- **Decided in `prepare`**, so before any write: the footprint and the
+  idempotency record are unchanged.
+- **The order is fixed:** the policy fault comes first, then the version.
+
+Tests:
+- `test_no_active_policy_is_a_typed_500_and_writes_nothing`;
+- `test_a_policy_this_engine_does_not_implement_is_a_typed_500`, in two
+  cases.
+
+Each test restores the seeded policy, and `0.2.0` alone remains.
+
+Recorded in the plan, revision 15. §9 is answered by this decision.
+
+### 11.5 Mutations
+
+`db/dev/mutate_slice4_step7.py`: **48 mutations**.
+- **R3 and R5 re-anchored.** The claim moved under a savepoint, and the
+  policy load under a `try`. Both still reach the code that runs.
+- **Ten added:**
+  - B1–B3: the body;
+  - C1–C3: one key, two calls;
+  - E1–E3: exact numbers;
+  - P1: the typed 500.
+
+RESULT_PLACEHOLDER_11
+
+### 11.6 What remains
+
+- **Step 8**, after the review of these fixes.
+- **G4-5R:** the period is open, and the RENT refusal is in force.

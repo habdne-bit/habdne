@@ -1,0 +1,54 @@
+TURAB — Slice 4 step 7, review of bf052f4: the review's tests run on the 0cc7717 code, BEFORE the fix
+============================================================
+Base commit       : 0cc7717340a2f30bb365e5b101e165b2560701cf
+Production code   : exactly as committed at 0cc7717 (git diff --stat below shows the test file only)
+Recorded          : 2026-10-05 11:12:55 UTC
+PostgreSQL        : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+--- git diff --stat ---
+ tests/test_slice4_step7.py | 217 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 209 insertions(+), 8 deletions(-)
+
+--- pytest tests/test_slice4_step7.py -k <the review's tests> -rA ---
+E   AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"d6e6fb43ba104dd8a3953eb8ea896612","detail":"The request body failed validation.","field_errors":[{"field":"future_hint","code":"UNKNOWN_FIELD","message":"Extra inputs are not permitted"}]}
+/home/user/habdne/tests/test_slice4_step7.py:154: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"d6e6fb43ba104dd8a3953eb8ea896612","detail":"The request body failed validation.","field_errors":[{"field":"future_hint","code":"UNKNOWN_FIELD","message":"Extra inputs are not permitted"}]}
+E   AssertionError: assert (422, 'VALIDATION_FAILED') == (409, 'IDEMPO...KEY_CONFLICT')
+/home/user/habdne/tests/test_slice4_step7.py:919: AssertionError: assert (422, 'VALIDATION_FAILED') == (409, 'IDEMPO...KEY_CONFLICT')
+E   KeyError: 'code'
+/home/user/habdne/tests/test_slice4_step7.py:941: KeyError: 'code'
+E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/3f0150af-a0ca-4c37-b05b-a8045540297d/matching/run, 12c69352-c194-4c2e-896f-477440dc0cdf) already exists.')
+     +  where True = isinstance(IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/3f0150af-a0ca-4c37-b05b-a8045540297d/matching/run, 12c69352-c194-4c2e-896f-477440dc0cdf) already exists.'), Exception)
+ERROR    turab.api:handlers.py:80 unhandled error
+sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_actor_account_id_route_key_idempotency__key"
+/home/user/habdne/tests/test_slice4_step7.py:1264: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/3f0150af-a0ca-4c37-b05b-a8045540297d/matching/run, 12c69352-c194-4c2e-896f-477440dc0cdf) already exists.')
+E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/4beda925-49da-4e3e-b312-98a1a547937c/matching/run, 1058ee06-d795-4862-987e-c67de38948c0) already exists.')
+     +  where True = isinstance(IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/4beda925-49da-4e3e-b312-98a1a547937c/matching/run, 1058ee06-d795-4862-987e-c67de38948c0) already exists.'), Exception)
+ERROR    turab.api:handlers.py:80 unhandled error
+sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_actor_account_id_route_key_idempotency__key"
+/home/user/habdne/tests/test_slice4_step7.py:1281: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "idempotency_records_a...ST /requests/4beda925-49da-4e3e-b312-98a1a547937c/matching/run, 1058ee06-d795-4862-987e-c67de38948c0) already exists.')
+E   AssertionError: assert {'m2': Decima...65432109877')} == {'m2': Decima...21098765432')}
+/home/user/habdne/tests/test_slice4_step7.py:1316: AssertionError: assert {'m2': Decima...65432109877')} == {'m2': Decima...21098765432')}
+PASSED tests/test_slice4_step7.py::test_the_response_is_the_stored_rows
+PASSED tests/test_slice4_step7.py::test_an_empty_property_list_evaluates_nothing
+FAILED tests/test_slice4_step7.py::test_an_undeclared_body_field_is_accepted_and_changes_nothing
+FAILED tests/test_slice4_step7.py::test_an_undeclared_field_is_part_of_the_body_for_idempotency
+FAILED tests/test_slice4_step7.py::test_property_ids_null_is_refused_and_absent_or_empty_keep_their_meaning
+FAILED tests/test_slice4_step7.py::test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result
+FAILED tests/test_slice4_step7.py::test_one_key_with_another_body_in_a_concurrent_call_is_409
+FAILED tests/test_slice4_step7.py::test_the_response_and_its_replay_carry_the_stored_numbers_exactly
+6 failed, 2 passed, 74 deselected in 17.61s
+
+--- reading ---
+R-S4-7-01  an undeclared field (future_hint) is refused 422 UNKNOWN_FIELD; the same key with
+           an undeclared field gives 422, not 409; property_ids: null is ACCEPTED (201, the
+           body has no problem `code`: KeyError 'code').
+R-S4-7-02  call B, with the same key, was OBSERVED waiting on call A's idempotency row
+           (pg_stat_activity, wait_event_type Lock; the test fails otherwise), then raised
+           UniqueViolation on idempotency_records_actor_account_id_route_key_idempotency__key:
+           an unhandled error, for the same body and for a different body alike.
+R-S4-7-03  the response's delta is 400.1265432109877; the stored delta is
+           400.12654321098765432.
+Control    test_the_response_is_the_stored_rows PASSES here with an area of 400: every number
+           in that world is exactly representable as a float, so the comparison cannot fail.
+           That is the masking the review describes; the R-S4-7-03 test uses the review's case.
+           test_an_empty_property_list_evaluates_nothing passes: [] already meant no candidate.

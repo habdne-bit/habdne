@@ -92,6 +92,10 @@ class ProblemCode(StrEnum):
     #: G4-3 (b), G4-5R, G4-7: the request's criteria cannot be matched as
     #: they stand. 422, naming the rule and the criterion, never the value.
     MATCHING_INPUT_REFUSED = "MATCHING_INPUT_REFUSED"
+    #: Plan §3.1: no active matching policy, or one whose promises this engine
+    #: does not implement. A configuration fault, not the caller's input, so a
+    #: TYPED 500 (decided in the review of bf052f4); nothing is written.
+    MATCHING_POLICY_MISCONFIGURED = "MATCHING_POLICY_MISCONFIGURED"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -131,6 +135,7 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.MATCHING_POLICY_VERSION_REFUSED: (422, "Matching policy version refused"),
     ProblemCode.REQUEST_NOT_MATCHABLE: (409, "Request not matchable"),
     ProblemCode.MATCHING_INPUT_REFUSED: (422, "Matching input refused"),
+    ProblemCode.MATCHING_POLICY_MISCONFIGURED: (500, "Matching policy misconfigured"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),
     ProblemCode.NOT_IMPLEMENTED: (501, "Not implemented"),

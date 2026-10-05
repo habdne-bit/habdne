@@ -8,7 +8,9 @@ Each mutation reintroduces one defect:
 - W: what is written (conditions 3 and 6; D1; D4);
 - R: the refusals (D6, CORRECTION-004, G4-8) and their order;
 - D: the diagnostic (D2, D3, D3b; condition 4);
-- A: the next action (D5, `action.next@1`).
+- A: the next action (D5, `action.next@1`);
+- B, C, E, P: the review of bf052f4 (the body, one key in two concurrent
+  calls, exact numbers, the typed 500).
 
 The test file is step 7's only.
 """
@@ -22,6 +24,42 @@ G = "src/turab/matching/gates.py"
 CMD = "src/turab/services/command.py"
 SES = "src/turab/db/session.py"
 ROUTE = "src/turab/api/routes/matching.py"
+IDEM = "src/turab/services/idempotency.py"
+EXACT = "src/turab/exact_json.py"
+
+#: `CommandService.run`: the refusals (`prepare`), then the key claimed under a
+#: savepoint. R3 swaps the two.
+PREPARE = '            prepared = prepare(session) if prepare is not None else None\n'
+CLAIM_BLOCK = (
+    '            if use_idempotency:\n'
+    '                # Two calls with one key can both find no record, then both\n'
+    '                # claim it. The second INSERT waits for the first transaction\n'
+    '                # and, once that commits, fails 23505. Under its own savepoint\n'
+    '                # that failure leaves this transaction usable, and the record\n'
+    '                # the first call committed is replayed, or refused if the body\n'
+    '                # differs (API_CONTRACTS §2.3; review of bf052f4, R-S4-7-02).\n'
+    '                try:\n'
+    '                    with session.begin_nested():\n'
+    '                        idempotency.claim(\n'
+    '                            session,\n'
+    '                            actor_account_id=self._subject.account_id,\n'
+    '                            route_key=route_key,\n'
+    '                            idempotency_key=self._idempotency_key,\n'
+    '                            payload=payload,\n'
+    '                            expired_record_id=expired,\n'
+    '                        )\n'
+    '                except IntegrityError as exc:\n'
+    '                    if not idempotency.key_taken(exc):\n'
+    '                        raise\n'
+    '                    replay = idempotency.committed(\n'
+    '                        session,\n'
+    '                        actor_account_id=self._subject.account_id,\n'
+    '                        route_key=route_key,\n'
+    '                        idempotency_key=self._idempotency_key,\n'
+    '                        payload=payload,\n'
+    '                    )\n'
+    '                    return CommandResult(replay.status, replay.body, replayed=True)\n'
+)
 
 MUTATIONS = [
  # --- T: the transaction --------------------------------------------------------------
@@ -81,26 +119,7 @@ MUTATIONS = [
   "extra_errors=(matching_run.RunRefused, matching_run.RequestMissing),",
   "extra_errors=(matching_run.RequestMissing,),"),
  ("R3 the key claimed before the refusals are decided", CMD,
-  "            prepared = prepare(session) if prepare is not None else None\n\n"
-  "            if use_idempotency:\n"
-  "                idempotency.claim(\n"
-  "                    session,\n"
-  "                    actor_account_id=self._subject.account_id,\n"
-  "                    route_key=route_key,\n"
-  "                    idempotency_key=self._idempotency_key,\n"
-  "                    payload=payload,\n"
-  "                    expired_record_id=expired,\n"
-  "                )\n",
-  "            if use_idempotency:\n"
-  "                idempotency.claim(\n"
-  "                    session,\n"
-  "                    actor_account_id=self._subject.account_id,\n"
-  "                    route_key=route_key,\n"
-  "                    idempotency_key=self._idempotency_key,\n"
-  "                    payload=payload,\n"
-  "                    expired_record_id=expired,\n"
-  "                )\n\n"
-  "            prepared = prepare(session) if prepare is not None else None\n"),
+  PREPARE + "\n" + CLAIM_BLOCK, CLAIM_BLOCK + "\n" + PREPARE),
  ("R4 the refusals decided before the replay lookup", CMD,
   "            if use_idempotency:\n"
   "                replay, expired = idempotency.lookup(",
@@ -108,10 +127,8 @@ MUTATIONS = [
   "            if use_idempotency:\n"
   "                replay, expired = idempotency.lookup("),
  ("R5 the request checked before the version", RUN,
-  "    active = policy.load_active_policy(session)\n"
   "    try:\n"
   "        policy.require_active_version(active, matching_policy_version)",
-  "    active = policy.load_active_policy(session)\n"
   "    candidates.candidate_set(session, request_id, property_ids)\n"
   "    try:\n"
   "        policy.require_active_version(active, matching_policy_version)"),
@@ -164,6 +181,35 @@ MUTATIONS = [
  ("A8 an information action for any unknown, actionable or not", EXP,
   "                   for r in hard.results if (r.criterion_code, r.ordinal) in actionable]",
   '                   for r in hard.results if r.compatibility == "UNKNOWN"]'),
+ # --- review of bf052f4 ---------------------------------------------------------------
+ # B: the body (R-S4-7-01)
+ ("B1 property_ids: null accepted", ROUTE, "        if value is None:", "        if False:"),
+ ("B2 the body closed", ROUTE, 'model_config = ConfigDict(extra="allow")',
+  'model_config = ConfigDict(extra="forbid")'),
+ ("B3 an undeclared field dropped before the idempotency hash", ROUTE,
+  'model_config = ConfigDict(extra="allow")', 'model_config = ConfigDict(extra="ignore")'),
+ # C: one key in two concurrent calls (R-S4-7-02)
+ ("C1 a taken key not handled", CMD, "                    if not idempotency.key_taken(exc):",
+  "                    if True:"),
+ ("C2 the competitor's record read in this snapshot", IDEM,
+  "    with session.get_bind().engine.connect() as fresh:\n"
+  "        replay, _ = lookup(fresh,",
+  "    if True:\n        fresh = session\n        replay, _ = lookup(fresh,"),
+ ("C3 another body under the same key replayed", IDEM,
+  '    if existing["request_hash"] != request_hash:\n        raise IdempotencyKeyConflict(route_key, key)',
+  '    if False:\n        raise IdempotencyKeyConflict(route_key, key)'),
+ # E: exact numbers (R-S4-7-03)
+ ("E1 stored numbers read as floats", EXACT, "    return json.loads(text, parse_float=Decimal)",
+  "    return json.loads(text)"),
+ ("E2 a Decimal written through a float", EXACT, "        out.append(str(value))\n",
+  "        out.append(json.dumps(float(value)))\n"),
+ ("E3 a replayed body read as floats", IDEM,
+  "        body=None if body is None else exact_json.loads(body),",
+  "        body=None if body is None else json.loads(body),"),
+ # P: the typed 500 (decided in the review of bf052f4)
+ ("P1 a policy fault left untyped", RUN,
+  "    except (freshness.NoActiveFreshnessPolicy, policy.PolicyNotImplemented) as exc:",
+  "    except () as exc:"),
 ]
 
 if __name__ == "__main__":

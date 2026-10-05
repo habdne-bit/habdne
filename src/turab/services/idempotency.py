@@ -22,9 +22,15 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .. import exact_json
+
 DEFAULT_TTL = timedelta(hours=24)
+#: The frozen UNIQUE(actor_account_id, route_key, idempotency_key), by the
+#: name PostgreSQL 16 gives it.
+KEY_CONSTRAINT = "idempotency_records_actor_account_id_route_key_idempotency__key"
 MAX_KEY_LENGTH = 128  # the frozen contract's maxLength for Idempotency-Key
 
 
@@ -102,7 +108,8 @@ def lookup(
         text(
             """
             SELECT idempotency_record_id, request_hash, response_status,
-                   response_body, response_resource_ref, expires_at
+                   response_body::text AS response_body, response_resource_ref,
+                   expires_at
               FROM turab.idempotency_records
              WHERE actor_account_id = :actor
                AND route_key = :route_key
@@ -123,9 +130,12 @@ def lookup(
         # duplicate a side effect, so the client is told to retry with a
         # new key rather than silently getting either.
         raise IdempotencyKeyConflict(route_key, key)
+    # Read as TEXT and parsed exactly: a stored number is replayed as it was
+    # stored, never through a binary float (review of bf052f4, R-S4-7-03).
+    body = existing["response_body"]
     return Replay(
         status=existing["response_status"],
-        body=existing["response_body"],
+        body=None if body is None else exact_json.loads(body),
         resource_ref=existing["response_resource_ref"],
     ), None
 
@@ -224,10 +234,45 @@ def complete(
         ),
         {
             "status": status,
-            "body": json.dumps(body, ensure_ascii=False) if body is not None else None,
+            "body": exact_json.dumps(body) if body is not None else None,
             "ref": resource_ref,
             "actor": actor_account_id,
             "route_key": route_key,
             "key": idempotency_key.strip(),
         },
     )
+
+
+def key_taken(exc: IntegrityError) -> bool:
+    """A claim that met a key a concurrent call had claimed and committed
+    (23505 on the frozen unique key, by name). Any other integrity error is
+    not this."""
+    orig = exc.orig
+    return (getattr(orig, "sqlstate", None) == "23505"
+            and getattr(getattr(orig, "diag", None), "constraint_name", None) == KEY_CONSTRAINT)
+
+
+def committed(
+    session: Session,
+    *,
+    actor_account_id: uuid.UUID,
+    route_key: str,
+    idempotency_key: str | None,
+    payload: Any,
+) -> Replay:
+    """The result a concurrent call committed under the same key, after this
+    transaction began (review of bf052f4, R-S4-7-02).
+
+    Read on a NEW connection: under Repeatable Read the committed row is
+    invisible in this transaction's snapshot (PostgreSQL 16 documentation,
+    §13.2.2). The claim and the stored result commit in ONE transaction
+    (`CommandService.run`), so a committed record always carries its result.
+    The same body replays it; another body is `IdempotencyKeyConflict`
+    (API_CONTRACTS §2.3). A record that is gone, or expired, between the two
+    reads is a conflict too: the call is not run twice."""
+    with session.get_bind().engine.connect() as fresh:
+        replay, _ = lookup(fresh, actor_account_id=actor_account_id, route_key=route_key,
+                           idempotency_key=idempotency_key, payload=payload)
+    if replay is None:
+        raise IdempotencyKeyConflict(route_key, _validate_key(idempotency_key))
+    return replay

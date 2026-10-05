@@ -17,7 +17,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from ...services import matching_run
 from ..deps import Command
@@ -30,17 +30,37 @@ RUN = "postRequestsRequestIdMatchingRun"
 
 
 class MatchingRunInput(BaseModel):
-    """The inline body. `matching_policy_version` is REQUIRED by CORRECTION-004
-    and must equal the ACTIVE policy's version. It is typed `Any` here on
-    purpose: an omitted, mistyped, unknown or inactive version all reach the
-    one typed refusal (422 `MATCHING_POLICY_VERSION_REFUSED`), which never
-    echoes the value, instead of a generic validation error that could. The
-    body is closed, as every sibling body is."""
+    """The inline body, as the effective contract declares it.
 
-    model_config = ConfigDict(extra="forbid")
+    - `matching_policy_version` is REQUIRED by CORRECTION-004 and must equal
+      the ACTIVE policy's version. It is typed `Any` here on purpose: an
+      omitted, mistyped, unknown or inactive version all reach the one typed
+      refusal (422 `MATCHING_POLICY_VERSION_REFUSED`), which never echoes the
+      value, instead of a generic validation error that could.
+    - `property_ids` is an array of ids. Absent means a full scan; `[]`
+      means no candidate; **null is refused**, since the contract's type is
+      an array and null is not one (review of bf052f4, R-S4-7-01).
+    - **The body is open**, as the contract leaves it (no
+      `additionalProperties: false`; CORRECTION-004 narrows only the
+      version). An undeclared field is accepted and changes nothing the run
+      computes. It is part of the body, so it counts for idempotency
+      (API_CONTRACTS §2.3). Closing the body would be a contract narrowing of
+      its own, which no correction approves (review of bf052f4).
+    """
+
+    model_config = ConfigDict(extra="allow")
 
     matching_policy_version: Any = None
     property_ids: list[uuid.UUID] | None = None
+
+    @field_validator("property_ids", mode="before")
+    @classmethod
+    def _an_array_not_null(cls, value: Any) -> Any:
+        # Runs only for a value that was SENT: an absent field keeps its
+        # default and is a full scan.
+        if value is None:
+            raise ValueError("property_ids is an array; omit it for a full scan")
+        return value
 
 
 @router.post("/requests/{request_id}/matching/run", operation_id=RUN, status_code=201)
