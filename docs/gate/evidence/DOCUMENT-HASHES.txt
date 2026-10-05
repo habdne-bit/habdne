@@ -630,3 +630,7 @@ docs/gate/SLICE_4_CLOSURE.md                                   new   8442b18de48
 docs/gate/SLICE_4_PLAN.md                                      rev20 20b58a4f4f10028a4f0fede02745e5a3a7b7e5ab15b2f82a35bb098f83338e68
 docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    76e69003214fe552e6887afa2f753b31d95735c8a9e55c430635ff00781a66d8
 SLICE_4_PLAN.md changed revision: 19 -> 20 (Slice 4 closed at 58368d1; final revision).
+
+--- Slice 5 plan, revision 1, for review; no code ---
+docs/gate/SLICE_5_PLAN.md                                      rev1  c7bcbc569a28619c675160ce5567bfa03fa89bd667d0c1e549e24e3fe985f989
+docs/gate/evidence/SLICE5-PLAN-FINDINGS.txt                    new   1a78e89e830a908d14bfc6be9a4f1d23b9639a1bfc2d76caebfaa22aac7a7dc3

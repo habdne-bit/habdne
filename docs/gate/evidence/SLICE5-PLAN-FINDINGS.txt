@@ -1,0 +1,26 @@
+TURAB — Slice 5 plan revision 1: findings F5-1 and F5-2 (measured, not fixed)
+Commit: 3277476b8c1e0aaf9ea00d9b38fae24efc1ecd8d
+Tree clean: True
+Source fingerprint (db/dev/source_fingerprint.py): 5906ae50ff1a21667f3c012dbfbb960e46f56b960020b4ed0851a7edb7ba4012
+Recorded: 2026-10-05 17:57:32 UTC
+
+F5-1  CustomerOpportunityView: rendered keys vs the frozen schema
+  frozen additionalProperties: False
+  frozen properties: ['created_at', 'known_differences', 'opportunity_id', 'property', 'shared_at', 'sharing_scope', 'status', 'validity_status', 'why_real']
+  SUMMARY_ONLY                rendered extra keys: ['contact']
+  PROPERTY_DETAILS_ALLOWED    rendered extra keys: ['contact']
+  CONTACT_AFTER_CONFIRMATION  rendered extra keys: ['contact']
+
+F5-2  `property` at each scope vs the frozen $ref CustomerPropertyView
+  frozen CustomerPropertyView additionalProperties: False
+  frozen CustomerPropertyView properties: ['availability_last_confirmed_at', 'built_area_m2', 'canonical_location_id', 'current_availability', 'land_area_m2', 'local_location_detail', 'property_id', 'property_type', 'supply_mode', 'version']
+  frozen CustomerOpportunityView.property: {'$ref': '#/components/schemas/CustomerPropertyView'}
+  SUMMARY_ONLY                property keys: ['availability', 'built_area_m2', 'canonical_location_id', 'land_area_m2', 'local_location_detail', 'offers', 'property_id', 'property_type', 'supply_mode']
+                              not in CustomerPropertyView: ['availability', 'offers']
+  PROPERTY_DETAILS_ALLOWED    property keys: ['availability_last_confirmed_at', 'built_area_m2', 'canonical_location_id', 'current_availability', 'land_area_m2', 'local_location_detail', 'property_id', 'property_type', 'supply_mode', 'version']
+                              not in CustomerPropertyView: []
+
+F5-3  SUMMARY_ONLY values (RFC-001 R8.2 names 'type, location and area bands')
+  input built_area_m2=137.5, local_location_detail='rue X 12'
+  rendered built_area_m2=137.5, local_location_detail=None
+  frozen CustomerPropertyView types built_area_m2 as {'type': ['number', 'null']}
