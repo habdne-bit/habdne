@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **149**
-- Distinct tests cited: **433**
-- Suite total: **1887/1887** test cases passing (1100 distinct test functions)
+- Rules and invariants covered: **151**
+- Distinct tests cited: **441**
+- Suite total: **1945/1945** test cases passing (1137 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -162,6 +162,8 @@ matrix, because it reads as assurance.
 | `R-S2-04` | Reactivation applies the active freshness policy; a future confirmation is refused and a historical one accepted | `test_a_stale_paused_request_cannot_be_reactivated`<br>`test_a_never_confirmed_paused_request_cannot_be_reactivated`<br>`test_reconfirm_then_reactivate_is_the_two_step_path`<br>`test_the_freshness_check_on_reactivation_reads_the_active_policy`<br>`test_a_future_confirmation_is_refused`<br>`test_a_historical_confirmation_is_still_accepted` | PASS |
 | `R-S2-05` | Input models match the contract; expected errors are 4xx, write nothing, consume no key and leak no database text | `test_a_null_non_nullable_field_is_a_422_not_a_500`<br>`test_an_unknown_enum_value_is_a_422_not_a_500`<br>`test_an_incoherent_budget_pair_is_refused_on_create`<br>`test_the_budget_pair_is_checked_on_the_merged_values`<br>`test_a_refused_input_consumes_no_idempotency_key`<br>`test_a_refused_input_leaks_no_database_text` | PASS |
 | `Slice 0` | Health is liveness; readiness checks the database and fails 503 | `test_health_is_liveness_only`<br>`test_readiness_checks_the_database`<br>`test_readiness_reports_503_when_the_database_is_unreachable` | PASS |
+| `S4 / R9.2` | Matching is staff-only: a customer can neither run it nor read a match or a diagnostic, and no customer or public operation returns one | `test_a_customer_cannot_run_matching`<br>`test_a_customer_cannot_read_a_match`<br>`test_a_customer_cannot_read_a_diagnostic`<br>`test_no_customer_or_public_operation_returns_a_match_or_a_diagnostic` | PASS |
+| `S4 / R6.3` | A staff read of a match or of a diagnostic is an access record; an unknown id is refused as every staff read is, and recorded | `test_a_match_read_is_recorded`<br>`test_a_diagnostic_read_is_recorded`<br>`test_an_unknown_match_is_refused_as_every_staff_read`<br>`test_the_diagnostic_of_an_unknown_request_is_refused_as_every_staff_read` | PASS |
 
 ## Reading this table
 

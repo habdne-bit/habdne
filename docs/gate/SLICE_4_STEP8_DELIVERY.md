@@ -237,14 +237,19 @@ Nothing is changed until then.
 - **G1–G6**, the reads: not recorded, the earliest run read as the latest,
   a never-run request not 404, a match through floats.
 
-Three tamper cases were added BEFORE the trial run:
+Three tamper cases were added before ANY step-8 mutation was run:
 - the reasons;
 - a snapshot no rule reads;
 - a rule's explanation.
 
-Without them, X3, Y2 and Y3 could not be told apart from correct code.
+The reason was read from the code, not measured: without them, no test
+would tell X3, Y2 and Y3 apart from correct code. No trial run preceded the
+clean-tree run.
 
-RESULT_PLACEHOLDER_8
+**Clean-tree result: 17 of 17 fail, and none survives.**
+- Recorded at `af6ae0e`, source fingerprint `b72de094…6cba1`, baseline 48
+  passed (`evidence/SLICE4-STEP8-MUTATIONS.txt`).
+- Every mutated file was restored and verified by sha256.
 
 ---
 

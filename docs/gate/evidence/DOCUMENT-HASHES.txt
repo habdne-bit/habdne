@@ -579,3 +579,18 @@ SLICE_4_PLAN.md changed revision: 15 -> 16 (review of 48588a0: typed 500 complet
 docs/gate/SLICE_4_PLAN.md                                      rev17 fe39e6dfe07ecbd6f6b7ddc8afed4aaa8f92b3b061e74bb1ca487e5ab32295a2
 docs/gate/SLICE_4_STEP7_DELIVERY.md                            --    3740100d0b57561173d4f2716e3fb9a67a88ec6e835ebedfce8f1c4e9e487205
 SLICE_4_PLAN.md changed revision: 16 -> 17 (step 7 closed at dcf834a; step 8 authorised).
+
+--- Slice 4 step 8: the staff reads, the mandatory tests, STOP GATE D; G4-19 raised ---
+src/turab/matching/reconstruct.py                              --    c522e4dd249b3dd10591c4dd9550dbbd64622935387dad5ba3744f2143773289
+src/turab/services/access.py                                   --    a23798e6a18e87040f69fee41d728dd895272567ff59dfc5f8bac71379015757
+src/turab/api/routes/matching.py                               --    3a8ce0e2639e2c4eb3e948ea3bd576d1eb52e68b063ddde69cd3f9188593f640
+db/gate/stop_gate_d_evidence.py                                --    0cec14d0fd9e2dcdc35d0261758bc931db2129d101f0625228ccb8aacc1597c1
+db/gate/authorization_evidence.py                              --    7d0e2f92d1099238eb2f9b25def6b89d7a5287d8d5c42a5a3d273249bd9ba18b
+tests/test_slice4_step8.py                                     --    c5da0d3517529cfafe89378a5c2f07488263a3c3ed92b504f7defef6b16744f9
+tests/test_slice4_stop_gate_d.py                               --    7c02c288e8f2de15d623360a6dd0a43bad55ff7d07f549f26a45fbb39ebaba5e
+db/dev/mutate_slice4_step8.py                                  --    d7a96ce41ab992eef39f52606b108aa7be762f67772a1fcca3365786bfa728c8
+docs/gate/SLICE_4_STEP8_DELIVERY.md                            --    438bac739a657eb8a969d220635fc2eea0c1a39027eddec812cae2d6b1309dcf
+docs/gate/SLICE_4_PLAN.md                                      rev18 7aa5ac21f26cd462be786d2871c25eee63142a4e14567446342ad7ca45f623d7
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     --    ab4cd52105c8bdeb369be51fdf5f448d28e813fb8d0ff981ed299c590ddd5111
+docs/gate/evidence/SLICE4-STEP8-MUTATIONS.txt                  new   dcdb74535a00e2c670a12de03e5ba8361080bdce51f39b1d64d38e532d73d0b9
+SLICE_4_PLAN.md changed revision: 17 -> 18 (step 8 delivered; G4-19 raised, open).

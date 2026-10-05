@@ -1,0 +1,105 @@
+TURAB — Slice 4 step 8: which read, proof or comparison fails which test
+============================================================
+Base commit       : af6ae0e3527e7148113214ab7ebfc4625ea50097
+Source fingerprint: b72de094fc590ab6c7d3efaff8f05404167c1b0f154b3d1d90690fa37e16cba1
+Working tree      : CLEAN
+Recorded          : 2026-10-05 15:16:48 UTC
+Test file         : tests/test_slice4_step8.py
+
+=== baseline (no mutation) ===
+   48 passed, 2 warnings in 17.28s
+== X1 blocking copied from the row, not derived [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 17.89s
+   FAILED test_reconstruction_detects_a_blocking_flag_that_was_not_derived
+   cause: E   assert False
+   cause: assert False
+== X2 eligibility not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.60s
+   FAILED test_reconstruction_detects_a_stored_decision_that_was_not_derived[eligibility-ELIGIBLE]
+   cause: E   assert False
+   cause: assert False
+== X3 the reasons not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.57s
+   FAILED test_reconstruction_detects_a_stored_decision_that_was_not_derived[reasons-value7]
+   cause: E   assert False
+   cause: assert False
+== X4 the soft score not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 17.15s
+   FAILED test_reconstruction_detects_a_stored_decision_that_was_not_derived[soft_score-0.5]
+   cause: E   assert False
+   cause: assert False
+== X5 the next action not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.33s
+   FAILED test_reconstruction_detects_a_stored_decision_that_was_not_derived[next_action-value6]
+   cause: E   assert False
+   cause: assert False
+== X6 blocking_if_unknown ignored [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.35s
+   FAILED test_every_stored_match_is_reconstructed_from_its_rows_alone
+   cause: AssertionError: [('aa183f70-4498-4d58-87be-49913f371dc1', ['LAND_AREA_MIN#1: blocking stored True, derived False', 'eligibility: store...N, derived PASS', "reasons: the s
+   cause: E   AssertionError: [('aa183f70-4498-4d58-87be-49913f371dc1', ['LAND_AREA_MIN#1: blocking stored True, derived False', 'eligibility: store...N, derived PASS', "reasons: t
+== X7 the column target left out of the soft score [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.55s
+   FAILED test_every_stored_match_is_reconstructed_from_its_rows_alone
+   cause: AssertionError: [('b1eaf67d-2eaa-43a8-a4fe-e6a0bb764a16', ['soft_score: stored 0.969424, derived 0.984127'])]
+   cause: E   AssertionError: [('b1eaf67d-2eaa-43a8-a4fe-e6a0bb764a16', ['soft_score: stored 0.969424, derived 0.984127'])]
+== Y1 compatibility not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.65s
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[result]
+   cause: E   assert [] != []
+   cause: assert [] != []
+== Y2 the input hash not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.36s
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[permission_snapshot]
+   cause: E   assert [] != []
+   cause: assert [] != []
+== Y3 the rule's explanation not compared [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   1 failed, 47 passed, 2 warnings in 16.28s
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[rule_explanation]
+   cause: E   assert [] != []
+   cause: assert [] != []
+== Y4 the rule run on the property snapshot of no one [src/turab/matching/reconstruct.py, 1 site(s)]  restored: sha256 c522e4dd249b3dd1 identical
+   7 failed, 41 passed, 2 warnings in 16.00s
+   FAILED test_an_old_match_replays_from_its_snapshots_after_everything_changed
+   FAILED test_every_stored_match_replays_its_criterion_results_and_input_hash
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[commercial_context_snapshot]
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[permission_snapshot]
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[property_snapshot]
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[result]
+   FAILED test_replay_detects_a_result_its_snapshots_do_not_give[rule_explanation]
+   cause: E   KeyError: 'property_type'
+   cause: E   assert ["DOCUMENT_TY...rom replayed'] == []
+   cause: KeyError: 'property_type'
+   cause: assert ["DOCUMENT_TY...rom replayed'] == []
+== G1 a match read not recorded [src/turab/services/access.py, 1 site(s)]  restored: sha256 a23798e6a18e8704 identical
+   1 failed, 47 passed, 2 warnings in 17.01s
+   FAILED test_a_match_read_is_recorded
+   cause: AssertionError: assert [] == [('READ', 'ge...0000000003'))]
+   cause: E   AssertionError: assert [] == [('READ', 'ge...0000000003'))]
+== G2 an unknown match's denial not recorded [src/turab/services/access.py, 1 site(s)]  restored: sha256 a23798e6a18e8704 identical
+   1 failed, 47 passed, 2 warnings in 16.17s
+   FAILED test_an_unknown_match_is_refused_as_every_staff_read
+   cause: AssertionError: assert [] == [('DENIED', '...H_CANDIDATE')]
+   cause: E   AssertionError: assert [] == [('DENIED', '...H_CANDIDATE')]
+== G3 the earliest diagnostic read as the latest [src/turab/services/access.py, 1 site(s)]  restored: sha256 a23798e6a18e8704 identical
+   1 failed, 47 passed, 2 warnings in 16.37s
+   FAILED test_the_latest_diagnostic_is_read_as_stored
+   cause: AssertionError: assert {'run_at': '2...ount': 0, ...} == {'run_at': '2...ount': 0, ...}
+   cause: E   AssertionError: assert {'run_at': '2...ount': 0, ...} == {'run_at': '2...ount': 0, ...}
+== G4 a diagnostic read not recorded [src/turab/services/access.py, 1 site(s)]  restored: sha256 a23798e6a18e8704 identical
+   1 failed, 47 passed, 2 warnings in 16.20s
+   FAILED test_a_diagnostic_read_is_recorded
+   cause: AssertionError: assert ('4f6dab7f-ff51-4895-8a2c-7781ed8c4efa', 'MATCH_DIAGNOSTIC_RUN') in {('0a7c4522-72a3-4f70-b1c3-875196cd54b8', 'REQUEST')}
+   cause: E   AssertionError: assert ('4f6dab7f-ff51-4895-8a2c-7781ed8c4efa', 'MATCH_DIAGNOSTIC_RUN') in {('0a7c4522-72a3-4f70-b1c3-875196cd54b8', 'REQUEST')}
+== G5 a request never run is not a 404 [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 3a8ce0e2639e2c4e identical
+   1 failed, 47 passed, 2 warnings in 17.29s
+   FAILED test_a_request_never_run_has_no_diagnostic
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== G6 a match returned through floats [src/turab/services/access.py, 1 site(s)]  restored: sha256 a23798e6a18e8704 identical
+   1 failed, 47 passed, 2 warnings in 16.38s
+   FAILED test_a_match_is_read_exactly_as_stored
+   cause: AssertionError: assert {'match_id': ...e': None, ...} == {'match_id': ...e': None, ...}
+   cause: E   AssertionError: assert {'match_id': ...e': None, ...} == {'match_id': ...e': None, ...}
+
+SURVIVING MUTATIONS: none
