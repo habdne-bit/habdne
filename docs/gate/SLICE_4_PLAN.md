@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 17**
+## Implementation plan — **revision 18**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -26,7 +26,8 @@ for.
 | 14 | `7a223d7` | **G4-15 DECIDED** (review of b3246b0), D1–D6 with the reviewer's constraints, recorded under G4-15. Step 7 authorised on them, with the seven conditions already recorded. Slice 4 is not closed; G4-5R is not decided, and the RENT refusal stays |
 | 15 | `e9f4ead` | Step 7 **not closed** (review of bf052f4): three findings fixed after being measured (R-S4-7-01 the body model against the contract; R-S4-7-02 one Idempotency-Key in two concurrent calls; R-S4-7-03 exact numbers in the response and the replay). **Decided:** the two policy configuration faults of §3.1 are a TYPED 500. Step 8 waits on the review of the fixes |
 | 16 | `18db48d` | Step 7 **not closed** (review of 48588a0): the three fixes of revision 15 accepted; the typed 500 completed (R-S4-7-04): **two codes**, both 500, a **fixed detail**, the cause **logged under the trace id**. The race witnesses bind B's wait to A's backend (`pg_blocking_pids`). Step 8 waits on this review |
-| 17 | the commit that records the review of dcf834a | **Step 7 CLOSED at `dcf834a`** (review of dcf834a). Step 8 authorised under the approved plan. Slice 4 stays open until step 8 is reviewed; G4-5R stays open, and the RENT refusal stays in force. **No decision is taken; no code changes** |
+| 17 | `13f71bf` | **Step 7 CLOSED at `dcf834a`** (review of dcf834a). Step 8 authorised under the approved plan. Slice 4 stays open until step 8 is reviewed; G4-5R stays open, and the RENT refusal stays in force. **No decision is taken; no code changes** |
+| 18 | the step-8 delivery commit | Step 8 delivered for review: the two staff reads, the ten mandatory tests under their planned names, the reference scenarios, STOP GATE D (reconstruction and replay) and its generator. **Raised (open): G4-19**, the registry digest at evaluation time is not stored, so a match's input hash replays only while the registry is unchanged. No decision is taken |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -310,6 +311,7 @@ accept a recommendation by number.
 | G4-16 | Tightening Slice 2's criterion entry | Not now; refuse at run time instead | — |
 | G4-17 | An ACTIVE offer on an alias (raised in step 3) | **APPROVED (a)** (review of cc3a7fe): kept and reported; nothing moved or re-linked | — |
 | G4-18 | A count criterion on a type the attribute cannot apply to (raised in step 4) | **APPROVED (b)** (review of f789a59): FAIL when the attribute cannot apply; UNKNOWN when it applies and is not recorded; `count_min@2` beside version 1 | step 4 |
+| G4-19 | The registry digest at evaluation time is not stored (raised in step 8) | **Open.** No option chosen; see G4-19 | — (replay proof of the hash, beyond the current registry) |
 
 Each item has options and a recommendation. **Blocks** names the step in §8
 that cannot start without it.
@@ -995,6 +997,43 @@ The contract does not give how they are filled.
 >   tested.
 
 ---
+
+### G4-19 · The registry digest at evaluation time is not stored (raised in step 8; open)
+- **Facts:**
+  - G4-13 put `REGISTRY.digest()` into every match's input hash, so that "a
+    run under a different rule set is a different input".
+  - The digest covers EVERY registered pair, `(id, version, source sha256)`.
+    It is not stored with the match: `explanation.engine` names the
+    versions the match used, not the digest.
+  - G4-2 adds a changed rule as a NEW version beside the old one, so the
+    digest changes whenever any version is added. The added version may be
+    one the match never used.
+- **Consequence, found while building STOP GATE D's replay.**
+  - Once any version is registered after a match was written, its stored
+    `input_hash` can no longer be recomputed from the database alone.
+  - The criterion results still replay, since each row names its own
+    version, and so does the reconstruction of every decision.
+  - Today no version has been added since step 7, so the replay proof
+    holds: every match in the run was evaluated under the current registry.
+    STOP GATE D states the limit (`reconstruct.py`, the document's §1).
+- **Options:**
+  - (a) **Record the digest** that entered the hash in each new match's
+    `explanation.engine`. A replay then recomputes the hash with the
+    recorded digest, and checks that digest against the pin file's history.
+    G4-13's hash is unchanged. It adds one field to the stored explanation
+    (D4), for new matches only.
+  - (b) **Narrow the hash** to the pairs the match actually ran, rather
+    than the whole registry. That is a new input format
+    (`turab.match-input/3`), and it changes G4-13's decision.
+  - (c) **Accept the limit:** the hash replays only while the registry is
+    unchanged, and STOP GATE D says so.
+- **Recommendation: (a).**
+  - It keeps G4-13 as decided.
+  - It makes the replay proof independent of the registry's growth.
+  - It is additive.
+
+  It is a change to what step 7 stores, so it needs the reviewer's
+  decision. **Delivered now: (c), stated.**
 
 ## 5. Authorization
 

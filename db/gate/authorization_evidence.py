@@ -750,6 +750,17 @@ RULES: tuple[Rule, ...] = (
     Rule("Slice 0", "Health is liveness; readiness checks the database and fails 503",
          ("test_health_is_liveness_only", "test_readiness_checks_the_database",
           "test_readiness_reports_503_when_the_database_is_unreachable")),
+    # --- Slice 4: matching is staff-only; its reads are recorded -------------
+    Rule("S4 / R9.2", "Matching is staff-only: a customer can neither run it nor read a "
+         "match or a diagnostic, and no customer or public operation returns one",
+         ("test_a_customer_cannot_run_matching", "test_a_customer_cannot_read_a_match",
+          "test_a_customer_cannot_read_a_diagnostic",
+          "test_no_customer_or_public_operation_returns_a_match_or_a_diagnostic")),
+    Rule("S4 / R6.3", "A staff read of a match or of a diagnostic is an access record; "
+         "an unknown id is refused as every staff read is, and recorded",
+         ("test_a_match_read_is_recorded", "test_a_diagnostic_read_is_recorded",
+          "test_an_unknown_match_is_refused_as_every_staff_read",
+          "test_the_diagnostic_of_an_unknown_request_is_refused_as_every_staff_read")),
 )
 
 

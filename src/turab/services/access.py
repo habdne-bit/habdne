@@ -11,6 +11,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..auth.audit import AccessAuditor
@@ -26,6 +27,11 @@ from ..auth.roles import Role
 from ..auth.subject import Subject
 from . import freshness, timeline
 from . import requests as request_service
+
+#: Audit resource kinds of Slice 4's staff reads (R6.3). A match and a
+#: diagnostic run are not `ResourceKind`s: they have no customer loader.
+MATCH_KIND = "MATCH_CANDIDATE"
+DIAGNOSTIC_KIND = "MATCH_DIAGNOSTIC_RUN"
 
 
 @dataclass(frozen=True, slots=True)
@@ -311,6 +317,68 @@ class AccessService:
         from . import properties as property_service
 
         return property_service.provenance_for(self._session, property_id)
+
+    def read_match(self, match_id: uuid.UUID, operation_id: str):
+        """Slice 4 step 8: one stored match, staff-only by role, and RECORDED
+        (R6.2, R6.3), as `read_staff_resource` records a staff read. A match
+        is not a customer resource and has no customer loader (R9.2).
+
+        An unknown id is refused as `OBJECT_NOT_AUTHORIZED`, the staff-read
+        convention of every other staff loader (Slice 3,
+        `test_on_the_staff_path_an_unknown_property_is_403`): one answer
+        for "not there" and "not yours". Returns the contract's
+        `MatchCandidate`, read from the stored rows, or an `AccessDenied`."""
+        from .matching_run import match_view
+
+        exists = self._session.execute(
+            text("SELECT 1 FROM turab.match_candidates WHERE match_id = :m"),
+            {"m": match_id}).scalar_one_or_none()
+        if exists is None:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind=MATCH_KIND, resource_id=match_id)
+            return AccessDenied(DenyReason.OBJECT_NOT_AUTHORIZED)
+        self._auditor.read(subject=self._subject, operation_id=operation_id,
+                           trace_id=self._trace_id, resource_kind=MATCH_KIND,
+                           resource_id=match_id)
+        return match_view(self._session, match_id)
+
+    def read_latest_diagnostic(self, request_id: uuid.UUID, operation_id: str):
+        """Slice 4 step 8: the latest diagnostic run of a request (G4-15:
+        counts and blocker summary only), staff-only and RECORDED.
+
+        The request is loaded first through the staff loader, which records
+        the read or the denial, so an unknown request answers as every staff
+        read does. A request that exists and has never been run returns
+        None: the route answers 404, since there is no diagnostic to
+        conceal. "Latest" is the greatest `run_at`; equal instants are
+        ordered by `diagnostic_run_id`, descending, so the answer is
+        deterministic."""
+        result = self.read_staff_resource(ResourceKind.REQUEST, request_id, operation_id)
+        if not result.authorized:
+            return result
+        row = self._session.execute(text("""
+            SELECT diagnostic_run_id, jsonb_build_object(
+                       'diagnostic_run_id', diagnostic_run_id, 'request_id', request_id,
+                       'run_at', run_at,
+                       'ready_opportunity_count', ready_opportunity_count,
+                       'actionable_unknown_count', actionable_unknown_count,
+                       'near_match_count', near_match_count,
+                       'blocker_summary', blocker_summary,
+                       'suggested_actions', suggested_actions,
+                       'relaxation_scenarios', relaxation_scenarios)::text AS body
+              FROM turab.match_diagnostic_runs WHERE request_id = :r
+             ORDER BY run_at DESC, diagnostic_run_id DESC LIMIT 1"""),
+            {"r": request_id}).mappings().first()
+        if row is None:
+            return None
+        self._auditor.read(subject=self._subject, operation_id=operation_id,
+                           trace_id=self._trace_id, resource_kind=DIAGNOSTIC_KIND,
+                           resource_id=row["diagnostic_run_id"])
+        from .. import exact_json
+        return exact_json.loads(row["body"])
 
     def record_list_access(
         self, *, operation_id: str, resource_kind: str, result_count: int,
