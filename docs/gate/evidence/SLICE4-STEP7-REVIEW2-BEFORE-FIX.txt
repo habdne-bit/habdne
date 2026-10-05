@@ -1,0 +1,58 @@
+TURAB — Slice 4 step 7, review of 48588a0: the review's tests run on the 48588a0 code, BEFORE the fix
+============================================================
+Base commit       : 48588a03a7f9d80fddf9e76ee92a23fd03ed0409
+Production code   : exactly as committed at 48588a0 (git diff --stat below shows the test file only)
+Recorded          : 2026-10-05 13:09:42 UTC
+PostgreSQL        : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+--- git diff --stat ---
+ tests/test_slice4_step7.py | 113 +++++++++++++++++++++++++++++++--------------
+ 1 file changed, 79 insertions(+), 34 deletions(-)
+
+--- pytest tests/test_slice4_step7.py -k "policy or race or concurrent" -rA ---
+E   AssertionError: assert 'MATCHING_POL...MISCONFIGURED' == 'MATCHING_POLICY_NOT_ACTIVE'
+E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.984873606-otp-secretmarker: automatic_request_relaxation must be false; this engine never changes a request (Spec §14, Master §7)
+E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+    raise DetailLeak(
+turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+/home/user/habdne/src/turab/api/problems.py:162: turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.317442337-otp-secretmarker: human_review_required_for_opportunity must be true (Master §5.2, ADR-08)
+E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+    raise DetailLeak(
+turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+/home/user/habdne/src/turab/api/problems.py:162: turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.701650281-otp-secretmarker: hard_gate must be {'unknown_required': 'NEED_MORE_INFORMATION', 'confirmed_fail_required': 'REJECTED'}; this engine implements no other mapping
+E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+    raise DetailLeak(
+turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+/home/user/habdne/src/turab/api/problems.py:162: turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+E   turab.services.matching_run.RunRefused: plan §3.1: policy 0.0.78432160-otp-secretmarker carries no usable rules.freshness_threshold_days.request; refusing to assume one
+E   turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+    raise DetailLeak(
+turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+/home/user/habdne/src/turab/api/problems.py:162: turab.api.problems.DetailLeak: problem detail may not contain 'otp': domain failures expose stable codes, not database or implementation text (API_CONTRACTS §2.5)
+PASSED tests/test_slice4_step7.py::test_correction_004_refuses_an_inactive_policys_version
+PASSED tests/test_slice4_step7.py::test_two_identical_runs_race_and_store_one_match
+PASSED tests/test_slice4_step7.py::test_one_key_and_one_body_in_two_concurrent_calls_return_the_original_result
+PASSED tests/test_slice4_step7.py::test_one_key_with_another_body_in_a_concurrent_call_is_409
+FAILED tests/test_slice4_step7.py::test_no_active_policy_is_its_own_typed_500
+FAILED tests/test_slice4_step7.py::test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[relaxes requests-change0-automatic_request_relaxation]
+FAILED tests/test_slice4_step7.py::test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no human review-change1-human_review_required_for_opportunity]
+FAILED tests/test_slice4_step7.py::test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[another hard-gate mapping-change2-hard_gate]
+FAILED tests/test_slice4_step7.py::test_a_policy_this_engine_does_not_implement_is_its_own_typed_500[no request freshness threshold-change3-freshness_threshold_days.request]
+5 failed, 4 passed, 81 deselected in 8.46s
+
+--- reading ---
+R-S4-7-04  no active policy: answered with the one code MATCHING_POLICY_MISCONFIGURED, which
+           does not tell the two faults apart.
+           a policy this engine does not implement, whose version carries `otp-secretmarker`:
+           the exception text, version included, became the problem detail, and the detail
+           guard raised DetailLeak, an UNTYPED error, in all four variants (relaxation,
+           human review, hard-gate mapping, a missing freshness threshold).
+           No record of the cause was written under the response's trace id (the tests
+           could not reach that assertion).
+Witness    the three race tests now record each backend's pid and require A's pid in
+           pg_blocking_pids(B), with B waiting on a Lock in the named INSERT. They PASS on
+           this code: the races were what the earlier witness described; the witness now
+           proves it. Not a defect of the code; a tightening of the evidence.
+After      matching_policies holds 0.2.0 alone, active: each test restored it in `finally`.

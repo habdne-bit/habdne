@@ -10,7 +10,8 @@ Each mutation reintroduces one defect:
 - D: the diagnostic (D2, D3, D3b; condition 4);
 - A: the next action (D5, `action.next@1`);
 - B, C, E, P: the review of bf052f4 (the body, one key in two concurrent
-  calls, exact numbers, the typed 500).
+  calls, exact numbers, the typed 500); P2-P4: the review of 48588a0 (two
+  codes, a fixed detail, the cause logged).
 
 The test file is step 7's only.
 """
@@ -26,6 +27,7 @@ SES = "src/turab/db/session.py"
 ROUTE = "src/turab/api/routes/matching.py"
 IDEM = "src/turab/services/idempotency.py"
 EXACT = "src/turab/exact_json.py"
+PARTIES = "src/turab/api/routes/parties.py"
 
 #: `CommandService.run`: the refusals (`prepare`), then the key claimed under a
 #: savepoint. R3 swaps the two.
@@ -210,6 +212,15 @@ MUTATIONS = [
  ("P1 a policy fault left untyped", RUN,
   "    except (freshness.NoActiveFreshnessPolicy, policy.PolicyNotImplemented) as exc:",
   "    except () as exc:"),
+ # P: the two policy faults (review of 48588a0, R-S4-7-04)
+ ("P2 one code for both policy faults", RUN,
+  '        code = ("MATCHING_POLICY_NOT_SUPPORTED" if _a_policy_is_active(session)',
+  '        code = ("MATCHING_POLICY_NOT_SUPPORTED" if True'),
+ ("P3 the detail built from the exception", RUN,
+  '        raise RunRefused(code, "plan §3.1", POLICY_FAULTS[code], internal=str(exc)) from None',
+  '        raise RunRefused(code, "plan §3.1", str(exc), internal=str(exc)) from None'),
+ ("P4 the cause not logged under the trace id", PARTIES,
+  "            if internal is not None:", "            if False:"),
 ]
 
 if __name__ == "__main__":

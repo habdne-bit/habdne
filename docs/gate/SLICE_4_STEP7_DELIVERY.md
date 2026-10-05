@@ -1,9 +1,10 @@
 # Slice 4 · step 7 — the matching run: persistence, audit, the diagnostic row, concurrency
 
-**Status: NOT closed** (review of bf052f4). Three findings are fixed in
-**§11**, after being measured. The typed 500 decided in the same review is
-applied there too. §11 supersedes §4's body description, §6's numbers
-statement, and §9. Slice 4 is not closed, and G4-5R is not decided: the RENT
+**Status: NOT closed** (review of 48588a0). The review of bf052f4's three
+findings are fixed in **§11**, and the review of 48588a0 accepted them. The
+typed 500 was applied incompletely in §11.4. It is completed in **§12**,
+which supersedes §11.4, as §11 supersedes §4's body description, §6's
+numbers statement, and §9. Slice 4 is not closed, and G4-5R is not decided: the RENT
 refusal stays in force.
 
 **Authorised:** the review of b3246b0 approved G4-15 with the constraints
@@ -551,6 +552,91 @@ Recorded in the plan, revision 15. §9 is answered by this decision.
 - Every mutated file was restored and verified by sha256.
 
 ### 11.6 What remains
+
+- **Step 8**, after the review of these fixes.
+- **G4-5R:** the period is open, and the RENT refusal is in force.
+
+---
+
+## 12. The review of 48588a0
+
+The review accepted R-S4-7-01, -02 and -03. It kept step 7 open on
+R-S4-7-04, and asked for a tighter race witness.
+
+**Measured before the fix** (`evidence/SLICE4-STEP7-REVIEW2-BEFORE-FIX.txt`).
+The production code was as committed at `48588a0`; only the test file
+differed. The 5 policy-fault tests failed:
+- **No active policy.** It was answered with the single code
+  `MATCHING_POLICY_MISCONFIGURED`, which does not tell the two faults apart.
+- **A policy this engine does not implement.** Its version carried
+  `otp-secretmarker`. The exception text, version included, became the
+  problem detail, and the detail guard raised `DetailLeak`, an UNTYPED
+  error. This held in all four variants: relaxation, human review, the
+  hard-gate mapping, and a missing freshness threshold.
+- **No record of the cause** was written under the trace id.
+
+**On the decision's wording.** The review of bf052f4, as received here,
+read «قرار 500 المصنّف لحالتي إعداد السياسة». One code was applied. The review
+of 48588a0 states the decision as two fixed codes, and that is applied now.
+
+### 12.1 R-S4-7-04, fixed
+
+1. **Two fixed codes, both 500:**
+   - `MATCHING_POLICY_NOT_ACTIVE`: no active policy row;
+   - `MATCHING_POLICY_NOT_SUPPORTED`: an active policy whose promises this
+     engine does not implement, or which lacks a freshness threshold.
+
+   When the loader raises, an active row is looked for in the run's
+   snapshot. Its presence chooses the code.
+2. **A fixed, safe detail.** The detail is
+   `plan §3.1: <matching_run.POLICY_FAULTS[code]>`. It is built from neither
+   the exception nor the policy.
+3. **The cause in the server log, bound to the trace id.**
+   `RunRefused.internal` carries the technical cause. The shared command
+   plumbing (`_run`) logs it on `turab.api` at ERROR, with
+   `trace_id`, `problem_code` and `internal_detail`, the same `extra`
+   pattern as the unhandled-error handler. It never reaches the response.
+4. **HTTP tests:**
+   - `test_no_active_policy_is_its_own_typed_500`;
+   - `test_a_policy_this_engine_does_not_implement_is_its_own_typed_500`,
+     in four variants, each with a version carrying `otp-secretmarker`.
+
+   Each test asserts:
+   - the code and the fixed detail;
+   - the version, the marker and the cause absent from the body;
+   - nothing written, and the key not consumed;
+   - exactly one ERROR record under the response's trace id, holding the
+     code and the cause, version included.
+
+   Each test restores `0.2.0` as the only policy.
+
+### 12.2 The race witness, tightened
+
+Both race tests now record each backend's pid, A first and then B, before
+the statement that blocks:
+- `_same_key_race` records it at the claim, over HTTP;
+- the identical-runs test records it at the match insert.
+
+The witness (`_blocked_by`) waits until three things hold at once:
+- B's backend is waiting on a `Lock`;
+- B's current query is the named INSERT;
+- `pg_blocking_pids(B)` contains A's pid.
+
+**Measured:** the three race tests PASS with this witness on the `48588a0`
+code. The races were what the earlier witness described, and the witness
+now proves it.
+
+### 12.3 Mutations
+
+`db/dev/mutate_slice4_step7.py`: **51 mutations.** Three are added on the
+policy faults:
+- **P2:** one code for both faults;
+- **P3:** the detail built from the exception;
+- **P4:** the cause not logged.
+
+RESULT_PLACEHOLDER_12
+
+### 12.4 What remains
 
 - **Step 8**, after the review of these fixes.
 - **G4-5R:** the period is open, and the RENT refusal is in force.

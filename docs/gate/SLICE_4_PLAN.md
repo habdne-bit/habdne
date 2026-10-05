@@ -1,5 +1,5 @@
 # Slice 4 — Deterministic Matching Core
-## Implementation plan — **revision 15**
+## Implementation plan — **revision 16**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Matching stayed closed through
@@ -24,7 +24,8 @@ for.
 | 12 | `7b09da3` | Step 6 **not closed** until applied: **the column target's weight decided, option (a)** (PREFERRED, weight 2, its own COLUMN term, never merged with a BUDGET_TARGET row). Applied as `score.soft@2` beside `@1`. Step 5's closure at `a5ea6f5` confirmed. G4-5R unchanged; step 7 waits on G4-15 |
 | 13 | `b3246b0` | **Step 6 CLOSED at `ee7fbc0`.** G4-15 detailed for decision, D1–D6, with the conditions that already bind step 7. **No decision is taken; no code changes** |
 | 14 | `7a223d7` | **G4-15 DECIDED** (review of b3246b0), D1–D6 with the reviewer's constraints, recorded under G4-15. Step 7 authorised on them, with the seven conditions already recorded. Slice 4 is not closed; G4-5R is not decided, and the RENT refusal stays |
-| 15 | the commit that answers the review of bf052f4 | Step 7 **not closed** (review of bf052f4): three findings fixed after being measured (R-S4-7-01 the body model against the contract; R-S4-7-02 one Idempotency-Key in two concurrent calls; R-S4-7-03 exact numbers in the response and the replay). **Decided:** the two policy configuration faults of §3.1 are a TYPED 500. Step 8 waits on the review of the fixes |
+| 15 | `e9f4ead` | Step 7 **not closed** (review of bf052f4): three findings fixed after being measured (R-S4-7-01 the body model against the contract; R-S4-7-02 one Idempotency-Key in two concurrent calls; R-S4-7-03 exact numbers in the response and the replay). **Decided:** the two policy configuration faults of §3.1 are a TYPED 500. Step 8 waits on the review of the fixes |
+| 16 | the commit that answers the review of 48588a0 | Step 7 **not closed** (review of 48588a0): the three fixes of revision 15 accepted; the typed 500 completed (R-S4-7-04): **two codes**, both 500, a **fixed detail**, the cause **logged under the trace id**. The race witnesses bind B's wait to A's backend (`pg_blocking_pids`). Step 8 waits on this review |
 
 **Baseline:** Handoff v1.0.3 / technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:171–206`.
@@ -897,12 +898,21 @@ The contract does not give how they are filled.
 >
 > How step 7 applies each is stated in `docs/gate/SLICE_4_STEP7_DELIVERY.md`.
 >
-> **Added in revision 15 (review of bf052f4).** The two policy
-> configuration faults of §3.1, no active policy and an active policy whose
-> promises this engine does not implement, are answered with a **typed 500**
-> (`MATCHING_POLICY_MISCONFIGURED`). They are configuration faults, not the
-> caller's input, so they are not among D6's 422 refusals. Like every
-> refusal, they are decided before any write.
+> **Added in revision 15 (review of bf052f4), completed in revision 16
+> (review of 48588a0).** The two policy configuration faults of §3.1 are
+> answered with a **typed 500**, one code each:
+> - `MATCHING_POLICY_NOT_ACTIVE`: no matching policy is active;
+> - `MATCHING_POLICY_NOT_SUPPORTED`: the active policy is not one this
+>   engine implements. That is either its promises, or a freshness threshold
+>   it lacks.
+>
+> They are configuration faults, not the caller's input, so they are not
+> among D6's 422 refusals. The detail is **fixed**, never built from the
+> exception or from the policy's data. The cause is **logged on the server
+> under the response's trace id**. Like every refusal, they are decided
+> before any write. Revision 15 had applied ONE code
+> (`MATCHING_POLICY_MISCONFIGURED`) with the exception text as detail; the
+> review of 48588a0 found that incomplete (R-S4-7-04).
 
 ### G4-16 · Should Slice 2 refuse these criteria at entry? (new in revision 2)
 - **Fact:** the defects measured in §E enter through Slice 2's

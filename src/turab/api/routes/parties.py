@@ -8,6 +8,8 @@ they receive is supplied by the command boundary inside its transaction.
 """
 from __future__ import annotations
 
+import logging
+
 import uuid
 from datetime import datetime
 from typing import Annotated, Any
@@ -310,6 +312,15 @@ def _run(request, command, operation_id, route_key, payload, handler,
     except Exception as exc:
         if extra_errors is not None and isinstance(exc, extra_errors):
             code = getattr(exc, "code", "VALIDATION_FAILED")
+            internal = getattr(exc, "internal", None)
+            if internal is not None:
+                # The technical cause of a typed refusal stays on the server,
+                # bound to the trace id the client receives (review of
+                # 48588a0, R-S4-7-04). The client sees the code and a fixed
+                # detail.
+                logging.getLogger("turab.api").error(
+                    "typed refusal", extra={"trace_id": trace, "problem_code": code,
+                                            "internal_detail": internal})
             return coded(
                 ProblemCode[code] if code in ProblemCode.__members__
                 else ProblemCode.VALIDATION_FAILED,

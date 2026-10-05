@@ -12,6 +12,7 @@ that test's properties (`property_ids`), so no test sees another's rows.
 from __future__ import annotations
 
 import json
+import logging
 import threading
 import time
 import uuid
@@ -970,10 +971,22 @@ def _service_run(engine, ids, req, props):
             return matching_run.execute(s, prepared)[1]
 
 
-def _waiting_on_a_lock(engine) -> bool:
-    return _one(engine, """SELECT count(*) FROM pg_stat_activity
-                            WHERE wait_event_type = 'Lock'
-                              AND query LIKE '%INSERT INTO turab.match_candidates%'""") > 0
+def _blocked_by(engine, pids, statement, message):
+    """The witness of a race (review of 48588a0): `pids` holds the backend of
+    A, then of B, recorded by the test's wrappers. It waits until B's backend
+    is waiting on a lock, in `statement`, AND `pg_blocking_pids(B)` names A's
+    backend: B waits on A, not merely on something."""
+    deadline = time.monotonic() + 30
+    while True:
+        if len(pids) == 2:
+            row = _all(engine, """
+                SELECT a.wait_event_type, a.query, :a = ANY(pg_blocking_pids(:b)) AS by_a
+                  FROM pg_stat_activity a WHERE a.pid = :b""", a=pids[0], b=pids[1])
+            if (row and row[0]["by_a"] and row[0]["wait_event_type"] == "Lock"
+                    and statement in row[0]["query"]):
+                return
+        assert time.monotonic() < deadline, message
+        time.sleep(0.05)
 
 
 def test_two_identical_runs_race_and_store_one_match(engine, ids, monkeypatch):
@@ -986,9 +999,11 @@ def test_two_identical_runs_race_and_store_one_match(engine, ids, monkeypatch):
     req, prop, _ = _world(engine, ids)
     inserted, release = threading.Event(), threading.Event()
     original = matching_run._insert
-    calls = []
+    calls, pids = [], []
 
     def paused(session, prepared, ev):
+        # Each run's backend, recorded BEFORE its insert (B's insert blocks).
+        pids.append(session.execute(text("SELECT pg_backend_pid()")).scalar_one())
         match_id = original(session, prepared, ev)
         calls.append(match_id)
         if len(calls) == 1:
@@ -1019,10 +1034,8 @@ def test_two_identical_runs_race_and_store_one_match(engine, ids, monkeypatch):
     assert inserted.wait(30)
     b = threading.Thread(target=run, args=("b",))
     b.start()
-    deadline = time.monotonic() + 30
-    while not _waiting_on_a_lock(engine):
-        assert time.monotonic() < deadline, "run B never waited on run A's row"
-        time.sleep(0.05)
+    _blocked_by(engine, pids, "INSERT INTO turab.match_candidates",
+                "run B never waited on run A's row")
     release.set()
     a.join(60)
     b.join(60)
@@ -1216,9 +1229,11 @@ def _same_key_race(client, ids, engine, monkeypatch, req, first_body, second_bod
 
     claimed, release = threading.Event(), threading.Event()
     original = idempotency.claim
-    calls = []
+    calls, pids = [], []
 
     def held(session, **kw):
+        # Each call's backend, recorded BEFORE its claim (B's claim blocks).
+        pids.append(session.execute(text("SELECT pg_backend_pid()")).scalar_one())
         original(session, **kw)
         calls.append(kw["idempotency_key"])
         if len(calls) == 1:
@@ -1240,12 +1255,8 @@ def _same_key_race(client, ids, engine, monkeypatch, req, first_body, second_bod
     assert claimed.wait(30)
     b = threading.Thread(target=call, args=("b", second_body))
     b.start()
-    deadline = time.monotonic() + 30
-    while _one(engine, """SELECT count(*) FROM pg_stat_activity
-                           WHERE wait_event_type = 'Lock'
-                             AND query LIKE '%INSERT INTO turab.idempotency_records%'""") == 0:
-        assert time.monotonic() < deadline, "call B never waited on call A's key"
-        time.sleep(0.05)
+    _blocked_by(engine, pids, "INSERT INTO turab.idempotency_records",
+                "call B never waited on call A's key")
     release.set()
     a.join(60)
     b.join(60)
@@ -1325,41 +1336,73 @@ def test_the_response_and_its_replay_carry_the_stored_numbers_exactly(client, id
 
 
 # ======================================================================================
-# Review of bf052f4: the policy configuration faults of §3.1 are a TYPED 500
+# The policy faults of plan §3.1: two typed 500s, a fixed detail, the cause logged
+# (review of bf052f4: the typed 500; review of 48588a0: R-S4-7-04)
 # ======================================================================================
 
-def _policy_fault(client, ids, engine, req):
+#: Carried by a test policy's VERSION, which the schema leaves free text:
+#: `otp` is a marker the problem-detail guard refuses (`problems._LEAK_MARKERS`),
+#: and `secretmarker` stands for any policy data.
+LEAKY = "otp-secretmarker"
+
+
+def _policy_fault(client, ids, engine, req, caplog, code, *, internal_has=(),
+                  never_shown=()):
+    """The call is refused with `code` (500) and the FIXED detail; nothing is
+    written and the key is not consumed; the cause, and only there, is in the
+    server log, under the response's trace id."""
     key = str(uuid.uuid4())
     before = _footprint(engine, req, key)
-    r = _run(client, ids, req, [], key=key, body={"matching_policy_version": VERSION})
-    assert (r.status_code, r.json()["code"]) == (500, "MATCHING_POLICY_MISCONFIGURED"), r.text
-    assert r.json()["detail"].startswith("plan §3.1")
+    caplog.clear()
+    with caplog.at_level(logging.ERROR, logger="turab.api"):
+        r = _run(client, ids, req, [], key=key, body={"matching_policy_version": VERSION})
+    assert r.status_code == 500, r.text
+    problem = r.json()
+    assert problem["code"] == code
+    assert problem["detail"] == f"plan §3.1: {matching_run.POLICY_FAULTS[code]}"
+    for marker in never_shown:
+        assert marker not in r.text
     assert _footprint(engine, req, key) == before and before["idempotency"] == 0
+    logged = [rec for rec in caplog.records
+              if getattr(rec, "trace_id", None) == problem["trace_id"]]
+    assert len(logged) == 1, [rec.getMessage() for rec in caplog.records]
+    assert (logged[0].levelname, logged[0].problem_code) == ("ERROR", code)
+    for fragment in internal_has:
+        assert fragment in logged[0].internal_detail
 
 
-def test_no_active_policy_is_a_typed_500_and_writes_nothing(client, ids, engine):
+def test_no_active_policy_is_its_own_typed_500(client, ids, engine, caplog):
     req = _request(engine, ids)
     _exec(engine, "UPDATE turab.matching_policies SET active = false WHERE version = :v",
           v=VERSION)
     try:
-        _policy_fault(client, ids, engine, req)
+        _policy_fault(client, ids, engine, req, caplog, "MATCHING_POLICY_NOT_ACTIVE",
+                      internal_has=("no active matching policy",))
     finally:
         _exec(engine, "UPDATE turab.matching_policies SET active = true WHERE version = :v",
               v=VERSION)
 
 
-@pytest.mark.parametrize("label, rules", [
-    ("relaxes requests", {"automatic_request_relaxation": True,
-                          "human_review_required_for_opportunity": True}),
-    ("no human review", {"automatic_request_relaxation": False,
-                         "human_review_required_for_opportunity": False}),
+@pytest.mark.parametrize("label, change, internal", [
+    ("relaxes requests", {"automatic_request_relaxation": True},
+     "automatic_request_relaxation"),
+    ("no human review", {"human_review_required_for_opportunity": False},
+     "human_review_required_for_opportunity"),
+    ("another hard-gate mapping", {"hard_gate": {"unknown_required": "REJECTED"}},
+     "hard_gate"),
+    ("no request freshness threshold", {"freshness_threshold_days": {"property": 30,
+                                                                     "offer_terms": 14}},
+     "freshness_threshold_days.request"),
 ])
-def test_a_policy_this_engine_does_not_implement_is_a_typed_500(client, ids, engine, label,
-                                                                rules):
+def test_a_policy_this_engine_does_not_implement_is_its_own_typed_500(
+        client, ids, engine, caplog, label, change, internal):
+    """The active policy carries a version with leak markers. Before the
+    review of 48588a0 that version reached the problem detail, and `otp`
+    turned the typed refusal into an untyped 500 (DetailLeak)."""
     req = _request(engine, ids)
     seeded = _one(engine, "SELECT rules::text FROM turab.matching_policies WHERE version = :v",
                   v=VERSION)
-    test_rules = {**json.loads(seeded), **rules}
+    version = f"0.0.{uuid.uuid4().int % 10**9}-{LEAKY}"
     _exec(engine, "UPDATE turab.matching_policies SET active = false WHERE version = :v",
           v=VERSION)
     policy = None
@@ -1367,9 +1410,11 @@ def test_a_policy_this_engine_does_not_implement_is_a_typed_500(client, ids, eng
         policy = _one(engine, """
             INSERT INTO turab.matching_policies (version, name, rules, active)
             VALUES (:v, 'unimplemented test policy', CAST(:r AS jsonb), true)
-            RETURNING matching_policy_id""",
-                      v=f"0.0.{uuid.uuid4().int % 10**9}-unimplemented", r=json.dumps(test_rules))
-        _policy_fault(client, ids, engine, req)
+            RETURNING matching_policy_id""", v=version,
+                      r=json.dumps({**json.loads(seeded), **change}))
+        _policy_fault(client, ids, engine, req, caplog, "MATCHING_POLICY_NOT_SUPPORTED",
+                      internal_has=(version, internal),
+                      never_shown=(version, "secretmarker", internal))
     finally:
         if policy is not None:
             _exec(engine, "DELETE FROM turab.matching_policies WHERE matching_policy_id = :p",

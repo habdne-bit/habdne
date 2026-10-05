@@ -16,11 +16,18 @@ and no idempotency record. The refusals:
 
 | refusal | rule | status |
 |---|---|---|
-| no active policy, or one whose promises this engine does not implement | plan §3.1 | 500 `MATCHING_POLICY_MISCONFIGURED`, typed (review of bf052f4) |
+| no active policy | plan §3.1 | 500 `MATCHING_POLICY_NOT_ACTIVE` |
+| an active policy this engine does not implement | plan §3.1 | 500 `MATCHING_POLICY_NOT_SUPPORTED` |
 | the version is not the ACTIVE policy's | CORRECTION-004 | 422 `MATCHING_POLICY_VERSION_REFUSED` |
 | no such request | — | 404 |
 | a request status a run does not accept | G4-8 | 409 `REQUEST_NOT_MATCHABLE` |
 | a criterion that contradicts the request, or cannot be evaluated; a RENT request | G4-3 (b), G4-7, G4-5R | 422 `MATCHING_INPUT_REFUSED` |
+
+The two 500s (review of bf052f4, completed in the review of 48588a0) carry
+a FIXED detail (`POLICY_FAULTS`), never the exception's text or the
+policy's data: a policy version is free text, and once carried a word the
+detail guard refuses. The cause is logged by the route, under the
+response's trace id.
 
 `execute` evaluates and writes. It refuses nothing a caller can cause.
 
@@ -82,16 +89,27 @@ DIAGNOSTIC_FORMAT = "turab.diagnostic-input/1"
 #: The frozen UNIQUE(request_id, property_id, matching_policy_id, input_hash),
 #: by the name PostgreSQL 16 gives it (schema_v0.2.3.sql:684).
 IDENTICAL_INPUT = "match_candidates_request_id_property_id_matching_policy_id__key"
+#: The policy faults of plan §3.1: two codes, both 500, each with a FIXED
+#: detail (review of 48588a0, R-S4-7-04).
+POLICY_FAULTS = {
+    "MATCHING_POLICY_NOT_ACTIVE": "no matching policy is active; no run can be evaluated",
+    "MATCHING_POLICY_NOT_SUPPORTED": "the active matching policy is not one this engine "
+                                     "implements; no run can be evaluated",
+}
 
 
 class RunRefused(ValueError):
     """A typed refusal decided by `prepare`. `code` names the problem code;
-    the message names the rule and never echoes a submitted value."""
+    the message names the rule and never echoes a submitted value.
+    `internal`, when set, is the technical cause: it is logged with the trace
+    id and never sent to the client."""
 
-    def __init__(self, code: str, rule: str, message: str) -> None:
+    def __init__(self, code: str, rule: str, message: str,
+                 internal: str | None = None) -> None:
         super().__init__(f"{rule}: {message}")
         self.code = code
         self.rule = rule
+        self.internal = internal
 
 
 class RequestMissing(LookupError):
@@ -127,6 +145,11 @@ class Evaluation:
     input_hash: str
 
 
+def _a_policy_is_active(session: Session) -> bool:
+    return session.execute(text(
+        "SELECT EXISTS (SELECT 1 FROM turab.matching_policies WHERE active)")).scalar_one()
+
+
 def prepare(session: Session, request_id: uuid.UUID, *, matching_policy_version: Any,
             property_ids: Iterable[uuid.UUID] | None) -> Prepared:
     """Every refusal of the run, decided by reads alone (D6)."""
@@ -137,10 +160,13 @@ def prepare(session: Session, request_id: uuid.UUID, *, matching_policy_version:
     try:
         active = policy.load_active_policy(session)
     except (freshness.NoActiveFreshnessPolicy, policy.PolicyNotImplemented) as exc:
-        # A configuration fault, not the caller's input: a TYPED 500 (decided
-        # in the review of bf052f4), decided like every refusal before any
-        # write.
-        raise RunRefused("MATCHING_POLICY_MISCONFIGURED", "plan §3.1", str(exc)) from None
+        # A configuration fault, not the caller's input: a TYPED 500, decided
+        # like every refusal before any write. No active policy at all, or an
+        # active one this engine cannot run (its promises, or a missing
+        # threshold), each with its own code and a fixed detail.
+        code = ("MATCHING_POLICY_NOT_SUPPORTED" if _a_policy_is_active(session)
+                else "MATCHING_POLICY_NOT_ACTIVE")
+        raise RunRefused(code, "plan §3.1", POLICY_FAULTS[code], internal=str(exc)) from None
     try:
         policy.require_active_version(active, matching_policy_version)
     except policy.PolicyVersionRefused as exc:
