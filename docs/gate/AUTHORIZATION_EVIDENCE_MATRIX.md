@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **162**
-- Distinct tests cited: **495**
-- Suite total: **2196/2196** test cases passing (1245 distinct test functions)
+- Rules and invariants covered: **168**
+- Distinct tests cited: **518**
+- Suite total: **2239/2239** test cases passing (1268 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -76,7 +76,7 @@ matrix, because it reads as assurance.
 | `D02` | Seller expectation never reaches a public or customer payload | `test_public_offer_never_carries_seller_expectation`<br>`test_public_render_from_a_real_property_row_leaks_nothing` | PASS |
 | `R9.4 / S35` | price_visibility redacts price independently of scope | `test_price_is_redacted_when_visibility_is_not_public`<br>`test_public_price_is_shown_when_visibility_is_public` | PASS |
 | `R8.2 / R8.2a` | Scope ladder adds; no scope lifts the never-serialized floor | `test_summary_only_withholds_property_detail`<br>`test_property_details_allowed_adds_the_customer_view`<br>`test_no_scope_lifts_the_never_serialized_floor` | PASS |
-| `R8.3 / S34` | Contact released only after a recorded confirmation | `test_contact_is_withheld_without_a_recorded_confirmation`<br>`test_contact_is_released_after_a_recorded_confirmation` | PASS |
+| `R8.3 / S34 (Appendix B)` | No contact is ever released through the customer opportunity view: the frozen type has no field for one (G5-6 (a)), at any scope | `test_the_customer_view_has_no_contact_at_any_scope` | PASS |
 | `§8` | Structured logs redact OTP codes and sensitive payloads | `test_sensitive_keys_are_redacted`<br>`test_redaction_reaches_nested_structures`<br>`test_exceptions_log_type_and_message_not_a_traceback` | PASS |
 | `Slice 1 / A02` | Phone verification alone creates no party and no account | `test_verify_phone_control_creates_no_account`<br>`test_login_purpose_creates_no_account_when_none_exists`<br>`test_otp_is_unauthenticated_and_creates_nothing` | PASS |
 | `Slice 1 / provider boundary` | The provider owns the challenge; TURAB stores none of it | `test_turab_stores_no_challenge_state`<br>`test_challenge_id_is_the_providers_verification_id`<br>`test_attempt_limits_belong_to_the_provider`<br>`test_a_provider_outage_is_503_not_a_rejection` | PASS |
@@ -175,6 +175,12 @@ matrix, because it reads as assurance.
 | `S5-3 / §3.3 / H04 / mandatory 6` | One open opportunity per request and canonical property: a second approval, an alias's open opportunity, an alias now, and two concurrent approvals are refused; the index is the backstop; a close frees the pair | `test_mandatory_6_a_second_offers_match_is_refused_while_one_is_open`<br>`test_mandatory_6_an_open_opportunity_on_an_alias_blocks_its_canonical`<br>`test_mandatory_6_a_match_on_a_property_that_is_now_an_alias_is_refused`<br>`test_mandatory_6_two_concurrent_approvals_of_one_pair_make_one_opportunity`<br>`test_mandatory_6_the_index_backstop_maps_to_the_same_refusal`<br>`test_mandatory_6_after_close_the_other_match_is_approvable` | PASS |
 | `S5-3 / G5-5 (a) / mandatory 1, 4` | The opportunity is NEW and VALID on the evaluated offer and context, with the offer's scope at approval; NMI then APPROVED keeps both decisions | `test_approved_creates_one_opportunity_with_the_decided_content`<br>`test_the_scope_is_the_offers_permission_scope_at_approval`<br>`test_the_binding_recorded_is_offer_bound_before_property_bound`<br>`test_mandatory_4_the_schema_refuses_another_initial_offer`<br>`test_mandatory_1_nmi_then_approved_keeps_both_decisions`<br>`test_mandatory_1_across_matches_of_one_pair` | PASS |
 | `S5-3 / §3.4 / R9.2 (stored)` | The stored why_real and known_differences hold only the decided codes per scope, without value, delta, claim or rule, whatever a claim says | `test_only_the_decided_codes_are_ever_shown`<br>`test_whether_a_claim_stands_behind_a_result_changes_nothing_shown`<br>`test_each_shown_rule_reads_only_its_rendered_field_and_links_no_claim`<br>`test_the_stored_content_follows_the_scope_and_carries_no_private_value` | PASS |
+| `S5-4 / G5-7 (a) / RFC-001 §4` | A customer reads an opportunity only through its request's party, and only once shared; otherwise the answer an unknown id gets; a relation grants nothing | `test_an_unshared_opportunity_is_answered_as_an_unknown_id`<br>`test_another_partys_opportunity_is_answered_as_an_unknown_id`<br>`test_a_relation_to_the_property_grants_nothing` | PASS |
+| `S5-4 / G5-6 (a) / R9.5 / Appendix B` | The customer body is the frozen type at every scope: four property fields at SUMMARY_ONLY, the full view above it, no contact, numbers exact | `test_the_customer_body_is_the_frozen_type_at_each_scope`<br>`test_an_area_is_an_exact_json_number` | PASS |
+| `S5-4 / mandatory 5 / R8.2a / R9.3` | No seller expectation, claim, document value, staff field or rule reaches the customer at any scope; a claim or an expectation behind a result changes nothing shown; LOCATION is never named | `test_no_private_value_reaches_the_customer_at_any_scope`<br>`test_a_claim_behind_the_document_changes_nothing_the_customer_sees`<br>`test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees`<br>`test_a_budget_decided_by_the_expectation_leaves_no_trace`<br>`test_location_is_never_named` | PASS |
+| `S5-4 / R4-2` | An entry is withheld from the customer when its field's value changed since the evaluation, outcome changed or not, re-checked at each render; the stored row and the internal view are unchanged | `test_the_withholding_follows_the_current_area`<br>`test_a_changed_property_type_withholds_property_type_at_every_scope`<br>`test_at_summary_only_an_area_change_cannot_show`<br>`test_an_unknown_difference_stays_while_the_area_is_still_unknown`<br>`test_the_withholding_compares_exact_values_and_fails_closed` | PASS |
+| `S5-4 / R6.2 / R6.3` | The internal opportunity read is staff-only and recorded; an unknown id is 403 and recorded | `test_staff_read_the_stored_opportunity_and_the_read_is_recorded`<br>`test_an_unknown_opportunity_is_403_for_staff_and_recorded`<br>`test_a_customer_cannot_use_the_internal_read` | PASS |
+| `S5-4 / G5-11 / R6.3c` | The match queue holds the matches awaiting a decision, per offer, canonical, with G5-11's priority and reason; staff-only, audited once with its count | `test_the_queue_holds_the_matches_awaiting_a_decision`<br>`test_the_queue_keeps_each_offers_current_match_only`<br>`test_a_match_with_an_opportunity_leaves_the_queue_whatever_its_latest_review`<br>`test_an_aliased_propertys_match_leaves_the_queue`<br>`test_the_queue_is_ordered_high_first_and_audited_once_with_its_count`<br>`test_a_customer_cannot_read_the_match_queue` | PASS |
 
 ## Reading this table
 

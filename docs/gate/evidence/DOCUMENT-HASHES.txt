@@ -707,3 +707,11 @@ SLICE_5_PLAN.md changed revision: 9 -> 10 (review of 60b0152: G5-5 decided (a), 
 docs/gate/SLICE_5_STEP3_DELIVERY.md                            ---   4ca66de8b555a93f8f0e568315a4a40065cb4620e2999897c0ebbc9933aae4c7
 docs/gate/SLICE_5_PLAN.md                                      rev11 9901221db22b85f41c94f3041d8ec5bf36162e6ea775dc43edcc5c2df1fdb48f
 SLICE_5_PLAN.md changed revision: 10 -> 11 (step 3 closed; L-S5-3a and L-S5-3b carried to step 6; step 4 authorized).
+
+--- Slice 5 step 4: the internal read, the customer read, and the match queue (review of 921ed01) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   f91fdfd693df6cd3af80362855703bf65f038395f8f664ae70f45acf5d77ef3b
+docs/gate/evidence/SLICE5-STEP4-BEFORE-FIX.txt                 new   63cb4486fde9e976ca64b219919906e7051c3bf5dcef9ff12b787e6aff079af0
+docs/gate/evidence/SLICE5-STEP4-MUTATIONS-FIRST-RUN.txt        new   9018b96af6bfb35eaba8b622403cf01b6933ca7ff209add22d1739a4a994a6f4
+docs/gate/evidence/SLICE5-STEP4-MUTATIONS.txt                  new   c9106421f981badae41515d5cdfeb47e8122b7cc8a58cc3fba48a9ba603bd6e4
+docs/rfc/RFC-001-APPENDIX-B-opportunity-view.md                new   6bd3e442a1bc6775bdcc416881d1a377fcb4681d6773e38ed11b5e04befc1cfb
+docs/DESIGN_LEDGER.md                                          ---   0d14f0ea0d10ac678beeb9b8e41164bc99c8b7e84ce35f45f52dacdd24610459
