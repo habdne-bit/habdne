@@ -620,6 +620,97 @@ def test_a_refused_review_does_not_consume_its_key(client, engine, ids):
     assert fixed.status_code == 200, fixed.text
 
 
+REJECT_OTHER = {"decision": "REJECTED", "reason_code": "OTHER"}
+NMI_DOCUMENT = {"decision": "NEED_MORE_INFORMATION", "reason_code": "DOCUMENT_NOT_KNOWN"}
+
+
+@pytest.mark.parametrize("first,second,same_key,expected", [
+    (REJECT_OTHER, REJECT_OTHER, True, (200, "replay")),
+    (REJECT_OTHER, {"decision": "REJECTED", "reason_code": "LOCATION_MISMATCH"}, True,
+     (409, "IDEMPOTENCY_KEY_CONFLICT")),
+    (NMI_DOCUMENT, NMI_DOCUMENT, True, (200, "replay")),
+    (NMI_DOCUMENT, {"decision": "NEED_MORE_INFORMATION", "reason_code": "REQUEST_STALE"}, True,
+     (409, "IDEMPOTENCY_KEY_CONFLICT")),
+    (REJECT_OTHER, NMI_DOCUMENT, False, (409, "MATCH_REVIEW_DECIDED")),
+], ids=["final-same-body", "final-other-body", "nmi-same-body", "nmi-other-body",
+        "final-other-key"])
+def test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key(
+        client, engine, ids, monkeypatch, first, second, same_key, expected):
+    """API_CONTRACTS §2.3, over HTTP, same actor (review of 7e84702).
+
+    A's request is paused inside `record`: it holds the match lock and its
+    uncommitted key claim. B's request, with the same key, reads the key
+    (nothing committed yet), then waits on the match lock. The witness: B's
+    backend waits on a Lock whose holder is A's backend, while a third
+    connection sees no review and no key record. A then commits.
+
+    With the same key, the KEY answers B: the same body replays A's response,
+    another body is IDEMPOTENCY_KEY_CONFLICT, even when A's decision is final
+    and B's own check would refuse it as decided. One review row and one key
+    record. With ANOTHER key (the last case) the decided refusal stands, and
+    B's key is not consumed."""
+    from turab.app import create_app
+
+    m = _match(client, engine, ids)
+    key_a, key_b = str(uuid.uuid4()), str(uuid.uuid4())
+    if same_key:
+        key_b = key_a
+    recorded, release = threading.Event(), threading.Event()
+    pids = []
+    original = match_review.record
+
+    def paused(session, prepared, **kw):
+        result = original(session, prepared, **kw)
+        if not pids:
+            pids.append(session.execute(text("SELECT pg_backend_pid()")).scalar_one())
+            recorded.set()
+            assert release.wait(30)
+        return result
+
+    monkeypatch.setattr(match_review, "record", paused)
+    out = {}
+
+    def send(name, body, key):
+        with TestClient(create_app(engine=engine)) as c:
+            out[name] = _review(c, m["match_id"], body, ids.ACC_REVIEWER, key)
+
+    a = threading.Thread(target=send, args=("a", first, key_a))
+    a.start()
+    assert recorded.wait(30), "A did not reach its write"
+    b = threading.Thread(target=send, args=("b", second, key_b))
+    b.start()
+    deadline, witness = time.monotonic() + 30, None
+    while witness is None:
+        witness = _all(engine, """
+            SELECT pid FROM pg_stat_activity
+             WHERE pid <> :a AND wait_event_type = 'Lock'
+               AND :a = ANY(pg_blocking_pids(pid))
+               AND query LIKE '%FROM turab.match_candidates WHERE match_id = %FOR UPDATE%'""",
+                       a=pids[0]) or None
+        assert witness is not None or time.monotonic() < deadline, "B never waited on A"
+        time.sleep(0.02)
+    assert (len(_reviews(engine, m["match_id"])),
+            _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                         "WHERE idempotency_key IN (:a, :b)", a=key_a, b=key_b)) == (0, 0), \
+        "B waits while A has committed nothing: B read the key before A's commit"
+    release.set()
+    a.join(30)
+    b.join(30)
+
+    assert out["a"].status_code == 200, out["a"].text
+    status, what = expected
+    assert out["b"].status_code == status, out["b"].text
+    if what == "replay":
+        assert out["b"].json() == out["a"].json()
+    else:
+        assert out["b"].json()["code"] == what
+    assert len(_reviews(engine, m["match_id"])) == 1
+    assert len(_tasks(engine, m["match_id"])) == (1 if first is NMI_DOCUMENT else 0)
+    records = {k: _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                               "WHERE idempotency_key = :k", k=k) for k in {key_a, key_b}}
+    assert records == ({key_a: 1} if same_key else {key_a: 1, key_b: 0})
+
+
 # ======================================================================================
 # §3.1 [R3-1]: the latest review is the last decision taken
 # ======================================================================================

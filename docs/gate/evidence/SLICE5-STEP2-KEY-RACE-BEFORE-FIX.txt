@@ -1,0 +1,72 @@
+TURAB — Slice 5 step 2: a same-key review waiting on the match lock, BEFORE the fix
+==================================================================================
+Recorded          : 2026-10-06 16:13:42 UTC
+Base commit       : 7e847028762069cc1e900ac2235f6eedbe5a7455
+Source fingerprint: a1be91d9fdb5e03599e2485da01f6959efd38969f0700aa037ad26a35f1c99ae
+Working tree      : clean except ONE modified file, the test file with the new test:
+                     M tests/test_slice5_step2.py
+Test file sha256  : 9446936ac69b86b7d9ceb526214bfe1a4b24fe7d2033925648339f91f540f76a
+Server            : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
+What is measured (review of 7e84702). Over HTTP, one actor (ACC_REVIEWER),
+two requests A and B on one match:
+- A is paused inside `match_review.record`, after its lookup, its match lock,
+  its key claim and its review INSERT, before its commit;
+- B is sent with the SAME Idempotency-Key. Its lookup finds nothing
+  committed; its `prepare` then waits on the match row lock.
+- Witness, asserted by the test before A is released:
+  - B's backend waits on a Lock (`wait_event_type = 'Lock'`) in the
+    `SELECT … FOR UPDATE` of `_lock_match`, and `pg_blocking_pids(B)`
+    names A's backend;
+  - a third connection sees no review of the match and no key record.
+  So B read the key before A committed, and then waited on A's lock.
+- A is released and commits. The test then checks B's answer, the review
+  count, the task count and the key records.
+
+Expected by API_CONTRACTS §2.3 (same key): the same body replays A's
+response; another body is 409 IDEMPOTENCY_KEY_CONFLICT. Controls: the NMI
+cases (A's decision not final), and B with ANOTHER key (the decided refusal
+must stand and consume no key).
+
+--- run 1
+  E   AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"…","detail":"this match has a final review; a later review is refused"}
+  E   AssertionError: assert 'MATCH_REVIEW_DECIDED' == 'IDEMPOTENCY_KEY_CONFLICT'
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-same-body]
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-other-body]
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+  FAILED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-same-body]
+  FAILED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-body]
+  2 failed, 3 passed, 76 deselected, 2 warnings in 6.93s
+--- run 2
+  E   AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"…","detail":"this match has a final review; a later review is refused"}
+  E   AssertionError: assert 'MATCH_REVIEW_DECIDED' == 'IDEMPOTENCY_KEY_CONFLICT'
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-same-body]
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-other-body]
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+  FAILED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-same-body]
+  FAILED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-body]
+  2 failed, 3 passed, 76 deselected, 2 warnings in 5.67s
+--- run 3
+  E   AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"…","detail":"this match has a final review; a later review is refused"}
+  E   AssertionError: assert 'MATCH_REVIEW_DECIDED' == 'IDEMPOTENCY_KEY_CONFLICT'
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-same-body]
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-other-body]
+  PASSED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+  FAILED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-same-body]
+  FAILED tests/test_slice5_step2.py::test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-body]
+  2 failed, 3 passed, 76 deselected, 2 warnings in 5.59s
+
+Result: in each of the three runs, the two FINAL cases fail, and in the same
+way:
+- final-same-body: B is 409 MATCH_REVIEW_DECIDED, not A's response;
+- final-other-body: B is 409 MATCH_REVIEW_DECIDED, not IDEMPOTENCY_KEY_CONFLICT.
+The witness held in every case: the test asserts it before releasing A, so a
+case that reached its answer had it.
+The three controls pass:
+- when A's decision is NMI, B passes `prepare`, and its claim meets A's
+  committed key (23505), which already replays or conflicts;
+- with another key, B is refused as decided, and its key is not consumed.
+
+Cause (stated by the review by reading; confirmed by the above):
+`CommandService.run` looks the key up BEFORE `prepare`. A refusal raised by
+`prepare` after the lock wait leaves `run` before the key is looked at again.

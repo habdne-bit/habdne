@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth.audit import AccessAuditor
@@ -341,6 +341,8 @@ class CommandService:
         lookup and BEFORE the key is claimed, and only reads. A refusal it
         raises is therefore decided before any write, the claim included
         (Slice 4, G4-15 D6), while an identical earlier call still replays.
+        A refusal is first checked against the key once more: a call with the
+        same key committed meanwhile answers instead (review of 7e84702).
         Its result is passed to `handler(session, prepared)`.
 
         `isolation` is passed to `audited_transaction` (the matching run asks
@@ -368,7 +370,31 @@ class CommandService:
                 if replay is not None:
                     return CommandResult(replay.status, replay.body, replayed=True)
 
-            prepared = prepare(session) if prepare is not None else None
+            try:
+                prepared = prepare(session) if prepare is not None else None
+            except DBAPIError:
+                raise
+            except Exception:
+                # A refusal decided AFTER the lookup above may have been caused
+                # by a call with this same key, committed in between: `prepare`
+                # can wait on a lock that call held (the match review waits on
+                # the match row; review of 7e84702). Then the key answers, not
+                # the refusal (API_CONTRACTS §2.3): the same body replays that
+                # call's result, another body is IDEMPOTENCY_KEY_CONFLICT. The
+                # key is read on a new connection, so a committed record is seen
+                # under any isolation level, and nothing is written. Otherwise
+                # the refusal stands, and the key is not consumed.
+                if use_idempotency:
+                    replay = idempotency.committed_if_any(
+                        session,
+                        actor_account_id=self._subject.account_id,
+                        route_key=route_key,
+                        idempotency_key=self._idempotency_key,
+                        payload=payload,
+                    )
+                    if replay is not None:
+                        return CommandResult(replay.status, replay.body, replayed=True)
+                raise
 
             if use_idempotency:
                 # Two calls with one key can both find no record, then both

@@ -270,9 +270,26 @@ def committed(
     The same body replays it; another body is `IdempotencyKeyConflict`
     (API_CONTRACTS §2.3). A record that is gone, or expired, between the two
     reads is a conflict too: the call is not run twice."""
+    replay = committed_if_any(session, actor_account_id=actor_account_id,
+                              route_key=route_key, idempotency_key=idempotency_key,
+                              payload=payload)
+    if replay is None:
+        raise IdempotencyKeyConflict(route_key, _validate_key(idempotency_key))
+    return replay
+
+
+def committed_if_any(
+    session: Session,
+    *,
+    actor_account_id: uuid.UUID,
+    route_key: str,
+    idempotency_key: str | None,
+    payload: Any,
+) -> Replay | None:
+    """`lookup`, on a NEW connection: what a call with this key has committed
+    since this transaction read the key, or None. Same body: its result;
+    another body: `IdempotencyKeyConflict`. It writes nothing."""
     with session.get_bind().engine.connect() as fresh:
         replay, _ = lookup(fresh, actor_account_id=actor_account_id, route_key=route_key,
                            idempotency_key=idempotency_key, payload=payload)
-    if replay is None:
-        raise IdempotencyKeyConflict(route_key, _validate_key(idempotency_key))
     return replay

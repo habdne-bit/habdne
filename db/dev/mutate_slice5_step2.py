@@ -10,7 +10,9 @@ Each mutation weakens ONE rule of step 2 (plan revision 6; the review of
 - R: the reason rules (G5-3 input, G5-4, [R6-1]);
 - T: the NMI task (G5-4 (a));
 - A: APPROVED refused in step 2 with its own code, writing nothing;
-- Z: authorization and the recorded denial of an unknown id.
+- Z: authorization and the recorded denial of an unknown id;
+- K: the key answers a refusal that a same-key call caused (review of
+  7e84702, API_CONTRACTS §2.3).
 
 See `mutation_runner.py`.
 """
@@ -123,6 +125,10 @@ MUTATIONS = [
      "                     command.authorize_staff_only(REVIEW, \"a match review is a staff action\")):"),
     ("Z3 the role is not checked", ROUTE,
      "    for decision in (command.authorize(REVIEW),\n", "    for decision in (\n"),
+    # --- K: the key and a refusal (review of 7e84702) -------------------------------
+    ("K1 a refusal ignores a same-key call committed meanwhile", CMD,
+     "                if use_idempotency:\n                    replay = idempotency.committed_if_any(",
+     "                if False:\n                    replay = idempotency.committed_if_any("),
 ]
 
 if __name__ == "__main__":

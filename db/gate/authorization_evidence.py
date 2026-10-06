@@ -777,6 +777,12 @@ RULES: tuple[Rule, ...] = (
           "test_an_opportunity_decides_even_when_the_latest_review_is_not_final",
           "test_nmi_is_not_final", "test_an_inactive_reason_is_refused",
           "test_a_refused_review_does_not_consume_its_key")),
+    Rule("S5-2 / API_CONTRACTS §2.3",
+         "A review with the same key as a call committed while it waited on the "
+         "match lock is answered by the key (replay, or IDEMPOTENCY_KEY_CONFLICT), "
+         "not refused as decided; with another key the refusal stands",
+         ("test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key",
+          "test_a_replay_returns_the_original_and_writes_nothing_more")),
     Rule("S5-2 / G5-4 (a) / R6-1",
          "Each NEED_MORE_INFORMATION review raises one specific task; an unspecific "
          "reason, and ACTIONABLE_UNKNOWN without a specific next action, are refused",
