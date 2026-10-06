@@ -290,6 +290,82 @@ DELTAS: tuple[Delta, ...] = (
             "test_an_immutable_policy_cannot_change",
         ),
     ),
+    Delta(
+        revision="0006_opportunity_history",
+        section="functions",
+        object_name="enforce_opportunity_history()",
+        kind="trigger function",
+        digest_before=None,
+        digest_after="e5e9c38bfda941027f78680286557c89539d1d4ea999a5427eaf8ae2b5e1b631",
+        reason=(
+            "The frozen schema refuses a change to an opportunity's request, "
+            "property or approved match only through trg_opportunity_gate's "
+            "re-check, and nothing else: its snapshots, why_real, sharing_scope, "
+            "creator and creation time were measured being rewritten, and every "
+            "status move was accepted, CLOSED -> NEW included (step 0, B4-B17). "
+            "This function enforces G5-12 (plan revision 4) rules 1-6: a CLOSED "
+            "row is final; the creation fields are written once; only the five "
+            "edges; the closing fields go with CLOSED; shared_at and engaged_at "
+            "are set only on the edge of their own event."
+        ),
+        proven_by=(
+            "test_a_field_written_at_creation_cannot_be_rewritten",
+            "test_a_status_change_off_the_graph_is_refused",
+            "test_the_closing_fields_go_with_the_closed_status",
+            "test_a_closed_opportunity_is_final",
+            "test_event_stamps",
+            "test_the_writable_columns_stay_writable",
+        ),
+    ),
+    Delta(
+        revision="0006_opportunity_history",
+        section="triggers",
+        object_name="opportunities.trg_opportunity_history",
+        kind="BEFORE UPDATE trigger calling enforce_opportunity_history()",
+        digest_before=None,
+        digest_after="403236d56fdbee127e0c6be43e38d3016ed25edd1e166c2c49b6d53467cc7430",
+        reason=(
+            "Attaches the history guard above to opportunities. Declared "
+            "separately because the check compares catalog objects one by one, "
+            "and a function without its trigger would guard nothing."
+        ),
+        proven_by=(
+            "test_a_field_written_at_creation_cannot_be_rewritten",
+        ),
+    ),
+    Delta(
+        revision="0006_opportunity_history",
+        section="functions",
+        object_name="enforce_opportunity_birth()",
+        kind="trigger function",
+        digest_before=None,
+        digest_after="b951d86c956096ae22b6bbab88a4ba6fa724900b5f8b00b98cba103b860718cf",
+        reason=(
+            "An opportunity could be inserted already SHARED, ENGAGED or CLOSED, "
+            "or not VALID, or carrying event times: a history it never lived. "
+            "G5-12's birth rule: a new opportunity is NEW and VALID, with no "
+            "shared, engaged or closing time and no close reason."
+        ),
+        proven_by=(
+            "test_an_opportunity_is_born_new_and_valid_with_no_event_time",
+            "test_any_other_birth_is_refused",
+        ),
+    ),
+    Delta(
+        revision="0006_opportunity_history",
+        section="triggers",
+        object_name="opportunities.trg_opportunity_birth",
+        kind="BEFORE INSERT trigger calling enforce_opportunity_birth()",
+        digest_before=None,
+        digest_after="02cebe3364c3fd3cc82f2d0cd658e6c3e5fbe5c8d435baeb6c325ac818b8420f",
+        reason=(
+            "Attaches the birth guard above to opportunities. Declared "
+            "separately for the same reason as the history trigger."
+        ),
+        proven_by=(
+            "test_any_other_birth_is_refused",
+        ),
+    ),
 )
 
 

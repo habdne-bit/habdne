@@ -1,0 +1,187 @@
+TURAB — Slice 5 step 1: migration 0006, BEFORE the fix
+============================================================
+Recorded          : 2026-10-05 23:58:13 UTC
+Base commit       : 6ba73cebc0544991bfe24be625a8fd432be61e7b
+Source fingerprint: 0312d388a9f2bc8c4956ba9616db4eb8e942ef8c844c7a275434a727c67770ec
+Working tree      : clean except ONE untracked file, the new test file:
+                    ?? tests/test_migration_0006_opportunity_history.py
+Test file sha256  : 448a6a28076153f3edabac6b684df260fb92fac872b23f1010a0105822df7e7c
+Database          : the suite's own, rebuilt at session start by alembic upgrade head = 0005 (no 0006 exists)
+
+What this shows: each guard the approved G5-12 text requires is ABSENT at 0005.
+Every refusal test must fail here (DID NOT RAISE); every 'must still succeed'
+test must pass. Step 0 (§B) measured the same writes by plain SQL; this is the
+shipped test file, run before the migration it tests.
+
+  .FFFFFFFFF...FFFFFFFF........FFFFFFFFFFFFFFF.FF.F.F.FF.FFFFFF..F         [100%]
+  =================================== FAILURES ===================================
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(36f61906-2b2b-47f6-a839-9661c5ddcca3, afbe3337-dc52-4372-be72-961b552f0b27) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bbfe60>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(36f61906-2b2b-47f6-a839-9661c5ddcca3, afbe3337-dc52-4372-be72-961b552f0b27) already exists.')
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(cf3926f9-1187-469f-b364-325b8389eb62, 7885ff95-606b-4478-b0f1-ba26a5ba54e0) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bd97e0>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(cf3926f9-1187-469f-b364-325b8389eb62, 7885ff95-606b-4478-b0f1-ba26a5ba54e0) already exists.')
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(5d7c5dee-d57d-4ea0-b8de-ca606f891d8a, 44a49f69-6829-4c59-8492-832c0752bd4a) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bdb920>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(5d7c5dee-d57d-4ea0-b8de-ca606f891d8a, 44a49f69-6829-4c59-8492-832c0752bd4a) already exists.')
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(47f7ea32-6329-4769-b899-ee583ce288f6, 56d128c5-f395-46c3-9528-8e371c3cbe59) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bd8200>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(47f7ea32-6329-4769-b899-ee583ce288f6, 56d128c5-f395-46c3-9528-8e371c3cbe59) already exists.')
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(845aa506-2255-4986-86e6-18ee81769593, 0a83c352-3efb-42ba-aa53-4e77cf64789c) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bfd9a0>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(845aa506-2255-4986-86e6-18ee81769593, 0a83c352-3efb-42ba-aa53-4e77cf64789c) already exists.')
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(91ae99de-e161-4f27-887f-7b5f902ceac4, db7b60f8-8c2f-4d94-8e13-9dd6264eb26e) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bdbbc0>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(91ae99de-e161-4f27-887f-7b5f902ceac4, db7b60f8-8c2f-4d94-8e13-9dd6264eb26e) already exists.')
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(7a03acae-54bf-4a76-98b3-b324704fd714, 899b50eb-6500-4e5b-ba07-c325e15c673e) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe284bd9000>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(7a03acae-54bf-4a76-98b3-b324704fd714, 899b50eb-6500-4e5b-ba07-c325e15c673e) already exists.')
+  E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(ed3bd5e5-7f15-4be6-a04c-00d42529c4bf, ce270835-2a27-46d0-849f-80572b77df64) already exists.')
+      assert False
+       +  where False = any(<generator object _refused.<locals>.<genexpr> at 0x7fe2862d4040>)
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:46: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(ed3bd5e5-7f15-4be6-a04c-00d42529c4bf, ce270835-2a27-46d0-849f-80572b77df64) already exists.')
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  E   Failed: DID NOT RAISE DBAPIError
+  /home/user/habdne/tests/test_migration_0006_opportunity_history.py:43: Failed: DID NOT RAISE DBAPIError
+  =========================== short test summary info ============================
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[status0]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[status1]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[status+closed_at+close_reason_code]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[validity_status0]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[validity_status1]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[shared_at]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[engaged_at]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[closed_at]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_any_other_birth_is_refused[close_reason_code]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[B4-commercial_context_snapshot]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[B5-permission_snapshot]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[B6-why_real]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[known_differences-known_differences]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[B7-sharing_scope]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[B8-created_by_account_id]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_field_written_at_creation_cannot_be_rewritten[B9-created_at]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_rule_2_holds_on_a_permitted_edge_too
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-, engaged_at = now()]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_status_change_off_the_graph_is_refused[SHARED-NEW-]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_status_change_off_the_graph_is_refused[ENGAGED-SHARED-]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_status_change_off_the_graph_is_refused[ENGAGED-NEW-]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_the_closing_fields_go_with_the_closed_status[status = 'CLOSED']
+  FAILED tests/test_migration_0006_opportunity_history.py::test_the_closing_fields_go_with_the_closed_status[status = 'CLOSED', closed_at = now()]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_the_closing_fields_go_with_the_closed_status[status = 'CLOSED', close_reason_code = 'BUYER_REJECTED']
+  FAILED tests/test_migration_0006_opportunity_history.py::test_the_closing_fields_go_with_the_closed_status[closed_at = now()]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_the_closing_fields_go_with_the_closed_status[close_reason_code = 'BUYER_REJECTED']
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_closed_opportunity_is_final[status = 'NEW', closed_at = NULL, close_reason_code = NULL]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_closed_opportunity_is_final[status = 'SHARED', closed_at = NULL, close_reason_code = NULL, shared_at = now()]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_closed_opportunity_is_final[validity_status = 'INVALID']
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_closed_opportunity_is_final[last_activity_at = now()]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_a_closed_opportunity_is_final[status = status]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[NEW-close-shared-supplied]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[NEW-close-engaged-supplied]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[SHARED-close-engaged-supplied]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[NEW-share-without-shared_at]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[NEW-share-engaged-supplied]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[SHARED-engage-without-engaged_at]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[NEW-unchanged-shared-supplied]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[SHARED-unchanged-engaged-supplied]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[SHARED-shared_at-moved]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[SHARED-shared_at-cleared]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[ENGAGED-engaged_at-moved]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_event_stamps[ENGAGED-engaged_at-cleared]
+  FAILED tests/test_migration_0006_opportunity_history.py::test_no_refusal_text_names_an_id
+  45 failed, 19 passed in 5.20s
+
+============================================================
+Second part: the full suite with 0006 applied, BEFORE any existing test was changed
+Tree: 6ba73cebc0544991bfe24be625a8fd432be61e7b + untracked: the 0006 test file and db/migrations/versions/0006_opportunity_history.py;
+      modified: tests/test_migrations.py (HEAD constant, downgrade tests, scope test),
+      db/gate/migration_deltas.py (the four 0006 deltas). Migration sha256: bc29a03a9fd45daac616dc832d8cb8e14b1f8f8f84d902c5b9bcba6f140063a4
+
+  Result: 1 failed, 2022 passed, 2 warnings in 190.04s (0:03:10)
+  31:E   psycopg.errors.RaiseException: Opportunity birth: a new opportunity is NEW and VALID, with no shared, engaged or closing time and no close reason
+  35:E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Opportunity birth: a new opportunity is NEW and VALID, with no shared, engaged or closing time and no close reason
+  46:/home/user/habdne/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Opportunity birth: a new opportunity is NEW and VALID, with no shared, engaged or closing time and no close reason
+
+  The one failure is an existing fixture, test_slice3_identity._opportunity(status='CLOSED'),
+  which INSERTED an opportunity already CLOSED: a history it never lived. The birth
+  rule refused it. The fixture is changed to insert NEW and close along the NEW -> CLOSED
+  edge with closed_at and a close reason; the test's intent (a closed opportunity on the
+  alias raises no task) is unchanged.

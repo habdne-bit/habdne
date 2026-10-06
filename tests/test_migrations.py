@@ -43,7 +43,7 @@ VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
 sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
 from migration_deltas import DELTAS, for_revision, split_row  # noqa: E402
 BASELINE = "0001_frozen_baseline_v0_2_3"
-HEAD = "0005_match_history_immutability"
+HEAD = "0006_opportunity_history"
 
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGUSER = os.environ.get("PGUSER", "turab")
@@ -894,14 +894,41 @@ def test_0003_refuses_to_downgrade(migrated):
     assert still == HEAD, "a refused downgrade must leave the version untouched"
 
 
+def _revision_module(filename: str):
+    from importlib import util as importlib_util
+
+    spec = importlib_util.spec_from_file_location(filename, VERSIONS / filename)
+    module = importlib_util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_0005_refuses_to_downgrade(migrated):
     """Reverting 0005 re-opens match history and immutable policies to
     silent rewriting (G4-14). The refusal is asserted so it cannot be quietly
-    replaced by a working downgrade later."""
+    replaced by a working downgrade later.
+
+    Since 0006, `alembic downgrade` from head stops at 0006's own refusal and
+    never reaches 0005's, so 0005's is asserted on the revision itself, and
+    the alembic-level refusal is asserted generically."""
+    with pytest.raises(RuntimeError, match="0005 has no downgrade"):
+        _revision_module("0005_match_history_immutability.py").downgrade()
     result = _alembic("downgrade", "0004_relation_overlap_guard")
     output = result.stderr + result.stdout
     assert result.returncode != 0, output
-    assert "0005 has no downgrade" in output, output
+    assert "has no downgrade" in output, output
+    with migrated.connect() as c:
+        still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+    assert still == HEAD, "a refused downgrade must leave the version untouched"
+
+
+def test_0006_refuses_to_downgrade(migrated):
+    """Reverting 0006 re-opens an opportunity's history to silent rewriting
+    (G5-12)."""
+    result = _alembic("downgrade", "0005_match_history_immutability")
+    output = result.stderr + result.stdout
+    assert result.returncode != 0, output
+    assert "0006 has no downgrade" in output, output
     with migrated.connect() as c:
         still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
     assert still == HEAD, "a refused downgrade must leave the version untouched"
@@ -916,6 +943,18 @@ def test_the_declared_deltas_for_0005_are_exactly_its_four_guards():
         ("triggers", "match_diagnostic_runs.prevent_match_diagnostic_run_update"),
         ("triggers", "matching_policies.trg_matching_policy_immutable"),
         ("functions", "enforce_matching_policy_immutability()"),
+    }
+
+
+def test_the_declared_deltas_for_0006_are_exactly_its_four_objects():
+    """Approved scope (G5-12, plan revision 4): two functions and the two
+    triggers that attach them to `opportunities`, nothing else."""
+    got = {(d.section, d.object_name) for d in for_revision("0006_opportunity_history")}
+    assert got == {
+        ("functions", "enforce_opportunity_history()"),
+        ("functions", "enforce_opportunity_birth()"),
+        ("triggers", "opportunities.trg_opportunity_history"),
+        ("triggers", "opportunities.trg_opportunity_birth"),
     }
 
 

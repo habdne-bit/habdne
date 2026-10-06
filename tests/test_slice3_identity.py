@@ -930,14 +930,26 @@ def _match_review(engine, match_id, decision, ids):
 
 
 def _opportunity(engine, ids, match_id, *, status="NEW"):
+    """An opportunity is born NEW (migration 0006, birth rule). A CLOSED one
+    is reached along the NEW -> CLOSED edge, with its closing time and
+    reason, as G5-12 permits. Before 0006 this fixture inserted it already
+    CLOSED, which the birth rule now refuses."""
     _match_review(engine, match_id, "APPROVED", ids)
-    return str(_one(engine, """
+    opp = str(_one(engine, """
         INSERT INTO turab.opportunities (request_id, property_id, approved_match_id,
-               current_offer_id, sharing_scope, why_real, created_by_account_id, status)
+               current_offer_id, sharing_scope, why_real, created_by_account_id)
         SELECT m.request_id, m.property_id, m.match_id, m.evaluated_offer_id,
-               'SUMMARY_ONLY', '{}'::jsonb, :acct, CAST(:s AS turab.opportunity_status)
+               'SUMMARY_ONLY', '{}'::jsonb, :acct
           FROM turab.match_candidates m WHERE m.match_id = :m
-        RETURNING opportunity_id""", m=match_id, acct=ids.ACC_OPERATOR, s=status))
+        RETURNING opportunity_id""", m=match_id, acct=ids.ACC_OPERATOR))
+    if status == "CLOSED":
+        _run(engine, """UPDATE turab.opportunities
+                           SET status = 'CLOSED', closed_at = now(),
+                               close_reason_code = 'BUYER_REJECTED'
+                         WHERE opportunity_id = :o""", o=opp)
+    else:
+        assert status == "NEW", status
+    return opp
 
 
 def _tasks(engine, alias):
@@ -957,9 +969,13 @@ def test_confirming_same_raises_review_work_for_affected_open_records(client, id
     open_match = _match(engine, req, alias, _offer(client, ids, alias))
     rejected = _match(engine, req, alias, _offer(client, ids, alias))
     _match_review(engine, rejected, "REJECTED", ids)
-    open_opp = _opportunity(engine, ids, _match(engine, req, alias, _offer(client, ids, alias)))
+    # The closed one first: one pair holds one OPEN opportunity at a time
+    # (ux_one_open_opportunity_per_pair), so a closed opportunity beside an
+    # open one is one that was closed before the other opened. Before 0006
+    # the fixture inserted it born CLOSED, which hid that order.
     _opportunity(engine, ids, _match(engine, req, alias, _offer(client, ids, alias)),
                  status="CLOSED")
+    open_opp = _opportunity(engine, ids, _match(engine, req, alias, _offer(client, ids, alias)))
     _match(engine, req, canonical, _offer(client, ids, canonical))  # on the canonical
     cid = _generate(client, ids, canonical)[0]["identity_candidate_id"]
     assert _review(client, ids, cid, decision="CONFIRMED_SAME",
