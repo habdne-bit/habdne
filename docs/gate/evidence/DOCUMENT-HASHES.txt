@@ -715,3 +715,6 @@ docs/gate/evidence/SLICE5-STEP4-MUTATIONS-FIRST-RUN.txt        new   9018b96af6b
 docs/gate/evidence/SLICE5-STEP4-MUTATIONS.txt                  new   c9106421f981badae41515d5cdfeb47e8122b7cc8a58cc3fba48a9ba603bd6e4
 docs/rfc/RFC-001-APPENDIX-B-opportunity-view.md                new   6bd3e442a1bc6775bdcc416881d1a377fcb4681d6773e38ed11b5e04befc1cfb
 docs/DESIGN_LEDGER.md                                          ---   0d14f0ea0d10ac678beeb9b8e41164bc99c8b7e84ce35f45f52dacdd24610459
+docs/gate/SLICE_5_STEP4_DELIVERY.md                            new   8510fd3a784c2c0b2ac7e0f90b928b2129272980445ce7ad45dec75349ebe1c0
+docs/gate/SLICE_5_PLAN.md                                      rev12 049a9d757eab73d44d22d426d57314ae0343023f1c48ef607c9e45789599581d
+SLICE_5_PLAN.md changed revision: 11 -> 12 (step 4 delivered; G5-11 match-queue vocabulary put for confirmation; RFC-001 Appendix B).

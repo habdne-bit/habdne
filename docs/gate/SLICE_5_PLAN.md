@@ -1,11 +1,11 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 11**
+## Implementation plan — **revision 12**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 (the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
-the one opportunity) is CLOSED at `921ed01`. Step 4 is authorized. No other
-step's code exists.
+the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
+queue) is delivered for review. No other step's code exists.
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
 step 3 opens `opportunities` to the APPROVED review only (H03).
@@ -248,7 +248,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 8 | `1e0d919` | the review of `7e84702` recorded: the temporary APPROVED code and STOP GATE D's status accepted; the Idempotency-Key race with a final decision measured and fixed (step 2 delivery §10) |
 | 9 | `60b0152` | the review of `1e0d919` recorded: step 2 CLOSED (step 2 delivery §11); step 3 waits on G5-5 |
 | 10 | `921ed01` | the review of `60b0152` recorded: G5-5 decided (a), with G5-6's SUMMARY_ONLY branch (four fields); step 3 authorized and delivered (`SLICE_5_STEP3_DELIVERY.md`) |
-| 11 | the commit that adds this revision | the review of `921ed01` recorded: step 3 CLOSED (step 3 delivery §11); the five interpretations approved; L-S5-3a and L-S5-3b carried to step 6 (§8); step 4 authorized |
+| 11 | `cb1a828` | the review of `921ed01` recorded: step 3 CLOSED (step 3 delivery §11); the five interpretations approved; L-S5-3a and L-S5-3b carried to step 6 (§8); step 4 authorized |
+| 12 | the commit that adds this revision | step 4 delivered (`SLICE_5_STEP4_DELIVERY.md`): the internal and customer reads (G5-6 (a), G5-7 (a), [R4-2]) and the match queue (G5-11, its vocabulary as proposed, put for confirmation); RFC-001 Appendix B and DL-13 amend R8.2, R8.3, S33, S34, S36a |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1215,6 +1216,9 @@ table; the shapes of `why_real` and `known_differences`.
 > **Its SUMMARY_ONLY branch decided in the review of `60b0152`:** the four
 > fields, no area. The rest of G5-6 is as accepted in the review of
 > `288bfdb`, and its tests are step 4's.
+>
+> **Implemented in step 4.** The numbered addendum is
+> `docs/rfc/RFC-001-APPENDIX-B-opportunity-view.md` (DL-13).
 
 > **Direction accepted in the review of `288bfdb`:** G5-6 (a), the frozen contract first, with an explicit addendum for R8. This does
 > not authorize code: the approval rules, the transitions and the
@@ -1400,6 +1404,12 @@ switched in this slice.
 - **Decision asked:** the narrowing; the terminal state; the consequence.
 
 ### G5-11 · The two queues
+
+> **The match queue, implemented in step 4 as proposed below** (review of
+> `921ed01`: the match queue "per G5-11"). Its membership, priority and
+> reason vocabulary are put to the reviewer for confirmation
+> (`SLICE_5_STEP4_DELIVERY.md` §2). The opportunity queue, G5-11 (a), is
+> step 5's.
 
 > **Direction accepted in the review of `288bfdb`:** G5-11 (a) for the opportunity queue, no time-based condition. This does
 > not authorize code: the approval rules, the transitions and the
@@ -1865,7 +1875,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **CLOSED** at `1e0d919` (`SLICE_5_STEP2_DELIVERY.md` §11); the key race of the review of `7e84702` fixed (§10 there) |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
-| 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **authorized** in the review of `921ed01` |
+| 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **delivered** for review (`SLICE_5_STEP4_DELIVERY.md`) |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
 
