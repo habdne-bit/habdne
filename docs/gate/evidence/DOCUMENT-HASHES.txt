@@ -688,3 +688,8 @@ docs/gate/evidence/SLICE5-STEP2-MUTATIONS-AFTER-KEY-FIX.txt    new   34ef5b51656
 docs/gate/SLICE_5_STEP2_DELIVERY.md                            ---   64142104b8a75a5d9f30e39ae565f40f0f02b80cc29f76f2ea3db7009ec89d2a
 docs/gate/SLICE_5_PLAN.md                                      rev8  96b74562396e9ed7b453887eb9d41fb06b9141985f89429658ec89989f8f9ee9
 SLICE_5_PLAN.md changed revision: 7 -> 8 (review of 7e84702: the key race fixed; temporary APPROVED code and STOP GATE D status accepted).
+
+--- Review of 1e0d919: Slice 5 step 2 CLOSED ---
+docs/gate/SLICE_5_STEP2_DELIVERY.md                            ---   6af1d517bb686529456885b322de5508a05adbda9b121d74dadb5785841b84db
+docs/gate/SLICE_5_PLAN.md                                      rev9  05dbb6b2d59b444126aed6622fbe03a750353c46e92b2e70003f9f537c302eb4
+SLICE_5_PLAN.md changed revision: 8 -> 9 (step 2 closed; step 3 waits on G5-5).

@@ -17,9 +17,9 @@
   footprint. Its test must show that APPROVED is a valid decision of the
   contract, not executed in this step, and is not classed as a gate failure.
 
-**Status:** delivered for review. **Not** closed. The review of `7e84702`
-found one blocker, an Idempotency-Key race with a final decision. It is
-measured and fixed in §10.
+**Status:** **CLOSED** at `1e0d919`, within the approved scope (§11). The
+review of `7e84702` found one blocker, an Idempotency-Key race with a final
+decision. It is measured and fixed in §10.
 
 **Still open:** G5-5, G5-10 and G4-5R (STOP GATE E is SALE only). **K06 stays
 UNPROVEN** (EN-02; G5-13 (b), decided (ii)).
@@ -323,7 +323,7 @@ Neither is regenerated (review of `f5a9d88`, decision 2).
 
 ## 9. What remains
 
-- **Step 2 closes on review.**
+- **Step 2 is CLOSED** (§11).
 - **Step 3** (APPROVED: §3.7, the opportunity, uniqueness, concurrency)
   needs G5-2 and G5-5. G5-5 is open. Step 3 removes
   `REVIEW_DECISION_NOT_YET_AVAILABLE` and adds the APPROVED → NMI form of A3.
@@ -465,3 +465,40 @@ problems as in §7.2.
   §10.4. The
   Slice 4 test `test_a_refusal_is_decided_before_any_write` still observes
   no INSERT, UPDATE or DELETE during a refused matching run.
+
+## 11. The review of `1e0d919`: step 2 CLOSED
+
+**Step 2 is closed at `1e0d919`, within its approved scope.**
+
+**What the review checked itself:**
+- the archive's digest `eaea0927…34fe`;
+- its 360 manifest entries;
+- `run_binding.py`: `bound`;
+- that the extracted source fingerprint `fcb5f91b…aa9a` equals the run's
+  record.
+
+**What it did not re-run:** the 2140 tests, the 30 mutations and the
+PostgreSQL gate. It treats them as our results, bound to this tree.
+
+**What the review found on the blocker:**
+- **The fix closes it.** After a refusal in `prepare`, `CommandService.run`
+  checks whether a call with the same key was committed during the wait:
+  - the same body replays the original response;
+  - another body keeps the key conflict;
+  - with no committed record, the original refusal stands.
+- **The race test is accepted as evidence in Read Committed, the isolation
+  used here.** It sends two HTTP requests with the same actor. It witnesses
+  B waiting on A's lock before A is released. It covers the same body,
+  another body and another key.
+- **The before-fix record** shows the two wrong answers the review asked to
+  measure.
+
+**What stands:**
+- the REPEATABLE READ limit stated in §10.5;
+- the temporary `REVIEW_DECISION_NOT_YET_AVAILABLE`, accepted, and removed
+  when step 3 executes the approval;
+- STOP GATE D kept as the Slice 4 tree's record;
+- G5-10 and G4-5R open (STOP GATE E for SALE only);
+- K06 UNPROVEN.
+
+**Step 3 is not authorized.** It waits on the decision on G5-5.
