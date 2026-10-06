@@ -19,7 +19,7 @@
   claim leaks, and that withholding is correct when values change. Both
   depend on the HTTP tests in their planned places (step 4).
 
-**Status:** delivered for review. **Not** closed.
+**Status:** **CLOSED** at `921ed01`, within the approved scope (§11).
 
 **Still open:**
 - G5-10 and G4-5R (STOP GATE E is SALE only);
@@ -442,7 +442,7 @@ pass nor a new failure of that record.
 
 ## 10. What remains
 
-- **Step 3 closes on review.**
+- **Step 3 is CLOSED** (§11).
 - **Step 4:** the reads. The internal view, the customer view (G5-6 (a)
   with the four SUMMARY_ONLY fields, F5-1/F5-2/F5-3, R4-2's withholding,
   mandatory test 5), and the match queue.
@@ -451,3 +451,95 @@ pass nor a new failure of that record.
   - K06 is UNPROVEN;
   - STOP GATE D is not regenerated in Slice 5. Its `--check` now also
     reports a writer of `opportunities` (§8).
+
+## 11. The review of `921ed01`: step 3 CLOSED
+
+**Step 3 is closed at `921ed01`, within its approved scope:** APPROVED, the
+currency check, and the creation of one opportunity, with its guards
+against duplication and concurrency.
+
+### 11.1 What the review checked itself
+
+- the bundle's SHA-256, `358999e6…87e0b`;
+- the 366 entries of `MANIFEST.sha256`, all OK;
+- `run_binding.py`: `bound`;
+- the source fingerprint, recomputed: `0e70f363…61e8be`, equal to the
+  evidence records';
+- the digests of `SLICE_5_STEP3_DELIVERY.md` (`c41e11da…f865`) and of
+  `SLICE_5_PLAN.md` (`4325bf2a…8dfe`);
+- **the pure logic of §3.7's table, run independently over all 47 628
+  combinations.** Every combination passed, the fail-closed handling of
+  unknown values included;
+- by reading:
+  - the order MATCH_GATES_NOT_PASS → MATCH_SUPERSEDED →
+    MATCH_CONTEXT_NOT_VALID → OPPORTUNITY_ALREADY_OPEN;
+  - the lock order;
+  - the creation of the opportunity;
+  - the content of `why_real` and `known_differences`.
+
+**What it did not re-run:** PostgreSQL, the mutation suite and the gate.
+Its environment has no PostgreSQL client. It checked their records and
+their binding to the fingerprint:
+- 57/57 tests;
+- 33/33 mutations;
+- 2196/2196 in the suite;
+- the gate: 70 PASS, 67 operations in parity;
+- the matrix: 162 rules.
+
+These stay **our** results, not an independent run.
+
+### 11.2 The five interpretations of §2.2, approved as implemented
+
+1. **The rules and thresholds are those pinned in the match itself.** This
+   is G5-2's reading. A policy change after the match was created does not
+   reinterpret the old match; it requires a new run.
+2. **`Problem.field_errors` carries the reasons.** The contract already
+   declares it, so the response schema is not widened by a new key.
+3. **`last_confirmed_at` is the `as_of` of the check, read after the locks.**
+   Its meaning, stated precisely: **the instant the SYSTEM confirmed that the
+   opportunity's context was valid at approval**.
+   - It is not a claim that the customer, the owner, or anyone else
+     confirmed anything by hand at that instant.
+   - The human confirmations stay where they are recorded: the request's,
+     the property's and the offer's own `last_confirmed_at` and
+     `commercial_terms_last_confirmed_at`.
+4. **A criterion is shown only if it was evaluated by the known pinned
+   version of the display rules.** This fail-closed rule prevents leaking an
+   inference whose derivability was not proven.
+5. **The order is `criterion_code`, then `ordinal`; the label is
+   `criterion_definitions.label_ar`.** This keeps the output deterministic.
+
+### 11.3 Two limits carried to step 6 and the slice's closure
+
+§9's limits do not keep the step open. Two of them **must not disappear**.
+They are carried, by name, to step 6 and to the final closure record of
+Slice 5 (plan §8, "Carried to step 6"):
+
+- **L-S5-3a: supersession across two policies is not proven.** No test
+  builds a two-policy case, and no mutation drops `matching_policy_id`.
+  - The implementation follows the decision ("within one policy").
+  - Its proof is weaker than the rest of G5-2.
+- **L-S5-3b: a new matching run can commit between the supersession check
+  and the approval's commit.** The Slice 4 engine does not take the request
+  lock.
+  - This is stated, not hidden, and does not block step 3.
+  - At step 6 or the final closure it must be either:
+    - **accepted** as a documented consistency model; or
+    - **closed** by a synchronization mechanism, if "the current match at
+      commit" is decided to be a strict condition.
+
+### 11.4 Unchanged
+
+- **STOP GATE D:** its stale `--check` is not a failure of this step. It is
+  the Slice 4 tree's record, and is not regenerated.
+- **K06** is UNPROVEN.
+- **G4-5R** and **G5-10** are open.
+
+None of these blocks the closure.
+
+**Step 4 is authorized by the same review,** once this documentation
+commit is made:
+- **Scope:** the internal read, the customer read and the match queue,
+  under G5-6, G5-7 and G5-11.
+- **Its condition of acceptance:** proof of the withholding, and of no leak
+  of any private expectation or claim.

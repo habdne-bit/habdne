@@ -702,3 +702,8 @@ docs/gate/evidence/SLICE5-STEP3-MUTATIONS.txt                  new   1e563fb8a51
 docs/gate/SLICE_5_STEP3_DELIVERY.md                            new   c41e11dae2b95bdf155e6cb21082d978abdfef8dc0ce24b6ff8eed8d7205f865
 docs/gate/SLICE_5_PLAN.md                                      rev10 4325bf2a03a1a84620941ac1fa4a3de08d8c00b58773977bcf32663868b18dfe
 SLICE_5_PLAN.md changed revision: 9 -> 10 (review of 60b0152: G5-5 decided (a), G5-6 SUMMARY_ONLY branch; step 3 delivered).
+
+--- Review of 921ed01: Slice 5 step 3 CLOSED ---
+docs/gate/SLICE_5_STEP3_DELIVERY.md                            ---   4ca66de8b555a93f8f0e568315a4a40065cb4620e2999897c0ebbc9933aae4c7
+docs/gate/SLICE_5_PLAN.md                                      rev11 9901221db22b85f41c94f3041d8ec5bf36162e6ea775dc43edcc5c2df1fdb48f
+SLICE_5_PLAN.md changed revision: 10 -> 11 (step 3 closed; L-S5-3a and L-S5-3b carried to step 6; step 4 authorized).

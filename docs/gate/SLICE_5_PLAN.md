@@ -1,10 +1,11 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 10**
+## Implementation plan — **revision 11**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 (the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
-the one opportunity) is delivered for review. No other step's code exists.
+the one opportunity) is CLOSED at `921ed01`. Step 4 is authorized. No other
+step's code exists.
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
 step 3 opens `opportunities` to the APPROVED review only (H03).
@@ -207,6 +208,32 @@ acceptance of step 2 rests on the bundle of `1e0d919`. The decision:
 
 Step 3's delivery: `SLICE_5_STEP3_DELIVERY.md`.
 
+**The review of `921ed01`. Step 3 is CLOSED within its approved scope.**
+
+**What the review checked itself:**
+- the bundle's SHA-256;
+- its 366 manifest entries;
+- `bound`;
+- the recomputed source fingerprint;
+- the two documents' digests;
+- **§3.7's pure table over all 47 628 combinations, independently**, the
+  fail-closed handling included.
+
+It did not re-run PostgreSQL or the mutations. Those stay our results,
+bound to the fingerprint.
+
+**Approved as implemented:** the five interpretations of step 3 delivery
+§2.2. The meaning of `last_confirmed_at` is stated precisely there (§11.2):
+the system's confirmation at approval, not a manual confirmation by anyone.
+
+**Carried to step 6 and the final closure:** L-S5-3a and L-S5-3b (§8).
+
+**Step 4 is authorized** after this documentation commit:
+- **scope:** the internal read, the customer read and the match queue
+  (G5-6, G5-7, G5-11);
+- **a condition of its acceptance:** proof of the withholding, and of no
+  leak of a private expectation or a claim.
+
 **Revision history**
 
 | rev | commit | what changed |
@@ -220,7 +247,8 @@ Step 3's delivery: `SLICE_5_STEP3_DELIVERY.md`.
 | 7 | `7e84702` | the review of `29a0f30` recorded: G5-3 decided (a), with its input narrowing and codes; [R6-1] and the AST correction accepted; step 2 authorized and delivered (`SLICE_5_STEP2_DELIVERY.md`) |
 | 8 | `1e0d919` | the review of `7e84702` recorded: the temporary APPROVED code and STOP GATE D's status accepted; the Idempotency-Key race with a final decision measured and fixed (step 2 delivery §10) |
 | 9 | `60b0152` | the review of `1e0d919` recorded: step 2 CLOSED (step 2 delivery §11); step 3 waits on G5-5 |
-| 10 | the commit that adds this revision | the review of `60b0152` recorded: G5-5 decided (a), with G5-6's SUMMARY_ONLY branch (four fields); step 3 authorized and delivered (`SLICE_5_STEP3_DELIVERY.md`) |
+| 10 | `921ed01` | the review of `60b0152` recorded: G5-5 decided (a), with G5-6's SUMMARY_ONLY branch (four fields); step 3 authorized and delivered (`SLICE_5_STEP3_DELIVERY.md`) |
+| 11 | the commit that adds this revision | the review of `921ed01` recorded: step 3 CLOSED (step 3 delivery §11); the five interpretations approved; L-S5-3a and L-S5-3b carried to step 6 (§8); step 4 authorized |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1836,10 +1864,19 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
 | 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **CLOSED** at `1e0d919` (`SLICE_5_STEP2_DELIVERY.md` §11); the key race of the review of `7e84702` fixed (§10 there) |
-| 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **delivered** for review (`SLICE_5_STEP3_DELIVERY.md`) |
-| 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
+| 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
+| 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **authorized** in the review of `921ed01` |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
+
+**Carried to step 6 and the final closure of Slice 5 (review of `921ed01`).**
+These are not closed by any step before them. Each is settled explicitly at
+step 6 or in the closure record:
+
+| Id | What | To settle |
+|---|---|---|
+| **L-S5-3a** | supersession across two policies is not proven: no two-policy test, no mutation dropping `matching_policy_id` | prove it, or record the weaker proof as accepted |
+| **L-S5-3b** | a new matching run can commit between the approval's supersession check and its commit: the Slice 4 engine does not take the request lock | either accept it as a documented consistency model, or add a synchronization mechanism if "the current match at commit" is decided strict |
 
 **A maintenance change, outside this sequence (review of `f5a9d88`,
 decision 3).** `db/dev/mutate_input_hardening.py` ran its mutations when
