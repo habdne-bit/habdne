@@ -658,3 +658,11 @@ docs/gate/evidence/SLICE5-STEP1-0006-MUTATIONS.txt             new   83c0bbb9c66
 docs/gate/SLICE_5_STEP1_DELIVERY.md                            new   7c60faa1ddae558fb0955c63ead7aa8c45c605e4569c09e021f934e18b7a087b
 docs/gate/SLICE_5_PLAN.md                                      rev4  3927550f6da058e88c292645f1ecdb298ebcec9a6929da7a36169066658a3746
 SLICE_5_PLAN.md revision 4 unchanged in content; §8 row 1 marks step 1 delivered.
+
+--- Review of f5a9d88: Slice 5 step 1 CLOSED; plan revision 5; the input-hardening import guard ---
+docs/gate/SLICE_5_PLAN.md                                      rev5  ed1f5b96c2d07ec55d87dd83780a364e69b9d5fa545d9b1aa20a087978879a4a
+docs/gate/SLICE_5_STEP1_DELIVERY.md                            ---   177ff831eca7522bc7b3ed02d459cd15b5e7147a40d894e282c81a1b3e22acf9
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   1d8f7d4b9fc19828d5e2105d6763c321a6fa4061596ff26dac492c90232c85d4
+docs/gate/evidence/MUTATE-INPUT-HARDENING-IMPORT-BEFORE-FIX.txt new   cad57eb09ac95cd9759b13e2ae3192a3652dbb191cb1b1591ddb7e721ad84735
+docs/gate/evidence/MUTATE-INPUT-HARDENING-RERUN-AFTER-GUARD.txt new   bb466419b2a2f6c84316c88aba6c800470a26e71512bd3c729ed5593cd202b22
+SLICE_5_PLAN.md changed revision: 4 -> 5 (step 1 closed; G5-12 wording; STOP GATE D/E decisions).

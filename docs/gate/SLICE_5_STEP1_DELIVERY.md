@@ -10,7 +10,7 @@ plan revision 4, and authorized step 1: "migration `0006` alone".
   mutations on the actual migration is required before step 1 closes, and
   §3 and §4 report those runs.
 
-**Status:** delivered for review; not closed.
+**Status:** **CLOSED** within G5-12's scope, in the review of `f5a9d88` (§8).
 
 **Basis:**
 - `docs/gate/SLICE_5_PLAN.md`, revision 4, G5-12: the five edges, rules 1–6,
@@ -217,3 +217,72 @@ one command, and it binds to the step's run.
   - G4-5R is open; STOP GATE E is for SALE only;
   - K06 is UNPROVEN until G5-13 (b)'s separate step;
   - `mutate_input_hardening.py` has no `__main__` guard (§4.3).
+
+## 8. The review of `f5a9d88`: step 1 closed
+
+**Decision.** Step 1 is closed within G5-12's scope. The review read:
+- the migration;
+- the tests, including the writes that must stay accepted, with B10 not
+  attributed to the schema;
+- the mutation record: every one of the 29 fails, once the no-op mutations
+  were corrected.
+
+**What the review verified itself:**
+- the bundle's digest;
+- the 348 manifest files;
+- `run_binding.py` inside the extracted tree (`bound`, with the recorded
+  source fingerprint).
+
+It re-ran neither PostgreSQL nor the tests. 2027/2027 and the gate stay
+results of our bound runs, not an independent check.
+
+### 8.1 The three decisions, and what was done
+
+1. **Two functions and two triggers are the approved content.** "One
+   function" in G5-12 was a numerical error, corrected in plan revision 5.
+   The migration is unchanged.
+2. **STOP GATE D stays the record of the Slice 4 tree,** not regenerated
+   during Slice 5. Its `--check` failure for staleness is expected, and is
+   not a pass for the new tree. STOP GATE E will be bound to Slice 5's run.
+   Recorded in plan §6.3.
+3. **The `__main__` guard for `mutate_input_hardening.py`,** as a separate,
+   limited maintenance change. Done:
+   - **Measured first.** In an isolated git worktree at `f5a9d88`, importing
+     the script ran the baseline suite (127 passed), then mutated
+     `src/turab/services/truth.py`, 25.9 s after the import. The process was
+     killed and the worktree removed; the main tree was not touched.
+     `evidence/MUTATE-INPUT-HARDENING-IMPORT-BEFORE-FIX.txt`. A first
+     attempt found PostgreSQL down (EN-01), and is stated there.
+   - **The guard** (`5d502b5`). The run sits in `main(only)`, called with
+     `sys.argv[1:]` under `if __name__ == "__main__"`. The diff, ignoring
+     whitespace, is that wrapper only.
+   - **The tests** (`tests/test_mutation_tools.py`), for every
+     `db/dev/mutate_*.py`, imported in a temporary copy WITHOUT `.venv`, so
+     a failing script can reach neither pytest nor the real tree:
+     - the import prints nothing, changes no file and leaves no `.orig`;
+     - no module-level call, loop, `with` or `try`;
+     - exactly one `__main__` guard;
+     - for this script, the guard calls `main(sys.argv[1:])`.
+
+     Against the old script, exactly its three tests fail, and the other 27
+     pass.
+   - **Direct invocation is unchanged.** The script run directly at
+     `5d502b5`, on a clean tree, gives the same failure count and the same
+     failing tests, mutation by mutation, as the 2026-09-24 record (16/16).
+     `evidence/MUTATE-INPUT-HARDENING-RERUN-AFTER-GUARD.txt`.
+
+### 8.2 Evidence after the guard
+
+On a clean tree, source fingerprint `e0d69820…37f6`:
+- **Suite:** 2057/2057 (`record_test_run.py` at `41c5eab`; `run_binding.py`:
+  `bound`). It was 2027 before: the 30 new tests.
+- **Gate:** PASS, parity 67 (`08e9f28`).
+- **Matrix:** 151 rules PASS.
+
+### 8.3 Unchanged
+
+- **K06 is UNPROVEN.** `0006`'s closure is no claim about it (EN-02, G5-13
+  (b)).
+- **Step 2 is not authorized.** G5-3 and its inputs must be decided before
+  the review command is written. G5-5 and G5-10 also stay open.
+- **G4-5R is open,** and STOP GATE E is for SALE.

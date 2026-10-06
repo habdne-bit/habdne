@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 4**
+## Implementation plan — **revision 5**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Slice 4 kept `match_reviews` and
@@ -66,6 +66,38 @@ PostgreSQL.
   area changed after the evaluation. Answered at G5-5 as **[R4-2]**.
 - **Still not approved:** G5-3, G5-5 and G5-10.
 
+**The review of step 1 (`f5a9d88`). Step 1 is CLOSED within G5-12's
+scope.**
+
+What the review checked itself:
+- the bundle's digest;
+- the 348 manifest files;
+- `run_binding.py` (`bound`, with the recorded source fingerprint), run
+  inside the extracted tree;
+- the migration, the tests and the mutation record, by reading.
+
+It re-ran neither PostgreSQL nor the tests. 2027/2027 and the gate are
+results of our runs, bound to the tree, not independent checks.
+
+**Its three decisions:**
+1. **The two functions and two triggers are the approved content.** "One
+   function and two triggers" in G5-12 was a numerical error. It is
+   corrected in this revision, and the migration is unchanged.
+2. **STOP GATE D stays the record of the Slice 4 tree.** It is not
+   regenerated during Slice 5. Its current `--check` failure, a stale
+   document, is expected, and is not a pass that could be credited to the
+   new tree. **STOP GATE E** is the document bound to Slice 5's run, when
+   it is reached (§6.3).
+3. **An `__main__` guard for `mutate_input_hardening.py`,** as a separate,
+   limited maintenance change, with a test that importing it modifies no
+   file and starts no run, and that direct invocation is unchanged. Done
+   at `5d502b5`; §8 records it.
+
+**What the closure does not change:**
+- K06 is not proven, and stays UNPROVEN;
+- step 2 is not authorized: G5-3 and its inputs must be decided first;
+- G4-5R is open, and STOP GATE E is for SALE.
+
 **Revision history**
 
 | rev | commit | what changed |
@@ -73,7 +105,8 @@ PostgreSQL.
 | 1 | `658a86d` | first plan |
 | 2 | `288bfdb` | step 0 measured (§6.4, record above); §2 restated from the measurements; §3.1 gains the review-ordering rule (measured A3, A5, A6); the five review points answered at G5-2, G5-4, G5-5, G5-8, G5-11; G5-12 widened by the measurement; G5-13 added (the application role, measured D) |
 | 3 | `3a797d8` | the review of `288bfdb` recorded; [R3-1] a strictly increasing review stamp (§3.1); [R3-2] one currency table, §3.7, used by approval, revalidate and share; [R3-3] the exact text of `0006` and the B-case attribution (G5-12); [R3-4] G5-13 split into (a) documentation, done as EN-02, and (b) remedy and enforcement point, with K06 UNPROVEN; [R3-5] LOCATION removed from the display list (G5-5) |
-| 4 | the commit that adds this revision | the review of `3a797d8` recorded, and its acceptances marked in place; [R4-1] G5-12 rules 5 and 6 rewritten as event stamps, set only on their own edge, with a test table for both closing edges; [R4-2] G5-5: an entry is withheld at render when its field's current value differs from the snapshot's |
+| 4 | `6ba73ce` | the review of `3a797d8` recorded, and its acceptances marked in place; [R4-1] G5-12 rules 5 and 6 rewritten as event stamps, set only on their own edge, with a test table for both closing edges; [R4-2] G5-5: an entry is withheld at render when its field's current value differs from the snapshot's |
+| 5 | the commit that adds this revision | the review of `f5a9d88` recorded: step 1 CLOSED; G5-12's "one function and two triggers" corrected to two functions and two triggers; STOP GATE D not regenerated in Slice 5, STOP GATE E bound to Slice 5's run (§6.3); the input-hardening import guard (§8) |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1277,8 +1310,10 @@ The permitted edges are exactly these five:
 No other change of `status` is permitted. CLOSED has no outgoing edge.
 ENGAGED is in the graph although no Slice 5 path reaches it (G5-1).
 
-**The exact content of `0006`.** It adds one function and two triggers on
-`turab.opportunities`.
+**The exact content of `0006`.** It adds two functions and two triggers on
+`turab.opportunities`. Revision 4 said "one function", a numerical error the
+review of `f5a9d88` named; the two named functions below were always the
+content, and the migration is unchanged.
 - **`enforce_opportunity_history()`, BEFORE UPDATE, in this order:**
   1. **A CLOSED row is final.** If `OLD.status = 'CLOSED'`, any UPDATE is
      refused.
@@ -1517,6 +1552,11 @@ in the review of `3a797d8`: option (ii).**
 - S33–S36a, re-proved on the real route, not only on the function.
 
 ### 6.3 STOP GATE E, generated and bound
+**Decided in the review of `f5a9d88`.** STOP GATE D stays bound to the
+Slice 4 run, and is not regenerated during Slice 5. Its `--check` reports
+it stale, as expected, and that report is not a pass. STOP GATE E is the
+document bound to Slice 5's own run.
+
 As STOP GATE C and D: a generator (`db/gate/stop_gate_e_evidence.py`)
 writes `docs/gate/SLICE_5_STOP_GATE_E.md` from the bound JUnit run, and has
 a `--check` mode. It refuses when any of the following holds:
@@ -1624,12 +1664,24 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
-| 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **delivered for review** (`SLICE_5_STEP1_DELIVERY.md`) |
+| 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3, G5-4 |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5, §3.7 |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
+
+**A maintenance change, outside this sequence (review of `f5a9d88`,
+decision 3).** `db/dev/mutate_input_hardening.py` ran its mutations when
+imported (step 1 delivery §4.3).
+- **The defect, measured** in an isolated worktree:
+  `evidence/MUTATE-INPUT-HARDENING-IMPORT-BEFORE-FIX.txt`.
+- **The guard,** at `5d502b5`.
+- **The tests:** `tests/test_mutation_tools.py`, for every mutation script.
+  Against the old script, exactly its three tests fail.
+- **The direct run, after the guard:**
+  `evidence/MUTATE-INPUT-HARDENING-RERUN-AFTER-GUARD.txt`, identical per
+  mutation to the 2026-09-24 record.
 
 **Outside this sequence (G5-13 (b), decided as (ii)).** The remedy of the
 application role is a separate, cross-cutting step, with its own plan. It is
