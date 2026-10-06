@@ -1,0 +1,46 @@
+TURAB — mutate_input_hardening.py: what IMPORTING it does, BEFORE the guard
+============================================================
+Recorded       : 2026-10-06 09:33:20 UTC
+Where          : an isolated git worktree at f5a9d8843d4e0f1416248a623f99e8e091679a68
+                 ( /tmp/claude-0/wt_guard ); the main tree is not touched
+Script sha256  : 459d92f3e14ed5cc812b85bfce064ad2f2933516e137b9a922ac20dfc16863a0
+Status before  : '?? .venv' (the .venv symlink only)
+Action         : python -c 'import mutate_input_hardening' (an IMPORT, not a run)
+Note           : a first attempt found PostgreSQL down (EN-01); the server was
+                 restarted and this is the re-run.
+
+After 25.9 s of the import:
+  the import ended on its own: False
+  a pytest child process was started by the import: True
+  working tree changed by the import: True
+     M src/turab/services/truth.py
+     ?? .venv
+     ?? src/turab/services/truth.py.orig
+  the import printed (its run header and first lines):
+    | TURAB — step 5: which mechanism refuses which hostile input
+    | ============================================================
+    | Base commit       : f5a9d8843d4e0f1416248a623f99e8e091679a68
+    | Source fingerprint: 7edec36116aa27aa045c9a06b81e13488621bb74e97d4ba4a51c84f98fc1c5f5
+    | Working tree      : DIRTY
+    | ?? .venv
+    | Recorded          : 2026-10-06 09:33:20 UTC
+    | 
+    | === baseline (no mutation) ===
+    |    127 passed, 2 warnings in 22.78s
+
+The process group was then killed. The worktree is reset and removed;
+nothing in it is kept or committed.
+
+============================================================
+Second part: the new tests (tests/test_mutation_tools.py), run against the OLD
+script (HEAD f5a9d88, sha256 459d92f3…63a0) placed in the main tree, then the fixed
+script restored. The tests import each script in a temporary copy WITHOUT .venv,
+so the old script could not reach pytest or the real tree.
+
+  FAILED tests/test_mutation_tools.py::test_importing_a_mutation_script_runs_nothing_and_changes_nothing[mutate_input_hardening.py]
+  FAILED tests/test_mutation_tools.py::test_a_mutation_script_runs_only_under_its_main_guard[mutate_input_hardening.py]
+  FAILED tests/test_mutation_tools.py::test_input_hardening_runs_its_main_with_the_command_line_selection
+  3 failed, 27 passed in 2.88s
+
+  Exactly the three tests about mutate_input_hardening.py fail; the 13 other
+  scripts already run only under their __main__ guard.

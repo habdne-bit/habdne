@@ -56,53 +56,60 @@ M = [
  ("M16 area rule reads repr() instead of 15 significant digits", "src/turab/api/json_types.py",
   'format(value, ".15g")', 'repr(value)'),
 ]
-only = sys.argv[1:]
 
 
 def _run(*argv):
     return subprocess.run(argv, cwd=ROOT, capture_output=True, text=True).stdout.strip()
 
 
-dirty = _run("git", "status", "--porcelain")
-print("TURAB — step 5: which mechanism refuses which hostile input")
-print("=" * 60)
-print("Base commit       :", _run("git", "rev-parse", "HEAD"))
-print("Source fingerprint:", _run(str(ROOT / ".venv/bin/python"), "db/dev/source_fingerprint.py", "."))
-print("Working tree      :", "CLEAN" if not dirty else "DIRTY\n" + dirty)
-print("Recorded          :", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"))
-print()
-base = subprocess.run([str(ROOT/".venv/bin/python"), "-m", "pytest", "tests/test_input_hardening.py",
-                       "-q", "-p", "no:cacheprovider"], cwd=ROOT, capture_output=True, text=True)
-print("=== baseline (no mutation) ===\n   " + base.stdout.strip().splitlines()[-1])
-for name, rel, old, new in M:
-    if only and name.split()[0] not in only: continue
-    path = ROOT / rel; backup = path.with_suffix(".py.orig")
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    shutil.copy2(path, backup)
-    s = path.read_text(); n = s.count(old)
-    assert n >= 1, (name, "anchor not found")
-    path.write_text(s.replace(old, new))
-    try:
-        r = subprocess.run([str(ROOT/".venv/bin/python"), "-m", "pytest",
-                            "tests/test_input_hardening.py", "-q", "-p", "no:cacheprovider",
-                            "--tb=line", "-rf"], cwd=ROOT, capture_output=True, text=True)
-    finally:
-        shutil.copy2(backup, path); backup.unlink()
-    assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, "not restored"
-    out = r.stdout
-    failed = sorted(set(re.findall(r"^FAILED tests/test_input_hardening.py::(\S+)", out, re.M)))
-    def _cause(line):
-        # A refused body carries a per-request trace_id; its field message is
-        # the cause, so that is what is kept.
-        field = re.search(r'"status":(\d+).*?"message":"([^"]+)"', line)
-        if field:
-            return f"HTTP {field.group(1)} field error: {field.group(2)}"
-        return re.sub(r"^/\S+:\d+: ", "", line)[:170]
+def main(only):
+    """The run. Called only when the script is executed, never on import
+    (review of f5a9d88: importing it once started its mutations, Slice 5
+    step 1 delivery §4.3)."""
+    dirty = _run("git", "status", "--porcelain")
+    print("TURAB — step 5: which mechanism refuses which hostile input")
+    print("=" * 60)
+    print("Base commit       :", _run("git", "rev-parse", "HEAD"))
+    print("Source fingerprint:", _run(str(ROOT / ".venv/bin/python"), "db/dev/source_fingerprint.py", "."))
+    print("Working tree      :", "CLEAN" if not dirty else "DIRTY\n" + dirty)
+    print("Recorded          :", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"))
+    print()
+    base = subprocess.run([str(ROOT/".venv/bin/python"), "-m", "pytest", "tests/test_input_hardening.py",
+                           "-q", "-p", "no:cacheprovider"], cwd=ROOT, capture_output=True, text=True)
+    print("=== baseline (no mutation) ===\n   " + base.stdout.strip().splitlines()[-1])
+    for name, rel, old, new in M:
+        if only and name.split()[0] not in only: continue
+        path = ROOT / rel; backup = path.with_suffix(".py.orig")
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        shutil.copy2(path, backup)
+        s = path.read_text(); n = s.count(old)
+        assert n >= 1, (name, "anchor not found")
+        path.write_text(s.replace(old, new))
+        try:
+            r = subprocess.run([str(ROOT/".venv/bin/python"), "-m", "pytest",
+                                "tests/test_input_hardening.py", "-q", "-p", "no:cacheprovider",
+                                "--tb=line", "-rf"], cwd=ROOT, capture_output=True, text=True)
+        finally:
+            shutil.copy2(backup, path); backup.unlink()
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, "not restored"
+        out = r.stdout
+        failed = sorted(set(re.findall(r"^FAILED tests/test_input_hardening.py::(\S+)", out, re.M)))
+        def _cause(line):
+            # A refused body carries a per-request trace_id; its field message is
+            # the cause, so that is what is kept.
+            field = re.search(r'"status":(\d+).*?"message":"([^"]+)"', line)
+            if field:
+                return f"HTTP {field.group(1)} field error: {field.group(2)}"
+            return re.sub(r"^/\S+:\d+: ", "", line)[:170]
 
-    causes = sorted(set(_cause(l) for l in out.splitlines()
-                        if re.match(r"^/.*:\d+: ", l) or l.startswith("E   ")))
-    summary = out.strip().splitlines()[-1]
-    print(f"== {name} [{rel}, {n} site(s)]  restored: sha256 {digest[:16]} identical\n   {summary}")
-    for f in failed: print("   FAILED", f)
-    for c in causes[:6]: print("   cause:", c)
-    sys.stdout.flush()
+        causes = sorted(set(_cause(l) for l in out.splitlines()
+                            if re.match(r"^/.*:\d+: ", l) or l.startswith("E   ")))
+        summary = out.strip().splitlines()[-1]
+        print(f"== {name} [{rel}, {n} site(s)]  restored: sha256 {digest[:16]} identical\n   {summary}")
+        for f in failed: print("   FAILED", f)
+        for c in causes[:6]: print("   cause:", c)
+        sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
