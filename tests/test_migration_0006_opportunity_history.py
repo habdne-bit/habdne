@@ -214,6 +214,41 @@ def test_rule_2_holds_on_a_permitted_edge_too(session, world):
     _refused(session, _update(f"{CLOSE}, why_real = '{{}}'::jsonb"), R2, o=world["opp"])
 
 
+def test_rule_2_refuses_a_match_change_the_frozen_gate_accepts(session, world):
+    """B3, in the form the frozen gate ACCEPTS: the spare match is APPROVED,
+    ELIGIBLE and of the same pair, so `trg_opportunity_gate`'s re-check
+    passes. Only rule 2 refuses it.
+
+    The first mutation run (H2c) showed that the B3 test above could not
+    tell rule 2 from the gate, because the gate refused first."""
+    _refused(session, _update("approved_match_id = :x"), R2, o=world["opp"],
+             x=world["spare"])
+
+
+@pytest.mark.parametrize("case,assignment", [
+    ("B1 request_id", "request_id = :x_req"),
+    ("B2 property_id", "property_id = :x_prop"),
+    ("B3 approved_match_id", "approved_match_id = :x_match"),
+])
+def test_rule_2_alone_refuses_the_pair_and_the_match(session, world, case, assignment):
+    """Rule 2 in isolation. Inside this test's transaction, which is rolled
+    back, the frozen `trg_opportunity_gate` is disabled, so the refusal can
+    only come from rule 2.
+
+    Without this, removing request_id or property_id from rule 2 (H2a,
+    H2b) survives: with the gate present, no UPDATE that changes either
+    column alone is accepted by the gate. That makes the gate the operative
+    guard and rule 2 a second one behind it, as the plan states. This test
+    pins the second guard on its own.
+
+    It uses the superuser's ability to disable a trigger (EN-02) to TEST a
+    guard. It is not a claim about K06."""
+    session.execute(text("ALTER TABLE turab.opportunities DISABLE TRIGGER trg_opportunity_gate"))
+    _refused(session, _update(assignment), R2, o=world["opp"],
+             x_req=world["other_req"], x_prop=world["other_prop"],
+             x_match=world["unreviewed"])
+
+
 def test_b10_current_offer_id_stays_accepted_by_the_schema(session, world):
     """B10 is NOT refused by 0006: the contract lets revalidate update the
     current offer context (API_CONTRACTS §4.11). The guard for Slice 5 is the

@@ -1,0 +1,237 @@
+TURAB — Slice 5 step 1: which guard of migration 0006 refuses which write
+============================================================
+Base commit       : e0892ce0eb262d249fb15cccdedfe6dfbacf2849
+Source fingerprint: 97381a3eb9468555a19d00ad3bfd9f0fc09abc5b310482531c207073e0e90f6f
+Working tree      : CLEAN
+Recorded          : 2026-10-06 00:09:43 UTC
+Test file         : tests/test_migration_0006_opportunity_history.py
+
+=== baseline (no mutation) ===
+   64 passed in 2.99s
+== H1 rule 1 removed: a CLOSED row may change [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   6 failed, 58 passed in 2.88s
+   FAILED test_a_closed_opportunity_is_final[last_activity_at
+   FAILED test_a_closed_opportunity_is_final[status
+   FAILED test_a_closed_opportunity_is_final[validity_status
+   FAILED test_no_refusal_text_names_an_id
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Opportunity history: this status change is not a permitted edge
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Opportunity history: this status change is not a permitted edge
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H2 rule 2 removed: nothing is written once [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   9 failed, 55 passed in 2.72s
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B4-commercial_context_snapshot]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B5-permission_snapshot]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B6-why_real]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B7-sharing_scope]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B8-created_by_account_id]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B9-created_at]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[known_differences-known_differences]
+   FAILED test_no_refusal_text_names_an_id
+   FAILED test_rule_2_holds_on_a_permitted_edge_too
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H2a rule 2 without request_id [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   64 passed in 2.91s
+== H2b rule 2 without property_id [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   64 passed in 2.99s
+== H2c rule 2 without approved_match_id [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   64 passed in 2.90s
+== H2d rule 2 without commercial_context_snapshot [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 2.90s
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B4-commercial_context_snapshot]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H2e rule 2 without permission_snapshot [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 2.69s
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B5-permission_snapshot]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H2f rule 2 without why_real [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   64 passed in 3.05s
+== H2g rule 2 without known_differences [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 3.02s
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[known_differences-known_differences]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H2h rule 2 without sharing_scope [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 2.98s
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B7-sharing_scope]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H2i rule 2 without created_by_account_id [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   64 passed in 2.95s
+== H2j rule 2 without created_at [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   64 passed in 3.07s
+== H3 rule 3 removed: any status change [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   6 failed, 58 passed in 3.08s
+   FAILED test_a_status_change_off_the_graph_is_refused[ENGAGED-NEW-]
+   FAILED test_a_status_change_off_the_graph_is_refused[ENGAGED-SHARED-]
+   FAILED test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-,
+   FAILED test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-]
+   FAILED test_a_status_change_off_the_graph_is_refused[SHARED-NEW-]
+   FAILED test_no_refusal_text_names_an_id
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Opportunity history: engaged_at is set only on SHARED -> ENGAGED, and never changed
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Opportunity history: engaged_at is set only on SHARED -> ENGAGED, and never changed
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H3b rule 3 admits SHARED -> NEW (B16) [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 3.27s
+   FAILED test_a_status_change_off_the_graph_is_refused[SHARED-NEW-]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H3c rule 3 admits NEW -> ENGAGED (B11) [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   3 failed, 61 passed in 3.03s
+   FAILED test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-,
+   FAILED test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-]
+   FAILED test_no_refusal_text_names_an_id
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Opportunity history: engaged_at is set only on SHARED -> ENGAGED, and never changed
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Opportunity history: engaged_at is set only on SHARED -> ENGAGED, and never changed
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H4 rule 4 removed: closing fields free [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   6 failed, 58 passed in 2.90s
+   FAILED test_no_refusal_text_names_an_id
+   FAILED test_the_closing_fields_go_with_the_closed_status[close_reason_code
+   FAILED test_the_closing_fields_go_with_the_closed_status[closed_at
+   FAILED test_the_closing_fields_go_with_the_closed_status[status
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H4b rule 4 one-way: closed_at may be set while not CLOSED (B13) [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   3 failed, 61 passed in 3.00s
+   FAILED test_no_refusal_text_names_an_id
+   FAILED test_the_closing_fields_go_with_the_closed_status[close_reason_code
+   FAILED test_the_closing_fields_go_with_the_closed_status[closed_at
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H4c rule 4 checks closed_at only, not the reason [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   2 failed, 62 passed in 2.88s
+   FAILED test_the_closing_fields_go_with_the_closed_status[close_reason_code
+   FAILED test_the_closing_fields_go_with_the_closed_status[status
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H5a rule 5, case 1: shared_at may move once set (B17) [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   2 failed, 62 passed in 2.96s
+   FAILED test_event_stamps[SHARED-shared_at-cleared]
+   FAILED test_event_stamps[SHARED-shared_at-moved]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H5b rule 5, case 2: NEW -> SHARED without shared_at [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 2.84s
+   FAILED test_event_stamps[NEW-share-without-shared_at]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H5c rule 5, case 3: shared_at for an event that did not happen [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   3 failed, 61 passed in 3.13s
+   FAILED test_event_stamps[NEW-close-shared-supplied]
+   FAILED test_event_stamps[NEW-unchanged-shared-supplied]
+   FAILED test_no_refusal_text_names_an_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H6a rule 6, case 1: engaged_at may move once set [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   2 failed, 62 passed in 3.08s
+   FAILED test_event_stamps[ENGAGED-engaged_at-cleared]
+   FAILED test_event_stamps[ENGAGED-engaged_at-moved]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H6b rule 6, case 2: SHARED -> ENGAGED without engaged_at [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   1 failed, 63 passed in 3.08s
+   FAILED test_event_stamps[SHARED-engage-without-engaged_at]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== H6c rule 6, case 3: engaged_at for an event that did not happen [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   5 failed, 59 passed in 3.16s
+   FAILED test_event_stamps[NEW-close-engaged-supplied]
+   FAILED test_event_stamps[NEW-share-engaged-supplied]
+   FAILED test_event_stamps[SHARED-close-engaged-supplied]
+   FAILED test_event_stamps[SHARED-unchanged-engaged-supplied]
+   FAILED test_no_refusal_text_names_an_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B1 birth trigger not created [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   10 failed, 54 passed in 3.25s
+   FAILED test_any_other_birth_is_refused[close_reason_code]
+   FAILED test_any_other_birth_is_refused[closed_at]
+   FAILED test_any_other_birth_is_refused[engaged_at]
+   FAILED test_any_other_birth_is_refused[shared_at]
+   FAILED test_any_other_birth_is_refused[status+closed_at+close_reason_code]
+   FAILED test_any_other_birth_is_refused[status0]
+   FAILED test_any_other_birth_is_refused[status1]
+   FAILED test_any_other_birth_is_refused[validity_status0]
+   FAILED test_any_other_birth_is_refused[validity_status1]
+   FAILED test_no_refusal_text_names_an_id
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(3f5a863
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(41cd7eb
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(555b9e9
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(572b653
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(66d14a1
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(7c5245d
+== B2 birth admits any status [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   3 failed, 61 passed in 3.19s
+   FAILED test_any_other_birth_is_refused[status0]
+   FAILED test_any_other_birth_is_refused[status1]
+   FAILED test_no_refusal_text_names_an_id
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(19d9818
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(e4996f2
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(ff30096
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(19d
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(e49
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(ff3
+== B3 birth admits any validity [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   2 failed, 62 passed in 2.92s
+   FAILED test_any_other_birth_is_refused[validity_status0]
+   FAILED test_any_other_birth_is_refused[validity_status1]
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(62df21c
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(fca1878
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(62d
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(fca
+== B4 birth admits event times [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   4 failed, 60 passed in 2.87s
+   FAILED test_any_other_birth_is_refused[close_reason_code]
+   FAILED test_any_other_birth_is_refused[closed_at]
+   FAILED test_any_other_birth_is_refused[engaged_at]
+   FAILED test_any_other_birth_is_refused[shared_at]
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(221eb51
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(9abd491
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(ac58e2e
+   cause: AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(b8c28ef
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(221
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportuni...request_id, property_id)=(9ab
+== T1 history trigger not created [db/migrations/versions/0006_opportunity_history.py, 1 site(s)]  restored: sha256 bc29a03a9fd45daa identical
+   36 failed, 28 passed in 3.07s
+   FAILED test_a_closed_opportunity_is_final[last_activity_at
+   FAILED test_a_closed_opportunity_is_final[status
+   FAILED test_a_closed_opportunity_is_final[validity_status
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B4-commercial_context_snapshot]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B5-permission_snapshot]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B6-why_real]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B7-sharing_scope]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B8-created_by_account_id]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[B9-created_at]
+   FAILED test_a_field_written_at_creation_cannot_be_rewritten[known_differences-known_differences]
+   FAILED test_a_status_change_off_the_graph_is_refused[ENGAGED-NEW-]
+   FAILED test_a_status_change_off_the_graph_is_refused[ENGAGED-SHARED-]
+   FAILED test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-,
+   FAILED test_a_status_change_off_the_graph_is_refused[NEW-ENGAGED-]
+   FAILED test_a_status_change_off_the_graph_is_refused[SHARED-NEW-]
+   FAILED test_event_stamps[ENGAGED-engaged_at-cleared]
+   FAILED test_event_stamps[ENGAGED-engaged_at-moved]
+   FAILED test_event_stamps[NEW-close-engaged-supplied]
+   FAILED test_event_stamps[NEW-close-shared-supplied]
+   FAILED test_event_stamps[NEW-share-engaged-supplied]
+   FAILED test_event_stamps[NEW-share-without-shared_at]
+   FAILED test_event_stamps[NEW-unchanged-shared-supplied]
+   FAILED test_event_stamps[SHARED-close-engaged-supplied]
+   FAILED test_event_stamps[SHARED-engage-without-engaged_at]
+   FAILED test_event_stamps[SHARED-shared_at-cleared]
+   FAILED test_event_stamps[SHARED-shared_at-moved]
+   FAILED test_event_stamps[SHARED-unchanged-engaged-supplied]
+   FAILED test_no_refusal_text_names_an_id
+   FAILED test_rule_2_holds_on_a_permitted_edge_too
+   FAILED test_the_closing_fields_go_with_the_closed_status[close_reason_code
+   FAILED test_the_closing_fields_go_with_the_closed_status[closed_at
+   FAILED test_the_closing_fields_go_with_the_closed_status[status
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+
+SURVIVING MUTATIONS: H2a rule 2 without request_id, H2b rule 2 without property_id, H2c rule 2 without approved_match_id, H2f rule 2 without why_real, H2i rule 2 without created_by_account_id, H2j rule 2 without created_at

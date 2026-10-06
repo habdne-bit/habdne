@@ -17,6 +17,7 @@ The suite's database is rebuilt by `alembic upgrade head` at session start,
 so a mutated migration is what the tests run against. See
 `mutation_runner.py`.
 """
+import re
 import sys
 
 from mutation_runner import run
@@ -40,11 +41,20 @@ COLUMNS = ["request_id", "property_id", "approved_match_id", "commercial_context
 
 
 def _without(column):
-    """Rule 2's comparison with one column removed from both rows."""
+    """Rule 2's comparison with one column removed from both rows.
+
+    The column may sit mid-line ("X, "), at a line end ("X,\n") or last
+    ("\n   X)"). The first run's version matched only the first form, so
+    four mutants (H2c, H2f, H2i, H2j) were identical to the original and
+    were reported as survivors; `mutation_runner` now refuses a no-op."""
     block = f"{ROW_NEW}\n                IS DISTINCT FROM\n                {ROW_OLD}"
 
     def strip(row, side):
-        return (row.replace(f"{side}.{column}, ", "").replace(f", {side}.{column})", ")"))
+        out = re.sub(rf"{side}\.{column},\s*", "", row)
+        if out == row:  # the last column: drop the separator before it
+            out = re.sub(rf",\s*{side}\.{column}\)", ")", row)
+        assert out != row, (column, "not removed")
+        return out
     return block, f"{strip(ROW_NEW, 'NEW')}\n                IS DISTINCT FROM\n                " \
                   f"{strip(ROW_OLD, 'OLD')}"
 

@@ -66,6 +66,10 @@ def run(title, test_file, mutations, only=()):
         # Checked BEFORE the backup is made: a missing anchor must not leave a
         # stray .orig behind (it did, once, during the review of 1935dc1).
         assert sites >= 1, (name, "anchor not found")
+        # A mutation that leaves the file unchanged tests nothing and would be
+        # reported as a SURVIVOR. Four did, in the first 0006 run (Slice 5
+        # step 1): their anchor matched, but the replacement equalled it.
+        assert source.replace(old, new) != source, (name, "mutation changes nothing")
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         backup = path.with_suffix(path.suffix + ".orig")
         shutil.copy2(path, backup)
