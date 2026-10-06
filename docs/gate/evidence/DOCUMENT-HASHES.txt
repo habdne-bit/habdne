@@ -693,3 +693,9 @@ SLICE_5_PLAN.md changed revision: 7 -> 8 (review of 7e84702: the key race fixed;
 docs/gate/SLICE_5_STEP2_DELIVERY.md                            ---   6af1d517bb686529456885b322de5508a05adbda9b121d74dadb5785841b84db
 docs/gate/SLICE_5_PLAN.md                                      rev9  05dbb6b2d59b444126aed6622fbe03a750353c46e92b2e70003f9f537c302eb4
 SLICE_5_PLAN.md changed revision: 8 -> 9 (step 2 closed; step 3 waits on G5-5).
+
+--- Slice 5 step 3: APPROVED, the currency check and the one opportunity (review of 60b0152) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   36645c0200097b1114404fa5192c2e17bb0eada6a0b984bd4357382a1312a43d
+docs/gate/evidence/SLICE5-STEP3-BEFORE-FIX.txt                 new   d0ad2ef257c2b7fc5d75f2be817392c66f30460304594ceb0758b912b4ae94c2
+docs/gate/evidence/SLICE5-STEP3-MUTATIONS-FIRST-RUN.txt        new   45fadbc21d4ad4af68a92bed3fd4e9ad8a9ae82abb232d7538fb77aaf8897064
+docs/gate/evidence/SLICE5-STEP3-MUTATIONS.txt                  new   1e563fb8a519453acbed188affb3cb22af747c37d5e80457a7bc2f80fdda6374
