@@ -1,0 +1,100 @@
+TURAB — Slice 5 step 4: the reads and the match queue, BEFORE the change
+========================================================================
+Recorded          : 2026-10-06 19:22:01 UTC
+Base commit       : cb1a828c98cf3eb8b039addf87a7260dc6addaf9 (step 3 CLOSED; no step-4 code)
+Measured in       : an isolated git worktree at the base commit; .venv symlinked
+Source fingerprint: c1e8da4fc02387a7740b7cababf99f7817f0525ff37f2f6744175ef5a01aa85c
+Database          : the suite's own, at alembic head 0006
+Test file sha256  : 014c593fcbc88fe6c8d7c983f635da60937988fb809a1ee34313f20a7426bf6e
+                    (the file of the step-4 commit, copied into the worktree)
+
+Discipline note: as in steps 2 and 3, the code was written before this record.
+The test file imports no new module at module level, so here, unlike steps 2
+and 3, it COLLECTS at the base commit and every test is measured.
+
+Result: 37 failed, 2 passed, 2 warnings in 14.78s
+
+A. Per test (pytest -rA)
+------------------------
+  PASSED tests/test_slice5_step4.py::test_another_partys_opportunity_is_answered_as_an_unknown_id
+  PASSED tests/test_slice5_step4.py::test_a_relation_to_the_property_grants_nothing
+  FAILED tests/test_slice5_step4.py::test_an_unshared_opportunity_is_answered_as_an_unknown_id
+  FAILED tests/test_slice5_step4.py::test_the_customer_body_is_the_frozen_type_at_each_scope[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_the_customer_body_is_the_frozen_type_at_each_scope[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_the_customer_body_is_the_frozen_type_at_each_scope[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_an_area_is_an_exact_json_number
+  FAILED tests/test_slice5_step4.py::test_no_private_value_reaches_the_customer_at_any_scope[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_no_private_value_reaches_the_customer_at_any_scope[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_no_private_value_reaches_the_customer_at_any_scope[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_a_claim_behind_the_document_changes_nothing_the_customer_sees[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_a_claim_behind_the_document_changes_nothing_the_customer_sees[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_a_claim_behind_the_document_changes_nothing_the_customer_sees[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_a_budget_decided_by_the_expectation_leaves_no_trace[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_a_budget_decided_by_the_expectation_leaves_no_trace[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_a_budget_decided_by_the_expectation_leaves_no_trace[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_location_is_never_named[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_location_is_never_named[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_location_is_never_named[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_the_withholding_follows_the_current_area
+  FAILED tests/test_slice5_step4.py::test_a_changed_property_type_withholds_property_type_at_every_scope[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_a_changed_property_type_withholds_property_type_at_every_scope[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_a_changed_property_type_withholds_property_type_at_every_scope[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_at_summary_only_an_area_change_cannot_show
+  FAILED tests/test_slice5_step4.py::test_an_unknown_difference_stays_while_the_area_is_still_unknown
+  FAILED tests/test_slice5_step4.py::test_the_withholding_compares_exact_values_and_fails_closed
+  FAILED tests/test_slice5_step4.py::test_staff_read_the_stored_opportunity_and_the_read_is_recorded[ACC_ADMIN]
+  FAILED tests/test_slice5_step4.py::test_staff_read_the_stored_opportunity_and_the_read_is_recorded[ACC_OPERATOR]
+  FAILED tests/test_slice5_step4.py::test_staff_read_the_stored_opportunity_and_the_read_is_recorded[ACC_REVIEWER]
+  FAILED tests/test_slice5_step4.py::test_an_unknown_opportunity_is_403_for_staff_and_recorded
+  FAILED tests/test_slice5_step4.py::test_a_customer_cannot_use_the_internal_read
+  FAILED tests/test_slice5_step4.py::test_the_queue_holds_the_matches_awaiting_a_decision
+  FAILED tests/test_slice5_step4.py::test_the_queue_keeps_each_offers_current_match_only
+  FAILED tests/test_slice5_step4.py::test_an_aliased_propertys_match_leaves_the_queue
+  FAILED tests/test_slice5_step4.py::test_the_queue_is_ordered_high_first_and_audited_once_with_its_count
+  FAILED tests/test_slice5_step4.py::test_a_customer_cannot_read_the_match_queue
+
+B. The causes, as each test reports them (count, line: cause)
+-------------------------------------------------------------
+       12 214: AttributeError: 'NoneType' object has no attribute 'pop'
+        4 515: AssertionError: {"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"}
+        3 431: AssertionError: assert 'PROPERTY_TYPE' not in (['PROPERTY_TYPE'] + [])
+        3 198: AssertionError: {"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"}
+        3 102: AssertionError: $: keys the frozen type does not allow: ['contact']
+        1 607: AssertionError: assert (404, 'NOT_FOUND') == (403, 'ROLE_NOT_PERMITTED')
+        1 506: AssertionError: assert (404, 'NOT_FOUND') == (403, 'ROLE_NOT_PERMITTED')
+        1 498: AssertionError: assert (404, 'NOT_FOUND') == (403, 'OBJECT_NOT_AUTHORIZED')
+        1 461: ModuleNotFoundError: No module named 'turab.services.opportunity_views'
+        1 455: AssertionError: assert ['BUILT_AREA_MIN'] == []
+        1 443: TypeError: argument of type 'NoneType' is not iterable
+        1 413: AssertionError: Decimal('110')
+        1 320: AssertionError: ('SUMMARY_ONLY', 'contact')
+        1 320: AssertionError: ('PROPERTY_DETAILS_ALLOWED', 'contact')
+        1 320: AssertionError: ('CONTACT_AFTER_CONFIRMATION', 'contact')
+        1 285: assert '"land_area_m2":1234567.89' in '{"opportunity_id":"…","status":"SHARED","validity_status":"VALID","sharing_scope":...],"property":null,"contact":null,"created_at":"2026-10-06T19:21:29.443850Z","shared_at":"
+        1 234: assert 200 == 404
+
+C. What these say about the base commit
+---------------------------------------
+- G5-7 (a) is not enforced: an UNSHARED opportunity is returned to its
+  customer (line 234: 200, not 404).
+- F5-1: the customer body carries a `contact` key at every scope (line 102:
+  "keys the frozen type does not allow: ['contact']"; line 320).
+- The Slice 0 renderer joins no property: `property` is null (line 214, 12
+  cases; line 285's body shows "property":null), so the four-field summary
+  (G5-6 (a)) and the full view are absent, and no area is rendered.
+- [R4-2] is absent: LAND_AREA_MIN stays after the area is corrected to 110
+  (line 413); PROPERTY_TYPE stays after the type changes (line 431, 3 cases);
+  an unknown difference stays after the area is recorded (line 455).
+- The internal read GET /opportunities/{id} and the match queue
+  GET /backoffice/queues/matches are not routed: 404 NOT_FOUND (lines 198,
+  498, 506, 515, 607).
+- The withholding module does not exist (line 461).
+- Two tests PASS at the base commit, and are kept as regression guards: an
+  opportunity of another party, and a relation to the property, are already
+  answered as an unknown id (the Slice 0 loader authorizes through the
+  request's party).
+
+The worktree was removed after this record.

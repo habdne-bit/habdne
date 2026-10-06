@@ -175,3 +175,36 @@ def review_match(request: Request, match_id: uuid.UUID, body: MatchReviewInput,
     return _run(request, command, REVIEW, f"POST /matches/{match_id}/review",
                 body.model_dump(mode="json", exclude_unset=True), handler, 200,
                 extra_errors=match_review.ReviewRefused, prepare=prepare)
+
+
+# --- Slice 5 step 4: the internal opportunity read and the match queue -----------
+
+OPPORTUNITY = "getOpportunitiesOpportunityId"
+MATCH_QUEUE = "getBackofficeQueuesMatches"
+
+
+@router.get("/opportunities/{opportunity_id}", operation_id=OPPORTUNITY)
+def read_opportunity(request: Request, opportunity_id: uuid.UUID, access: Access):
+    """The contract's `InternalOpportunityView`: staff only by its `x-roles`,
+    the stored row unfiltered, recorded (R6.3; plan §3.6). An unknown id is
+    403 and recorded, the staff-read convention. Numbers as stored."""
+    decision = access.authorize_operation(OPPORTUNITY)
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    result = access.read_opportunity(opportunity_id, OPPORTUNITY)
+    if isinstance(result, AccessDenied):
+        return for_denial(result.reason, trace_id_of(request), customer_scoped=False)
+    return ExactJSONResponse(content=result)
+
+
+@router.get("/backoffice/queues/matches", operation_id=MATCH_QUEUE, tags=["BackOffice"])
+def match_queue(request: Request, access: Access):
+    """`QueuePage` of matches awaiting a decision (G5-11), staff only, audited
+    once with its count (R6.3c). Paging as the Slice 3 queues: the whole
+    queue, `next_cursor` null."""
+    decision = access.authorize_operation(MATCH_QUEUE)
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    return {"items": access.match_queue(operation_id=MATCH_QUEUE), "next_cursor": None}

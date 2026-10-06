@@ -19,10 +19,10 @@ from ...dto import (
     CustomerPropertyView,
     CustomerRequestView,
     assert_no_forbidden_fields,
-    render_opportunity_for_scope,
 )
 from ..deps import Access
 from ..problems import for_denial, trace_id_of
+from ..responses import ExactJSONResponse
 
 router = APIRouter(prefix="/me", tags=["Me"])
 
@@ -91,11 +91,14 @@ def get_me_property(request: Request, property_id: uuid.UUID, access: Access):
 
 @router.get("/opportunities/{opportunity_id}", operation_id="getMeOpportunitiesOpportunityId")
 def get_me_opportunity(request: Request, opportunity_id: uuid.UUID, access: Access):
-    """Rendered through the sharing-scope ladder (R8.2).
+    """The frozen `CustomerOpportunityView` (Slice 5 step 4; G5-6 (a), G5-7 (a),
+    [R4-2]; RFC-001 Appendix B).
 
-    The opportunity's property and contact are not joined here: that belongs to
-    Slice 5, and inventing a partial join now would make the scope ladder look
-    exercised when it is not.
+    The loader authorizes through `opportunities.request_id ->
+    requests.party_id` and admits a SHARED opportunity only: an unshared or
+    another party's opportunity gets the answer an unknown id gets. The body
+    is rendered through the scope ladder, with the withholding of entries
+    whose field changed since the evaluation, and numbers written exactly.
     """
     decision = access.authorize_operation("getMeOpportunitiesOpportunityId")
     if not decision.allowed:
@@ -108,6 +111,6 @@ def get_me_opportunity(request: Request, opportunity_id: uuid.UUID, access: Acce
     )
     if not result.authorized:
         return for_denial(result.reason, trace_id_of(request), customer_scoped=True)
-    payload = render_opportunity_for_scope(result.row).model_dump(mode="json")
+    payload = access.customer_opportunity(opportunity_id)
     assert_no_forbidden_fields(payload, Audience.CUSTOMER)
-    return payload
+    return ExactJSONResponse(content=payload)

@@ -356,15 +356,37 @@ class CustomerRequestView(_Strict):
         )
 
 
+class CustomerPropertySummary(_Strict):
+    """Slice 5, G5-6 (a), decided in the review of 60b0152: the property of an
+    opportunity at SUMMARY_ONLY. Four fields of the frozen
+    `CustomerPropertyView`, and no area: R8.2's "area bands" have no field
+    in the frozen type (F5-3)."""
+
+    property_id: uuid.UUID
+    property_type: str
+    supply_mode: str
+    canonical_location_id: uuid.UUID | None = None
+
+    @classmethod
+    def render(cls, row: Mapping[str, Any]) -> "CustomerPropertySummary":
+        return cls(property_id=row["property_id"], property_type=str(row["property_type"]),
+                   supply_mode=str(row["supply_mode"]),
+                   canonical_location_id=row.get("canonical_location_id"))
+
+
 class CustomerOpportunityView(_Strict):
+    """The frozen `CustomerOpportunityView` (`additionalProperties: false`),
+    key for key (Slice 5, G5-6 (a)). It has no `contact` field: F5-1, and
+    RFC-001 Appendix B. Its `property` is the frozen `CustomerPropertyView`,
+    reduced to `CustomerPropertySummary` at SUMMARY_ONLY (F5-2)."""
+
     opportunity_id: uuid.UUID
     status: str
     validity_status: str
     sharing_scope: str
     why_real: Any
     known_differences: Any = None
-    property: CustomerPropertyView | PublicPropertySummary | None = None
-    contact: dict[str, Any] | None = None
+    property: CustomerPropertyView | CustomerPropertySummary | None = None
     created_at: datetime | None = None
     shared_at: datetime | None = None
 
@@ -373,29 +395,27 @@ def render_opportunity_for_scope(
     row: Mapping[str, Any],
     *,
     property_row: Mapping[str, Any] | None = None,
-    offer_rows: list[Mapping[str, Any]] | None = None,
-    contact: dict[str, Any] | None = None,
-    confirmation_recorded: bool = False,
 ) -> CustomerOpportunityView:
-    """R8.2 / R8.2a. The scope ladder, applied server-side.
+    """R8.2 / R8.2a, as amended by RFC-001 Appendix B (Slice 5, G5-6 (a)).
+    The scope ladder, applied server-side, within the frozen type:
+    - SUMMARY_ONLY: the property's four summary fields, no area;
+    - PROPERTY_DETAILS_ALLOWED and CONTACT_AFTER_CONFIRMATION: the full
+      `CustomerPropertyView`.
 
-    Each rung adds; none of them reaches the NEVER_SERIALIZED floor.
-    """
+    No rung adds a contact or an offer term: the frozen type has no field
+    for either (Slice 0's renderer emitted a `contact` key and the public
+    summary's `availability` and `offers`: F5-1, F5-2). None reaches the
+    NEVER_SERIALIZED floor. `why_real` and `known_differences` are rendered
+    as given: the caller applies [R4-2]'s withholding first
+    (`services.opportunity_views`)."""
     scope = SharingScope(str(row["sharing_scope"]))
 
-    property_view: CustomerPropertyView | PublicPropertySummary | None = None
+    property_view: CustomerPropertyView | CustomerPropertySummary | None = None
     if property_row is not None:
         if scope is SharingScope.SUMMARY_ONLY:
-            # Type, location and area bands only — rendered through the PUBLIC
-            # type, so the customer detail simply does not exist to leak.
-            property_view = PublicPropertySummary.render(property_row, offers=[])
+            property_view = CustomerPropertySummary.render(property_row)
         else:
             property_view = CustomerPropertyView.render(property_row)
-
-    released_contact: dict[str, Any] | None = None
-    if scope is SharingScope.CONTACT_AFTER_CONFIRMATION and confirmation_recorded:
-        # R8.3. The scope names a precondition; it is not its satisfaction.
-        released_contact = contact
 
     return CustomerOpportunityView(
         opportunity_id=row["opportunity_id"],
@@ -405,7 +425,6 @@ def render_opportunity_for_scope(
         why_real=row.get("why_real"),
         known_differences=row.get("known_differences"),
         property=property_view,
-        contact=released_contact,
         created_at=row.get("created_at"),
         shared_at=row.get("shared_at"),
     )

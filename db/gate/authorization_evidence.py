@@ -254,9 +254,10 @@ RULES: tuple[Rule, ...] = (
          ("test_summary_only_withholds_property_detail",
           "test_property_details_allowed_adds_the_customer_view",
           "test_no_scope_lifts_the_never_serialized_floor")),
-    Rule("R8.3 / S34", "Contact released only after a recorded confirmation",
-         ("test_contact_is_withheld_without_a_recorded_confirmation",
-          "test_contact_is_released_after_a_recorded_confirmation")),
+    Rule("R8.3 / S34 (Appendix B)",
+         "No contact is ever released through the customer opportunity view: the "
+         "frozen type has no field for one (G5-6 (a)), at any scope",
+         ("test_the_customer_view_has_no_contact_at_any_scope",)),
     Rule("§8", "Structured logs redact OTP codes and sensitive payloads",
          ("test_sensitive_keys_are_redacted", "test_redaction_reaches_nested_structures",
           "test_exceptions_log_type_and_message_not_a_traceback")),
@@ -849,6 +850,50 @@ RULES: tuple[Rule, ...] = (
           "test_whether_a_claim_stands_behind_a_result_changes_nothing_shown",
           "test_each_shown_rule_reads_only_its_rendered_field_and_links_no_claim",
           "test_the_stored_content_follows_the_scope_and_carries_no_private_value")),
+    # --- Slice 5, step 4: the reads and the match queue ---------------------
+    Rule("S5-4 / G5-7 (a) / RFC-001 §4",
+         "A customer reads an opportunity only through its request's party, and only "
+         "once shared; otherwise the answer an unknown id gets; a relation grants nothing",
+         ("test_an_unshared_opportunity_is_answered_as_an_unknown_id",
+          "test_another_partys_opportunity_is_answered_as_an_unknown_id",
+          "test_a_relation_to_the_property_grants_nothing")),
+    Rule("S5-4 / G5-6 (a) / R9.5 / Appendix B",
+         "The customer body is the frozen type at every scope: four property fields at "
+         "SUMMARY_ONLY, the full view above it, no contact, numbers exact",
+         ("test_the_customer_body_is_the_frozen_type_at_each_scope",
+          "test_an_area_is_an_exact_json_number")),
+    Rule("S5-4 / mandatory 5 / R8.2a / R9.3",
+         "No seller expectation, claim, document value, staff field or rule reaches the "
+         "customer at any scope; a claim or an expectation behind a result changes nothing "
+         "shown; LOCATION is never named",
+         ("test_no_private_value_reaches_the_customer_at_any_scope",
+          "test_a_claim_behind_the_document_changes_nothing_the_customer_sees",
+          "test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees",
+          "test_a_budget_decided_by_the_expectation_leaves_no_trace",
+          "test_location_is_never_named")),
+    Rule("S5-4 / R4-2",
+         "An entry is withheld from the customer when its field's value changed since the "
+         "evaluation, outcome changed or not, re-checked at each render; the stored row "
+         "and the internal view are unchanged",
+         ("test_the_withholding_follows_the_current_area",
+          "test_a_changed_property_type_withholds_property_type_at_every_scope",
+          "test_at_summary_only_an_area_change_cannot_show",
+          "test_an_unknown_difference_stays_while_the_area_is_still_unknown",
+          "test_the_withholding_compares_exact_values_and_fails_closed")),
+    Rule("S5-4 / R6.2 / R6.3",
+         "The internal opportunity read is staff-only and recorded; an unknown id is 403 "
+         "and recorded",
+         ("test_staff_read_the_stored_opportunity_and_the_read_is_recorded",
+          "test_an_unknown_opportunity_is_403_for_staff_and_recorded",
+          "test_a_customer_cannot_use_the_internal_read")),
+    Rule("S5-4 / G5-11 / R6.3c",
+         "The match queue holds the matches awaiting a decision, per offer, canonical, "
+         "with G5-11's priority and reason; staff-only, audited once with its count",
+         ("test_the_queue_holds_the_matches_awaiting_a_decision",
+          "test_the_queue_keeps_each_offers_current_match_only",
+          "test_an_aliased_propertys_match_leaves_the_queue",
+          "test_the_queue_is_ordered_high_first_and_audited_once_with_its_count",
+          "test_a_customer_cannot_read_the_match_queue")),
 )
 
 

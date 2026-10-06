@@ -330,7 +330,11 @@ def load_offer(session: Session, subject: Subject, offer_id: uuid.UUID) -> LoadR
 def load_opportunity(
     session: Session, subject: Subject, opportunity_id: uuid.UUID
 ) -> LoadResult:
-    """Transitive: the opportunity's request must belong to the caller."""
+    """Transitive: the opportunity's request must belong to the caller
+    (RFC-001 §4: `opportunities.request_id -> requests.party_id`, never a
+    relation). Slice 5, G5-7 (a): and the opportunity is SHARED. Before
+    `shared_at` is set, the answer is the one an unknown id gets, so a
+    customer cannot tell an unshared opportunity from none."""
     if not subject.has_party:
         return _denied(ResourceKind.OPPORTUNITY, opportunity_id, DenyReason.NO_PARTY)
     row = session.execute(
@@ -343,6 +347,7 @@ def load_opportunity(
               JOIN turab.requests r ON r.request_id = o.request_id
              WHERE o.opportunity_id = :opportunity_id
                AND r.party_id = :subject_party
+               AND o.shared_at IS NOT NULL
             """
         ),
         {"opportunity_id": opportunity_id, "subject_party": subject.party_id},

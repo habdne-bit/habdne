@@ -170,6 +170,25 @@ numbered appendix carrying the approved text and naming its source, with the
 body of RFC-001 left unedited — the handling the independent review asked
 for. `docs/gate/INV-1-and-INV-2.md` remains as the enforcement map.
 
+### DL-13 · RFC-001 R8.2 and R8.3 promise fields the frozen contract does not have
+**Measured while planning Slice 5 (plan §4, F5-1, F5-2, F5-3). Decided by
+G5-6 (a): the frozen contract first; SUMMARY_ONLY branch decided in the
+review of `60b0152`.**
+
+R8.2 releases public offer terms at `PROPERTY_DETAILS_ALLOWED`, and
+"area bands" at `SUMMARY_ONLY`. R8.3 releases a contact at
+`CONTACT_AFTER_CONFIRMATION`. The frozen `CustomerOpportunityView` and
+`CustomerPropertyView` are `additionalProperties: false`, with no field for
+any of the three. The Slice 0 renderer emitted them anyway.
+
+**Answered** by `docs/rfc/RFC-001-APPENDIX-B-opportunity-view.md`, a numbered
+appendix that amends R8.2's rows, R8.3, S33, S34 and S36a. The body of RFC-001
+is left unedited. Implemented in Slice 5 step 4: the renderer conforms to
+the frozen types.
+
+Releasing a contact or offer terms to a customer would need a contract
+widening. G5-6 (b) proposed one, and it was not taken.
+
 ---
 
 ## Superseded

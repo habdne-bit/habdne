@@ -31,6 +31,8 @@ from . import requests as request_service
 #: Audit resource kinds of Slice 4's staff reads (R6.3). A match and a
 #: diagnostic run are not `ResourceKind`s: they have no customer loader.
 MATCH_KIND = "MATCH_CANDIDATE"
+#: Slice 5 §3.6: the access kind of a staff read of one opportunity.
+OPPORTUNITY_KIND = "OPPORTUNITY"
 DIAGNOSTIC_KIND = "MATCH_DIAGNOSTIC_RUN"
 
 
@@ -344,6 +346,45 @@ class AccessService:
                            trace_id=self._trace_id, resource_kind=MATCH_KIND,
                            resource_id=match_id)
         return match_view(self._session, match_id)
+
+    def read_opportunity(self, opportunity_id: uuid.UUID, operation_id: str):
+        """Slice 5 step 4: one opportunity, staff-only by role, RECORDED (R6.2,
+        R6.3; plan §3.6), as `read_match`. An unknown id is refused as
+        `OBJECT_NOT_AUTHORIZED`, and that denial is recorded. Returns the
+        contract's `InternalOpportunityView`, or an `AccessDenied`."""
+        from . import opportunity_views
+
+        view = opportunity_views.internal_view(self._session, opportunity_id)
+        if view is None:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind=OPPORTUNITY_KIND, resource_id=opportunity_id)
+            return AccessDenied(DenyReason.OBJECT_NOT_AUTHORIZED)
+        self._auditor.read(subject=self._subject, operation_id=operation_id,
+                           trace_id=self._trace_id, resource_kind=OPPORTUNITY_KIND,
+                           resource_id=opportunity_id)
+        return view
+
+    def customer_opportunity(self, opportunity_id: uuid.UUID):
+        """Slice 5 step 4: the frozen `CustomerOpportunityView` of an
+        opportunity the customer loader has ALREADY authorized (and recorded):
+        rendered on the read session, nothing further decided here."""
+        from . import opportunity_views
+
+        return opportunity_views.customer_view(self._session, opportunity_id)
+
+    def match_queue(self, *, operation_id: str):
+        """Slice 5 step 4: the match queue (G5-11), on the READ session,
+        audited once with its count, not its ids (R6.3c)."""
+        from . import opportunity_views
+
+        items = opportunity_views.match_queue(self._session)
+        self.record_list_access(
+            operation_id=operation_id, resource_kind=MATCH_KIND, result_count=len(items),
+            query_shape={"membership": "G5-11", "excluded_eligibility": ["REJECTED"]})
+        return items
 
     def read_latest_diagnostic(self, request_id: uuid.UUID, operation_id: str):
         """Slice 4 step 8: the latest diagnostic run of a request (G4-15:

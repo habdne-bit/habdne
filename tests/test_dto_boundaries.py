@@ -202,13 +202,14 @@ def opportunity_rows(session, ids):
 
 
 def test_summary_only_withholds_property_detail(opportunity_rows):
-    """S33."""
+    """S33, as amended by RFC-001 Appendix B (Slice 5, G5-6 (a)): the four
+    summary fields, no area, no availability, no offers (F5-2, F5-3)."""
     row, prop = opportunity_rows
     view = render_opportunity_for_scope({**row, "sharing_scope": "SUMMARY_ONLY"},
                                         property_row=prop)
-    assert set(view.property.model_dump()) == PUBLIC_PROPERTY_KEYS
-    assert "version" not in view.property.model_dump()
-    assert view.contact is None
+    assert set(view.property.model_dump()) == {"property_id", "property_type",
+                                               "supply_mode", "canonical_location_id"}
+    assert "contact" not in view.model_dump()
 
 
 def test_property_details_allowed_adds_the_customer_view(opportunity_rows):
@@ -219,25 +220,21 @@ def test_property_details_allowed_adds_the_customer_view(opportunity_rows):
     assert set(view.property.model_dump()) == CUSTOMER_PROPERTY_KEYS
 
 
-def test_contact_is_withheld_without_a_recorded_confirmation(opportunity_rows):
-    """S34 / R8.3. The scope names a precondition, not its satisfaction."""
-    row, prop = opportunity_rows
-    view = render_opportunity_for_scope(
-        {**row, "sharing_scope": "CONTACT_AFTER_CONFIRMATION"},
-        property_row=prop, contact={"phone": "+213661000002"},
-        confirmation_recorded=False,
-    )
-    assert view.contact is None
+@pytest.mark.parametrize(
+    "scope",
+    ["SUMMARY_ONLY", "PROPERTY_DETAILS_ALLOWED", "CONTACT_AFTER_CONFIRMATION"],
+)
+def test_the_customer_view_has_no_contact_at_any_scope(opportunity_rows, scope):
+    """S34 and R8.3, as amended by RFC-001 Appendix B (Slice 5, G5-6 (a)): the
+    frozen `CustomerOpportunityView` has no field for a contact, so no scope,
+    and no recorded confirmation, releases one through it (F5-1). Until Slice
+    5 the renderer took a contact and released it at the highest scope."""
+    from turab.dto import CustomerOpportunityView
 
-
-def test_contact_is_released_after_a_recorded_confirmation(opportunity_rows):
+    assert "contact" not in CustomerOpportunityView.model_fields
     row, prop = opportunity_rows
-    view = render_opportunity_for_scope(
-        {**row, "sharing_scope": "CONTACT_AFTER_CONFIRMATION"},
-        property_row=prop, contact={"phone": "+213661000002"},
-        confirmation_recorded=True,
-    )
-    assert view.contact == {"phone": "+213661000002"}
+    view = render_opportunity_for_scope({**row, "sharing_scope": scope}, property_row=prop)
+    assert "contact" not in view.model_dump()
 
 
 @pytest.mark.parametrize(
@@ -248,10 +245,7 @@ def test_no_scope_lifts_the_never_serialized_floor(opportunity_rows, scope):
     """S36a / R8.2a. The question a reviewer should be able to ask: does a
     higher scope add this field? For the floor the answer is always no."""
     row, prop = opportunity_rows
-    view = render_opportunity_for_scope(
-        {**row, "sharing_scope": scope}, property_row=prop,
-        contact={"phone": "+213661000002"}, confirmation_recorded=True,
-    )
+    view = render_opportunity_for_scope({**row, "sharing_scope": scope}, property_row=prop)
     assert_no_forbidden_fields(view.model_dump(), Audience.CUSTOMER)
 
 
