@@ -1,10 +1,10 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-10-05 17:09:12 UTC
-Commit      : cbb82ddd26689e326c93e5c92253567ddce43269
+Recorded    : 2026-10-06 00:24:44 UTC
+Commit      : fca3c658de5608aacd4efa87079878d34ab78706
 Working tree: clean when this run started
 Source fingerprint (db/dev/source_fingerprint.py):
-              5906ae50ff1a21667f3c012dbfbb960e46f56b960020b4ed0851a7edb7ba4012
+              7edec36116aa27aa045c9a06b81e13488621bb74e97d4ba4a51c84f98fc1c5f5
 Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 
 The gate output below is deterministic, but not of the frozen package
