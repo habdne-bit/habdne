@@ -107,11 +107,19 @@ class ProblemCode(StrEnum):
     #: The match's latest review is REJECTED or APPROVED, or an opportunity
     #: was created from it: a later review is refused. 409, state.
     MATCH_REVIEW_DECIDED = "MATCH_REVIEW_DECIDED"
-    #: Step 2 ONLY. APPROVED is a valid decision in the contract; its
-    #: execution (the currency check and the opportunity) is step 3. 409: the
-    #: body is valid and nothing is wrong with the match; the decision is not
-    #: executed yet. It is NOT a gate failure, and is removed in step 3.
-    REVIEW_DECISION_NOT_YET_AVAILABLE = "REVIEW_DECISION_NOT_YET_AVAILABLE"
+    #: Slice 5 step 3, APPROVED (G5-2 (a), G5-3, §3.3, §3.7). 409, state:
+    #: - the match was not evaluated ELIGIBLE with all four gates PASS (named
+    #:   before the frozen `trg_match_review_gate` fires);
+    #: - a later evaluation of the same offer exists;
+    #: - the currency check of the facts now is not VALID (`field_errors`
+    #:   lists every failing fact);
+    #: - an opportunity is open for the request and the canonical property.
+    #: The step-2 code REVIEW_DECISION_NOT_YET_AVAILABLE is removed: APPROVED
+    #: is executed (review of 29a0f30; review of 60b0152).
+    MATCH_GATES_NOT_PASS = "MATCH_GATES_NOT_PASS"
+    MATCH_SUPERSEDED = "MATCH_SUPERSEDED"
+    MATCH_CONTEXT_NOT_VALID = "MATCH_CONTEXT_NOT_VALID"
+    OPPORTUNITY_ALREADY_OPEN = "OPPORTUNITY_ALREADY_OPEN"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -154,7 +162,10 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.REVIEW_REASON_REQUIRED: (422, "Review reason required"),
     ProblemCode.REVIEW_REASON_NOT_ALLOWED: (422, "Review reason not allowed"),
     ProblemCode.MATCH_REVIEW_DECIDED: (409, "Match review is final"),
-    ProblemCode.REVIEW_DECISION_NOT_YET_AVAILABLE: (409, "Review decision not yet available"),
+    ProblemCode.MATCH_GATES_NOT_PASS: (409, "Match gates not passed"),
+    ProblemCode.MATCH_SUPERSEDED: (409, "Match superseded"),
+    ProblemCode.MATCH_CONTEXT_NOT_VALID: (409, "Match context not valid"),
+    ProblemCode.OPPORTUNITY_ALREADY_OPEN: (409, "Opportunity already open"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),

@@ -1154,15 +1154,16 @@ def test_no_path_writes_a_review_or_an_opportunity_and_matching_writes_no_task()
     or `tasks`; the three match tables are written by the run alone.
 
     Slice 5 step 2 (review of 29a0f30) opened `match_reviews` to the review
-    command, as the Slice 5 plan asked. Until then this test required NO
-    writer at all; the matching-side claim is unchanged, and the current
+    command, and step 3 (review of 60b0152) opened `opportunities` to the
+    APPROVED review, as the Slice 5 plan asked. Until then this test required
+    NO writer at all; the matching-side claim is unchanged, and the current
     writers are pinned below so that any further one fails here too."""
     run = "src/turab/services/matching_run.py"
     for table in ("match_reviews", "opportunities", "tasks"):
         assert not [w for w in _writers(table)
                     if w == run or w.startswith("src/turab/matching/")], table
     assert _writers("match_reviews") == ["src/turab/services/match_review.py"]
-    assert _writers("opportunities") == []
+    assert _writers("opportunities") == ["src/turab/services/match_review.py"]
     for table in ("match_candidates", "match_criterion_results", "match_diagnostic_runs"):
         assert _writers(table) == [run], table
 

@@ -321,10 +321,13 @@ def _run(request, command, operation_id, route_key, payload, handler,
                 logging.getLogger("turab.api").error(
                     "typed refusal", extra={"trace_id": trace, "problem_code": code,
                                             "internal_detail": internal})
+            # A refusal may name the facts behind it, in the contract's own
+            # `Problem.field_errors` (Slice 5 step 3, MATCH_CONTEXT_NOT_VALID).
+            field_errors = getattr(exc, "field_errors", None)
             return coded(
                 ProblemCode[code] if code in ProblemCode.__members__
                 else ProblemCode.VALIDATION_FAILED,
-                trace, str(exc),
+                trace, str(exc), **({"field_errors": field_errors} if field_errors else {}),
             )
         if isinstance(exc, ValueError):
             return coded(ProblemCode.VALIDATION_FAILED, trace, str(exc))

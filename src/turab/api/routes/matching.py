@@ -152,9 +152,10 @@ class MatchReviewInput(BaseModel):
 @router.post("/matches/{match_id}/review", operation_id=REVIEW)
 def review_match(request: Request, match_id: uuid.UUID, body: MatchReviewInput,
                  command: Command):
-    """The human decision on one match (plan revision 6, step 2). REJECTED and
-    NEED_MORE_INFORMATION are executed; APPROVED is refused until step 3 with
-    `REVIEW_DECISION_NOT_YET_AVAILABLE`, writing nothing."""
+    """The human decision on one match (Slice 5, steps 2 and 3). REJECTED and
+    NEED_MORE_INFORMATION record a review (and NMI a task); APPROVED records a
+    review and creates the one opportunity, after the checks of
+    `match_review`. A refusal writes nothing."""
     for decision in (command.authorize(REVIEW),
                      command.authorize_staff_only(REVIEW, "a match review is a staff action"),
                      command.authorize_match_exists(match_id, REVIEW)):

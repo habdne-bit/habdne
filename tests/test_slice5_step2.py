@@ -5,12 +5,11 @@ review stamp, [R3-1]), §3.2, G5-3 (decided (a) in the review of 29a0f30),
 G5-4 (a) with [R6-1], §7 condition 4; `services/match_review.py`.
 
 **Step 2's boundary (review of 29a0f30).** REJECTED and NEED_MORE_INFORMATION
-are executed, with the NMI task and the ordering rule. APPROVED is a valid
-decision of the contract that is NOT executed in this step: it is refused with
-`REVIEW_DECISION_NOT_YET_AVAILABLE` and writes nothing. The tests below show
-it is not classed as a gate failure. The approval codes of G5-3 (gates,
-supersession, currency, an open opportunity) belong to step 3, and no test
-here is attributed to them.
+are executed, with the NMI task and the ordering rule. Step 2 refused APPROVED
+with `REVIEW_DECISION_NOT_YET_AVAILABLE`; step 3 executes it, and its tests
+are `tests/test_slice5_step3.py`. The step-2 tests of that refusal, and of
+the step-3 codes' absence, were removed in step 3 with the code they tested
+(Slice 5 step 3 delivery, "Existing tests that changed").
 
 **Isolation.** HTTP tests commit to the shared test database. Each builds its
 own request, properties and offers; matches come from the delivered Slice 4
@@ -564,26 +563,6 @@ def test_every_reason_the_review_names_is_seeded_and_active(engine):
 # APPROVED in step 2: a valid decision, not executed yet — never a gate failure
 # ======================================================================================
 
-@pytest.mark.parametrize("kind", ["ELIGIBLE", "DOCUMENT_UNKNOWN"])
-def test_approved_is_refused_in_step_2_as_not_yet_available(client, engine, ids, kind):
-    """The review of 29a0f30: APPROVED is refused with a typed, zero-footprint
-    refusal that says the decision is valid but not executed in this step.
-    On an ELIGIBLE match with every gate PASS the answer is the same as on a
-    NEED_MORE_INFORMATION match, so it is not a gate verdict."""
-    m = _match(client, engine, ids, kind)
-    r = _refused(client, engine, m["match_id"], {"decision": "APPROVED"}, ids.ACC_REVIEWER,
-                 409, "REVIEW_DECISION_NOT_YET_AVAILABLE")
-    assert "valid decision" in r.json()["detail"] and "step 3" in r.json()["detail"]
-    assert r.json()["code"] not in {"HARD_GATE_FAILED", "MATCH_GATES_NOT_PASS"}
-
-
-def test_the_step_3_codes_are_not_introduced_by_step_2():
-    """G5-3's approval codes are step 3's; step 2 adds only its own four."""
-    for code in ("MATCH_GATES_NOT_PASS", "MATCH_SUPERSEDED", "MATCH_CONTEXT_NOT_VALID",
-                 "OPPORTUNITY_ALREADY_OPEN"):
-        assert code not in ProblemCode.__members__, code
-
-
 # ======================================================================================
 # Idempotency (API_CONTRACTS §2.3, K05)
 # ======================================================================================
@@ -873,17 +852,21 @@ def _writers(table: str) -> list[str]:
                   if pattern.search(p.read_text()))
 
 
-def test_only_the_review_command_writes_match_reviews_and_nothing_writes_opportunities():
+def test_only_the_review_command_writes_match_reviews_and_opportunities():
+    """§7 conditions 3 and 4. Until step 3 nothing wrote `opportunities`;
+    the APPROVED review is now its one writer (H03)."""
     assert _writers("match_reviews") == ["src/turab/services/match_review.py"]
-    assert _writers("opportunities") == []
+    assert _writers("opportunities") == ["src/turab/services/match_review.py"]
     assert _writers("tasks") == ["src/turab/services/identity.py",
                                  "src/turab/services/match_review.py"]
 
 
-def test_step_2_never_writes_an_opportunity(client, engine, ids):
+def test_nmi_and_rejected_never_write_an_opportunity(client, engine, ids):
+    """O-03: NMI keeps the candidate a non-opportunity; REJECTED ends it.
+    (Until step 3 this test also sent APPROVED, which step 2 refused.)"""
     m = _match(client, engine, ids)
     for body in ({"decision": "NEED_MORE_INFORMATION", "reason_code": "DOCUMENT_NOT_KNOWN"},
-                 {"decision": "APPROVED"}, {"decision": "REJECTED", "reason_code": "OTHER"}):
+                 {"decision": "REJECTED", "reason_code": "OTHER"}):
         _review(client, m["match_id"], body, ids.ACC_REVIEWER)
     assert _one(engine, "SELECT count(*) FROM turab.opportunities WHERE request_id = :r",
                 r=m["request_id"]) == 0

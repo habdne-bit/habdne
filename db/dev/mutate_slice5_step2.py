@@ -9,7 +9,9 @@ Each mutation weakens ONE rule of step 2 (plan revision 6; the review of
   opportunity decides);
 - R: the reason rules (G5-3 input, G5-4, [R6-1]);
 - T: the NMI task (G5-4 (a));
-- A: APPROVED refused in step 2 with its own code, writing nothing;
+- A (removed in step 3): APPROVED was refused in step 2 with its own code.
+  Step 3 executes APPROVED; its mutations are `mutate_slice5_step3.py`. A1–A3
+  are in the step-2 records (`SLICE5-STEP2-MUTATIONS*.txt`);
 - Z: authorization and the recorded denial of an unknown id;
 - K: the key answers a refusal that a same-key call caused (review of
   7e84702, API_CONTRACTS §2.3).
@@ -29,10 +31,6 @@ GREATEST = ("GREATEST(COALESCE(CAST(:clock AS timestamptz), clock_timestamp()),\
             "                    max(reviewed_at) + interval '1 microsecond')")
 REJECT_CHECK = ("""if reason is None or not (reason["category"] in REJECT_CATEGORIES\n"""
                 """                                      or reason["code"] == REJECT_OTHER):""")
-APPROVED_REFUSAL = ('''        raise ReviewRefused(
-            "REVIEW_DECISION_NOT_YET_AVAILABLE",
-            "APPROVED is a valid decision; its execution (the currency check and "
-            "the opportunity) is delivered in Slice 5 step 3. Nothing was recorded")''')
 OPPORTUNITY_DECIDES = ('''    return session.execute(text(
         "SELECT EXISTS (SELECT 1 FROM turab.opportunities WHERE approved_match_id = :m)"),
         {"m": match_id}).scalar_one()''')
@@ -108,14 +106,6 @@ MUTATIONS = [
     ("T6 title is the reviewer's text", SVC,
      '"title": TASK_TITLES[prepared.task_type]',
      '"title": prepared.reason_text or TASK_TITLES[prepared.task_type]'),
-    # --- A: APPROVED in step 2 ------------------------------------------------------
-    ("A1 APPROVED executed", SVC, APPROVED_REFUSAL, "        pass"),
-    ("A2 APPROVED refused as an input error", SVC,
-     '            "REVIEW_DECISION_NOT_YET_AVAILABLE",\n            "APPROVED is a valid',
-     '            "VALIDATION_FAILED",\n            "APPROVED is a valid'),
-    ("A3 APPROVED refused as decided", SVC,
-     '            "REVIEW_DECISION_NOT_YET_AVAILABLE",\n            "APPROVED is a valid',
-     '            "MATCH_REVIEW_DECIDED",\n            "APPROVED is a valid'),
     # --- Z: authorization -----------------------------------------------------------
     ("Z1 an unknown id is not recorded", CMD, DENIAL_RECORD,
      '            return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not an available match")'),

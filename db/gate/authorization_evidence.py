@@ -800,12 +800,55 @@ RULES: tuple[Rule, ...] = (
           "test_a5_the_waiting_review_committed_last_is_the_latest",
           "test_a_review_waiting_behind_a_rejection_is_refused_as_decided",
           "test_a3_twenty_sequences_end_with_the_last_decision")),
-    Rule("S5-2 / step boundary",
-         "In step 2, APPROVED is refused with its own code and writes nothing; no "
-         "path writes an opportunity, and only the review command writes a review",
-         ("test_approved_is_refused_in_step_2_as_not_yet_available",
-          "test_only_the_review_command_writes_match_reviews_and_nothing_writes_opportunities",
-          "test_step_2_never_writes_an_opportunity")),
+    Rule("S5-2/3 / writers",
+         "Only the review command writes a review, and only the APPROVED review "
+         "creates an opportunity (H03); NMI and REJECTED never do",
+         ("test_only_the_review_command_writes_match_reviews_and_opportunities",
+          "test_the_approved_review_is_the_one_writer_of_opportunities",
+          "test_mandatory_3_there_is_no_generic_opportunity_creation",
+          "test_nmi_and_rejected_never_write_an_opportunity")),
+    # --- Slice 5, step 3: APPROVED and the one opportunity ------------------
+    Rule("S5-3 / H02 / mandatory 2",
+         "APPROVED is refused, before any write, unless the match was evaluated "
+         "ELIGIBLE with all four gates PASS; the frozen trigger is the backstop",
+         ("test_mandatory_2_a_gate_not_pass_is_refused_before_any_write",
+          "test_mandatory_2_the_schema_refuses_the_same_when_the_service_check_is_bypassed")),
+    Rule("S5-3 / G5-2 (a) / §3.7",
+         "APPROVED requires the current evaluation of its offer and a VALID check "
+         "of the facts now (the table, exhaustively); every failing fact is named",
+         ("test_every_combination_is_the_worst_fact_and_names_every_failing_fact",
+          "test_a_fact_that_changed_after_the_run_refuses_the_approval",
+          "test_every_failing_fact_is_named_and_the_worst_decides",
+          "test_a_needs_confirmation_request_is_matched_eligible_but_not_approved",
+          "test_the_approval_is_accepted_exactly_when_the_check_is_valid",
+          "test_a_fact_being_changed_is_waited_for_and_read_after_its_commit",
+          "test_a_new_evaluation_supersedes_its_own_offers_match_only")),
+    Rule("S5-3 / §3.3 / H04 / mandatory 6",
+         "One open opportunity per request and canonical property: a second "
+         "approval, an alias's open opportunity, an alias now, and two concurrent "
+         "approvals are refused; the index is the backstop; a close frees the pair",
+         ("test_mandatory_6_a_second_offers_match_is_refused_while_one_is_open",
+          "test_mandatory_6_an_open_opportunity_on_an_alias_blocks_its_canonical",
+          "test_mandatory_6_a_match_on_a_property_that_is_now_an_alias_is_refused",
+          "test_mandatory_6_two_concurrent_approvals_of_one_pair_make_one_opportunity",
+          "test_mandatory_6_the_index_backstop_maps_to_the_same_refusal",
+          "test_mandatory_6_after_close_the_other_match_is_approvable")),
+    Rule("S5-3 / G5-5 (a) / mandatory 1, 4",
+         "The opportunity is NEW and VALID on the evaluated offer and context, with "
+         "the offer's scope at approval; NMI then APPROVED keeps both decisions",
+         ("test_approved_creates_one_opportunity_with_the_decided_content",
+          "test_the_scope_is_the_offers_permission_scope_at_approval",
+          "test_the_binding_recorded_is_offer_bound_before_property_bound",
+          "test_mandatory_4_the_schema_refuses_another_initial_offer",
+          "test_mandatory_1_nmi_then_approved_keeps_both_decisions",
+          "test_mandatory_1_across_matches_of_one_pair")),
+    Rule("S5-3 / §3.4 / R9.2 (stored)",
+         "The stored why_real and known_differences hold only the decided codes per "
+         "scope, without value, delta, claim or rule, whatever a claim says",
+         ("test_only_the_decided_codes_are_ever_shown",
+          "test_whether_a_claim_stands_behind_a_result_changes_nothing_shown",
+          "test_each_shown_rule_reads_only_its_rendered_field_and_links_no_claim",
+          "test_the_stored_content_follows_the_scope_and_carries_no_private_value")),
 )
 
 

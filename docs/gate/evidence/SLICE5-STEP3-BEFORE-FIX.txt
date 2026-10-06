@@ -1,0 +1,80 @@
+TURAB — Slice 5 step 3: APPROVED and the opportunity, BEFORE the change
+=======================================================================
+Recorded          : 2026-10-06 17:52:06 UTC
+Base commit       : 60b0152f283c9c49aa38da1396e712c1d4b2f21c (step 2 CLOSED; no step-3 code)
+Measured in       : an isolated git worktree at the base commit; .venv symlinked
+Source fingerprint: 0c949a88b6a351a9b675f4499e1d9734912c71cdb04fcd84acb720e4ea008b49
+Database          : the suite's own, at alembic head 0006
+
+Discipline note: as in step 2, the step-3 code was written before this record
+was taken. The record is taken at the base commit, in a worktree that holds
+none of the new code, so it measures what the shipped tests and the route do
+without the change.
+
+A. The shipped test file, run at the base commit
+------------------------------------------------
+tests/test_slice5_step3.py sha256: 2a460ef205782c24b50502f34fdbacd54c44d2a0d9e05d37fe7dbdbbf4241371
+
+  E   ImportError: cannot import name 'currency' from 'turab.services' (<worktree>/src/turab/services/__init__.py)
+  !!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+  2 warnings, 1 error in 0.77s
+
+Result: the module cannot be collected; the currency check
+(`turab.services.currency`) does not exist at the base commit.
+
+B. The route, at the base commit (probe, not shipped)
+-----------------------------------------------------
+One real match per case from the Slice 4 run, then POST
+/matches/{match_id}/review {"decision": "APPROVED"} as ACC_REVIEWER, then a
+count of the match's reviews and of the request's opportunities.
+Probe file sha256: c0c7a659e348ffc28612a170924a4f6894356bf8dbb27ffa769738c9ac4ade89 (source in C)
+
+  PROBE ELIGIBLE: eligibility=ELIGIBLE status=409 code=REVIEW_DECISION_NOT_YET_AVAILABLE match_reviews=0 opportunities=0
+  PROBE ELIGIBLE_THEN_REQUEST_PAUSED: eligibility=ELIGIBLE status=409 code=REVIEW_DECISION_NOT_YET_AVAILABLE match_reviews=0 opportunities=0
+  PROBE NEED_MORE_INFORMATION: eligibility=NEED_MORE_INFORMATION status=409 code=REVIEW_DECISION_NOT_YET_AVAILABLE match_reviews=0 opportunities=0
+  3 passed, 2 warnings in 3.64s
+
+Files under src/ that insert into turab.opportunities: 0
+
+Result: APPROVED is not executed. Every case, the ELIGIBLE one included, is
+the step-2 refusal 409 REVIEW_DECISION_NOT_YET_AVAILABLE, with nothing
+written. No code creates an opportunity, checks the facts now, or answers
+MATCH_GATES_NOT_PASS, MATCH_SUPERSEDED, MATCH_CONTEXT_NOT_VALID or
+OPPORTUNITY_ALREADY_OPEN.
+
+The worktree was removed after this record.
+
+C. The probe source, verbatim
+-----------------------------
+  """BEFORE-FIX probe at 60b0152: what POST /matches/{id}/review does with APPROVED."""
+  import uuid
+  import pytest
+  from fastapi.testclient import TestClient
+  from tests.test_slice4_step7 import _one, _exec, _offer, _request, _criterion, _run, _property
+  
+  
+  @pytest.fixture
+  def client(engine):
+      from turab.app import create_app
+      with TestClient(create_app(engine=engine)) as c:
+          yield c
+  
+  
+  @pytest.mark.parametrize("case", ["ELIGIBLE", "ELIGIBLE_THEN_REQUEST_PAUSED",
+                                    "NEED_MORE_INFORMATION"])
+  def test_probe(client, engine, ids, case):
+      req = _request(engine, ids)
+      _criterion(engine, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
+      prop = _property(engine, document=None if case == "NEED_MORE_INFORMATION" else "LAND_BOOK")
+      _offer(engine, ids, prop)
+      [m] = _run(client, ids, req, [prop]).json()["matches"]
+      if case == "ELIGIBLE_THEN_REQUEST_PAUSED":
+          _exec(engine, "UPDATE turab.requests SET status = 'PAUSED' WHERE request_id = :r", r=req)
+      r = client.post(f"/matches/{m['match_id']}/review", json={"decision": "APPROVED"},
+                      headers={"Authorization": f"Bearer {ids.ACC_REVIEWER}",
+                               "Idempotency-Key": str(uuid.uuid4())})
+      reviews = _one(engine, "SELECT count(*) FROM turab.match_reviews WHERE match_id=:m",
+                     m=m["match_id"])
+      opps = _one(engine, "SELECT count(*) FROM turab.opportunities WHERE request_id=:r", r=req)
+      print(f"\nPROBE {case}: eligibility={m['eligibility']} status={r.status_code} "
+            f"code={r.json().get('code')} match_reviews={reviews} opportunities={opps}")
