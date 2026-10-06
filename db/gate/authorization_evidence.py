@@ -891,6 +891,7 @@ RULES: tuple[Rule, ...] = (
          "with G5-11's priority and reason; staff-only, audited once with its count",
          ("test_the_queue_holds_the_matches_awaiting_a_decision",
           "test_the_queue_keeps_each_offers_current_match_only",
+          "test_a_match_with_an_opportunity_leaves_the_queue_whatever_its_latest_review",
           "test_an_aliased_propertys_match_leaves_the_queue",
           "test_the_queue_is_ordered_high_first_and_audited_once_with_its_count",
           "test_a_customer_cannot_read_the_match_queue")),

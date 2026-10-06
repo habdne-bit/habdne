@@ -578,6 +578,35 @@ def test_the_queue_keeps_each_offers_current_match_only(client, engine, ids):
     assert m1["match_id"] not in items, "superseded"
 
 
+def test_a_match_with_an_opportunity_leaves_the_queue_whatever_its_latest_review(
+        client, engine, ids):
+    """G5-11: "no opportunity" is its own condition. An approved match also
+    leaves through its latest review (APPROVED is final), so this case
+    separates the two: an APPROVED review and its opportunity, then a later
+    NMI review, written by SQL (the step-3 fixture of the same rule). The
+    latest review is NMI, and only the opportunity keeps the match out. The
+    first mutation run showed the gap (Q3 survived)."""
+    from tests.test_slice5_step3 import _world
+
+    *_, [m] = _world(client, engine, ids)
+    _exec(engine, """INSERT INTO turab.match_reviews (match_id, decision, reviewer_account_id)
+                     VALUES (:m, 'APPROVED', :a)""", m=m["match_id"], a=ids.ACC_REVIEWER)
+    _exec(engine, """
+        INSERT INTO turab.opportunities (request_id, property_id, approved_match_id,
+                                         current_offer_id, sharing_scope, why_real,
+                                         created_by_account_id)
+        SELECT request_id, property_id, match_id, evaluated_offer_id, 'SUMMARY_ONLY',
+               '{}'::jsonb, :a FROM turab.match_candidates WHERE match_id = :m""",
+          m=m["match_id"], a=ids.ACC_REVIEWER)
+    _exec(engine, """
+        INSERT INTO turab.match_reviews (match_id, decision, reason_code, reviewer_account_id,
+                                         reviewed_at)
+        SELECT :m, 'NEED_MORE_INFORMATION', 'DOCUMENT_NOT_KNOWN', :a,
+               max(reviewed_at) + interval '1 second'
+          FROM turab.match_reviews WHERE match_id = :m""", m=m["match_id"], a=ids.ACC_REVIEWER)
+    assert m["match_id"] not in {i["id"] for i in _queue(client, ids.ACC_REVIEWER)["items"]}
+
+
 def test_an_aliased_propertys_match_leaves_the_queue(client, engine, ids):
     from tests.test_slice5_step3 import _make_alias, _world
 

@@ -1,0 +1,180 @@
+TURAB — Slice 5 step 4: which test refuses which weakening of the reads and the queue
+============================================================
+Base commit       : 6c8498ab4b579927bf1d1349921f66697b517476
+Source fingerprint: 84edc4a4b7879599a40fc09f5a0fb15c29ef2c3fe2ad6d104be1ba454a621412
+Working tree      : CLEAN
+Recorded          : 2026-10-06 19:22:56 UTC
+Test file         : tests/test_slice5_step4.py
+
+=== baseline (no mutation) ===
+   39 passed, 2 warnings in 14.64s
+== V1 an unshared opportunity is visible [src/turab/auth/loaders.py, 1 site(s)]  restored: sha256 654a3152f3265228 identical
+   1 failed, 38 passed, 2 warnings in 14.02s
+   FAILED test_an_unshared_opportunity_is_answered_as_an_unknown_id
+   cause: E   assert 200 == 404
+   cause: assert 200 == 404
+== V2 SUMMARY_ONLY renders the full property [src/turab/dto/boundaries.py, 1 site(s)]  restored: sha256 f6971d74ec920e0d identical
+   2 failed, 37 passed, 2 warnings in 14.60s
+   FAILED test_at_summary_only_an_area_change_cannot_show
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[SUMMARY_ONLY]
+   cause: AssertionError: assert 'land_area_m2' not in {'property_id': 'a8fdfb05-e4aa-42a4-bd6a-09bbefcd5b7d', 'property_type': 'LAND', 'canonical_location_id': None, 'local_locati
+   cause: AssertionError: four fields, no area (F5-2, F5-3)
+   cause: E   AssertionError: assert 'land_area_m2' not in {'property_id': 'a8fdfb05-e4aa-42a4-bd6a-09bbefcd5b7d', 'property_type': 'LAND', 'canonical_location_id': None, 'local_lo
+   cause: E   AssertionError: four fields, no area (F5-2, F5-3)
+== V3 the customer type carries a contact [src/turab/dto/boundaries.py, 1 site(s)]  restored: sha256 f6971d74ec920e0d identical
+   6 failed, 33 passed, 2 warnings in 14.22s
+   FAILED test_no_private_value_reaches_the_customer_at_any_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_no_private_value_reaches_the_customer_at_any_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_no_private_value_reaches_the_customer_at_any_scope[SUMMARY_ONLY]
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[SUMMARY_ONLY]
+   cause: AssertionError: $: keys the frozen type does not allow: ['contact']
+   cause: AssertionError: ('CONTACT_AFTER_CONFIRMATION', 'contact')
+   cause: AssertionError: ('PROPERTY_DETAILS_ALLOWED', 'contact')
+   cause: AssertionError: ('SUMMARY_ONLY', 'contact')
+   cause: E   AssertionError: $: keys the frozen type does not allow: ['contact']
+   cause: E   AssertionError: ('CONTACT_AFTER_CONFIRMATION', 'contact')
+== V4 the customer gets the internal view [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   26 failed, 13 passed, 2 warnings in 14.38s
+   FAILED test_a_budget_decided_by_the_expectation_leaves_no_trace[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_a_budget_decided_by_the_expectation_leaves_no_trace[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_a_budget_decided_by_the_expectation_leaves_no_trace[SUMMARY_ONLY]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[SUMMARY_ONLY]
+   FAILED test_a_claim_behind_the_document_changes_nothing_the_customer_sees[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_a_claim_behind_the_document_changes_nothing_the_customer_sees[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_a_claim_behind_the_document_changes_nothing_the_customer_sees[SUMMARY_ONLY]
+   FAILED test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_a_claim_behind_the_rooms_changes_nothing_the_customer_sees[SUMMARY_ONLY]
+   FAILED test_an_area_is_an_exact_json_number
+   FAILED test_an_unknown_difference_stays_while_the_area_is_still_unknown
+   FAILED test_an_unshared_opportunity_is_answered_as_an_unknown_id
+   FAILED test_at_summary_only_an_area_change_cannot_show
+   FAILED test_location_is_never_named[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_location_is_never_named[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_location_is_never_named[SUMMARY_ONLY]
+   FAILED test_no_private_value_reaches_the_customer_at_any_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_no_private_value_reaches_the_customer_at_any_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_no_private_value_reaches_the_customer_at_any_scope[SUMMARY_ONLY]
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_the_customer_body_is_the_frozen_type_at_each_scope[SUMMARY_ONLY]
+   FAILED test_the_withholding_follows_the_current_area
+   cause: E   turab.dto.boundaries.FieldLeak: CUSTOMER payload contains ['approved_match_id', 'commercial_context_snapshot', 'commercial_context_snapshot.seller_expectation_dzd', '
+   cause: turab.dto.boundaries.FieldLeak: CUSTOMER payload contains ['approved_match_id', 'commercial_context_snapshot', 'commercial_context_snapshot.seller_expectation_dzd', 'curr
+== W1 why_real is not withheld [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   4 failed, 35 passed, 2 warnings in 13.51s
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[SUMMARY_ONLY]
+   FAILED test_the_withholding_follows_the_current_area
+   cause: AssertionError: Decimal('110')
+   cause: AssertionError: assert 'PROPERTY_TYPE' not in (['PROPERTY_TYPE'] + [])
+   cause: E   AssertionError: Decimal('110')
+   cause: E   AssertionError: assert 'PROPERTY_TYPE' not in (['PROPERTY_TYPE'] + [])
+== W2 known_differences are not withheld [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.07s
+   FAILED test_an_unknown_difference_stays_while_the_area_is_still_unknown
+   cause: AssertionError: assert ['BUILT_AREA_MIN'] == []
+   cause: E   AssertionError: assert ['BUILT_AREA_MIN'] == []
+== W3 only a change from or to null withholds [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   5 failed, 34 passed, 2 warnings in 13.45s
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[CONTACT_AFTER_CONFIRMATION]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[PROPERTY_DETAILS_ALLOWED]
+   FAILED test_a_changed_property_type_withholds_property_type_at_every_scope[SUMMARY_ONLY]
+   FAILED test_the_withholding_compares_exact_values_and_fails_closed
+   FAILED test_the_withholding_follows_the_current_area
+   cause: AssertionError: Decimal('110')
+   cause: AssertionError: assert 'PROPERTY_TYPE' not in (['PROPERTY_TYPE'] + [])
+   cause: AssertionError: assert ['LAND_AREA_M...ROPERTY_TYPE'] == ['PROPERTY_TYPE']
+   cause: E   AssertionError: Decimal('110')
+   cause: E   AssertionError: assert 'PROPERTY_TYPE' not in (['PROPERTY_TYPE'] + [])
+   cause: E   AssertionError: assert ['LAND_AREA_M...ROPERTY_TYPE'] == ['PROPERTY_TYPE']
+== W4 a null on both sides withholds [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 13.73s
+   FAILED test_an_unknown_difference_stays_while_the_area_is_still_unknown
+   cause: AssertionError: assert [] == ['BUILT_AREA_MIN']
+   cause: E   AssertionError: assert [] == ['BUILT_AREA_MIN']
+== W5 the area compared as text [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   2 failed, 37 passed, 2 warnings in 12.99s
+   FAILED test_the_withholding_compares_exact_values_and_fails_closed
+   FAILED test_the_withholding_follows_the_current_area
+   cause: AssertionError: assert 'LAND_AREA_MIN' in []
+   cause: AssertionError: assert ['PROPERTY_TYPE'] == ['LAND_AREA_M...ROPERTY_TYPE']
+   cause: E   AssertionError: assert 'LAND_AREA_MIN' in []
+   cause: E   AssertionError: assert ['PROPERTY_TYPE'] == ['LAND_AREA_M...ROPERTY_TYPE']
+== W6 the scope is ignored [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.70s
+   FAILED test_the_withholding_compares_exact_values_and_fails_closed
+   cause: AssertionError: assert ['LAND_AREA_M...ROPERTY_TYPE'] == ['PROPERTY_TYPE']
+   cause: E   AssertionError: assert ['LAND_AREA_M...ROPERTY_TYPE'] == ['PROPERTY_TYPE']
+== I1 the read is not recorded [src/turab/services/access.py, 1 site(s)]  restored: sha256 b3879864ec56cdcf identical
+   3 failed, 36 passed, 2 warnings in 14.57s
+   FAILED test_staff_read_the_stored_opportunity_and_the_read_is_recorded[ACC_ADMIN]
+   FAILED test_staff_read_the_stored_opportunity_and_the_read_is_recorded[ACC_OPERATOR]
+   FAILED test_staff_read_the_stored_opportunity_and_the_read_is_recorded[ACC_REVIEWER]
+   cause: AssertionError: assert [] == [('READ', 'OPPORTUNITY')]
+   cause: E   AssertionError: assert [] == [('READ', 'OPPORTUNITY')]
+== I2 an unknown id is not recorded [src/turab/services/access.py, 1 site(s)]  restored: sha256 b3879864ec56cdcf identical
+   1 failed, 38 passed, 2 warnings in 14.39s
+   FAILED test_an_unknown_opportunity_is_403_for_staff_and_recorded
+   cause: AssertionError: assert [] == [('DENIED', 'OPPORTUNITY')]
+   cause: E   AssertionError: assert [] == [('DENIED', 'OPPORTUNITY')]
+== Q1 REJECTED is queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 15.20s
+   FAILED test_the_queue_holds_the_matches_awaiting_a_decision
+   cause: AssertionError: assert '1e39fe0c-54a2-4257-a5f9-ed4aece9daf4' not in {'d96d9f8d-0df6-42d1-9e83-8e9bb969abef': {'id': 'd96d9f8d-0df6-42d1-9e83-8e9bb969abef', 'kind': 'MATC
+   cause: E   AssertionError: assert '1e39fe0c-54a2-4257-a5f9-ed4aece9daf4' not in {'d96d9f8d-0df6-42d1-9e83-8e9bb969abef': {'id': 'd96d9f8d-0df6-42d1-9e83-8e9bb969abef', 'kind': '
+== Q2 the latest review is ignored [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.83s
+   FAILED test_the_queue_holds_the_matches_awaiting_a_decision
+   cause: AssertionError: assert '4caf135b-8cd4-4ae8-aa34-c5e13d985294' not in {'1573fb03-9db6-464a-9101-1d452073230d': {'id': '1573fb03-9db6-464a-9101-1d452073230d', 'kind': 'MATC
+   cause: E   AssertionError: assert '4caf135b-8cd4-4ae8-aa34-c5e13d985294' not in {'1573fb03-9db6-464a-9101-1d452073230d': {'id': '1573fb03-9db6-464a-9101-1d452073230d', 'kind': '
+== Q3 an approved match stays queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   39 passed, 2 warnings in 15.00s
+== Q4 an alias's match stays queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 15.18s
+   FAILED test_an_aliased_propertys_match_leaves_the_queue
+   cause: AssertionError: assert '5679da4f-68e0-4ae5-9637-c061e97a3841' not in {'033dfff6-edc9-4b7e-ac25-6c602a5358e3', '42e08f03-df46-433b-828c-d661e7226b63', '52e6ed9a-7d0f-4d6e-
+   cause: E   AssertionError: assert '5679da4f-68e0-4ae5-9637-c061e97a3841' not in {'033dfff6-edc9-4b7e-ac25-6c602a5358e3', '42e08f03-df46-433b-828c-d661e7226b63', '52e6ed9a-7d0f-4
+== Q5 supersession across offers [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.89s
+   FAILED test_the_queue_keeps_each_offers_current_match_only
+   cause: AssertionError: assert ('a685389e-6218-43af-afb0-18049b1529e8' in {'2887ee94-1b85-46e3-bdcc-026f9d1a6415', '2b1364e0-834d-4da4-ab62-2b376d96abd0', 'a685389e-6218-43af-afb
+   cause: E   AssertionError: assert ('a685389e-6218-43af-afb0-18049b1529e8' in {'2887ee94-1b85-46e3-bdcc-026f9d1a6415', '2b1364e0-834d-4da4-ab62-2b376d96abd0', 'a685389e-6218-43af
+== Q6 a superseded match stays queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.96s
+   FAILED test_the_queue_keeps_each_offers_current_match_only
+   cause: AssertionError: superseded
+   cause: E   AssertionError: superseded
+== Q7 an NMI review does not show [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.87s
+   FAILED test_the_queue_holds_the_matches_awaiting_a_decision
+   cause: AssertionError: e715c168-d537-4cd7-94c6-1428b0d4351d
+   cause: E   AssertionError: e715c168-d537-4cd7-94c6-1428b0d4351d
+== Q8 a reason without a code is null [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 14.82s
+   FAILED test_the_queue_holds_the_matches_awaiting_a_decision
+   cause: AssertionError: 3e0bfb2b-f225-4aaf-bb77-a84fa64bad56
+   cause: E   AssertionError: 3e0bfb2b-f225-4aaf-bb77-a84fa64bad56
+== Q9 ELIGIBLE is NORMAL [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 15.51s
+   FAILED test_the_queue_holds_the_matches_awaiting_a_decision
+   cause: AssertionError: a0a43ea7-1519-4fdb-8376-305e01f5ec72
+   cause: E   AssertionError: a0a43ea7-1519-4fdb-8376-305e01f5ec72
+== Q10 the order ignores the priority [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 068b360da3cda51b identical
+   1 failed, 38 passed, 2 warnings in 15.39s
+   FAILED test_the_queue_is_ordered_high_first_and_audited_once_with_its_count
+   cause: E   assert [0, 0, 1, 1, 1, 0, ...] == [0, 0, 0, 0, 0, 1, ...]
+   cause: assert [0, 0, 1, 1, 1, 0, ...] == [0, 0, 0, 0, 0, 1, ...]
+== Q11 the queue is not audited [src/turab/services/access.py, 1 site(s)]  restored: sha256 b3879864ec56cdcf identical
+   1 failed, 38 passed, 2 warnings in 14.82s
+   FAILED test_the_queue_is_ordered_high_first_and_audited_once_with_its_count
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+
+SURVIVING MUTATIONS: Q3 an approved match stays queued
+exit 0
