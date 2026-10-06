@@ -718,3 +718,4 @@ docs/DESIGN_LEDGER.md                                          ---   0d14f0ea0d1
 docs/gate/SLICE_5_STEP4_DELIVERY.md                            new   8510fd3a784c2c0b2ac7e0f90b928b2129272980445ce7ad45dec75349ebe1c0
 docs/gate/SLICE_5_PLAN.md                                      rev12 049a9d757eab73d44d22d426d57314ae0343023f1c48ef607c9e45789599581d
 SLICE_5_PLAN.md changed revision: 11 -> 12 (step 4 delivered; G5-11 match-queue vocabulary put for confirmation; RFC-001 Appendix B).
+docs/gate/SLICE_5_STEP4_DELIVERY.md                            ---   9baa7bdf252514938e19deb1b98fdad30dd9a824f48fc29c19b9963a8890815a

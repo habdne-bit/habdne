@@ -288,8 +288,8 @@ gap and its answer. The RFC body is unchanged.
 - **I1–I2:** the internal read;
 - **Q1–Q11:** the queue.
 
-Every mutated text is checked to compile before the run (the lesson of step
-3's N2).
+Before the run, every mutated text was checked by hand to compile (the
+lesson of step 3's N2). The runner itself does not check this.
 
 ### 7.1 The first run, kept
 
