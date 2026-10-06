@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **156**
-- Distinct tests cited: **467**
-- Suite total: **2135/2135** test cases passing (1208 distinct test functions)
+- Rules and invariants covered: **157**
+- Distinct tests cited: **469**
+- Suite total: **2140/2140** test cases passing (1209 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -166,6 +166,7 @@ matrix, because it reads as assurance.
 | `S4 / R6.3` | A staff read of a match or of a diagnostic is an access record; an unknown id is refused as every staff read is, and recorded | `test_a_match_read_is_recorded`<br>`test_a_diagnostic_read_is_recorded`<br>`test_an_unknown_match_is_refused_as_every_staff_read`<br>`test_the_diagnostic_of_an_unknown_request_is_refused_as_every_staff_read` | PASS |
 | `S5-2 / RFC-001 §2.1 / R6.3a` | Only ADMIN and REVIEWER review a match (maker–checker: not the OPERATOR); the reviewer is the subject; an unknown match id is 403 and recorded | `test_only_admin_and_reviewer_may_review`<br>`test_admin_and_reviewer_may_review`<br>`test_an_unknown_match_is_403_and_recorded` | PASS |
 | `S5-2 / G5-3 (a)` | REJECTED and APPROVED are final, NEED_MORE_INFORMATION is not; a later review of a decided match is 409; the input is narrowed before any write and consumes no key | `test_a_malformed_review_is_refused_before_any_write`<br>`test_rejected_refuses_a_reason_outside_its_categories`<br>`test_rejected_is_final`<br>`test_a_match_with_an_opportunity_is_decided`<br>`test_an_opportunity_decides_even_when_the_latest_review_is_not_final`<br>`test_nmi_is_not_final`<br>`test_an_inactive_reason_is_refused`<br>`test_a_refused_review_does_not_consume_its_key` | PASS |
+| `S5-2 / API_CONTRACTS §2.3` | A review with the same key as a call committed while it waited on the match lock is answered by the key (replay, or IDEMPOTENCY_KEY_CONFLICT), not refused as decided; with another key the refusal stands | `test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key`<br>`test_a_replay_returns_the_original_and_writes_nothing_more` | PASS |
 | `S5-2 / G5-4 (a) / R6-1` | Each NEED_MORE_INFORMATION review raises one specific task; an unspecific reason, and ACTIONABLE_UNKNOWN without a specific next action, are refused | `test_the_nmi_mapping_is_g5_4s_table`<br>`test_nmi_raises_one_task_of_the_reasons_type`<br>`test_the_task_title_is_fixed_and_never_the_reviewers_text`<br>`test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review`<br>`test_nmi_refuses_a_reason_that_names_no_specific_task`<br>`test_actionable_unknown_is_refused_without_a_specific_next_action`<br>`test_actionable_unknown_refuses_every_unspecific_next_action` | PASS |
 | `S5-2 / §3.1 [R3-1]` | The match is locked first and each review is stamped strictly after every earlier one; the waiting review sees the first | `test_an_equal_clock_reading_still_stamps_strictly_after`<br>`test_a_previous_stamp_in_the_future_is_still_exceeded`<br>`test_a5_the_waiting_review_committed_last_is_the_latest`<br>`test_a_review_waiting_behind_a_rejection_is_refused_as_decided`<br>`test_a3_twenty_sequences_end_with_the_last_decision` | PASS |
 | `S5-2 / step boundary` | In step 2, APPROVED is refused with its own code and writes nothing; no path writes an opportunity, and only the review command writes a review | `test_approved_is_refused_in_step_2_as_not_yet_available`<br>`test_only_the_review_command_writes_match_reviews_and_nothing_writes_opportunities`<br>`test_step_2_never_writes_an_opportunity` | PASS |

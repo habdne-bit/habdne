@@ -680,3 +680,8 @@ docs/gate/evidence/SLICE5-STEP2-MUTATIONS.txt                  new   ac8c48e7c27
 docs/gate/SLICE_5_STEP2_DELIVERY.md                            new   43377f4812fc957d32c99a958cd4a54e774637d42b272b14f6cf807c820ff887
 docs/gate/SLICE_5_PLAN.md                                      rev7  08d021d33d9d8ca65cd0595ab00dfee50c04f56ed6d4a4292bb04151518c0403
 SLICE_5_PLAN.md changed revision: 6 -> 7 (review of 29a0f30: G5-3 decided (a); step 2 authorized and delivered; stale status sentence corrected).
+
+--- Review of 7e84702: the Idempotency-Key and a final review decision ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   ecb1615996f7f063a2f858ba6ec5b4aab2e6ca6975b56a5df54d546e692f6a13
+docs/gate/evidence/SLICE5-STEP2-KEY-RACE-BEFORE-FIX.txt        new   0ddc6b5cd51a27fed5f0f77a99d162f86562010252a2aa5b69cef28b96dc65e5
+docs/gate/evidence/SLICE5-STEP2-MUTATIONS-AFTER-KEY-FIX.txt    new   34ef5b516566ecde8a48f4cea174fa6cf3d46e3f56724ca485f05962ee271c3f
