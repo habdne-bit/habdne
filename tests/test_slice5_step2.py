@@ -81,9 +81,14 @@ def _match(client, engine, ids, kind="ELIGIBLE"):
     - DOCUMENT_UNKNOWN: REQUIRED DOCUMENT_TYPE unknown, so NEED_MORE_INFORMATION
       with `next_action.type` VERIFY_DOCUMENT;
     - ROOMS_UNKNOWN: an APARTMENT with no ROOMS recorded and REQUIRED ROOMS_MIN,
-      so NEED_MORE_INFORMATION with `next_action.type` OTHER ([R6-1])."""
+      so NEED_MORE_INFORMATION with `next_action.type` OTHER ([R6-1]);
+    - PREFERRED_UNKNOWN: a PREFERRED DOCUMENT_TYPE unknown, so ELIGIBLE with
+      one UNKNOWN criterion that is NOT blocking."""
     req = _request(engine, ids)
-    if kind == "ROOMS_UNKNOWN":
+    if kind == "PREFERRED_UNKNOWN":
+        _criterion(engine, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "PREFERRED")
+        prop = _prop(engine, document=None)
+    elif kind == "ROOMS_UNKNOWN":
         _criterion(engine, req, "ROOMS_MIN", "GTE", 3, "REQUIRED")
         prop = _prop(engine, ptype="APARTMENT", document=None)
     else:
@@ -282,11 +287,60 @@ def test_a_match_with_an_opportunity_is_decided(client, engine, ids):
              ids.ACC_REVIEWER, 409, "MATCH_REVIEW_DECIDED")
 
 
+def test_an_opportunity_decides_even_when_the_latest_review_is_not_final(client, engine, ids):
+    """G5-3 (a), the opportunity alone. In the test above the APPROVED review
+    also decides, so it cannot tell the two rules apart (the first mutation
+    run: D3 survived). Here a later NMI review, written by SQL, is the
+    latest, so only the opportunity can make the match decided. No step-2
+    path writes either row."""
+    m = _match(client, engine, ids)
+    _exec(engine, """INSERT INTO turab.match_reviews (match_id, decision, reviewer_account_id)
+                     VALUES (:m, 'APPROVED', :a)""", m=m["match_id"], a=ids.ACC_REVIEWER)
+    _exec(engine, """
+        INSERT INTO turab.opportunities (request_id, property_id, approved_match_id,
+                                         current_offer_id, sharing_scope, why_real,
+                                         created_by_account_id)
+        SELECT request_id, property_id, match_id, evaluated_offer_id, 'SUMMARY_ONLY',
+               '{}'::jsonb, :a FROM turab.match_candidates WHERE match_id = :m""",
+          m=m["match_id"], a=ids.ACC_REVIEWER)
+    _exec(engine, """
+        INSERT INTO turab.match_reviews (match_id, decision, reason_code, reviewer_account_id,
+                                         reviewed_at)
+        SELECT :m, 'NEED_MORE_INFORMATION', 'DOCUMENT_NOT_KNOWN', :a,
+               max(reviewed_at) + interval '1 second'
+          FROM turab.match_reviews WHERE match_id = :m""", m=m["match_id"], a=ids.ACC_REVIEWER)
+    assert _latest(engine, m["match_id"])["decision"] == "NEED_MORE_INFORMATION"
+    _refused(client, engine, m["match_id"],
+             {"decision": "REJECTED", "reason_code": "OTHER"},
+             ids.ACC_REVIEWER, 409, "MATCH_REVIEW_DECIDED")
+
+
 # ======================================================================================
 # NEED_MORE_INFORMATION (G5-4 (a)): one NEW task per review, typed from the reason
 # ======================================================================================
 
-@pytest.mark.parametrize("reason,task_type", sorted(match_review.NMI_TASK_TYPES.items()))
+#: G5-4's table (plan revision 6), written out here. The test does not read
+#: the mapping from the module it tests: a parametrization taken from
+#: `NMI_TASK_TYPES` agreed with any change to it, and the first mutation run
+#: showed it (R8 and R9 survived).
+G5_4_TABLE = {
+    "DOCUMENT_NOT_KNOWN": "VERIFY_DOCUMENT",
+    "DOCUMENT_MISMATCH": "VERIFY_DOCUMENT",
+    "PRICE_NOT_KNOWN": "CONFIRM_PRICE",
+    "PRICE_NEGOTIATION_UNCONFIRMED": "CONFIRM_PRICE",
+    "OFFER_STALE": "CONFIRM_PRICE",
+    "REQUEST_STALE": "RECONFIRM_REQUEST",
+    "PROPERTY_STALE": "RECONFIRM_PROPERTY",
+    "PERMISSION_MISSING": "CONFIRM_PERMISSION",
+    "CONSENT_REVOKED": "CONFIRM_PERMISSION",
+}
+
+
+def test_the_nmi_mapping_is_g5_4s_table():
+    assert dict(match_review.NMI_TASK_TYPES) == G5_4_TABLE
+
+
+@pytest.mark.parametrize("reason,task_type", sorted(G5_4_TABLE.items()))
 def test_nmi_raises_one_task_of_the_reasons_type(client, engine, ids, reason, task_type):
     m = _match(client, engine, ids)
     r = _review(client, m["match_id"],
@@ -324,16 +378,37 @@ def test_the_response_and_the_task_are_the_contracts_shapes(client, engine, ids)
     assert set(body["task"]) == set(schemas["Task"]["properties"])
 
 
-@pytest.mark.parametrize("kind,priority", [("DOCUMENT_UNKNOWN", "HIGH"), ("ELIGIBLE", "NORMAL")])
+@pytest.mark.parametrize("kind,priority", [("DOCUMENT_UNKNOWN", "HIGH"), ("ELIGIBLE", "NORMAL"),
+                                           ("PREFERRED_UNKNOWN", "NORMAL")])
 def test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown(
         client, engine, ids, kind, priority):
-    """G5-4: Spec §13, as `action.next@1` applies it."""
+    """G5-4: Spec §13, as `action.next@1` applies it. An UNKNOWN that does not
+    block (PREFERRED) does not raise the priority."""
     m = _match(client, engine, ids, kind)
+    unknown = _all(engine, """SELECT blocking FROM turab.match_criterion_results
+                               WHERE match_id = :m AND compatibility = 'UNKNOWN'""",
+                   m=m["match_id"])
+    assert [u["blocking"] for u in unknown] == {
+        "DOCUMENT_UNKNOWN": [True], "ELIGIBLE": [], "PREFERRED_UNKNOWN": [False]}[kind]
     _review(client, m["match_id"],
             {"decision": "NEED_MORE_INFORMATION", "reason_code": "DOCUMENT_NOT_KNOWN"},
             ids.ACC_REVIEWER)
     [task] = _tasks(engine, m["match_id"])
     assert task["priority"] == priority
+
+
+def test_the_task_title_is_fixed_and_never_the_reviewers_text(client, engine, ids):
+    """G5-4: the reviewer's free text is kept on the review; the task's title
+    is the fixed title of its type."""
+    m = _match(client, engine, ids)
+    r = _review(client, m["match_id"],
+                {"decision": "NEED_MORE_INFORMATION", "reason_code": "DOCUMENT_NOT_KNOWN",
+                 "reason_text": "call the client"}, ids.ACC_REVIEWER)
+    assert r.status_code == 200, r.text
+    [review] = _reviews(engine, m["match_id"])
+    [task] = _tasks(engine, m["match_id"])
+    assert review["reason_text"] == "call the client"
+    assert task["title"] == r.json()["task"]["title"] == "Verify the property's document"
 
 
 def test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review(client, engine, ids):
@@ -359,6 +434,10 @@ def test_nmi_is_not_final(client, engine, ids):
                    ids.ACC_REVIEWER).status_code == 200
     assert [r["decision"] for r in _reviews(engine, m["match_id"])] == [
         "REJECTED", "NEED_MORE_INFORMATION"]
+    # The LATEST review decides, not the first: the first here is NMI.
+    _refused(client, engine, m["match_id"],
+             {"decision": "NEED_MORE_INFORMATION", "reason_code": "REQUEST_STALE"},
+             ids.ACC_REVIEWER, 409, "MATCH_REVIEW_DECIDED")
 
 
 @pytest.mark.parametrize("reason", ["OTHER", "LOCATION_MISMATCH", "BUYER_REJECTED",
@@ -449,6 +528,27 @@ def test_actionable_unknown_refuses_every_unspecific_next_action(next_action):
 @pytest.mark.parametrize("kind", sorted(match_review.SPECIFIC_NEXT_ACTION_TYPES))
 def test_actionable_unknown_takes_each_specific_type(kind):
     assert match_review.task_type_for("ACTIONABLE_UNKNOWN", {"type": kind}) == kind
+
+
+@pytest.mark.parametrize("decision,reason", [("REJECTED", "LOCATION_MISMATCH"),
+                                             ("NEED_MORE_INFORMATION", "DOCUMENT_NOT_KNOWN")])
+def test_an_inactive_reason_is_refused(client, engine, ids, decision, reason):
+    """G5-3: a reason must be ACTIVE. The reason is deactivated inside the
+    service's own transaction, which is rolled back, so no other test sees
+    it (the first mutation run: R4 survived)."""
+    m = _match(client, engine, ids)
+    s = _session(engine, ids.ACC_REVIEWER)
+    try:
+        s.execute(text("UPDATE turab.reason_codes SET active = false WHERE code = :c"),
+                  {"c": reason})
+        with pytest.raises(match_review.ReviewRefused) as caught:
+            match_review.prepare(s, match_id=uuid.UUID(m["match_id"]), decision=decision,
+                                 reason_code=reason, reason_text=None)
+        assert caught.value.code == "REVIEW_REASON_NOT_ALLOWED"
+    finally:
+        s.rollback()
+        s.close()
+    assert _one(engine, "SELECT active FROM turab.reason_codes WHERE code = :c", c=reason)
 
 
 def test_every_reason_the_review_names_is_seeded_and_active(engine):
