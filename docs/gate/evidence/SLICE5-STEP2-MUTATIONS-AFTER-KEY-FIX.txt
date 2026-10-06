@@ -1,0 +1,336 @@
+TURAB — Slice 5 step 2: which test refuses which weakening of the review
+============================================================
+Base commit       : ef58077888747c17bfbfc48bbd8310b9cf58ce5a
+Source fingerprint: fcb5f91b7b42c9d7690240fd22fd848a7aeaac270bd8e2ba58909620d841aa9a
+Working tree      : CLEAN
+Recorded          : 2026-10-06 16:19:52 UTC
+Test file         : tests/test_slice5_step2.py
+
+=== baseline (no mutation) ===
+   81 passed, 2 warnings in 21.25s
+== S1 stamp without the microsecond [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   3 failed, 78 passed, 2 warnings in 21.45s
+   FAILED test_a_previous_stamp_in_the_future_is_still_exceeded
+   FAILED test_an_equal_clock_reading_still_stamps_strictly_after
+   FAILED test_the_stamp_statement_is_the_plans
+   cause: AssertionError: assert 'NEED_MORE_INFORMATION' == 'REJECTED'
+   cause: AssertionError: assert 'SELECT GREAT...match_id = :m' == 'SELECT GREAT...match_id = :m'
+   cause: AssertionError: assert ('NEED_MORE_I...', 'REJECTED') == ('REJECTED', ..._INFORMATION')
+   cause: E   AssertionError: assert 'NEED_MORE_INFORMATION' == 'REJECTED'
+   cause: E   AssertionError: assert 'SELECT GREAT...match_id = :m' == 'SELECT GREAT...match_id = :m'
+   cause: E   AssertionError: assert ('NEED_MORE_I...', 'REJECTED') == ('REJECTED', ..._INFORMATION')
+== S2 stamp is the clock alone [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   41 failed, 40 passed, 9 warnings in 166.50s (0:02:46)
+   FAILED test_a3_twenty_sequences_end_with_the_last_decision
+   FAILED test_a5_the_waiting_review_committed_last_is_the_latest
+   FAILED test_a_previous_stamp_in_the_future_is_still_exceeded
+   FAILED test_a_refused_review_does_not_consume_its_key
+   FAILED test_a_replay_returns_the_original_and_writes_nothing_more
+   FAILED test_a_review_waiting_behind_a_rejection_is_refused_as_decided
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-same-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-other-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-same-body]
+   FAILED test_actionable_unknown_takes_a_specific_next_action
+   FAILED test_admin_and_reviewer_may_review[ACC_ADMIN]
+   FAILED test_admin_and_reviewer_may_review[ACC_REVIEWER]
+   FAILED test_an_equal_clock_reading_still_stamps_strictly_after
+   FAILED test_nmi_is_not_final
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[CONSENT_REVOKED-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_MISMATCH-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_NOT_KNOWN-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[OFFER_STALE-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PERMISSION_MISSING-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NEGOTIATION_UNCONFIRMED-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NOT_KNOWN-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PROPERTY_STALE-RECONFIRM_PROPERTY]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[REQUEST_STALE-RECONFIRM_REQUEST]
+   FAILED test_rejected_is_final[then0]
+   FAILED test_rejected_is_final[then1]
+   FAILED test_rejected_is_final[then2]
+   FAILED test_rejected_records_one_review_and_no_task[LOCATION_MISMATCH]
+   FAILED test_rejected_records_one_review_and_no_task[OTHER]
+   FAILED test_rejected_records_one_review_and_no_task[PERMISSION_MISSING]
+   FAILED test_rejected_records_one_review_and_no_task[REQUEST_STALE]
+   FAILED test_step_2_never_writes_an_opportunity
+   FAILED test_the_first_review_takes_the_clock
+   FAILED test_the_response_and_the_task_are_the_contracts_shapes
+   FAILED test_the_stamp_statement_is_the_plans
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[DOCUMENT_UNKNOWN-HIGH]
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[ELIGIBLE-NORMAL]
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[PREFERRED_UNKNOWN-NORMAL]
+   FAILED test_the_task_title_is_fixed_and_never_the_reviewers_text
+   FAILED test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review
+   cause: AssertionError: A did not reach its write
+   cause: AssertionError: assert 'NEED_MORE_INFORMATION' == 'REJECTED'
+   cause: AssertionError: assert 'SELECT COALE...match_id = :m' == 'SELECT GREAT...match_id = :m'
+   cause: E   AssertionError: A did not reach its write
+   cause: E   AssertionError: assert 'NEED_MORE_INFORMATION' == 'REJECTED'
+   cause: E   AssertionError: assert 'SELECT COALE...match_id = :m' == 'SELECT GREAT...match_id = :m'
+== S3 match not locked [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   7 failed, 74 passed, 7 warnings in 179.16s (0:02:59)
+   FAILED test_a5_the_waiting_review_committed_last_is_the_latest
+   FAILED test_a_review_waiting_behind_a_rejection_is_refused_as_decided
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-same-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-other-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-same-body]
+   cause: AssertionError: B never waited on A
+   cause: E   AssertionError: B never waited on A
+   cause: E   assert (False)
+   cause: assert (False)
+== D1 REJECTED not final [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   6 failed, 75 passed, 2 warnings in 20.17s
+   FAILED test_a_review_waiting_behind_a_rejection_is_refused_as_decided
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+   FAILED test_nmi_is_not_final
+   FAILED test_rejected_is_final[then0]
+   FAILED test_rejected_is_final[then1]
+   FAILED test_rejected_is_final[then2]
+   cause: AssertionError: assert (True and 'recorded' == 'MATCH_REVIEW_DECIDED'
+   cause: AssertionError: {"match_id":"79e9e681-8837-4838-ba72-32a4acbf5120","decision":"NEED_MORE_INFORMATION","opportunity":null,"task":{"task_id":"91223173-7306-4d0e-8381-f9fda4
+   cause: AssertionError: {"type":"about:blank","title":"Review decision not yet available","status":409,"code":"REVIEW_DECISION_NOT_YET_AVAILABLE","trace_id":"4e4889b8713e4d3ababd
+   cause: E   AssertionError: assert (True and 'recorded' == 'MATCH_REVIEW_DECIDED'
+   cause: E   AssertionError: {"match_id":"79e9e681-8837-4838-ba72-32a4acbf5120","decision":"NEED_MORE_INFORMATION","opportunity":null,"task":{"task_id":"91223173-7306-4d0e-8381-f9
+   cause: E   AssertionError: {"type":"about:blank","title":"Review decision not yet available","status":409,"code":"REVIEW_DECISION_NOT_YET_AVAILABLE","trace_id":"4e4889b8713e4d3a
+== D2 NMI final [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   6 failed, 75 passed, 2 warnings in 17.80s
+   FAILED test_a3_twenty_sequences_end_with_the_last_decision
+   FAILED test_a5_the_waiting_review_committed_last_is_the_latest
+   FAILED test_a_previous_stamp_in_the_future_is_still_exceeded
+   FAILED test_an_equal_clock_reading_still_stamps_strictly_after
+   FAILED test_nmi_is_not_final
+   FAILED test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review
+   cause: AssertionError: assert (True and 'MATCH_REVIEW_DECIDED' == 'recorded'
+   cause: AssertionError: assert 409 == 200
+   cause: E   AssertionError: assert (True and 'MATCH_REVIEW_DECIDED' == 'recorded'
+   cause: E   AssertionError: assert 409 == 200
+   cause: E   turab.services.match_review.ReviewRefused: this match has a final review; a later review is refused
+   cause: turab.services.match_review.ReviewRefused: this match has a final review; a later review is refused
+== D3 an opportunity does not decide [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   1 failed, 80 passed, 2 warnings in 21.78s
+   FAILED test_an_opportunity_decides_even_when_the_latest_review_is_not_final
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== D4 decided reads the OLDEST review [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   1 failed, 80 passed, 2 warnings in 21.09s
+   FAILED test_nmi_is_not_final
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== D5 decided check removed [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   8 failed, 73 passed, 2 warnings in 20.64s
+   FAILED test_a_match_with_an_opportunity_is_decided
+   FAILED test_a_review_waiting_behind_a_rejection_is_refused_as_decided
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-key]
+   FAILED test_an_opportunity_decides_even_when_the_latest_review_is_not_final
+   FAILED test_nmi_is_not_final
+   FAILED test_rejected_is_final[then0]
+   FAILED test_rejected_is_final[then1]
+   FAILED test_rejected_is_final[then2]
+   cause: AssertionError: assert (True and 'recorded' == 'MATCH_REVIEW_DECIDED'
+   cause: AssertionError: {"match_id":"af1d4a55-6883-43e6-a0cc-d408c6d18940","decision":"NEED_MORE_INFORMATION","opportunity":null,"task":{"task_id":"5a41dbf2-748a-44c3-ab93-be8895
+   cause: AssertionError: {"type":"about:blank","title":"Review decision not yet available","status":409,"code":"REVIEW_DECISION_NOT_YET_AVAILABLE","trace_id":"d23edcf048044bdd9ce2
+   cause: E   AssertionError: assert (True and 'recorded' == 'MATCH_REVIEW_DECIDED'
+   cause: E   AssertionError: {"match_id":"af1d4a55-6883-43e6-a0cc-d408c6d18940","decision":"NEED_MORE_INFORMATION","opportunity":null,"task":{"task_id":"5a41dbf2-748a-44c3-ab93-be
+   cause: E   AssertionError: {"type":"about:blank","title":"Review decision not yet available","status":409,"code":"REVIEW_DECISION_NOT_YET_AVAILABLE","trace_id":"d23edcf048044bdd
+== R1 APPROVED takes a reason [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   1 failed, 80 passed, 2 warnings in 21.32s
+   FAILED test_a_malformed_review_is_refused_before_any_write[approve-with-reason]
+   cause: AssertionError: {"type":"about:blank","title":"Review decision not yet available","status":409,"code":"REVIEW_DECISION_NOT_YET_AVAILABLE","trace_id":"6fa77bd0a3354138ba58
+   cause: E   AssertionError: {"type":"about:blank","title":"Review decision not yet available","status":409,"code":"REVIEW_DECISION_NOT_YET_AVAILABLE","trace_id":"6fa77bd0a3354138
+== R2 a reason is not required [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 21.10s
+   FAILED test_a_malformed_review_is_refused_before_any_write[nmi-no-reason]
+   FAILED test_a_malformed_review_is_refused_before_any_write[reject-no-reason]
+   cause: AssertionError: {"type":"about:blank","title":"Review reason not allowed","status":422,"code":"REVIEW_REASON_NOT_ALLOWED","trace_id":"1c34947554304690a40b1103b90e2ae3","d
+   cause: AssertionError: {"type":"about:blank","title":"Review reason not allowed","status":422,"code":"REVIEW_REASON_NOT_ALLOWED","trace_id":"ba06d3c3b04b4090984b33cb2eb35989","d
+   cause: E   AssertionError: {"type":"about:blank","title":"Review reason not allowed","status":422,"code":"REVIEW_REASON_NOT_ALLOWED","trace_id":"1c34947554304690a40b1103b90e2ae3
+   cause: E   AssertionError: {"type":"about:blank","title":"Review reason not allowed","status":422,"code":"REVIEW_REASON_NOT_ALLOWED","trace_id":"ba06d3c3b04b4090984b33cb2eb35989
+== R3 REJECTED takes any category [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 20.69s
+   FAILED test_rejected_refuses_a_reason_outside_its_categories[BUYER_REJECTED]
+   FAILED test_rejected_refuses_a_reason_outside_its_categories[SAME_PROPERTY_CONFIRMED]
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== R4 an inactive reason is accepted [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 20.98s
+   FAILED test_an_inactive_reason_is_refused[NEED_MORE_INFORMATION-DOCUMENT_NOT_KNOWN]
+   FAILED test_an_inactive_reason_is_refused[REJECTED-LOCATION_MISMATCH]
+   cause: E   Failed: DID NOT RAISE ReviewRefused
+   cause: Failed: DID NOT RAISE ReviewRefused
+== R5 NMI takes any reason [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   4 failed, 77 passed, 2 warnings in 20.55s
+   FAILED test_a_refused_review_does_not_consume_its_key
+   FAILED test_nmi_refuses_a_reason_that_names_no_specific_task[BUYER_REJECTED]
+   FAILED test_nmi_refuses_a_reason_that_names_no_specific_task[LOCATION_MISMATCH]
+   FAILED test_nmi_refuses_a_reason_that_names_no_specific_task[OTHER]
+   cause: E   KeyError: 'code'
+   cause: E   assert 200 == 422
+   cause: KeyError: 'code'
+   cause: assert 200 == 422
+== R6 ACTIONABLE_UNKNOWN takes OTHER [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   3 failed, 78 passed, 2 warnings in 20.64s
+   FAILED test_actionable_unknown_is_refused_without_a_specific_next_action[ROOMS_UNKNOWN-OTHER]
+   FAILED test_actionable_unknown_refuses_every_unspecific_next_action[next_action2]
+   FAILED test_actionable_unknown_refuses_every_unspecific_next_action[next_action3]
+   cause: E   Failed: DID NOT RAISE ReviewRefused
+   cause: E   KeyError: 'OTHER'
+   cause: Failed: DID NOT RAISE ReviewRefused
+   cause: KeyError: 'OTHER'
+== R7 ACTIONABLE_UNKNOWN takes a null next_action [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   4 failed, 77 passed, 2 warnings in 20.38s
+   FAILED test_actionable_unknown_is_refused_without_a_specific_next_action[ELIGIBLE-None]
+   FAILED test_actionable_unknown_refuses_every_unspecific_next_action[None]
+   FAILED test_actionable_unknown_refuses_every_unspecific_next_action[next_action1]
+   FAILED test_actionable_unknown_refuses_every_unspecific_next_action[next_action3]
+   cause: E   Failed: DID NOT RAISE ReviewRefused
+   cause: E   KeyError: None
+   cause: Failed: DID NOT RAISE ReviewRefused
+   cause: KeyError: None
+== R8 DOCUMENT_MISMATCH mapped to CONFIRM_PRICE [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 20.14s
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_MISMATCH-VERIFY_DOCUMENT]
+   FAILED test_the_nmi_mapping_is_g5_4s_table
+   cause: AssertionError: assert {'DOCUMENT_NO...M_PRICE', ...} == {'DOCUMENT_NO...M_PRICE', ...}
+   cause: E   AssertionError: assert {'DOCUMENT_NO...M_PRICE', ...} == {'DOCUMENT_NO...M_PRICE', ...}
+   cause: E   assert ('CONFIRM_PRI... price terms") == ('VERIFY_DOCU...y's document")
+   cause: assert ('CONFIRM_PRI... price terms") == ('VERIFY_DOCU...y's document")
+== R9 OFFER_STALE mapped to RECONFIRM_PROPERTY [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 20.19s
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[OFFER_STALE-CONFIRM_PRICE]
+   FAILED test_the_nmi_mapping_is_g5_4s_table
+   cause: AssertionError: assert {'DOCUMENT_NO...M_PRICE', ...} == {'DOCUMENT_NO...M_PRICE', ...}
+   cause: E   AssertionError: assert {'DOCUMENT_NO...M_PRICE', ...} == {'DOCUMENT_NO...M_PRICE', ...}
+   cause: E   assert ('RECONFIRM_P...the property') == ('CONFIRM_PRI... price terms")
+   cause: assert ('RECONFIRM_P...the property') == ('CONFIRM_PRI... price terms")
+== T1 no task for NMI [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   19 failed, 62 passed, 2 warnings in 20.11s
+   FAILED test_a_replay_returns_the_original_and_writes_nothing_more
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-other-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[nmi-same-body]
+   FAILED test_actionable_unknown_takes_a_specific_next_action
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[CONSENT_REVOKED-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_MISMATCH-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_NOT_KNOWN-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[OFFER_STALE-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PERMISSION_MISSING-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NEGOTIATION_UNCONFIRMED-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NOT_KNOWN-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PROPERTY_STALE-RECONFIRM_PROPERTY]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[REQUEST_STALE-RECONFIRM_REQUEST]
+   FAILED test_the_response_and_the_task_are_the_contracts_shapes
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[DOCUMENT_UNKNOWN-HIGH]
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[ELIGIBLE-NORMAL]
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[PREFERRED_UNKNOWN-NORMAL]
+   FAILED test_the_task_title_is_fixed_and_never_the_reviewers_text
+   FAILED test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review
+   cause: AssertionError: assert (2 == 2 and 0 == 2)
+   cause: AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert (2 == 2 and 0 == 2)
+   cause: E   AssertionError: assert 0 == 1
+   cause: E   TypeError: 'NoneType' object is not iterable
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+== T2 priority always NORMAL [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 21.35s
+   FAILED test_actionable_unknown_takes_a_specific_next_action
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[DOCUMENT_UNKNOWN-HIGH]
+   cause: AssertionError: assert 'NORMAL' == 'HIGH'
+   cause: AssertionError: assert ('VERIFY_DOCU...ABLE_UNKNOWN') == ('VERIFY_DOCU...ABLE_UNKNOWN')
+   cause: E   AssertionError: assert 'NORMAL' == 'HIGH'
+   cause: E   AssertionError: assert ('VERIFY_DOCU...ABLE_UNKNOWN') == ('VERIFY_DOCU...ABLE_UNKNOWN')
+== T3 a non-blocking unknown raises the priority [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   1 failed, 80 passed, 2 warnings in 19.77s
+   FAILED test_the_task_is_high_priority_when_the_match_has_a_blocking_unknown[PREFERRED_UNKNOWN-NORMAL]
+   cause: AssertionError: assert 'HIGH' == 'NORMAL'
+   cause: E   AssertionError: assert 'HIGH' == 'NORMAL'
+== T4 payload without match_review_id [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   11 failed, 70 passed, 2 warnings in 19.86s
+   FAILED test_actionable_unknown_takes_a_specific_next_action
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[CONSENT_REVOKED-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_MISMATCH-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_NOT_KNOWN-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[OFFER_STALE-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PERMISSION_MISSING-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NEGOTIATION_UNCONFIRMED-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NOT_KNOWN-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PROPERTY_STALE-RECONFIRM_PROPERTY]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[REQUEST_STALE-RECONFIRM_REQUEST]
+   FAILED test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review
+   cause: AssertionError: assert {'next_action': None} == {'match_revie...action': None}
+   cause: E   AssertionError: assert {'next_action': None} == {'match_revie...action': None}
+   cause: E   KeyError: 'match_review_id'
+   cause: KeyError: 'match_review_id'
+== T5 task not audited [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   9 failed, 72 passed, 2 warnings in 19.91s
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[CONSENT_REVOKED-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_MISMATCH-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[DOCUMENT_NOT_KNOWN-VERIFY_DOCUMENT]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[OFFER_STALE-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PERMISSION_MISSING-CONFIRM_PERMISSION]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NEGOTIATION_UNCONFIRMED-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PRICE_NOT_KNOWN-CONFIRM_PRICE]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[PROPERTY_STALE-RECONFIRM_PROPERTY]
+   FAILED test_nmi_raises_one_task_of_the_reasons_type[REQUEST_STALE-RECONFIRM_REQUEST]
+   cause: AssertionError: assert [] == [{'action': 'INSERT'}]
+   cause: E   AssertionError: assert [] == [{'action': 'INSERT'}]
+== T6 title is the reviewer's text [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   1 failed, 80 passed, 2 warnings in 19.65s
+   FAILED test_the_task_title_is_fixed_and_never_the_reviewers_text
+   cause: E   assert 'call the client' == "Verify the p...ty's document"
+   cause: assert 'call the client' == "Verify the p...ty's document"
+== A1 APPROVED executed [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 19.48s
+   FAILED test_approved_is_refused_in_step_2_as_not_yet_available[DOCUMENT_UNKNOWN]
+   FAILED test_approved_is_refused_in_step_2_as_not_yet_available[ELIGIBLE]
+   cause: E   KeyError: 'code'
+   cause: E   psycopg.errors.RaiseException: Cannot approve match b2123a15-81c6-4db3-9bfb-341d5be7c02f before all opportunity gates pass
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Cannot approve match b2123a15-81c6-4db3-9bfb-341d5be7c02f before all opportunity gates pass
+   cause: KeyError: 'code'
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Cannot approve match b2123a15-81c6-4db3-9bfb-341d5be7c02f before all opportunity gates pass
+== A2 APPROVED refused as an input error [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 19.19s
+   FAILED test_approved_is_refused_in_step_2_as_not_yet_available[DOCUMENT_UNKNOWN]
+   FAILED test_approved_is_refused_in_step_2_as_not_yet_available[ELIGIBLE]
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"05b7ce8035564c92a657aeeeeb764f26","detail":"APPROVED
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"16e886572e5146809f8cbd84b5c71328","detail":"APPROVED
+   cause: E   AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"05b7ce8035564c92a657aeeeeb764f26","detail":"APPR
+   cause: E   AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"16e886572e5146809f8cbd84b5c71328","detail":"APPR
+== A3 APPROVED refused as decided [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 84bf4e10b319e19b identical
+   2 failed, 79 passed, 2 warnings in 19.31s
+   FAILED test_approved_is_refused_in_step_2_as_not_yet_available[DOCUMENT_UNKNOWN]
+   FAILED test_approved_is_refused_in_step_2_as_not_yet_available[ELIGIBLE]
+   cause: AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"5898fe6a8b4f48f0a1a0f5d8a63ce8d9","detail":"A
+   cause: AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"8cb3b64b59274e9184a498cf73859ae7","detail":"A
+   cause: E   AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"5898fe6a8b4f48f0a1a0f5d8a63ce8d9","detail
+   cause: E   AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"8cb3b64b59274e9184a498cf73859ae7","detail
+== Z1 an unknown id is not recorded [src/turab/services/command.py, 1 site(s)]  restored: sha256 2ae74933978d5249 identical
+   1 failed, 80 passed, 2 warnings in 22.01s
+   FAILED test_an_unknown_match_is_403_and_recorded
+   cause: AssertionError: assert [] == [('DENIED', '...H_CANDIDATE')]
+   cause: E   AssertionError: assert [] == [('DENIED', '...H_CANDIDATE')]
+== Z2 existence not checked by the route [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 9d9ba6a62f746184 identical
+   1 failed, 80 passed, 2 warnings in 21.20s
+   FAILED test_an_unknown_match_is_403_and_recorded
+   cause: AssertionError: assert [] == [('DENIED', '...H_CANDIDATE')]
+   cause: E   AssertionError: assert [] == [('DENIED', '...H_CANDIDATE')]
+== Z3 the role is not checked [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 9d9ba6a62f746184 identical
+   2 failed, 79 passed, 2 warnings in 21.36s
+   FAILED test_only_admin_and_reviewer_may_review[ACC_AMINA-403-ROLE_NOT_PERMITTED]
+   FAILED test_only_admin_and_reviewer_may_review[ACC_OPERATOR-403-ROLE_NOT_PERMITTED]
+   cause: AssertionError: {"type":"about:blank","title":"Not permitted","status":403,"code":"OBJECT_NOT_AUTHORIZED","trace_id":"05b3ee6d66dc43c89f0ec283f4b65180","detail":"a match 
+   cause: E   AssertionError: {"type":"about:blank","title":"Not permitted","status":403,"code":"OBJECT_NOT_AUTHORIZED","trace_id":"05b3ee6d66dc43c89f0ec283f4b65180","detail":"a ma
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== K1 a refusal ignores a same-key call committed meanwhile [src/turab/services/command.py, 1 site(s)]  restored: sha256 2ae74933978d5249 identical
+   2 failed, 79 passed, 2 warnings in 20.61s
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-other-body]
+   FAILED test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key[final-same-body]
+   cause: AssertionError: assert 'MATCH_REVIEW_DECIDED' == 'IDEMPOTENCY_KEY_CONFLICT'
+   cause: AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"e106deb69f8d4216ad96d0ebb833555c","detail":"t
+   cause: E   AssertionError: assert 'MATCH_REVIEW_DECIDED' == 'IDEMPOTENCY_KEY_CONFLICT'
+   cause: E   AssertionError: {"type":"about:blank","title":"Match review is final","status":409,"code":"MATCH_REVIEW_DECIDED","trace_id":"e106deb69f8d4216ad96d0ebb833555c","detail
+
+SURVIVING MUTATIONS: none
+exit 0
