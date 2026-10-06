@@ -1,0 +1,299 @@
+TURAB — Slice 5 step 3: which test refuses which weakening of APPROVED
+============================================================
+Base commit       : 1a4839ad886005d393e079a8fd08052366967786
+Source fingerprint: 80c7f266c437fdf65489b1f9a70383e5d248b7c9ba8e7975d28d34a8a4bb78f7
+Working tree      : CLEAN
+Recorded          : 2026-10-06 17:56:18 UTC
+Test file         : tests/test_slice5_step3.py
+
+=== baseline (no mutation) ===
+   57 passed, 2 warnings in 14.40s
+== G1 the gates are not checked [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   4 failed, 53 passed, 2 warnings in 13.92s
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[FRESHNESS-NEEDS_CONFIRMATION-FRESHNESS_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[HARD-REJECTED-HARD_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[INFORMATION-NEED_MORE_INFORMATION-INFORMATION_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[PERMISSION-NEEDS_CONFIRMATION-PERMISSION_GATE]
+   cause: E   psycopg.errors.RaiseException: Cannot approve match 61755b37-7d40-4b32-aa6c-b735563c0f19 before all opportunity gates pass
+   cause: E   psycopg.errors.RaiseException: Cannot approve match b0e46a19-95cd-45c0-9d11-4c2398281a49 before all opportunity gates pass
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Cannot approve match 61755b37-7d40-4b32-aa6c-b735563c0f19 before all opportunity gates pass
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Cannot approve match b0e46a19-95cd-45c0-9d11-4c2398281a49 before all opportunity gates pass
+   cause: HTTP 409 field error: PERMISSION is UNKNOWN: NEEDS_CONFIRMATION
+   cause: HTTP 409 field error: REQUEST_FRESHNESS is UNKNOWN: NEEDS_CONFIRMATION
+== G2 the permission gate is ignored [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 14.20s
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[PERMISSION-NEEDS_CONFIRMATION-PERMISSION_GATE]
+   cause: AssertionError: assert {'ELIGIBILITY...MISSION_GATE'} <= {'ELIGIBILITY'}
+   cause: E   AssertionError: assert {'ELIGIBILITY...MISSION_GATE'} <= {'ELIGIBILITY'}
+== G3 the eligibility is ignored [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   4 failed, 53 passed, 2 warnings in 13.68s
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[FRESHNESS-NEEDS_CONFIRMATION-FRESHNESS_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[HARD-REJECTED-HARD_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[INFORMATION-NEED_MORE_INFORMATION-INFORMATION_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[PERMISSION-NEEDS_CONFIRMATION-PERMISSION_GATE]
+   cause: AssertionError: assert {'ELIGIBILITY', 'HARD_GATE'} <= {'HARD_GATE'}
+   cause: AssertionError: assert {'ELIGIBILITY...ESHNESS_GATE'} <= {'FRESHNESS_GATE'}
+   cause: AssertionError: assert {'ELIGIBILITY...MISSION_GATE'} <= {'PERMISSION_GATE'}
+   cause: AssertionError: assert {'ELIGIBILITY...RMATION_GATE'} <= {'HARD_GATE',...RMATION_GATE'}
+   cause: E   AssertionError: assert {'ELIGIBILITY', 'HARD_GATE'} <= {'HARD_GATE'}
+   cause: E   AssertionError: assert {'ELIGIBILITY...ESHNESS_GATE'} <= {'FRESHNESS_GATE'}
+== S1 supersession is not checked [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 14.18s
+   FAILED test_a_new_evaluation_supersedes_its_own_offers_match_only
+   cause: AssertionError: {"type":"about:blank","title":"Opportunity already open","status":409,"code":"OPPORTUNITY_ALREADY_OPEN","trace_id":"df610c8329c941b78a02a2213b9081c4","det
+   cause: E   AssertionError: {"type":"about:blank","title":"Opportunity already open","status":409,"code":"OPPORTUNITY_ALREADY_OPEN","trace_id":"df610c8329c941b78a02a2213b9081c4",
+== S2 supersession across offers [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 13.57s
+   FAILED test_a_new_evaluation_supersedes_its_own_offers_match_only
+   cause: AssertionError: assert 409 == 200
+   cause: E   AssertionError: assert 409 == 200
+== C1 the check is not enforced [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   18 failed, 39 passed, 2 warnings in 14.43s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[binding-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[offer-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[property-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[request-UPDATE
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[consent_revoked-PERMISSION-CONSENT_REVOKED-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_paused-OFFER_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_stale-OFFER_FRESHNESS-OFFER_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_withdrawn-OFFER_STATUS-WITHDRAWN-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[property_stale-PROPERTY_FRESHNESS-PROPERTY_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_closed-REQUEST_STATUS-CLOSED-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_paused-REQUEST_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_stale-REQUEST_FRESHNESS-REQUEST_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[unavailable-AVAILABILITY-PROPERTY_UNAVAILABLE-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[under_discussion-AVAILABILITY-UNDER_DISCUSSION-NEEDS_CONFIRMATION]
+   FAILED test_a_needs_confirmation_request_is_matched_eligible_but_not_approved
+   FAILED test_every_failing_fact_is_named_and_the_worst_decides
+   FAILED test_mandatory_6_a_match_on_a_property_that_is_now_an_alias_is_refused
+   FAILED test_the_approval_is_accepted_exactly_when_the_check_is_valid
+   cause: AssertionError: {"match_id":"032def1a-b3d0-4624-8691-a771b6beb06c","decision":"APPROVED","opportunity":{"opportunity_id":"ca66a4a0-efd6-44a3-a778-d6df497600ea","request_i
+   cause: AssertionError: {"match_id":"30bf5035-6ee1-4436-b322-8e730ef3936d","decision":"APPROVED","opportunity":{"opportunity_id":"b79e3538-ba85-43f2-bc43-25fe2b5af1e1","request_i
+   cause: AssertionError: {"match_id":"526f0cea-faaa-4231-8af6-3ebe944a957d","decision":"APPROVED","opportunity":{"opportunity_id":"ca8b6306-57ef-4665-b21f-2310b03d3e97","request_i
+   cause: AssertionError: {"match_id":"7c39606e-8160-4917-8a54-0879f69239e6","decision":"APPROVED","opportunity":{"opportunity_id":"90902882-fcbe-4964-85a3-cae75ee88016","request_i
+   cause: AssertionError: {"match_id":"a0c8a353-6c24-41c7-94f1-eab7ec5ce2fb","decision":"APPROVED","opportunity":{"opportunity_id":"6d7ab4fc-94a3-419b-be0a-bdf3c8b676e8","request_i
+   cause: AssertionError: {"match_id":"a7b0e87e-8311-414c-aa48-0688affb7cc9","decision":"APPROVED","opportunity":{"opportunity_id":"07983d56-d6ac-43e8-afa2-3ac1613d2e26","request_i
+== C2 NEEDS_CONFIRMATION is accepted [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   10 failed, 47 passed, 2 warnings in 14.19s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[offer-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[request-UPDATE
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_paused-OFFER_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_stale-OFFER_FRESHNESS-OFFER_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[property_stale-PROPERTY_FRESHNESS-PROPERTY_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_paused-REQUEST_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_stale-REQUEST_FRESHNESS-REQUEST_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[under_discussion-AVAILABILITY-UNDER_DISCUSSION-NEEDS_CONFIRMATION]
+   FAILED test_a_needs_confirmation_request_is_matched_eligible_but_not_approved
+   FAILED test_the_approval_is_accepted_exactly_when_the_check_is_valid
+   cause: AssertionError: {"match_id":"4493e799-9ce9-4de8-996b-b45df70ddd95","decision":"APPROVED","opportunity":{"opportunity_id":"c8d46628-9efe-4d03-9fc4-a291e95d56fc","request_i
+   cause: AssertionError: {"match_id":"583a735b-505c-42be-ad80-07ab388ed5ca","decision":"APPROVED","opportunity":{"opportunity_id":"c76cc8d5-e309-4c60-95ed-e5782889471c","request_i
+   cause: AssertionError: {"match_id":"855d2c42-6cd3-4394-9582-8998c3c89261","decision":"APPROVED","opportunity":{"opportunity_id":"07d35ba7-acb7-4e45-abaf-abb02dcac85c","request_i
+   cause: AssertionError: {"match_id":"93416e26-5124-4de2-9e56-4e5cc3b79a1e","decision":"APPROVED","opportunity":{"opportunity_id":"4c9e4d10-8a31-4de2-a629-046d09c1f602","request_i
+   cause: AssertionError: {"match_id":"9d9a5de3-aa18-448b-8dfa-461b9d661b18","decision":"APPROVED","opportunity":{"opportunity_id":"6f6a0ef2-7d48-4169-bc6f-07562874b4c1","request_i
+   cause: AssertionError: {"match_id":"da7eb142-0e70-44cb-8c9d-dd7b96e3621e","decision":"APPROVED","opportunity":{"opportunity_id":"fe4db825-9295-4321-b70b-1c5670b0a2fd","request_i
+== C3 a PAUSED request is VALID [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   5 failed, 52 passed, 2 warnings in 13.23s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[request-UPDATE
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_paused-REQUEST_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_every_combination_is_the_worst_fact_and_names_every_failing_fact
+   FAILED test_every_failing_fact_is_named_and_the_worst_decides
+   FAILED test_the_check_is_section_3_7s_table
+   cause: AssertionError: assert ['OFFER_FRESH... 'PERMISSION'] == ['REQUEST_STA... 'PERMISSION']
+   cause: AssertionError: assert {'REQUEST_STA...NVALID'}, ...} == {'REQUEST_STA...NVALID'}, ...}
+   cause: AssertionError: {"match_id":"82128656-b296-4c94-a52d-6bccef453113","decision":"APPROVED","opportunity":{"opportunity_id":"f956bd02-ea92-4faf-aefb-5d0c6acbf88a","request_i
+   cause: AssertionError: {'REQUEST_STATUS': 'PAUSED', 'OFFER_STATUS': 'ACTIVE', 'AVAILABILITY': 'AVAILABLE', 'IDENTITY': 'CANONICAL', ...}
+   cause: E   AssertionError: assert ['OFFER_FRESH... 'PERMISSION'] == ['REQUEST_STA... 'PERMISSION']
+   cause: E   AssertionError: assert {'REQUEST_STA...NVALID'}, ...} == {'REQUEST_STA...NVALID'}, ...}
+== C4 a value outside the table is VALID [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 2 warnings in 13.62s
+   FAILED test_a_value_outside_the_table_fails_closed
+   cause: AssertionError: assert ('VALID' == 'INVALID'
+   cause: E   AssertionError: assert ('VALID' == 'INVALID'
+== C5 only the first failing fact is named [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   2 failed, 55 passed, 2 warnings in 13.67s
+   FAILED test_every_combination_is_the_worst_fact_and_names_every_failing_fact
+   FAILED test_every_failing_fact_is_named_and_the_worst_decides
+   cause: AssertionError: assert ['REQUEST_STATUS'] == ['REQUEST_STA... 'PERMISSION']
+   cause: AssertionError: {'REQUEST_STATUS': 'ACTIVE', 'OFFER_STATUS': 'ACTIVE', 'AVAILABILITY': 'AVAILABLE', 'IDENTITY': 'CANONICAL', ...}
+   cause: E   AssertionError: assert ['REQUEST_STATUS'] == ['REQUEST_STA... 'PERMISSION']
+   cause: E   AssertionError: {'REQUEST_STATUS': 'ACTIVE', 'OFFER_STATUS': 'ACTIVE', 'AVAILABILITY': 'AVAILABLE', 'IDENTITY': 'CANONICAL', ...}
+== C6 the identity is not read [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 2 warnings in 13.72s
+   FAILED test_mandatory_6_a_match_on_a_property_that_is_now_an_alias_is_refused
+   cause: AssertionError: {"match_id":"ccbc3a6f-616b-4f6a-b2eb-a4be8f06f5a4","decision":"APPROVED","opportunity":{"opportunity_id":"498418dc-52e0-4e52-b990-28a73003d6b9","request_i
+   cause: E   AssertionError: {"match_id":"ccbc3a6f-616b-4f6a-b2eb-a4be8f06f5a4","decision":"APPROVED","opportunity":{"opportunity_id":"498418dc-52e0-4e52-b990-28a73003d6b9","reque
+== C7 the match's thresholds are not used [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   5 failed, 52 passed, 2 warnings in 13.95s
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_stale-OFFER_FRESHNESS-OFFER_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[property_stale-PROPERTY_FRESHNESS-PROPERTY_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_stale-REQUEST_FRESHNESS-REQUEST_STALE-NEEDS_CONFIRMATION]
+   FAILED test_every_failing_fact_is_named_and_the_worst_decides
+   FAILED test_the_check_uses_the_thresholds_and_versions_the_match_recorded
+   cause: AssertionError: assert 'FRESH' == 'STALE'
+   cause: AssertionError: assert ['REQUEST_STA... 'PERMISSION'] == ['REQUEST_STA... 'PERMISSION']
+   cause: AssertionError: {"match_id":"2aec68d2-db2c-4113-bdc1-942aedc2976d","decision":"APPROVED","opportunity":{"opportunity_id":"e1247e75-1d9a-4d1f-ba9d-4b8567e2e402","request_i
+   cause: AssertionError: {"match_id":"410ccae6-b669-4c41-965b-35f274b53676","decision":"APPROVED","opportunity":{"opportunity_id":"924c264e-86c1-49ef-84ab-6e408662ab4c","request_i
+   cause: AssertionError: {"match_id":"e95152cb-bb0d-4146-9352-07a209ce4032","decision":"APPROVED","opportunity":{"opportunity_id":"a5041eae-570e-4fe8-82d5-7f54ec2014c4","request_i
+   cause: E   AssertionError: assert 'FRESH' == 'STALE'
+== C8 the permission gate is not read [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   3 failed, 54 passed, 2 warnings in 13.06s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[binding-UPDATE
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[consent_revoked-PERMISSION-CONSENT_REVOKED-INVALID]
+   FAILED test_every_failing_fact_is_named_and_the_worst_decides
+   cause: AssertionError: assert 'INVALID' in 'the facts now are NEEDS_CONFIRMATION, not VALID; reconfirm them or run the matching again'
+   cause: AssertionError: {"match_id":"ecc986b5-d1a1-4d30-a36e-0ad3cb6b21f8","decision":"APPROVED","opportunity":{"opportunity_id":"0b99bce7-66d0-4099-80d5-0571b17b1975","request_i
+   cause: E   AssertionError: assert 'INVALID' in 'the facts now are NEEDS_CONFIRMATION, not VALID; reconfirm them or run the matching again'
+   cause: E   AssertionError: {"match_id":"ecc986b5-d1a1-4d30-a36e-0ad3cb6b21f8","decision":"APPROVED","opportunity":{"opportunity_id":"0b99bce7-66d0-4099-80d5-0571b17b1975","reque
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== C9 the worst class is not the validity [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   10 failed, 47 passed, 2 warnings in 13.38s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[offer-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[request-UPDATE
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_paused-OFFER_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_stale-OFFER_FRESHNESS-OFFER_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[property_stale-PROPERTY_FRESHNESS-PROPERTY_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_paused-REQUEST_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_stale-REQUEST_FRESHNESS-REQUEST_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[under_discussion-AVAILABILITY-UNDER_DISCUSSION-NEEDS_CONFIRMATION]
+   FAILED test_a_needs_confirmation_request_is_matched_eligible_but_not_approved
+   FAILED test_every_combination_is_the_worst_fact_and_names_every_failing_fact
+   cause: AssertionError: {"match_id":"10ea8a3a-cee5-489a-a249-2b05a4b2bf5e","decision":"APPROVED","opportunity":{"opportunity_id":"555a2e20-4882-4d97-a611-833ebd9acf79","request_i
+   cause: AssertionError: {"match_id":"7b8a51b9-9b27-4935-8297-04412c9ce5fd","decision":"APPROVED","opportunity":{"opportunity_id":"f93c6a30-b2fa-4912-b930-68e3b05ffece","request_i
+   cause: AssertionError: {"match_id":"a38c2c67-83a0-4276-b71f-c08ee9f3d2bf","decision":"APPROVED","opportunity":{"opportunity_id":"47e222c6-53cd-4a45-bc0a-cb904a34e531","request_i
+   cause: AssertionError: {"match_id":"ce4fa5cc-b6b6-43ab-b2ae-4691f0c90121","decision":"APPROVED","opportunity":{"opportunity_id":"78b30677-c3d1-4a94-ba9d-3c4ba9ccb5c9","request_i
+   cause: AssertionError: {"match_id":"ea399e50-d004-4173-bf2c-0f84f4de56c8","decision":"APPROVED","opportunity":{"opportunity_id":"ebd31f28-f1d3-4511-b377-4ab03df4d289","request_i
+   cause: AssertionError: {"match_id":"eed8c568-a41f-4b12-ae49-3e36529d8ac0","decision":"APPROVED","opportunity":{"opportunity_id":"0b17d4cd-d1e2-4ffd-a0f8-46778220192c","request_i
+== L1 the request is not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   2 failed, 55 passed, 3 warnings in 73.20s (0:01:13)
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[request-UPDATE
+   FAILED test_mandatory_6_two_concurrent_approvals_of_one_pair_make_one_opportunity
+   cause: AssertionError: B never waited on A's request lock
+   cause: AssertionError: the approval never waited
+   cause: E   AssertionError: B never waited on A's request lock
+   cause: E   AssertionError: the approval never waited
+== L2 the request lock is shared [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 3 warnings in 43.63s
+   FAILED test_mandatory_6_two_concurrent_approvals_of_one_pair_make_one_opportunity
+   cause: AssertionError: B never waited on A's request lock
+   cause: E   AssertionError: B never waited on A's request lock
+== L3 the property is not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 2 warnings in 43.00s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[property-UPDATE
+   cause: AssertionError: the approval never waited
+   cause: E   AssertionError: the approval never waited
+== L4 the offer is not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 2 warnings in 43.78s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[offer-UPDATE
+   cause: AssertionError: the approval never waited
+   cause: E   AssertionError: the approval never waited
+== L5 the bindings are not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 2 warnings in 43.25s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[binding-UPDATE
+   cause: AssertionError: the approval never waited
+   cause: E   AssertionError: the approval never waited
+== O1 the open opportunity is not checked [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   2 failed, 55 passed, 2 warnings in 14.00s
+   FAILED test_mandatory_6_a_second_offers_match_is_refused_while_one_is_open
+   FAILED test_mandatory_6_an_open_opportunity_on_an_alias_blocks_its_canonical
+   cause: AssertionError: assert 'd6a85611-26c0-470a-9eb6-81eda79cb9e8' in 'an opportunity is open for this request and this property'
+   cause: AssertionError: {"match_id":"3dc64f1a-cf73-403e-93ca-f0d830aa9da9","decision":"APPROVED","opportunity":{"opportunity_id":"7964f5ef-4117-404b-91da-1caf4b10bef9","request_i
+   cause: E   AssertionError: assert 'd6a85611-26c0-470a-9eb6-81eda79cb9e8' in 'an opportunity is open for this request and this property'
+   cause: E   AssertionError: {"match_id":"3dc64f1a-cf73-403e-93ca-f0d830aa9da9","decision":"APPROVED","opportunity":{"opportunity_id":"7964f5ef-4117-404b-91da-1caf4b10bef9","reque
+== O2 an alias's opportunity is not counted [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 13.31s
+   FAILED test_mandatory_6_an_open_opportunity_on_an_alias_blocks_its_canonical
+   cause: AssertionError: {"match_id":"eb6786b5-7eea-48fa-ac9d-2e0e715b8193","decision":"APPROVED","opportunity":{"opportunity_id":"db2906bc-2cd3-4984-a913-6d488a0f5651","request_i
+   cause: E   AssertionError: {"match_id":"eb6786b5-7eea-48fa-ac9d-2e0e715b8193","decision":"APPROVED","opportunity":{"opportunity_id":"db2906bc-2cd3-4984-a913-6d488a0f5651","reque
+== O3 a closed opportunity is counted [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 13.79s
+   FAILED test_mandatory_6_after_close_the_other_match_is_approvable
+   cause: AssertionError: assert 409 == 200
+   cause: E   AssertionError: assert 409 == 200
+== O4 the index's refusal is not mapped [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 13.34s
+   FAILED test_mandatory_6_the_index_backstop_maps_to_the_same_refusal
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_opportunity_per_pair"
+== N1 the scope is not the offer's at approval [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 14.20s
+   FAILED test_the_scope_is_the_offers_permission_scope_at_approval
+   cause: AssertionError: assert 'SUMMARY_ONLY' == 'PROPERTY_DETAILS_ALLOWED'
+   cause: E   AssertionError: assert 'SUMMARY_ONLY' == 'PROPERTY_DETAILS_ALLOWED'
+== N2 the context is not the match's [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   2 warnings, 1 error in 0.53s
+   cause: E         ^
+   cause: E       '{}'::jsonb, CAST(:permission AS jsonb),
+   cause: E     File "/home/user/habdne/src/turab/services/match_review.py", line 448
+   cause: E   SyntaxError: f-string: valid expression required before '}'
+   cause: in import_module
+== N3 property-bound before offer-bound [src/turab/services/currency.py, 1 site(s)]  restored: sha256 5ce82e9e386214a3 identical
+   1 failed, 56 passed, 2 warnings in 14.13s
+   FAILED test_the_binding_recorded_is_offer_bound_before_property_bound
+   cause: AssertionError: assert UUID('ac0c0e2c-84cd-4298-8ad9-111d8e2b07e7') == UUID('860cb9e4-ddc1-4557-8904-6741bc51eefa')
+   cause: E   AssertionError: assert UUID('ac0c0e2c-84cd-4298-8ad9-111d8e2b07e7') == UUID('860cb9e4-ddc1-4557-8904-6741bc51eefa')
+== N4 no confirmation time [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 14.06s
+   FAILED test_approved_creates_one_opportunity_with_the_decided_content
+   cause: E   assert (None is not None)
+   cause: assert (None is not None)
+== W1 the scope is ignored [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   2 failed, 55 passed, 2 warnings in 13.87s
+   FAILED test_only_the_decided_codes_are_ever_shown[SUMMARY_ONLY]
+   FAILED test_the_stored_content_follows_the_scope_and_carries_no_private_value
+   cause: AssertionError: assert {'BUILT_AREA_...ROPERTY_TYPE'} == {'PROPERTY_TYPE'}
+   cause: AssertionError: assert {'format': 't... 'REQUIRED'}]} == {'format': 't... 'REQUIRED'}]}
+   cause: E   AssertionError: assert {'BUILT_AREA_...ROPERTY_TYPE'} == {'PROPERTY_TYPE'}
+   cause: E   AssertionError: assert {'format': 't... 'REQUIRED'}]} == {'format': 't... 'REQUIRED'}]}
+== W2 the rule version is not checked [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 14.28s
+   FAILED test_a_result_of_another_rule_version_is_not_shown
+   cause: AssertionError: assert ([{'code': 'L...ty': 'FAIL'}]) == ([], [])
+   cause: E   AssertionError: assert ([{'code': 'L...ty': 'FAIL'}]) == ([], [])
+== W3 a blocking unknown is a difference [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 13.65s
+   FAILED test_the_shapes_carry_no_value_delta_evidence_or_rule
+   cause: AssertionError: assert [{'code': 'BU...': 'UNKNOWN'}] == [{'code': 'BU...ity': 'FAIL'}]
+   cause: E   AssertionError: assert [{'code': 'BU...': 'UNKNOWN'}] == [{'code': 'BU...ity': 'FAIL'}]
+== W4 a FLEXIBLE pass is a reason [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   1 failed, 56 passed, 2 warnings in 13.56s
+   FAILED test_the_shapes_carry_no_value_delta_evidence_or_rule
+   cause: AssertionError: assert {'format': 't... 'FLEXIBLE'}]} == {'format': 't...'PREFERRED'}]}
+   cause: E   AssertionError: assert {'format': 't... 'FLEXIBLE'}]} == {'format': 't...'PREFERRED'}]}
+== W5 an area is shown at SUMMARY_ONLY [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 de28823610843f17 identical
+   2 failed, 55 passed, 2 warnings in 15.25s
+   FAILED test_only_the_decided_codes_are_ever_shown[SUMMARY_ONLY]
+   FAILED test_the_stored_content_follows_the_scope_and_carries_no_private_value
+   cause: AssertionError: assert {'LAND_AREA_M...ROPERTY_TYPE'} == {'PROPERTY_TYPE'}
+   cause: AssertionError: assert {'format': 't... 'REQUIRED'}]} == {'format': 't... 'REQUIRED'}]}
+   cause: E   AssertionError: assert {'LAND_AREA_M...ROPERTY_TYPE'} == {'PROPERTY_TYPE'}
+   cause: E   AssertionError: assert {'format': 't... 'REQUIRED'}]} == {'format': 't... 'REQUIRED'}]}
+== X1 the facts are not in the problem [src/turab/api/routes/parties.py, 1 site(s)]  restored: sha256 17c29f2387f18533 identical
+   21 failed, 36 passed, 2 warnings in 14.29s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[binding-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[offer-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[property-UPDATE
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[request-UPDATE
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[consent_revoked-PERMISSION-CONSENT_REVOKED-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_paused-OFFER_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_stale-OFFER_FRESHNESS-OFFER_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[offer_withdrawn-OFFER_STATUS-WITHDRAWN-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[property_stale-PROPERTY_FRESHNESS-PROPERTY_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_closed-REQUEST_STATUS-CLOSED-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_paused-REQUEST_STATUS-PAUSED-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[request_stale-REQUEST_FRESHNESS-REQUEST_STALE-NEEDS_CONFIRMATION]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[unavailable-AVAILABILITY-PROPERTY_UNAVAILABLE-INVALID]
+   FAILED test_a_fact_that_changed_after_the_run_refuses_the_approval[under_discussion-AVAILABILITY-UNDER_DISCUSSION-NEEDS_CONFIRMATION]
+   FAILED test_a_needs_confirmation_request_is_matched_eligible_but_not_approved
+   FAILED test_every_failing_fact_is_named_and_the_worst_decides
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[FRESHNESS-NEEDS_CONFIRMATION-FRESHNESS_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[HARD-REJECTED-HARD_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[INFORMATION-NEED_MORE_INFORMATION-INFORMATION_GATE]
+   FAILED test_mandatory_2_a_gate_not_pass_is_refused_before_any_write[PERMISSION-NEEDS_CONFIRMATION-PERMISSION_GATE]
+   FAILED test_mandatory_6_a_match_on_a_property_that_is_now_an_alias_is_refused
+   cause: E   KeyError: 'field_errors'
+   cause: KeyError: 'field_errors'
+
+SURVIVING MUTATIONS: N2 the context is not the match's
+exit 0

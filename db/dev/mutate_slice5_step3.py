@@ -100,7 +100,9 @@ MUTATIONS = [
      '             "scope": checked.sharing_scope,', '             "scope": "SUMMARY_ONLY",'),
     ("N2 the context is not the match's", SVC,
      "                   m.commercial_context_snapshot, CAST(:permission AS jsonb),",
-     "                   '{}'::jsonb, CAST(:permission AS jsonb),"),
+     # Inside an f-string: the braces are doubled. The first run's form,
+     # '{}', did not compile, and was reported as a survivor (first-run record).
+     "                   '{{}}'::jsonb, CAST(:permission AS jsonb),"),
     ("N3 property-bound before offer-bound", CUR,
      'return (binding["bound_to"] != "OFFER", binding["bound_at"],',
      'return (binding["bound_to"] == "OFFER", binding["bound_at"],'),
