@@ -271,6 +271,27 @@ class CommandService:
                         "not your offer")
         return ALLOW_DECISION
 
+    def authorize_match_exists(self, match_id: uuid.UUID, operation_id: str) -> Decision:
+        """Slice 5 step 2: a staff command on a match. An unknown id is
+        refused as `OBJECT_NOT_AUTHORIZED` and RECORDED (R6.3a), the answer
+        and the record `AccessService.read_match` gives the read path, so
+        the read and the command answer "not there" alike. Read on the READ
+        session; a match is never deleted, so the answer cannot go stale
+        before the command runs."""
+        from .access import MATCH_KIND
+
+        exists = self._read_session.execute(
+            text("SELECT 1 FROM turab.match_candidates WHERE match_id = :m"),
+            {"m": match_id}).scalar_one_or_none()
+        if exists is None:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind=MATCH_KIND, resource_id=match_id)
+            return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not an available match")
+        return ALLOW_DECISION
+
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:
         """For commands whose object does not exist yet.
 

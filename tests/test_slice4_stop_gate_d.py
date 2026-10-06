@@ -65,12 +65,31 @@ def _gen(tree: pathlib.Path, check: bool = True) -> subprocess.CompletedProcess:
                           capture_output=True, text=True)
 
 
+def _recorded_commit() -> str:
+    """The commit the committed STOP GATE D document is bound to."""
+    text = (ROOT / "docs/gate/SLICE_4_STOP_GATE_D.md").read_text()
+    return re.search(r"The JUnit run is recorded at commit `([0-9a-f]{40})`", text).group(1)
+
+
 @pytest.fixture
 def tree(tmp_path) -> pathlib.Path:
+    """The copy's `src` is the tree STOP GATE D records, taken from the commit
+    its document is bound to; the rest is the current tree.
+
+    STOP GATE D is the record of the Slice 4 tree and is not regenerated in
+    Slice 5 (review of f5a9d88, decision 2). Its condition 6 requires NO
+    writer of `match_reviews`, and Slice 5 step 2 added one, the review
+    command. A copy of the current `src` therefore has no passing baseline,
+    and every experiment below would fail in its fixture rather than prove
+    a refusal. Until then the copy was the current `src`, which equalled the
+    recorded one: `git diff 333b5f7 29a0f30 -- src` is empty."""
     copy = tmp_path / "tree"
     ignore = shutil.ignore_patterns("__pycache__", ".pytest_cache")
-    for d in ("src", "tests", "db", "docs/gate"):
+    for d in ("tests", "db", "docs/gate"):
         shutil.copytree(ROOT / d, copy / d, ignore=ignore)
+    archive = subprocess.run(["git", "archive", _recorded_commit(), "src"], cwd=ROOT,
+                             capture_output=True, check=True).stdout
+    subprocess.run(["tar", "-x", "-C", str(copy)], input=archive, check=True)
     shutil.copy(ROOT / "alembic.ini", copy / "alembic.ini")
     _bind(copy, _report([_case(n) for n in sorted(stop_gate_d_evidence.mapped_names())]))
     written = _gen(copy, check=False)

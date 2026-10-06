@@ -1149,16 +1149,22 @@ def _writers(table):
 
 
 def test_no_path_writes_a_review_or_an_opportunity_and_matching_writes_no_task():
-    """Acceptance condition 6 and D1, computed from the tree: no file inserts
-    into `match_reviews` or `opportunities`; the three match tables are
-    written by the run alone; neither the run nor the matching package
-    inserts a task."""
-    assert _writers("match_reviews") == [] and _writers("opportunities") == []
+    """Acceptance condition 6 and D1, computed from the tree: neither the run
+    nor the matching package inserts into `match_reviews`, `opportunities`
+    or `tasks`; the three match tables are written by the run alone.
+
+    Slice 5 step 2 (review of 29a0f30) opened `match_reviews` to the review
+    command, as the Slice 5 plan asked. Until then this test required NO
+    writer at all; the matching-side claim is unchanged, and the current
+    writers are pinned below so that any further one fails here too."""
     run = "src/turab/services/matching_run.py"
+    for table in ("match_reviews", "opportunities", "tasks"):
+        assert not [w for w in _writers(table)
+                    if w == run or w.startswith("src/turab/matching/")], table
+    assert _writers("match_reviews") == ["src/turab/services/match_review.py"]
+    assert _writers("opportunities") == []
     for table in ("match_candidates", "match_criterion_results", "match_diagnostic_runs"):
         assert _writers(table) == [run], table
-    assert not [w for w in _writers("tasks")
-                if w == run or w.startswith("src/turab/matching/")]
 
 
 @pytest.mark.parametrize("label, setup, body, status", [

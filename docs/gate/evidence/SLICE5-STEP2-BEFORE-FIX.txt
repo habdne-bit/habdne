@@ -1,0 +1,96 @@
+TURAB — Slice 5 step 2: POST /matches/{match_id}/review, BEFORE the change
+==========================================================================
+Recorded          : 2026-10-06 10:43:24 UTC
+Base commit       : 29a0f30d4b9c06056534851133b3bc919c48ba3d (plan revision 6; no step-2 code)
+Measured in       : an isolated git worktree at the base commit (the working tree of
+                    the repository was not used); .venv symlinked
+Source fingerprint: 98f8c4be358bcd7a10bea368c87734436d44eb9626fe9bd57a4cd90beb8fe99f
+                    (db/dev/source_fingerprint.py, computed in the worktree)
+Database          : the suite's own, at alembic head 0006
+
+Discipline note (stated, not hidden): the step-2 code was written BEFORE this
+record was taken. The record is therefore taken after the fact, at the base
+commit, in a worktree that holds none of the new code. It measures the same
+thing a record taken first would have: what the shipped test file and the
+route do without the change.
+
+A. The shipped test file, run at the base commit
+------------------------------------------------
+tests/test_slice5_step2.py sha256: c0afd6e34693ea70313183e4a4d59204ae291c6a7955cfc1ae6641e814668555
+(the file of the step-2 commit, copied into the worktree unchanged)
+
+  ==================================== ERRORS ====================================
+  _________________ ERROR collecting tests/test_slice5_step2.py __________________
+  ImportError while importing test module '<worktree>/tests/test_slice5_step2.py'.
+  Hint: make sure your test modules/packages have valid Python names.
+  Traceback:
+  /usr/lib/python3.12/importlib/__init__.py:90: in import_module
+      return _bootstrap._gcd_import(name[level:], package, level)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  tests/test_slice5_step2.py:40: in <module>
+      from turab.services import match_review
+  E   ImportError: cannot import name 'match_review' from 'turab.services' (<worktree>/src/turab/services/__init__.py)
+  .venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  .venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  =========================== short test summary info ============================
+  ERROR tests/test_slice5_step2.py
+  !!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+  2 warnings, 1 error in 0.92s
+
+Result: the module cannot be collected; 0 of its tests run. The service
+`turab.services.match_review` does not exist at the base commit.
+
+B. The route itself, at the base commit (probe, not shipped)
+------------------------------------------------------------
+Because A stops at the import, a probe that does NOT import the new module
+was run in the same worktree: one real ELIGIBLE match per case from the
+Slice 4 run, then POST /matches/{match_id}/review as ACC_REVIEWER with an
+Idempotency-Key, then a count of match_reviews and tasks for that match.
+Probe file: tests/test_probe_step2_before.py (worktree only), sha256 3744f2f97e9994ff8bfea5e448dc43591da61bedea307e4aec3ef95f9d5cbf96
+
+  PROBE REJECTED: status=404 body={"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"} match_reviews=0 tasks=0
+  PROBE NEED_MORE_INFORMATION: status=404 body={"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"} match_reviews=0 tasks=0
+  PROBE APPROVED: status=404 body={"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"} match_reviews=0 tasks=0
+  3 passed, 2 warnings in 3.69s
+
+Result: the operation postMatchesMatchIdReview is ABSENT. All three decisions
+get the generic 404 NOT_FOUND of an unknown path; nothing is written. None
+of REVIEW_REASON_REQUIRED, REVIEW_REASON_NOT_ALLOWED, MATCH_REVIEW_DECIDED,
+or the NMI task exists.
+
+The worktree was removed after this record.
+
+C. The probe source (sha256 above), verbatim
+--------------------------------------------
+  """BEFORE-FIX probe at 29a0f30: what POST /matches/{id}/review does today."""
+  import uuid
+  import pytest
+  from fastapi.testclient import TestClient
+  from tests.test_slice4_step7 import _one, _offer, _request, _criterion, _run, _property
+  
+  
+  @pytest.fixture
+  def client(engine):
+      from turab.app import create_app
+      with TestClient(create_app(engine=engine)) as c:
+          yield c
+  
+  
+  @pytest.mark.parametrize("body", [{"decision": "REJECTED", "reason_code": "OTHER"},
+                                    {"decision": "NEED_MORE_INFORMATION",
+                                     "reason_code": "DOCUMENT_NOT_KNOWN"},
+                                    {"decision": "APPROVED"}])
+  def test_probe(client, engine, ids, body):
+      req = _request(engine, ids)
+      _criterion(engine, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
+      prop = _property(engine)
+      _offer(engine, ids, prop)
+      [m] = _run(client, ids, req, [prop]).json()["matches"]
+      r = client.post(f"/matches/{m['match_id']}/review", json=body,
+                      headers={"Authorization": f"Bearer {ids.ACC_REVIEWER}",
+                               "Idempotency-Key": str(uuid.uuid4())})
+      reviews = _one(engine, "SELECT count(*) FROM turab.match_reviews WHERE match_id=:m",
+                     m=m["match_id"])
+      tasks = _one(engine, "SELECT count(*) FROM turab.tasks WHERE match_id=:m", m=m["match_id"])
+      print(f"\nPROBE {body['decision']}: status={r.status_code} body={r.text} "
+            f"match_reviews={reviews} tasks={tasks}")

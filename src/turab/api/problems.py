@@ -99,6 +99,19 @@ class ProblemCode(StrEnum):
     MATCHING_POLICY_NOT_ACTIVE = "MATCHING_POLICY_NOT_ACTIVE"
     #: The active matching policy is not one this engine implements:
     MATCHING_POLICY_NOT_SUPPORTED = "MATCHING_POLICY_NOT_SUPPORTED"
+    #: Slice 5 step 2 (G5-3, decided (a) in the review of 29a0f30). The
+    #: review's reason is required (REJECTED, NEED_MORE_INFORMATION), or
+    #: forbidden (APPROVED), or outside what the decision admits: 422, input.
+    REVIEW_REASON_REQUIRED = "REVIEW_REASON_REQUIRED"
+    REVIEW_REASON_NOT_ALLOWED = "REVIEW_REASON_NOT_ALLOWED"
+    #: The match's latest review is REJECTED or APPROVED, or an opportunity
+    #: was created from it: a later review is refused. 409, state.
+    MATCH_REVIEW_DECIDED = "MATCH_REVIEW_DECIDED"
+    #: Step 2 ONLY. APPROVED is a valid decision in the contract; its
+    #: execution (the currency check and the opportunity) is step 3. 409: the
+    #: body is valid and nothing is wrong with the match; the decision is not
+    #: executed yet. It is NOT a gate failure, and is removed in step 3.
+    REVIEW_DECISION_NOT_YET_AVAILABLE = "REVIEW_DECISION_NOT_YET_AVAILABLE"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -138,6 +151,10 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.MATCHING_POLICY_VERSION_REFUSED: (422, "Matching policy version refused"),
     ProblemCode.REQUEST_NOT_MATCHABLE: (409, "Request not matchable"),
     ProblemCode.MATCHING_INPUT_REFUSED: (422, "Matching input refused"),
+    ProblemCode.REVIEW_REASON_REQUIRED: (422, "Review reason required"),
+    ProblemCode.REVIEW_REASON_NOT_ALLOWED: (422, "Review reason not allowed"),
+    ProblemCode.MATCH_REVIEW_DECIDED: (409, "Match review is final"),
+    ProblemCode.REVIEW_DECISION_NOT_YET_AVAILABLE: (409, "Review decision not yet available"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),

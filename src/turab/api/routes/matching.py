@@ -17,9 +17,9 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ...services import matching_run
+from ...services import match_review, matching_run
 from ...services.access import AccessDenied
 from ..deps import Access, Command
 from ..problems import ProblemCode, coded, for_denial, trace_id_of
@@ -122,3 +122,55 @@ def read_latest_diagnostic(request: Request, request_id: uuid.UUID, access: Acce
     if not isinstance(result, dict):
         return for_denial(result.reason, trace_id_of(request), customer_scoped=False)
     return ExactJSONResponse(content=result)
+
+
+# --- Slice 5 step 2: the human review ----------------------------------------
+
+REVIEW = "postMatchesMatchIdReview"
+
+
+class MatchReviewInput(BaseModel):
+    """`MatchReviewInput`, field for field (closed in the contract). The
+    rules that depend on the decision (G5-3) are the service's, so that they
+    answer with their own codes. `reason_code` and `reason_text` are strings
+    in the contract: absent is allowed, an explicit null is not."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    decision: str = Field(pattern="^(APPROVED|REJECTED|NEED_MORE_INFORMATION)$")
+    reason_code: str | None = None
+    reason_text: str | None = None
+
+    @field_validator("reason_code", "reason_text", mode="before")
+    @classmethod
+    def _a_string_not_null(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("a string; omit the field rather than send null")
+        return value
+
+
+@router.post("/matches/{match_id}/review", operation_id=REVIEW)
+def review_match(request: Request, match_id: uuid.UUID, body: MatchReviewInput,
+                 command: Command):
+    """The human decision on one match (plan revision 6, step 2). REJECTED and
+    NEED_MORE_INFORMATION are executed; APPROVED is refused until step 3 with
+    `REVIEW_DECISION_NOT_YET_AVAILABLE`, writing nothing."""
+    for decision in (command.authorize(REVIEW),
+                     command.authorize_staff_only(REVIEW, "a match review is a staff action"),
+                     command.authorize_match_exists(match_id, REVIEW)):
+        if not decision.allowed:
+            return for_denial(decision.reason, trace_id_of(request),
+                              customer_scoped=False, detail=decision.detail)
+
+    def prepare(session):
+        return match_review.prepare(
+            session, match_id=match_id, decision=body.decision,
+            reason_code=body.reason_code, reason_text=body.reason_text)
+
+    def handler(session, prepared):
+        return 200, match_review.record(
+            session, prepared, reviewer_account_id=command.subject.account_id)
+
+    return _run(request, command, REVIEW, f"POST /matches/{match_id}/review",
+                body.model_dump(mode="json", exclude_unset=True), handler, 200,
+                extra_errors=match_review.ReviewRefused, prepare=prepare)

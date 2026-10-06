@@ -761,6 +761,42 @@ RULES: tuple[Rule, ...] = (
          ("test_a_match_read_is_recorded", "test_a_diagnostic_read_is_recorded",
           "test_an_unknown_match_is_refused_as_every_staff_read",
           "test_the_diagnostic_of_an_unknown_request_is_refused_as_every_staff_read")),
+    # --- Slice 5, step 2: the human match review ---------------------------
+    Rule("S5-2 / RFC-001 §2.1 / R6.3a",
+         "Only ADMIN and REVIEWER review a match (maker–checker: not the OPERATOR); "
+         "the reviewer is the subject; an unknown match id is 403 and recorded",
+         ("test_only_admin_and_reviewer_may_review", "test_admin_and_reviewer_may_review",
+          "test_an_unknown_match_is_403_and_recorded")),
+    Rule("S5-2 / G5-3 (a)",
+         "REJECTED and APPROVED are final, NEED_MORE_INFORMATION is not; a later "
+         "review of a decided match is 409; the input is narrowed before any write "
+         "and consumes no key",
+         ("test_a_malformed_review_is_refused_before_any_write",
+          "test_rejected_refuses_a_reason_outside_its_categories",
+          "test_rejected_is_final", "test_a_match_with_an_opportunity_is_decided",
+          "test_nmi_is_not_final", "test_a_refused_review_does_not_consume_its_key")),
+    Rule("S5-2 / G5-4 (a) / R6-1",
+         "Each NEED_MORE_INFORMATION review raises one specific task; an unspecific "
+         "reason, and ACTIONABLE_UNKNOWN without a specific next action, are refused",
+         ("test_nmi_raises_one_task_of_the_reasons_type",
+          "test_two_nmi_reviews_give_two_tasks_each_linked_to_its_own_review",
+          "test_nmi_refuses_a_reason_that_names_no_specific_task",
+          "test_actionable_unknown_is_refused_without_a_specific_next_action",
+          "test_actionable_unknown_refuses_every_unspecific_next_action")),
+    Rule("S5-2 / §3.1 [R3-1]",
+         "The match is locked first and each review is stamped strictly after every "
+         "earlier one; the waiting review sees the first",
+         ("test_an_equal_clock_reading_still_stamps_strictly_after",
+          "test_a_previous_stamp_in_the_future_is_still_exceeded",
+          "test_a5_the_waiting_review_committed_last_is_the_latest",
+          "test_a_review_waiting_behind_a_rejection_is_refused_as_decided",
+          "test_a3_twenty_sequences_end_with_the_last_decision")),
+    Rule("S5-2 / step boundary",
+         "In step 2, APPROVED is refused with its own code and writes nothing; no "
+         "path writes an opportunity, and only the review command writes a review",
+         ("test_approved_is_refused_in_step_2_as_not_yet_available",
+          "test_only_the_review_command_writes_match_reviews_and_nothing_writes_opportunities",
+          "test_step_2_never_writes_an_opportunity")),
 )
 
 
