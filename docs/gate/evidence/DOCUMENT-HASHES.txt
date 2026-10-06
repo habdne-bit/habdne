@@ -649,3 +649,9 @@ SLICE_5_PLAN.md changed revision: 2 -> 3 ([R3-1]..[R3-5]); ENVIRONMENT_NOTES.md 
 docs/gate/SLICE_5_PLAN.md                                      rev4  c14d65fab2a7d9ccd986ffac8e74f6ba216619050cfdfd8729fc6330bbafc309
 docs/gate/ENVIRONMENT_NOTES.md                                 EN-02 5da011ca3529d7dc5017da794700937d7cb1bcb04bc35e597447562da0147358
 SLICE_5_PLAN.md changed revision: 3 -> 4 ([R4-1] event stamps in 0006 rules 5-6; [R4-2] withhold on changed field).
+
+--- Slice 5 step 1: migration 0006 (G5-12) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   e98cc01d2bfb8fe5f735d4b3f2c7d9eea18997a28966bb01ed26b60c9eb23332
+docs/gate/evidence/SLICE5-STEP1-0006-BEFORE-FIX.txt            new   5be2c2c1f3d05e133671fd3eb21eb095281c50379216bffea7dda50ff82c43cf
+docs/gate/evidence/SLICE5-STEP1-0006-MUTATIONS-FIRST-RUN.txt   new   cab3491e3c856afac3fd30fbad58d174b1cde93b51cf29f07c35084874351032
+docs/gate/evidence/SLICE5-STEP1-0006-MUTATIONS.txt             new   83c0bbb9c6638596a2884334354c4ed0b27e5b191b752bbd736b8a8c6f2906fe
