@@ -671,3 +671,9 @@ SLICE_5_PLAN.md changed revision: 4 -> 5 (step 1 closed; G5-12 wording; STOP GAT
 docs/gate/SLICE_5_PLAN.md                                      rev6  6433da6ebdce21c9cde6862a5fd8afb79d89b1a7d83667ca9d1d792a9011dfba
 docs/gate/SLICE_5_STEP1_DELIVERY.md                            ---   fe7bbdea0d089973c237ebb1a62b856e3e59fe1765ea57a012ca9f569eab97e6
 SLICE_5_PLAN.md changed revision: 5 -> 6.
+
+--- Slice 5 step 2: the match review, REJECTED and NEED_MORE_INFORMATION (review of 29a0f30) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   2bad3923d5395e358a2cd72d54e4692017850682be3ea1ce281494dad0da5150
+docs/gate/evidence/SLICE5-STEP2-BEFORE-FIX.txt                 new   5e03dc0e2a62cbb5d7e298bd65af993d1dc6ee99ad11662d34f9da065d2b705e
+docs/gate/evidence/SLICE5-STEP2-MUTATIONS-FIRST-RUN.txt        new   5c990bea8a1fb68e9f34a838cc39aec78f38160cd4e8bd8da902b0f21466b554
+docs/gate/evidence/SLICE5-STEP2-MUTATIONS.txt                  new   ac8c48e7c27ccadb96a2195c2eaf9ac24f35c97634bc0bea52161b0f81254d88
