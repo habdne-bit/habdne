@@ -699,3 +699,6 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   36645c02000
 docs/gate/evidence/SLICE5-STEP3-BEFORE-FIX.txt                 new   d0ad2ef257c2b7fc5d75f2be817392c66f30460304594ceb0758b912b4ae94c2
 docs/gate/evidence/SLICE5-STEP3-MUTATIONS-FIRST-RUN.txt        new   45fadbc21d4ad4af68a92bed3fd4e9ad8a9ae82abb232d7538fb77aaf8897064
 docs/gate/evidence/SLICE5-STEP3-MUTATIONS.txt                  new   1e563fb8a519453acbed188affb3cb22af747c37d5e80457a7bc2f80fdda6374
+docs/gate/SLICE_5_STEP3_DELIVERY.md                            new   c41e11dae2b95bdf155e6cb21082d978abdfef8dc0ce24b6ff8eed8d7205f865
+docs/gate/SLICE_5_PLAN.md                                      rev10 4325bf2a03a1a84620941ac1fa4a3de08d8c00b58773977bcf32663868b18dfe
+SLICE_5_PLAN.md changed revision: 9 -> 10 (review of 60b0152: G5-5 decided (a), G5-6 SUMMARY_ONLY branch; step 3 delivered).

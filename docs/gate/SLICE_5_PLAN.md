@@ -1,12 +1,13 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 9**
+## Implementation plan — **revision 10**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
-(the review, without APPROVED) is CLOSED at `1e0d919`. No other step's
-code exists. Slice 4 kept `match_reviews` and `opportunities` closed by an
-approved boundary (G4-15 D1). Step 2 opens `match_reviews` to the review
-command only; `opportunities` stays without a writer until step 3.
+(the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
+the one opportunity) is delivered for review. No other step's code exists.
+Slice 4 kept `match_reviews` and `opportunities` closed by an approved
+boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
+step 3 opens `opportunities` to the APPROVED review only (H03).
 
 (Revisions 1–6 carried the sentence "No code for this slice exists, and
 none is written until this plan is approved". It stopped being true when
@@ -184,6 +185,28 @@ What stands:
 
 **Step 3 is not authorized:** it waits on G5-5.
 
+**The review of `60b0152`. G5-5 decided (a); step 3 authorized.** The
+reviewer could not check `60b0152` itself (it was not attached); the
+acceptance of step 2 rests on the bundle of `1e0d919`. The decision:
+
+| Item | Decision |
+|---|---|
+| `sharing_scope` | the evaluated offer's `permission_scope` as it is at approval, recorded with the permission snapshot |
+| `why_real`, `known_differences` | the render-derivability rule, by the fixed list by criterion code and scope; a code's presence never depends on `evidence_claim_id` |
+| SUMMARY_ONLY | `CustomerPropertyView` with four fields only: id, type, `supply_mode`, `canonical_location_id`; no area. This settles the branch of G5-6 that G5-5 needs; the customer-response tests stay step 4's |
+| a field changed after the evaluation | the entry is withheld from the customer response when the current value differs from the match snapshot's, even with the same outcome; the stored `why_real` and the internal view are unchanged |
+| the initial content | the plan's shapes, the evaluated context copied, `current_offer_id` = `evaluated_offer_id`, the binding order, NEW and VALID, the approval time in `last_confirmed_at` |
+
+- **Scope of step 3:** APPROVED, the check of the facts now, and one
+  opportunity with its uniqueness and concurrency guards. Not share, close
+  or the customer view.
+- **Conditional:** the proof that no private expectation or claim leaks,
+  and of the withholding, rests on the HTTP tests in their planned places
+  (step 4).
+- **Standing:** G5-10 and G4-5R open; K06 UNPROVEN.
+
+Step 3's delivery: `SLICE_5_STEP3_DELIVERY.md`.
+
 **Revision history**
 
 | rev | commit | what changed |
@@ -196,7 +219,8 @@ What stands:
 | 6 | `29a0f30` | the review of `2bed7c8` recorded; [R6-1] G5-4: ACTIONABLE_UNKNOWN is refused when the stored `next_action` is absent or of type OTHER, with its tests |
 | 7 | `7e84702` | the review of `29a0f30` recorded: G5-3 decided (a), with its input narrowing and codes; [R6-1] and the AST correction accepted; step 2 authorized and delivered (`SLICE_5_STEP2_DELIVERY.md`) |
 | 8 | `1e0d919` | the review of `7e84702` recorded: the temporary APPROVED code and STOP GATE D's status accepted; the Idempotency-Key race with a final decision measured and fixed (step 2 delivery §10) |
-| 9 | the commit that adds this revision | the review of `1e0d919` recorded: step 2 CLOSED (step 2 delivery §11); step 3 waits on G5-5 |
+| 9 | `60b0152` | the review of `1e0d919` recorded: step 2 CLOSED (step 2 delivery §11); step 3 waits on G5-5 |
+| 10 | the commit that adds this revision | the review of `60b0152` recorded: G5-5 decided (a), with G5-6's SUMMARY_ONLY branch (four fields); step 3 authorized and delivered (`SLICE_5_STEP3_DELIVERY.md`) |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -980,6 +1004,11 @@ non-opportunity". The input carries a `reason_code` and nothing else.
 - **Decision asked:** the mapping, and (a) or (b).
 
 ### G5-5 · What a created opportunity contains
+
+> **Decided (a) in the review of `60b0152`,** item by item as recorded at the
+> top of this plan, with SUMMARY_ONLY rendering the four fields. Implemented
+> for the stored opportunity in step 3 (`SLICE_5_STEP3_DELIVERY.md`); the
+> customer render and its withholding are step 4's.
 `sharing_scope` and `why_real` are NOT NULL. `MatchReviewInput` carries
 neither.
 
@@ -1154,6 +1183,10 @@ silently.
 table; the shapes of `why_real` and `known_differences`.
 
 ### G5-6 · The customer view against the frozen contract (F5-1, F5-2, F5-3)
+
+> **Its SUMMARY_ONLY branch decided in the review of `60b0152`:** the four
+> fields, no area. The rest of G5-6 is as accepted in the review of
+> `288bfdb`, and its tests are step 4's.
 
 > **Direction accepted in the review of `288bfdb`:** G5-6 (a), the frozen contract first, with an explicit addendum for R8. This does
 > not authorize code: the approval rules, the transitions and the
@@ -1803,7 +1836,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
 | 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **CLOSED** at `1e0d919` (`SLICE_5_STEP2_DELIVERY.md` §11); the key race of the review of `7e84702` fixed (§10 there) |
-| 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5, §3.7 |
+| 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **delivered** for review (`SLICE_5_STEP3_DELIVERY.md`) |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
