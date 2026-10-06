@@ -1,10 +1,16 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 6**
+## Implementation plan — **revision 7**
 
-**Status:** submitted for review. **No code for this slice exists, and none
-is written until this plan is approved.** Slice 4 kept `match_reviews` and
-`opportunities` closed by an approved boundary (G4-15 D1). Opening them is
-the decision this plan asks for.
+**Status:** submitted for review. **Code is written one approved step at a
+time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
+(the review, without APPROVED) is delivered for review. No other step's
+code exists. Slice 4 kept `match_reviews` and `opportunities` closed by an
+approved boundary (G4-15 D1). Step 2 opens `match_reviews` to the review
+command only; `opportunities` stays without a writer until step 3.
+
+(Revisions 1–6 carried the sentence "No code for this slice exists, and
+none is written until this plan is approved". It stopped being true when
+step 1 was delivered; this revision corrects it.)
 
 **The review of revision 1** authorized step 0 only: the PostgreSQL
 measurements of §6.4, with no code change. It asked revision 2 to settle
@@ -116,6 +122,31 @@ mutations. It re-ran neither the suite nor the gate.
 
 **Not authorized:** step 2. K06 stays UNPROVEN, and G4-5R open.
 
+**The review of revision 6 (`29a0f30`).** The reviewer matched the
+digests and blob ids of the four attachments. Step 1's closure stands.
+- **Accepted:** the AST correction of the step 1 note (§8.1 there), and
+  [R6-1] at G5-4.
+- **G5-3 decided, option (a):**
+  - **sequence:** NEED_MORE_INFORMATION is not final; REJECTED and
+    APPROVED are final; a later review is 409 `MATCH_REVIEW_DECIDED`,
+    consistent with Slice 3's `_OPEN_MATCHES`;
+  - **input:** the narrowing is approved. A reason is required for
+    REJECTED and NMI, and forbidden for APPROVED. REJECTED takes the
+    categories MATCH, FRESHNESS and PERMISSION, or `OTHER`. NMI takes only
+    a reason that yields a specific task (G5-4, [R6-1]). A violation is 422,
+    before any write and before the key is consumed;
+  - **codes:** the list is approved. The approval and opportunity codes
+    belong to step 3, and are not attributed to step 2's tests. An unknown
+    match id stays 403.
+- **Step 2 authorized, within its limit:** REJECTED, NMI and its task, and
+  §3.1's ordering rule. APPROVED stays refused until step 3, by a typed
+  refusal with no footprint. Its test must show that APPROVED is a valid
+  decision of the contract, not executed in this step, and is not classed
+  as a gate failure.
+- **Still open:** G5-5, G5-10, G4-5R. K06 stays UNPROVEN.
+
+Step 2's delivery: `SLICE_5_STEP2_DELIVERY.md`.
+
 **Revision history**
 
 | rev | commit | what changed |
@@ -125,7 +156,8 @@ mutations. It re-ran neither the suite nor the gate.
 | 3 | `3a797d8` | the review of `288bfdb` recorded; [R3-1] a strictly increasing review stamp (§3.1); [R3-2] one currency table, §3.7, used by approval, revalidate and share; [R3-3] the exact text of `0006` and the B-case attribution (G5-12); [R3-4] G5-13 split into (a) documentation, done as EN-02, and (b) remedy and enforcement point, with K06 UNPROVEN; [R3-5] LOCATION removed from the display list (G5-5) |
 | 4 | `6ba73ce` | the review of `3a797d8` recorded, and its acceptances marked in place; [R4-1] G5-12 rules 5 and 6 rewritten as event stamps, set only on their own edge, with a test table for both closing edges; [R4-2] G5-5: an entry is withheld at render when its field's current value differs from the snapshot's |
 | 5 | `2bed7c8` | the review of `f5a9d88` recorded: step 1 CLOSED; G5-12's "one function and two triggers" corrected to two functions and two triggers; STOP GATE D not regenerated in Slice 5, STOP GATE E bound to Slice 5's run (§6.3); the input-hardening import guard (§8) |
-| 6 | the commit that adds this revision | the review of `2bed7c8` recorded; [R6-1] G5-4: ACTIONABLE_UNKNOWN is refused when the stored `next_action` is absent or of type OTHER, with its tests |
+| 6 | `29a0f30` | the review of `2bed7c8` recorded; [R6-1] G5-4: ACTIONABLE_UNKNOWN is refused when the stored `next_action` is absent or of type OTHER, with its tests |
+| 7 | the commit that adds this revision | the review of `29a0f30` recorded: G5-3 decided (a), with its input narrowing and codes; [R6-1] and the AST correction accepted; step 2 authorized and delivered (`SLICE_5_STEP2_DELIVERY.md`) |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -756,6 +788,10 @@ follows from that:
 defined, compared within one policy.
 
 ### G5-3 · The sequence of reviews on one match, and the input
+
+> **Decided (a) in the review of `29a0f30`,** with the input narrowing and
+> the codes below. The approval and opportunity codes are step 3's.
+> Implemented for REJECTED and NMI in step 2 (`SLICE_5_STEP2_DELIVERY.md`).
 **Sequence.** Slice 3's `_OPEN_MATCHES` (`services/identity.py`) already
 treats a match as closed when its latest review is REJECTED, or when an
 opportunity was created from it.
@@ -1727,7 +1763,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 |---|---|---|
 | 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
 | 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
-| 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3, G5-4 |
+| 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **delivered** for review (`SLICE_5_STEP2_DELIVERY.md`) |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5, §3.7 |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |

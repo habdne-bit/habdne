@@ -677,3 +677,6 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   2bad3923d53
 docs/gate/evidence/SLICE5-STEP2-BEFORE-FIX.txt                 new   5e03dc0e2a62cbb5d7e298bd65af993d1dc6ee99ad11662d34f9da065d2b705e
 docs/gate/evidence/SLICE5-STEP2-MUTATIONS-FIRST-RUN.txt        new   5c990bea8a1fb68e9f34a838cc39aec78f38160cd4e8bd8da902b0f21466b554
 docs/gate/evidence/SLICE5-STEP2-MUTATIONS.txt                  new   ac8c48e7c27ccadb96a2195c2eaf9ac24f35c97634bc0bea52161b0f81254d88
+docs/gate/SLICE_5_STEP2_DELIVERY.md                            new   43377f4812fc957d32c99a958cd4a54e774637d42b272b14f6cf807c820ff887
+docs/gate/SLICE_5_PLAN.md                                      rev7  08d021d33d9d8ca65cd0595ab00dfee50c04f56ed6d4a4292bb04151518c0403
+SLICE_5_PLAN.md changed revision: 6 -> 7 (review of 29a0f30: G5-3 decided (a); step 2 authorized and delivered; stale status sentence corrected).
