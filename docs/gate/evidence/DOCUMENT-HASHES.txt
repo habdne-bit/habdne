@@ -666,3 +666,8 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   1d8f7d4b9fc
 docs/gate/evidence/MUTATE-INPUT-HARDENING-IMPORT-BEFORE-FIX.txt new   cad57eb09ac95cd9759b13e2ae3192a3652dbb191cb1b1591ddb7e721ad84735
 docs/gate/evidence/MUTATE-INPUT-HARDENING-RERUN-AFTER-GUARD.txt new   bb466419b2a2f6c84316c88aba6c800470a26e71512bd3c729ed5593cd202b22
 SLICE_5_PLAN.md changed revision: 4 -> 5 (step 1 closed; G5-12 wording; STOP GATE D/E decisions).
+
+--- Review of 2bed7c8: plan revision 6 ([R6-1] ACTIONABLE_UNKNOWN); step 1 note wording narrowed ---
+docs/gate/SLICE_5_PLAN.md                                      rev6  6433da6ebdce21c9cde6862a5fd8afb79d89b1a7d83667ca9d1d792a9011dfba
+docs/gate/SLICE_5_STEP1_DELIVERY.md                            ---   fe7bbdea0d089973c237ebb1a62b856e3e59fe1765ea57a012ca9f569eab97e6
+SLICE_5_PLAN.md changed revision: 5 -> 6.

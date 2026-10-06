@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 5**
+## Implementation plan — **revision 6**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Slice 4 kept `match_reviews` and
@@ -98,6 +98,24 @@ results of our runs, bound to the tree, not independent checks.
 - step 2 is not authorized: G5-3 and its inputs must be decided first;
 - G4-5R is open, and STOP GATE E is for SALE.
 
+**The review of `2bed7c8`.** The maintenance change is accepted, and step
+1's closure stands. The reviewer compared the direct run with the
+2026-09-24 record: same failure counts, same failing tests, for all 16
+mutations. It re-ran neither the suite nor the gate.
+
+**Two corrections it asked for:**
+- **The step 1 delivery note over-stated the AST test.** The test forbids a
+  call standing as a module-level STATEMENT. It does not forbid a call
+  inside a module-level assignment. The behavioural import test is the
+  evidence that no effect appears. The wording is narrowed in the note
+  (§8.1).
+- **G5-4, ACTIONABLE_UNKNOWN.** The table took the task type from the
+  match's stored `next_action`. But the pinned `action.next@1` can return
+  `OTHER`, and G5-4 itself forbids an unspecific task. **[R6-1]**, at G5-4,
+  answers it.
+
+**Not authorized:** step 2. K06 stays UNPROVEN, and G4-5R open.
+
 **Revision history**
 
 | rev | commit | what changed |
@@ -106,7 +124,8 @@ results of our runs, bound to the tree, not independent checks.
 | 2 | `288bfdb` | step 0 measured (§6.4, record above); §2 restated from the measurements; §3.1 gains the review-ordering rule (measured A3, A5, A6); the five review points answered at G5-2, G5-4, G5-5, G5-8, G5-11; G5-12 widened by the measurement; G5-13 added (the application role, measured D) |
 | 3 | `3a797d8` | the review of `288bfdb` recorded; [R3-1] a strictly increasing review stamp (§3.1); [R3-2] one currency table, §3.7, used by approval, revalidate and share; [R3-3] the exact text of `0006` and the B-case attribution (G5-12); [R3-4] G5-13 split into (a) documentation, done as EN-02, and (b) remedy and enforcement point, with K06 UNPROVEN; [R3-5] LOCATION removed from the display list (G5-5) |
 | 4 | `6ba73ce` | the review of `3a797d8` recorded, and its acceptances marked in place; [R4-1] G5-12 rules 5 and 6 rewritten as event stamps, set only on their own edge, with a test table for both closing edges; [R4-2] G5-5: an entry is withheld at render when its field's current value differs from the snapshot's |
-| 5 | the commit that adds this revision | the review of `f5a9d88` recorded: step 1 CLOSED; G5-12's "one function and two triggers" corrected to two functions and two triggers; STOP GATE D not regenerated in Slice 5, STOP GATE E bound to Slice 5's run (§6.3); the input-hardening import guard (§8) |
+| 5 | `2bed7c8` | the review of `f5a9d88` recorded: step 1 CLOSED; G5-12's "one function and two triggers" corrected to two functions and two triggers; STOP GATE D not regenerated in Slice 5, STOP GATE E bound to Slice 5's run (§6.3); the input-hardening import guard (§8) |
+| 6 | the commit that adds this revision | the review of `2bed7c8` recorded; [R6-1] G5-4: ACTIONABLE_UNKNOWN is refused when the stored `next_action` is absent or of type OTHER, with its tests |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -799,12 +818,55 @@ non-opportunity". The input carries a `reason_code` and nothing else.
   | REQUEST_STALE | RECONFIRM_REQUEST |
   | PROPERTY_STALE | RECONFIRM_PROPERTY |
   | PERMISSION_MISSING, CONSENT_REVOKED | CONFIRM_PERMISSION |
-  | ACTIONABLE_UNKNOWN | the type of the match's stored `next_action`, when it has one; otherwise refused |
+  | ACTIONABLE_UNKNOWN | the type of the match's stored `next_action` when it is one of the five SPECIFIC types below; **refused (422) when `next_action` is absent or its type is `OTHER`** [R6-1] |
 
   The mapping repeats Slice 4's `action.next@1` wherever the two overlap
   (DOCUMENT → VERIFY_DOCUMENT, offer terms → CONFIRM_PRICE, request and
   property reconfirmation). Any other code is refused for NMI (422), `OTHER`
   included, because Spec §19.1 forbids an unspecific task.
+- **[R6-1] ACTIONABLE_UNKNOWN never yields an unspecific task.**
+  - **What `action.next@1` can return.** Read from the pinned function
+    (`gates.py`, `next_action_v1`):
+    - **null**, for an ELIGIBLE or REJECTED match;
+    - **one of six types:** VERIFY_DOCUMENT, CONFIRM_PRICE, OTHER,
+      RECONFIRM_REQUEST, RECONFIRM_PROPERTY or CONFIRM_PERMISSION. **OTHER**
+      is what it gives for a blocking unknown on any criterion other than
+      DOCUMENT_TYPE, RIGHT_TYPE or BUDGET_MAX, for example ROOMS_MIN, or a
+      code with no deterministic rule.
+  - **The rule.** For ACTIONABLE_UNKNOWN, the task type is the stored
+    `next_action.type` only when it is one of the five specific types:
+    VERIFY_DOCUMENT, CONFIRM_PRICE, RECONFIRM_REQUEST, RECONFIRM_PROPERTY,
+    CONFIRM_PERMISSION. When `next_action` is null, or its type is OTHER, the
+    review is refused before any write:
+    - 422 `REVIEW_REASON_NOT_ALLOWED`;
+    - its detail says that this match has no specific task for
+      ACTIONABLE_UNKNOWN;
+    - no review, no task, and no idempotency key consumed.
+
+    The reviewer may then give a reason code that names the information
+    itself (the table above). If no code fits, ACTIONABLE_UNKNOWN is not a
+    way round the ban on an unspecific task (Spec §19.1).
+  - **Why 422, not 409.** The same input is refused whatever the match's
+    later history, because a match's `next_action` is immutable (G4-14). It
+    is a property of the input against this match, not of a state that may
+    change.
+  - **Planned tests:**
+    - **the OTHER case.** A NEED_MORE_INFORMATION match whose blocking
+      unknown is on ROOMS_MIN (`next_action.type = OTHER`). An NMI with
+      ACTIONABLE_UNKNOWN is 422, and the footprint is unchanged: reviews,
+      tasks, the audit log's high-water mark, idempotency records;
+    - **the absent case.** An ELIGIBLE match (`next_action` null). An NMI
+      with ACTIONABLE_UNKNOWN is 422, with the same unchanged footprint;
+    - **the accepted case.** A match whose `next_action.type` is
+      VERIFY_DOCUMENT. An NMI with ACTIONABLE_UNKNOWN creates ONE task of
+      type VERIFY_DOCUMENT, whose `payload.match_review_id` is the review;
+    - **a vocabulary guard, without PostgreSQL.** The set of types the
+      pinned `action.next@1` can return, read from its code, is exactly the
+      six above. The mapping accepts exactly the five specific ones. A
+      later rule version that adds a type fails this test, and so forces
+      the mapping to be decided again;
+    - **the mutation record** includes accepting OTHER, and accepting a null
+      `next_action`. Each must fail its test.
 - **The task's fields:**
   - `match_id`, `request_id` and `property_id` from the match;
   - `reason_code`, from the review;

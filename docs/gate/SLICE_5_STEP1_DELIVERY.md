@@ -260,7 +260,13 @@ results of our bound runs, not an independent check.
      `db/dev/mutate_*.py`, imported in a temporary copy WITHOUT `.venv`, so
      a failing script can reach neither pytest nor the real tree:
      - the import prints nothing, changes no file and leaves no `.orig`;
-     - no module-level call, loop, `with` or `try`;
+     - no call standing as a module-level STATEMENT, and no module-level
+       loop, `with` or `try` (an AST check). It does NOT forbid a call
+       inside a module-level assignment, such as `ROOT = pathlib.Path(...)`
+       or a mutation list built by a function. The evidence that importing
+       has no effect is the behavioural import test above, not this check.
+       Corrected in the review of `2bed7c8`: an earlier wording said "no
+       module-level call", which over-stated what the test checks;
      - exactly one `__main__` guard;
      - for this script, the guard calls `main(sys.argv[1:])`.
 
