@@ -685,3 +685,6 @@ SLICE_5_PLAN.md changed revision: 6 -> 7 (review of 29a0f30: G5-3 decided (a); s
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   ecb1615996f7f063a2f858ba6ec5b4aab2e6ca6975b56a5df54d546e692f6a13
 docs/gate/evidence/SLICE5-STEP2-KEY-RACE-BEFORE-FIX.txt        new   0ddc6b5cd51a27fed5f0f77a99d162f86562010252a2aa5b69cef28b96dc65e5
 docs/gate/evidence/SLICE5-STEP2-MUTATIONS-AFTER-KEY-FIX.txt    new   34ef5b516566ecde8a48f4cea174fa6cf3d46e3f56724ca485f05962ee271c3f
+docs/gate/SLICE_5_STEP2_DELIVERY.md                            ---   64142104b8a75a5d9f30e39ae565f40f0f02b80cc29f76f2ea3db7009ec89d2a
+docs/gate/SLICE_5_PLAN.md                                      rev8  96b74562396e9ed7b453887eb9d41fb06b9141985f89429658ec89989f8f9ee9
+SLICE_5_PLAN.md changed revision: 7 -> 8 (review of 7e84702: the key race fixed; temporary APPROVED code and STOP GATE D status accepted).

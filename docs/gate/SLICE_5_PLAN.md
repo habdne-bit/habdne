@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 7**
+## Implementation plan — **revision 8**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
@@ -147,6 +147,23 @@ digests and blob ids of the four attachments. Step 1's closure stands.
 
 Step 2's delivery: `SLICE_5_STEP2_DELIVERY.md`.
 
+**The review of `7e84702` (step 2).** The reviewer checked the bundle's
+digest, its 358 manifest entries and `run_binding.py` (`bound`). It re-ran
+neither PostgreSQL nor the mutations.
+- **Accepted:**
+  - `REVIEW_DECISION_NOT_YET_AVAILABLE` (409), within step 2. It describes
+    an APPROVED that is valid in the contract and not executable now,
+    without claiming a gate failure. It is removed when step 3 executes the
+    approval;
+  - STOP GATE D kept as the Slice 4 tree's record. Its `--check` failure
+    counts as neither a pass nor a new failure of that record.
+- **Blocking (step 2 not closed): the Idempotency-Key raced with a final
+  decision.**
+  - The cause: `CommandService.run` read the key before `prepare`. A review
+    that waited on the match lock of a same-key call was then refused as
+    decided, instead of being answered by the key (API_CONTRACTS §2.3).
+  - Measured over HTTP, fixed, and re-evidenced: step 2 delivery §10.
+
 **Revision history**
 
 | rev | commit | what changed |
@@ -157,7 +174,8 @@ Step 2's delivery: `SLICE_5_STEP2_DELIVERY.md`.
 | 4 | `6ba73ce` | the review of `3a797d8` recorded, and its acceptances marked in place; [R4-1] G5-12 rules 5 and 6 rewritten as event stamps, set only on their own edge, with a test table for both closing edges; [R4-2] G5-5: an entry is withheld at render when its field's current value differs from the snapshot's |
 | 5 | `2bed7c8` | the review of `f5a9d88` recorded: step 1 CLOSED; G5-12's "one function and two triggers" corrected to two functions and two triggers; STOP GATE D not regenerated in Slice 5, STOP GATE E bound to Slice 5's run (§6.3); the input-hardening import guard (§8) |
 | 6 | `29a0f30` | the review of `2bed7c8` recorded; [R6-1] G5-4: ACTIONABLE_UNKNOWN is refused when the stored `next_action` is absent or of type OTHER, with its tests |
-| 7 | the commit that adds this revision | the review of `29a0f30` recorded: G5-3 decided (a), with its input narrowing and codes; [R6-1] and the AST correction accepted; step 2 authorized and delivered (`SLICE_5_STEP2_DELIVERY.md`) |
+| 7 | `7e84702` | the review of `29a0f30` recorded: G5-3 decided (a), with its input narrowing and codes; [R6-1] and the AST correction accepted; step 2 authorized and delivered (`SLICE_5_STEP2_DELIVERY.md`) |
+| 8 | the commit that adds this revision | the review of `7e84702` recorded: the temporary APPROVED code and STOP GATE D's status accepted; the Idempotency-Key race with a final decision measured and fixed (step 2 delivery §10) |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1763,7 +1781,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 |---|---|---|
 | 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
 | 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
-| 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **delivered** for review (`SLICE_5_STEP2_DELIVERY.md`) |
+| 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **delivered** for review (`SLICE_5_STEP2_DELIVERY.md`); the key race of the review of `7e84702` fixed (§10 there) |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5, §3.7 |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |

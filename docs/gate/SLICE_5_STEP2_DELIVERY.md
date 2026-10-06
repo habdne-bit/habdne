@@ -17,7 +17,9 @@
   footprint. Its test must show that APPROVED is a valid decision of the
   contract, not executed in this step, and is not classed as a gate failure.
 
-**Status:** delivered for review. **Not** closed.
+**Status:** delivered for review. **Not** closed. The review of `7e84702`
+found one blocker, an Idempotency-Key race with a final decision. It is
+measured and fixed in §10.
 
 **Still open:** G5-5, G5-10 and G4-5R (STOP GATE E is SALE only). **K06 stays
 UNPROVEN** (EN-02; G5-13 (b), decided (ii)).
@@ -327,3 +329,139 @@ Neither is regenerated (review of `f5a9d88`, decision 2).
   `REVIEW_DECISION_NOT_YET_AVAILABLE` and adds the APPROVED → NMI form of A3.
 - **Standing:** G5-5, G5-10 and G4-5R open; K06 UNPROVEN; STOP GATE D is
   not regenerated in Slice 5, and STOP GATE E binds to Slice 5's run.
+
+## 10. The review of `7e84702`: the key and a final decision
+
+**What the review checked itself:**
+- the bundle's digest;
+- its 358 manifest entries;
+- `run_binding.py`: `bound`.
+
+These check the attachments and their binding. They are not a re-run of
+the PostgreSQL tests or of the mutations.
+
+**Accepted:**
+- `REVIEW_DECISION_NOT_YET_AVAILABLE` (409), within step 2's limits. It
+  describes an APPROVED that is valid in the contract and not executable
+  now, without claiming a gate failure. It is removed when step 3 executes
+  the approval.
+- STOP GATE D stays the record of the Slice 4 tree. Its current `--check`
+  failure counts as neither a pass nor a new failure of that record.
+
+**The blocker: the Idempotency-Key raced with a final decision.**
+`CommandService.run` reads the key BEFORE `prepare`.
+`match_review.prepare` locks the match, then refuses it if it is decided,
+and both happen before the key is claimed. So:
+1. A and B start with the same actor, path and key. B's first read does not
+   see A's uncommitted record.
+2. B waits on the match lock A holds. A commits REJECTED and its result.
+3. Once the lock is released, B sees the final decision and returns 409
+   `MATCH_REVIEW_DECIDED`. It should have returned A's result when the body
+   matches, or 409 `IDEMPOTENCY_KEY_CONFLICT` when it differs
+   (API_CONTRACTS §2.3).
+
+The review inferred this from the code's order, without a concurrent run.
+The existing replay test is sequential. The concurrent lock tests use two
+actors and call the service directly, so they never reach the key's path.
+
+### 10.1 Measured before the fix
+
+`evidence/SLICE5-STEP2-KEY-RACE-BEFORE-FIX.txt`.
+- **Commit and tree:** at `7e84702`, on a tree clean except the new test
+  file.
+- **Same file shipped:** sha256 `9446936a…f76a`, the file committed with
+  the fix.
+- **Three runs, identical:**
+  - **final-same-body:** B returns 409 `MATCH_REVIEW_DECIDED` instead of
+    A's response;
+  - **final-other-body:** B returns 409 `MATCH_REVIEW_DECIDED` instead of
+    `IDEMPOTENCY_KEY_CONFLICT`;
+  - **controls, all passing:** NMI with the same body, NMI with another
+    body, and another key.
+
+**How the test drives it:**
+`test_a_same_key_review_waiting_on_the_match_lock_is_answered_by_the_key`.
+- **Over HTTP, one actor,** two app clients on two threads.
+- **A's pause:** A's request is paused inside `match_review.record`. By then
+  it has read the key, locked the match, claimed the key and inserted its
+  review, and it has not committed.
+- **B:** sent with the key of the case.
+- **The witness, asserted before A is released:**
+  - B's backend waits on a Lock, in the `SELECT … FOR UPDATE` of
+    `_lock_match`;
+  - `pg_blocking_pids(B)` names A's backend;
+  - a third connection sees no review of the match and no record of
+    either key.
+
+  So B read the key before A's commit, then waited on A's lock.
+- **After A commits, the test checks:**
+  - B's answer;
+  - **one** review row;
+  - the task count: one for NMI, none for REJECTED;
+  - the key records: one for the shared key, or, with another key, one for
+    A's key and **none** for B's.
+
+### 10.2 The fix (`ef58077`)
+
+`CommandService.run`: a refusal raised by `prepare` is checked against the
+key once more, before it is returned.
+- **The read:** `idempotency.committed_if_any`, a `lookup` on a NEW
+  connection. `committed` (Slice 4, R-S4-7-02) now uses it too.
+- **A same-key call committed meanwhile:** the key answers, with A's result
+  for the same body, or `IDEMPOTENCY_KEY_CONFLICT` for another.
+- **Otherwise:** the refusal stands. Nothing is written, and the key is not
+  consumed. The read is a SELECT on another connection.
+- **A database error** (`DBAPIError`) is re-raised unchanged. It is not a
+  refusal decided by the state.
+
+**Why a new connection.** Under Read Committed, which the review uses, the
+transaction's own session would also see A's commit. Under REPEATABLE READ,
+which the matching run uses, it would not. A new connection sees a
+committed record under both, as `committed` already did.
+
+### 10.3 After the fix
+
+| Evidence | Result |
+|---|---|
+| The new test | 5/5 cases pass: final-same-body and final-other-body as §2.3 requires; the three controls unchanged |
+| Step 2's file | 81/81 |
+| Ordinary refusals | still write nothing and consume no key (`_refused` footprint tests; `test_a_refused_review_does_not_consume_its_key`) |
+| Mutations | 30/30 fail, none survives, at `ef58077`, clean tree, fingerprint `fcb5f91b…aa9a` (`evidence/SLICE5-STEP2-MUTATIONS-AFTER-KEY-FIX.txt`). The new K1 removes the check, and fails exactly final-same-body and final-other-body |
+| Suite, gate, matrix | §10.4 |
+
+### 10.4 The evidence round after the fix
+
+Each row ran on a clean tree, source fingerprint `fcb5f91b…aa9a`.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Mutations | 30/30 fail | `ef58077` → `288a6a1` | §10.3 |
+| Authorization matrix | **157 rules**, all PASS (one new: `S5-2 / API_CONTRACTS §2.3`); suite 2140/2140 | `5aed43e` | `AUTHORIZATION_EVIDENCE_MATRIX.md`; `--check --no-run`: current |
+| PostgreSQL gate | PASS; 70 database-level PASS notices, 0 FAIL; 67 operations in parity | `fbc8549` (run at `5aed43e`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **2140 passed**, 0 failed, 0 errors, 0 skipped | `22d1880` (run at `fbc8549`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+
+The step-2 records of §6 and §7 stay as they were: they are bound to
+`5df5660` and its fingerprint `1405da35…8ec3`. The table above supersedes
+them for the current tree. STOP GATE D's `--check` reports the same two
+problems as in §7.2.
+
+### 10.5 Limits of the fix, stated
+
+- **Every non-database exception from `prepare` is checked against the key,**
+  not only `ReviewRefused`. A same-key result therefore answers any such
+  exception, but only when that result is committed, so the call's outcome
+  is already known.
+- **The opposite order is not changed.** Suppose B is refused without
+  waiting for A (A still uncommitted, and B's refusal not caused by A).
+  B returns its refusal, because no record is committed when B decides. A
+  retry with the key after A's commit replays A.
+- **The new-connection choice is tested only under Read Committed.** No
+  current REPEATABLE READ command has a `prepare` refusal that a same-key
+  call can cause: the matching run refuses on the policy version, a request
+  that cannot be matched, or RENT. So no test tells the new connection from
+  the transaction's own session.
+- **The shared machinery changed.** The whole suite passes: 2140/2140 in our
+  run on the uncommitted tree that became `ef58077`, and in the bound run of
+  §10.4. The
+  Slice 4 test `test_a_refusal_is_decided_before_any_write` still observes
+  no INSERT, UPDATE or DELETE during a refused matching run.
