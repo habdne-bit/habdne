@@ -1624,7 +1624,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements of §6.4, folded into revision 2; no code | **done**; accepted in the review of `288bfdb` |
-| 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12 |
+| 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **delivered for review** (`SLICE_5_STEP1_DELIVERY.md`) |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3, G5-4 |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5, §3.7 |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11 |

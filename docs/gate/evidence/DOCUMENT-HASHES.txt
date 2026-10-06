@@ -655,3 +655,6 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   e98cc01d2bf
 docs/gate/evidence/SLICE5-STEP1-0006-BEFORE-FIX.txt            new   5be2c2c1f3d05e133671fd3eb21eb095281c50379216bffea7dda50ff82c43cf
 docs/gate/evidence/SLICE5-STEP1-0006-MUTATIONS-FIRST-RUN.txt   new   cab3491e3c856afac3fd30fbad58d174b1cde93b51cf29f07c35084874351032
 docs/gate/evidence/SLICE5-STEP1-0006-MUTATIONS.txt             new   83c0bbb9c6638596a2884334354c4ed0b27e5b191b752bbd736b8a8c6f2906fe
+docs/gate/SLICE_5_STEP1_DELIVERY.md                            new   7c60faa1ddae558fb0955c63ead7aa8c45c605e4569c09e021f934e18b7a087b
+docs/gate/SLICE_5_PLAN.md                                      rev4  3927550f6da058e88c292645f1ecdb298ebcec9a6929da7a36169066658a3746
+SLICE_5_PLAN.md revision 4 unchanged in content; §8 row 1 marks step 1 delivered.
