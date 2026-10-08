@@ -719,3 +719,10 @@ docs/gate/SLICE_5_STEP4_DELIVERY.md                            new   8510fd3a784
 docs/gate/SLICE_5_PLAN.md                                      rev12 049a9d757eab73d44d22d426d57314ae0343023f1c48ef607c9e45789599581d
 SLICE_5_PLAN.md changed revision: 11 -> 12 (step 4 delivered; G5-11 match-queue vocabulary put for confirmation; RFC-001 Appendix B).
 docs/gate/SLICE_5_STEP4_DELIVERY.md                            ---   9baa7bdf252514938e19deb1b98fdad30dd9a824f48fc29c19b9963a8890815a
+
+--- Review of d0e0bc9: the free-text location detail withheld (step 4) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   ecb9d827ba7f102f61353b35071a18cf1b336616388cc2979758dba5a8a11537
+docs/gate/evidence/SLICE5-STEP4-LOCATION-TEXT-BEFORE-FIX.txt   new   aa2d474ec0ca9ff4b9a2621764377f2f13b549ae481160c5d25336598ee1d868
+docs/gate/evidence/SLICE5-STEP4-MUTATIONS-AFTER-TEXT-FIX.txt   new   34ae3c69875b277cc14c90ea87f4361d8698fe08a89d2acf083f3f92a2328ef9
+docs/rfc/RFC-001-APPENDIX-B-opportunity-view.md                ---   9ba9f7e2530e86a2b8ecf2bd7e11e2de96f33baefdd067bb7a078e2f56adf27a
+docs/DESIGN_LEDGER.md                                          ---   c25ff952e47bd2a4a1473535db32dee23c39a26b71b215ef1d76b8bc8645927f
