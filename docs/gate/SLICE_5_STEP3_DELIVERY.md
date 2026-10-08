@@ -22,7 +22,7 @@
 **Status:** **CLOSED** at `921ed01`, within the approved scope (§11).
 
 **Still open:**
-- G5-10 and G4-5R (STOP GATE E is SALE only);
+- G5-10 and G4-5R (STOP GATE E is SALE only). *[G5-10 decided since, in the review of `d0e0bc9`.]*
 - K06 stays **UNPROVEN** (EN-02; G5-13 (b), decided (ii)).
 
 **Commits:**
@@ -447,7 +447,7 @@ pass nor a new failure of that record.
   with the four SUMMARY_ONLY fields, F5-1/F5-2/F5-3, R4-2's withholding,
   mandatory test 5), and the match queue.
 - **Standing:**
-  - G5-10 and G4-5R are open;
+  - G5-10 and G4-5R are open; *[G5-10 decided since, in the review of `d0e0bc9`.]*
   - K06 is UNPROVEN;
   - STOP GATE D is not regenerated in Slice 5. Its `--check` now also
     reports a writer of `opportunities` (§8).
@@ -533,7 +533,7 @@ Slice 5 (plan §8, "Carried to step 6"):
 - **STOP GATE D:** its stale `--check` is not a failure of this step. It is
   the Slice 4 tree's record, and is not regenerated.
 - **K06** is UNPROVEN.
-- **G4-5R** and **G5-10** are open.
+- **G4-5R** and **G5-10** are open. *[G5-10 decided since, in the review of `d0e0bc9`.]*
 
 None of these blocks the closure.
 

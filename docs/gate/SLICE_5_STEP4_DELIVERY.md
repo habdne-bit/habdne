@@ -5,12 +5,12 @@ internal read + customer read + match queue، وفق G5-6/G5-7/G5-11، مع إث
 withholding وعدم تسريب أي private expectation/claim. هذه النقطة الأخيرة
 ستكون من أهم شروط قبولي للخطوة 4."
 
-**Status:** delivered for review. **Not** closed. The review of `d0e0bc9`
-found one blocker, free text reaching the customer. It is measured and
-fixed in §11.
+**Status:** **CLOSED** at `1556624`, within its approved scope (§12). The
+review of `d0e0bc9` found one blocker, free text reaching the customer. It
+is measured and fixed in §11.
 
 **Still open:**
-- G5-10 and G4-5R;
+- G4-5R (G5-10 was decided in the review of `d0e0bc9`);
 - K06 is UNPROVEN;
 - L-S5-3a and L-S5-3b are carried to step 6 (plan §8).
 
@@ -356,14 +356,15 @@ problems as after step 3: the writers of `match_reviews` and
 - **Carried, unchanged:**
   - L-S5-3a and L-S5-3b (step 6);
   - K06 UNPROVEN (EN-02);
-  - G4-5R and G5-10 open.
+  - G4-5R open (G5-10 decided since, in the review of `d0e0bc9`).
 - **These results are ours.** No independent run exists.
 
 ## 10. What remains
 
-- **Step 4 closes on review.**
-- **Step 5:** revalidate, share (G5-8), close (G5-10, open), the
-  opportunity queue (G5-11 (a)) and the B10 service guard. It needs G5-10.
+- **Step 4 is CLOSED** (§12).
+- **Step 5:** revalidate, share (G5-8), close (G5-10, decided in the review
+  of `d0e0bc9`), the opportunity queue (G5-11 (a)) and the B10 service guard.
+  It is authorized (§12).
 
 ## 11. The review of `d0e0bc9`: the free-text location detail
 
@@ -458,3 +459,31 @@ and `6ed8ab7a…c655`. The table above supersedes them for the current tree.
 The decision is recorded in the plan (revision 13). It is not implemented
 here: close is step 5. **Step 5 does not start before this fix is
 reviewed.**
+
+## 12. The review of `1556624`: step 4 CLOSED
+
+**Step 4 is closed at `1556624`, within its approved scope:** the internal
+read, the customer read and the match queue, with the withholding of §11.
+
+**Step 5 is authorized**, under the decisions taken:
+- G5-8;
+- G5-9;
+- G5-10, decided in the review of `d0e0bc9`;
+- G5-11 (a);
+- G5-12.
+
+**Slice 5 as a whole is not closed.**
+
+**What the closure rests on.** The PostgreSQL, suite and mutation results
+are the implementation team's, bound to the tree. The review did not re-run
+them.
+
+**Stale statements corrected.** The statements of this note, of the step 3
+note and of the plan that called G5-10 open are corrected or marked "decided
+since".
+
+**Standing:**
+- L-S5-3a and L-S5-3b are carried to step 6;
+- K06 is UNPROVEN;
+- G4-5R is open;
+- STOP GATE E is SALE only.

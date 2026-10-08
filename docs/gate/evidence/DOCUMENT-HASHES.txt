@@ -729,3 +729,9 @@ docs/DESIGN_LEDGER.md                                          ---   c25ff952e47
 docs/gate/SLICE_5_STEP4_DELIVERY.md                            ---   ddf1a7d4485ba2b896411742061ff103fc5150a34c6a2263a4157899cc84ea09
 docs/gate/SLICE_5_PLAN.md                                      rev13 8c16906e1a97dda3f5bc0b62d347a10fc7e8275484df4a9fe80119e7895eee99
 SLICE_5_PLAN.md changed revision: 12 -> 13 (review of d0e0bc9: location-text blocker fixed in step 4; G5-10 decided; step 5 not yet authorized).
+
+--- Review of 1556624: Slice 5 step 4 CLOSED; step 5 authorized; G5-10 stale statements corrected ---
+docs/gate/SLICE_5_STEP4_DELIVERY.md                            ---   64e2cb1b0eae8045c06596437935972b095389bbf2ddc1c1b4e846bb62894618
+docs/gate/SLICE_5_STEP3_DELIVERY.md                            ---   878ae6a15e744d24e05b46fdab8dd311311d030a71a28dc139e8d99e5ef04770
+docs/gate/SLICE_5_PLAN.md                                      rev14 501d604125c411c7a0038ac26247c92d2fe621103fafaf257c135ba85763c729
+SLICE_5_PLAN.md changed revision: 13 -> 14 (step 4 closed; step 5 authorized; G5-10 open-statements marked decided).

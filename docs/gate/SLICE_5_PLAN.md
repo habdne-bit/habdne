@@ -1,12 +1,12 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 13**
+## Implementation plan — **revision 14**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 (the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
 the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
-queue) is delivered for review, with the fix of the review of `d0e0bc9`.
-No other step's code exists.
+queue) is CLOSED at `1556624`. Step 5 is authorized. No other step's code
+exists. **Slice 5 as a whole is not closed.**
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
 step 3 opens `opportunities` to the APPROVED review only (H03).
@@ -73,7 +73,7 @@ PostgreSQL.
 - **A point for G5-5,** before the customer view is implemented: the key
   test does not prove derivability from THIS response when the type or an
   area changed after the evaluation. Answered at G5-5 as **[R4-2]**.
-- **Still not approved:** G5-3, G5-5 and G5-10.
+- **Still not approved:** G5-3, G5-5 and G5-10. *[G5-10 decided since, in the review of `d0e0bc9`.]*
 
 **The review of step 1 (`f5a9d88`). Step 1 is CLOSED within G5-12's
 scope.**
@@ -146,7 +146,7 @@ digests and blob ids of the four attachments. Step 1's closure stands.
   refusal with no footprint. Its test must show that APPROVED is a valid
   decision of the contract, not executed in this step, and is not classed
   as a gate failure.
-- **Still open:** G5-5, G5-10, G4-5R. K06 stays UNPROVEN.
+- **Still open:** G5-5, G5-10, G4-5R. K06 stays UNPROVEN. *[G5-10 decided since, in the review of `d0e0bc9`.]*
 
 Step 2's delivery: `SLICE_5_STEP2_DELIVERY.md`.
 
@@ -183,7 +183,7 @@ What it accepted:
 
 What stands:
 - the temporary APPROVED code, and STOP GATE D as the Slice 4 record;
-- G5-10 and G4-5R open, and K06 UNPROVEN.
+- G5-10 and G4-5R open, and K06 UNPROVEN. *[G5-10 decided since, in the review of `d0e0bc9`.]*
 
 **Step 3 is not authorized:** it waits on G5-5.
 
@@ -205,7 +205,7 @@ acceptance of step 2 rests on the bundle of `1e0d919`. The decision:
 - **Conditional:** the proof that no private expectation or claim leaks,
   and of the withholding, rests on the HTTP tests in their planned places
   (step 4).
-- **Standing:** G5-10 and G4-5R open; K06 UNPROVEN.
+- **Standing:** G5-10 and G4-5R open; K06 UNPROVEN. *[G5-10 decided since, in the review of `d0e0bc9`.]*
 
 Step 3's delivery: `SLICE_5_STEP3_DELIVERY.md`.
 
@@ -227,6 +227,17 @@ L-S5-3a or L-S5-3b.
 
 **G5-10 decided** (at G5-10 below). Step 5 is not authorized before the fix
 is reviewed. K06 stays UNPROVEN, G4-5R open, and STOP GATE E SALE only.
+
+**The review of `1556624`. Step 4 is CLOSED at `1556624`; step 5 is
+authorized under the decisions taken. Slice 5 as a whole is not closed.**
+
+**What the review relies on.** The PostgreSQL, suite and mutation results
+are the implementation team's, bound to the tree. The reviewer did not
+re-run them.
+
+**What this revision corrects.** The statements above that called G5-10
+open were true when written. Each is now marked as decided since. Nothing
+else in them is changed.
 
 **The review of `921ed01`. Step 3 is CLOSED within its approved scope.**
 
@@ -270,7 +281,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 10 | `921ed01` | the review of `60b0152` recorded: G5-5 decided (a), with G5-6's SUMMARY_ONLY branch (four fields); step 3 authorized and delivered (`SLICE_5_STEP3_DELIVERY.md`) |
 | 11 | `cb1a828` | the review of `921ed01` recorded: step 3 CLOSED (step 3 delivery §11); the five interpretations approved; L-S5-3a and L-S5-3b carried to step 6 (§8); step 4 authorized |
 | 12 | `e1ab4fb` | step 4 delivered (`SLICE_5_STEP4_DELIVERY.md`): the internal and customer reads (G5-6 (a), G5-7 (a), [R4-2]) and the match queue (G5-11, its vocabulary as proposed, put for confirmation); RFC-001 Appendix B and DL-13 amend R8.2, R8.3, S33, S34, S36a |
-| 13 | the commit that adds this revision | the review of `d0e0bc9` recorded: step 4 not closed, the free-text location detail withheld from the customer opportunity (Appendix B.1a); §2's other points accepted; **G5-10 decided** |
+| 13 | `1556624` | the review of `d0e0bc9` recorded: step 4 not closed, the free-text location detail withheld from the customer opportunity (Appendix B.1a); §2's other points accepted; **G5-10 decided** |
+| 14 | the commit that adds this revision | the review of `1556624` recorded: step 4 CLOSED (step 4 delivery §12); step 5 authorized; the statements that called G5-10 open marked as decided since |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1407,6 +1419,8 @@ switched in this slice.
 >   match.
 >
 > **Step 5 is not authorized** before step 4's fix is reviewed.
+> *[Reviewed since: step 4 CLOSED and step 5 authorized in the review of
+> `1556624`.]*
 - **`CloseCommand.reason_code` is required** by the contract. The proposal
   narrows it to the category OPPORTUNITY, plus `OTHER`:
   - OWNER_REJECTED;
@@ -1910,8 +1924,8 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 1 | migration `0006`, exactly G5-12's text, with its mutation record | G5-12; **CLOSED** in the review of `f5a9d88` (`SLICE_5_STEP1_DELIVERY.md`) |
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **CLOSED** at `1e0d919` (`SLICE_5_STEP2_DELIVERY.md` §11); the key race of the review of `7e84702` fixed (§10 there) |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
-| 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **delivered** for review (`SLICE_5_STEP4_DELIVERY.md`) |
-| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10, G5-11, G5-12 |
+| 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **CLOSED** at `1556624` (`SLICE_5_STEP4_DELIVERY.md` §12) |
+| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; **authorized** in the review of `1556624` |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
 
 **Carried to step 6 and the final closure of Slice 5 (review of `921ed01`).**
