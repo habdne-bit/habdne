@@ -735,3 +735,7 @@ docs/gate/SLICE_5_STEP4_DELIVERY.md                            ---   64e2cb1b0ea
 docs/gate/SLICE_5_STEP3_DELIVERY.md                            ---   878ae6a15e744d24e05b46fdab8dd311311d030a71a28dc139e8d99e5ef04770
 docs/gate/SLICE_5_PLAN.md                                      rev14 501d604125c411c7a0038ac26247c92d2fe621103fafaf257c135ba85763c729
 SLICE_5_PLAN.md changed revision: 13 -> 14 (step 4 closed; step 5 authorized; G5-10 open-statements marked decided).
+--- Slice 5 step 5: revalidate, share, close, the opportunity queue, B10 (review of 1556624) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   296c2eb6d2c326b49d165ae83ede0e16da7e20ec87f2cf488138306650d7dd21
+docs/gate/evidence/SLICE5-STEP5-BEFORE-FIX.txt                 new   40b65975ffe13f55d222990d0bbe2dad98cf7e86bc5a916a39e0d5849d15b09c
+docs/gate/evidence/SLICE5-STEP5-MUTATIONS.txt                  new   b58632aab662aa4d01f69ad81ce8ef907ee51b78840b27d203691f47ffba96c1
