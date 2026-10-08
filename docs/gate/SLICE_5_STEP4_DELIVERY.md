@@ -5,7 +5,9 @@ internal read + customer read + match queue، وفق G5-6/G5-7/G5-11، مع إث
 withholding وعدم تسريب أي private expectation/claim. هذه النقطة الأخيرة
 ستكون من أهم شروط قبولي للخطوة 4."
 
-**Status:** delivered for review. **Not** closed.
+**Status:** delivered for review. **Not** closed. The review of `d0e0bc9`
+found one blocker, free text reaching the customer. It is measured and
+fixed in §11.
 
 **Still open:**
 - G5-10 and G4-5R;
@@ -57,7 +59,7 @@ attempt is recorded as a denial.
 | Scope | `property` |
 |---|---|
 | SUMMARY_ONLY | `CustomerPropertySummary`: `property_id`, `property_type`, `supply_mode`, `canonical_location_id`. No area, no band |
-| PROPERTY_DETAILS_ALLOWED, CONTACT_AFTER_CONFIRMATION | the full frozen `CustomerPropertyView` |
+| PROPERTY_DETAILS_ALLOWED, CONTACT_AFTER_CONFIRMATION | the frozen `CustomerPropertyView` without `local_location_detail` (§11; Appendix B.1a). Delivered first as the full view |
 
 **Never rendered, at any scope:**
 - `contact`: the frozen type has no field for it (F5-1);
@@ -146,8 +148,9 @@ The plan left these details open. Each is one place in the code.
    - My first version withheld every null. I corrected it before any test
      ran, and `test_an_unknown_difference_stays_while_the_area_is_still_unknown`
      fixes the rule.
-5. **The full `CustomerPropertyView` includes `local_location_detail`** at
-   PROPERTY_DETAILS_ALLOWED and above.
+5. **[Settled otherwise in the review of `d0e0bc9`: the field is now
+   withheld, §11.]** The full `CustomerPropertyView` includes
+   `local_location_detail` at PROPERTY_DETAILS_ALLOWED and above.
    - The frozen type declares it. G3-12 withheld it in the PUBLIC list only.
    - Its content is free text that a staff member records. If the reviewer
      wants it withheld from customers too, that is a narrowing, and one
@@ -361,3 +364,97 @@ problems as after step 3: the writers of `match_reviews` and
 - **Step 4 closes on review.**
 - **Step 5:** revalidate, share (G5-8), close (G5-10, open), the
   opportunity queue (G5-11 (a)) and the B10 service guard. It needs G5-10.
+
+## 11. The review of `d0e0bc9`: the free-text location detail
+
+### 11.1 What the review checked itself
+
+- the bundle's digest;
+- its 376 manifest entries;
+- the recomputed source fingerprint, `6ed8ab7a…c655`;
+- `run_binding.py`: `bound`.
+
+It did not re-run PostgreSQL, the suite or the mutations. Their figures stay
+our results, bound to the tree.
+
+### 11.2 The blocker: contact data through free text
+
+**What the review found, by reading the code path.** At
+PROPERTY_DETAILS_ALLOWED and CONTACT_AFTER_CONFIRMATION, the response copied
+the property's current `local_location_detail`.
+- That field is free text with no constraint on its content. If it holds a
+  phone number, the number reaches the customer.
+- Yet Appendix B, delivered in this step, says no contact is released at any
+  scope.
+- A missing `contact` key does not prove that no contact data is released.
+
+**Measured before the fix, over HTTP.**
+`evidence/SLICE5-STEP4-LOCATION-TEXT-BEFORE-FIX.txt`, at `d0e0bc9`, on a
+tree clean except the test file.
+- **The input:** the field holds "قرب المسجد، اتصل 0661-77-88-99 أو
+  owner@contact-sentinel.example".
+- **The result:** the phone number was in the customer's raw body at both
+  upper scopes. At SUMMARY_ONLY it was not, because the summary has no such
+  field.
+- **The frozen-type test**, which now expects the field absent above
+  SUMMARY_ONLY, failed at the same two scopes.
+- **The measurement confirms what the review inferred** from the code.
+
+**The fix, at `2bd8d08`.** Above SUMMARY_ONLY, the opportunity's property is
+`CustomerOpportunityPropertyView`: the frozen `CustomerPropertyView` without
+`local_location_detail`.
+- The field is optional in the frozen type, so the change narrows the
+  response and widens nothing.
+- **Where the field stays:** in the staff property read
+  (`getPropertiesPropertyId`, which the test checks), and in
+  `CustomerPropertyView`, the owner's view of their own property, which
+  this step does not govern.
+- **Appendix B gains B.1a,** marked as revised in this review, and DL-13
+  notes it.
+
+**The test:**
+`test_free_location_text_never_reaches_the_customer`, at the three scopes.
+- No piece of the text (the phone, the e-mail domain, the Arabic words) and
+  no `local_location_detail` key is in the raw body.
+- The staff read still returns the text.
+
+**The mutation:** **V5** restores the field in the opportunity's property
+type. It is killed by this test and by the frozen-type test, at the two
+upper scopes. It restores exactly the measured leak.
+
+**This settles §2's point 5 against the delivered implementation,** as the
+review decided.
+
+### 11.3 The other points of §2, accepted within the described scope
+
+The review accepted:
+- the match queue's vocabulary (G5-11);
+- the `basis` where a reason has no code;
+- `created_at` as the match's creation time;
+- null against null as no change;
+- the opportunity's own property row, even after it becomes an alias. E04
+  stays where it is (step 6).
+
+**This acceptance does not close L-S5-3a or L-S5-3b.**
+
+### 11.4 The evidence after the fix
+
+Each row ran on a clean tree, source fingerprint `6c642a98…c453`.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Mutations | **24/24 fail**, none survives (V5 added) | `2bd8d08` → `3340dbf` | `evidence/SLICE5-STEP4-MUTATIONS-AFTER-TEXT-FIX.txt` |
+| Authorization matrix | 168 rules, all PASS; the frozen-type row now cites the new test; suite 2242/2242 | `a506553` | `AUTHORIZATION_EVIDENCE_MATRIX.md`; `--check --no-run`: current |
+| PostgreSQL gate | PASS; 70 database-level PASS notices, 0 FAIL; 67 operations | `61043c6` (run at `a506553`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **2242 passed**, 0 failed | `424b3c3` (run at `61043c6`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+
+**The records of §7 and §8 stay as they were.** They are bound to `5b2b5af`
+and `6ed8ab7a…c655`. The table above supersedes them for the current tree.
+- **The suite count:** 2239, plus the three cases of the new test.
+- **STOP GATE D:** the same three problems as before.
+
+### 11.5 G5-10, decided in the same review
+
+The decision is recorded in the plan (revision 13). It is not implemented
+here: close is step 5. **Step 5 does not start before this fix is
+reviewed.**

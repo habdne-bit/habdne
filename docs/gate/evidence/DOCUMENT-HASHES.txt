@@ -726,3 +726,6 @@ docs/gate/evidence/SLICE5-STEP4-LOCATION-TEXT-BEFORE-FIX.txt   new   aa2d474ec0c
 docs/gate/evidence/SLICE5-STEP4-MUTATIONS-AFTER-TEXT-FIX.txt   new   34ae3c69875b277cc14c90ea87f4361d8698fe08a89d2acf083f3f92a2328ef9
 docs/rfc/RFC-001-APPENDIX-B-opportunity-view.md                ---   9ba9f7e2530e86a2b8ecf2bd7e11e2de96f33baefdd067bb7a078e2f56adf27a
 docs/DESIGN_LEDGER.md                                          ---   c25ff952e47bd2a4a1473535db32dee23c39a26b71b215ef1d76b8bc8645927f
+docs/gate/SLICE_5_STEP4_DELIVERY.md                            ---   ddf1a7d4485ba2b896411742061ff103fc5150a34c6a2263a4157899cc84ea09
+docs/gate/SLICE_5_PLAN.md                                      rev13 8c16906e1a97dda3f5bc0b62d347a10fc7e8275484df4a9fe80119e7895eee99
+SLICE_5_PLAN.md changed revision: 12 -> 13 (review of d0e0bc9: location-text blocker fixed in step 4; G5-10 decided; step 5 not yet authorized).

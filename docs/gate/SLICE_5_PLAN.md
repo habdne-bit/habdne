@@ -1,11 +1,12 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 12**
+## Implementation plan — **revision 13**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 (the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
 the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
-queue) is delivered for review. No other step's code exists.
+queue) is delivered for review, with the fix of the review of `d0e0bc9`.
+No other step's code exists.
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
 step 3 opens `opportunities` to the APPROVED review only (H03).
@@ -208,6 +209,25 @@ acceptance of step 2 rests on the bundle of `1e0d919`. The decision:
 
 Step 3's delivery: `SLICE_5_STEP3_DELIVERY.md`.
 
+**The review of `d0e0bc9` (step 4).** The reviewer checked:
+- the bundle's digest;
+- its 376 manifest entries;
+- the recomputed source fingerprint;
+- `bound`.
+
+It did not re-run PostgreSQL, the suite or the mutations.
+
+**Step 4 is not closed. One blocker:** `local_location_detail`, free text,
+reached the customer opportunity at the two upper scopes. A contact written
+there would be released, although Appendix B releases none. It is measured,
+fixed and re-evidenced in step 4 delivery §11, and Appendix B gains B.1a.
+
+**Accepted:** §2's other points of the step 4 note. They do not close
+L-S5-3a or L-S5-3b.
+
+**G5-10 decided** (at G5-10 below). Step 5 is not authorized before the fix
+is reviewed. K06 stays UNPROVEN, G4-5R open, and STOP GATE E SALE only.
+
 **The review of `921ed01`. Step 3 is CLOSED within its approved scope.**
 
 **What the review checked itself:**
@@ -249,7 +269,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 9 | `60b0152` | the review of `1e0d919` recorded: step 2 CLOSED (step 2 delivery §11); step 3 waits on G5-5 |
 | 10 | `921ed01` | the review of `60b0152` recorded: G5-5 decided (a), with G5-6's SUMMARY_ONLY branch (four fields); step 3 authorized and delivered (`SLICE_5_STEP3_DELIVERY.md`) |
 | 11 | `cb1a828` | the review of `921ed01` recorded: step 3 CLOSED (step 3 delivery §11); the five interpretations approved; L-S5-3a and L-S5-3b carried to step 6 (§8); step 4 authorized |
-| 12 | the commit that adds this revision | step 4 delivered (`SLICE_5_STEP4_DELIVERY.md`): the internal and customer reads (G5-6 (a), G5-7 (a), [R4-2]) and the match queue (G5-11, its vocabulary as proposed, put for confirmation); RFC-001 Appendix B and DL-13 amend R8.2, R8.3, S33, S34, S36a |
+| 12 | `e1ab4fb` | step 4 delivered (`SLICE_5_STEP4_DELIVERY.md`): the internal and customer reads (G5-6 (a), G5-7 (a), [R4-2]) and the match queue (G5-11, its vocabulary as proposed, put for confirmation); RFC-001 Appendix B and DL-13 amend R8.2, R8.3, S33, S34, S36a |
+| 13 | the commit that adds this revision | the review of `d0e0bc9` recorded: step 4 not closed, the free-text location detail withheld from the customer opportunity (Appendix B.1a); §2's other points accepted; **G5-10 decided** |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1372,6 +1393,20 @@ There is no column for them.
 switched in this slice.
 
 ### G5-10 · Close
+
+> **Decided in the review of `d0e0bc9`:**
+> - **the narrowing:** `CloseCommand.reason_code` is one of the eight codes
+>   below, the category OPPORTUNITY plus `OTHER`;
+> - **what close writes:** an opportunity is closed from NEW, SHARED or
+>   ENGAGED, writing the status, `closed_at`, the reason and
+>   `last_activity_at` together;
+> - **CLOSED is final;**
+> - **the consequence of `approved_match_id` UNIQUE is accepted:** no second
+>   opportunity from the same match after it is closed. A new opportunity
+>   for the pair needs a new match on changed facts, or another offer's
+>   match.
+>
+> **Step 5 is not authorized** before step 4's fix is reviewed.
 - **`CloseCommand.reason_code` is required** by the contract. The proposal
   narrows it to the category OPPORTUNITY, plus `OTHER`:
   - OWNER_REJECTED;
