@@ -189,6 +189,11 @@ the frozen types.
 Releasing a contact or offer terms to a customer would need a contract
 widening. G5-6 (b) proposed one, and it was not taken.
 
+**Narrowed further in the review of `d0e0bc9` (Appendix B.1a).** The
+opportunity response also withholds `local_location_detail`, at every scope.
+That free text can carry a contact, and a missing `contact` key does not
+prove that no contact data is released.
+
 ---
 
 ## Superseded

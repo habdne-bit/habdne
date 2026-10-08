@@ -374,11 +374,51 @@ class CustomerPropertySummary(_Strict):
                    canonical_location_id=row.get("canonical_location_id"))
 
 
+class CustomerOpportunityPropertyView(_Strict):
+    """The property of an opportunity at PROPERTY_DETAILS_ALLOWED and
+    CONTACT_AFTER_CONFIRMATION: the frozen `CustomerPropertyView` WITHOUT
+    `local_location_detail` (review of d0e0bc9).
+
+    That field is free text with no constraint on its content, so it can carry
+    a phone number or an address of a person. RFC-001 Appendix B releases no
+    contact through this response at any scope, and a missing `contact` key
+    does not prove that. The field is optional in the frozen type, so leaving
+    it out narrows the response and widens nothing. It stays in the staff
+    property read, and in `CustomerPropertyView`, the owner's view of their
+    own property."""
+
+    property_id: uuid.UUID
+    property_type: str
+    canonical_location_id: uuid.UUID | None = None
+    land_area_m2: Decimal | None = None
+    built_area_m2: Decimal | None = None
+    current_availability: str
+    availability_last_confirmed_at: datetime | None = None
+    supply_mode: str
+    version: int
+
+    @classmethod
+    def render(cls, row: Mapping[str, Any]) -> "CustomerOpportunityPropertyView":
+        return cls(
+            property_id=row["property_id"],
+            property_type=str(row["property_type"]),
+            canonical_location_id=row.get("canonical_location_id"),
+            land_area_m2=row.get("land_area_m2"),
+            built_area_m2=row.get("built_area_m2"),
+            current_availability=str(row.get("current_availability", "UNKNOWN")),
+            availability_last_confirmed_at=row.get("availability_last_confirmed_at"),
+            supply_mode=str(row["supply_mode"]),
+            version=int(row["version"]),
+        )
+
+
 class CustomerOpportunityView(_Strict):
     """The frozen `CustomerOpportunityView` (`additionalProperties: false`),
     key for key (Slice 5, G5-6 (a)). It has no `contact` field: F5-1, and
-    RFC-001 Appendix B. Its `property` is the frozen `CustomerPropertyView`,
-    reduced to `CustomerPropertySummary` at SUMMARY_ONLY (F5-2)."""
+    RFC-001 Appendix B. Its `property` is the frozen `CustomerPropertyView`
+    narrowed: `CustomerPropertySummary` at SUMMARY_ONLY (F5-2), and
+    `CustomerOpportunityPropertyView`, without the free-text location
+    detail, above it (review of d0e0bc9)."""
 
     opportunity_id: uuid.UUID
     status: str
@@ -386,7 +426,7 @@ class CustomerOpportunityView(_Strict):
     sharing_scope: str
     why_real: Any
     known_differences: Any = None
-    property: CustomerPropertyView | CustomerPropertySummary | None = None
+    property: CustomerOpportunityPropertyView | CustomerPropertySummary | None = None
     created_at: datetime | None = None
     shared_at: datetime | None = None
 
@@ -399,8 +439,9 @@ def render_opportunity_for_scope(
     """R8.2 / R8.2a, as amended by RFC-001 Appendix B (Slice 5, G5-6 (a)).
     The scope ladder, applied server-side, within the frozen type:
     - SUMMARY_ONLY: the property's four summary fields, no area;
-    - PROPERTY_DETAILS_ALLOWED and CONTACT_AFTER_CONFIRMATION: the full
-      `CustomerPropertyView`.
+    - PROPERTY_DETAILS_ALLOWED and CONTACT_AFTER_CONFIRMATION: the
+      `CustomerPropertyView` without `local_location_detail`, free text that
+      can carry a contact (review of d0e0bc9).
 
     No rung adds a contact or an offer term: the frozen type has no field
     for either (Slice 0's renderer emitted a `contact` key and the public
@@ -410,12 +451,12 @@ def render_opportunity_for_scope(
     (`services.opportunity_views`)."""
     scope = SharingScope(str(row["sharing_scope"]))
 
-    property_view: CustomerPropertyView | CustomerPropertySummary | None = None
+    property_view: CustomerOpportunityPropertyView | CustomerPropertySummary | None = None
     if property_row is not None:
         if scope is SharingScope.SUMMARY_ONLY:
             property_view = CustomerPropertySummary.render(property_row)
         else:
-            property_view = CustomerPropertyView.render(property_row)
+            property_view = CustomerOpportunityPropertyView.render(property_row)
 
     return CustomerOpportunityView(
         opportunity_id=row["opportunity_id"],

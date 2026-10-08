@@ -4,7 +4,8 @@
 
 Each mutation weakens ONE rule of step 4 (the review of 921ed01; plan G5-5
 (a) with [R4-2], G5-6 (a), G5-7 (a), G5-11; RFC-001 Appendix B):
-- V: who may see an opportunity, and the frozen customer type;
+- V: who may see an opportunity, and the frozen customer type (V5, the
+  free-text location detail: review of d0e0bc9);
 - W: the withholding of an entry whose field changed ([R4-2]);
 - I: the internal read, staff-only and recorded;
 - Q: the match queue's membership, priority, reason, order and audit.
@@ -36,6 +37,31 @@ QUEUE_AUDIT = ('''        self.record_list_access(
             query_shape={"membership": "G5-11", "excluded_eligibility": ["REJECTED"]})
 ''')
 
+#: Review of d0e0bc9: the opportunity's property type without, then with, the
+#: free-text `local_location_detail` (its declaration and its rendering).
+LOCATION_TEXT_OFF = (
+    "    canonical_location_id: uuid.UUID | None = None\n"
+    "    land_area_m2: Decimal | None = None\n"
+    "    built_area_m2: Decimal | None = None\n"
+    "    current_availability: str\n"
+    "    availability_last_confirmed_at: datetime | None = None\n"
+    "    supply_mode: str\n"
+    "    version: int\n"
+    "\n"
+    "    @classmethod\n"
+    "    def render(cls, row: Mapping[str, Any]) -> \"CustomerOpportunityPropertyView\":\n"
+    "        return cls(\n"
+    "            property_id=row[\"property_id\"],\n"
+    "            property_type=str(row[\"property_type\"]),\n"
+    "            canonical_location_id=row.get(\"canonical_location_id\"),\n")
+LOCATION_TEXT_ON = LOCATION_TEXT_OFF.replace(
+    "    canonical_location_id: uuid.UUID | None = None\n",
+    "    canonical_location_id: uuid.UUID | None = None\n"
+    "    local_location_detail: str | None = None\n").replace(
+    "            canonical_location_id=row.get(\"canonical_location_id\"),\n",
+    "            canonical_location_id=row.get(\"canonical_location_id\"),\n"
+    "            local_location_detail=row.get(\"local_location_detail\"),\n")
+
 MUTATIONS = [
     # --- V: visibility and the frozen type --------------------------------------------
     ("V1 an unshared opportunity is visible", LOADERS,
@@ -52,6 +78,8 @@ MUTATIONS = [
     ("V4 the customer gets the internal view", VIEWS,
      "    return _jsonable(view.model_dump())",
      "    return internal_view(session, opportunity_id)"),
+    ("V5 the free-text location detail is rendered", DTO, LOCATION_TEXT_OFF,
+     LOCATION_TEXT_ON),
     # --- W: the withholding -----------------------------------------------------------
     ("W1 why_real is not withheld", VIEWS,
      '"criteria": withheld(criteria, scope, snapshot=snapshot, current=prop)}',

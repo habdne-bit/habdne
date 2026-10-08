@@ -272,7 +272,10 @@ def test_the_customer_body_is_the_frozen_type_at_each_scope(client, engine, ids,
     if scope == "SUMMARY_ONLY":
         assert set(body["property"]) == SUMMARY_FIELDS, "four fields, no area (F5-2, F5-3)"
     else:
-        assert set(body["property"]) == set(SCHEMAS["CustomerPropertyView"]["properties"])
+        # Every field of the frozen type but the free-text location detail,
+        # which the opportunity response withholds (review of d0e0bc9).
+        assert set(body["property"]) == set(
+            SCHEMAS["CustomerPropertyView"]["properties"]) - {"local_location_detail"}
     assert (body["status"], body["sharing_scope"]) == ("SHARED", scope)
 
 
@@ -285,6 +288,31 @@ def test_an_area_is_an_exact_json_number(client, engine, ids):
     assert '"land_area_m2":1234567.89' in r.text.replace(" ", "")
     assert json.loads(r.text, parse_float=Decimal)["property"]["land_area_m2"] == Decimal(
         "1234567.89")
+
+
+#: A contact written into free text: a phone and an e-mail address.
+CONTACT_IN_TEXT = "قرب المسجد، اتصل 0661-77-88-99 أو owner@contact-sentinel.example"
+
+
+@pytest.mark.parametrize("scope", SCOPES)
+def test_free_location_text_never_reaches_the_customer(client, engine, ids, scope):
+    """Review of d0e0bc9: `local_location_detail` is free text with no
+    constraint on its content, so it can carry a contact. RFC-001 Appendix B
+    says no contact is released at any scope; the absence of a `contact` key
+    does not prove it. The field is withheld from the opportunity response at
+    EVERY scope, and stays in the staff property read. Checked on the raw
+    body."""
+    world = _opportunity(client, engine, ids, scope=scope)
+    _exec(engine, """UPDATE turab.properties SET local_location_detail = :t
+                      WHERE property_id = :p""", t=CONTACT_IN_TEXT, p=world["property"])
+    r = _customer(client, ids, world)
+    assert r.status_code == 200, r.text
+    for piece in ("0661-77-88-99", "contact-sentinel.example", "قرب المسجد",
+                  "local_location_detail"):
+        assert piece not in r.text, (scope, piece)
+    staff = _get(client, f"/properties/{world['property']}", ids.ACC_OPERATOR)
+    assert staff.status_code == 200, staff.text
+    assert staff.json()["local_location_detail"] == CONTACT_IN_TEXT, "kept for staff"
 
 
 # ======================================================================================

@@ -217,7 +217,11 @@ def test_property_details_allowed_adds_the_customer_view(opportunity_rows):
     view = render_opportunity_for_scope(
         {**row, "sharing_scope": "PROPERTY_DETAILS_ALLOWED"}, property_row=prop
     )
-    assert set(view.property.model_dump()) == CUSTOMER_PROPERTY_KEYS
+    # The opportunity response withholds the free-text location detail, which
+    # can carry a contact (review of d0e0bc9); the owner's own view keeps it.
+    assert set(view.property.model_dump()) == CUSTOMER_PROPERTY_KEYS - {
+        "local_location_detail"}
+    assert "local_location_detail" in CustomerPropertyView.render(prop).model_dump()
 
 
 @pytest.mark.parametrize(

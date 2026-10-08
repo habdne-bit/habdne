@@ -2,6 +2,7 @@ from .boundaries import (
     NEVER_SERIALIZED,
     Audience,
     CustomerOpportunityView,
+    CustomerOpportunityPropertyView,
     CustomerPartyView,
     CustomerPropertySummary,
     CustomerPropertyView,
@@ -14,7 +15,7 @@ from .boundaries import (
 )
 
 __all__ = [
-    "NEVER_SERIALIZED", "Audience", "CustomerOpportunityView", "CustomerPartyView",
+    "NEVER_SERIALIZED", "Audience", "CustomerOpportunityPropertyView", "CustomerOpportunityView", "CustomerPartyView",
     "CustomerPropertySummary", "CustomerPropertyView", "CustomerRequestView", "FieldLeak",
     "PublicOfferSummary", "PublicPropertySummary", "assert_no_forbidden_fields",
     "render_opportunity_for_scope",

@@ -38,8 +38,8 @@ body of RFC-001 is unchanged.
 | Scope | `CustomerOpportunityView` renders |
 |---|---|
 | `SUMMARY_ONLY` | `opportunity_id`, `status`, `validity_status`, `sharing_scope`, `why_real`, `known_differences`, `created_at`, `shared_at`; `property` reduced to **four fields of `CustomerPropertyView`: `property_id`, `property_type`, `supply_mode`, `canonical_location_id`**. **No area, and no band**: the frozen type has no field for a band (F5-3) |
-| `PROPERTY_DETAILS_ALLOWED` | the above, with `property` the **full `CustomerPropertyView`**. **No offer term**: the frozen type has no field for one |
-| `CONTACT_AFTER_CONFIRMATION` | the same as `PROPERTY_DETAILS_ALLOWED`. **No contact**: the frozen type has no field for one (F5-1) |
+| `PROPERTY_DETAILS_ALLOWED` | the above, with `property` the **`CustomerPropertyView` without `local_location_detail`** (B.1a). **No offer term**: the frozen type has no field for one |
+| `CONTACT_AFTER_CONFIRMATION` | the same as `PROPERTY_DETAILS_ALLOWED`. **No contact**: the frozen type has no field for one (F5-1), and the free-text location detail is withheld (B.1a) |
 
 **What the amendment removes.** Two releases that the frozen contract cannot
 carry:
@@ -49,10 +49,29 @@ carry:
 **Where they may go.** Releasing either would need a contract widening.
 G5-6 (b) proposed one, and it was not taken. "The overlay may only narrow."
 
+### B.1a Free text is withheld (review of `d0e0bc9`)
+
+`local_location_detail` is free text with no constraint on its content. It
+can carry a phone number or the address of a person.
+- **What a missing key does not prove.** A response without a `contact` key
+  is not thereby without contact data.
+- **The decision.** The opportunity response therefore withholds the field
+  at **every** scope. It is optional in the frozen `CustomerPropertyView`, so
+  leaving it out narrows the response and widens nothing.
+- **Where it stays:**
+  - in the staff property read;
+  - in the owner's own view of their property (`getMePropertiesPropertyId`),
+    which this appendix does not govern.
+- **Proved by** an HTTP test that writes a phone and an e-mail address into
+  the field, then checks the customer's raw body at all three scopes.
+
+*Revised in the review of `d0e0bc9`. The first delivered version of this
+appendix rendered the full `CustomerPropertyView` above SUMMARY_ONLY.*
+
 ## B.2 R8.2a, unchanged and strengthened
 
 The floor stands as written. Under B.1 no rung adds anything to the property
-beyond the frozen `CustomerPropertyView`. So the answer to R8.2a's question,
+beyond the frozen `CustomerPropertyView`, less its free text. So the answer to R8.2a's question,
 "does a higher scope add this field?", is **no** for every field of the floor,
 and also no for contact and offer terms.
 

@@ -1,0 +1,36 @@
+TURAB — Slice 5 step 4: free location text in the customer response, BEFORE the fix
+====================================================================================
+Recorded          : 2026-10-08 09:05:28 UTC
+Base commit       : d0e0bc9e0f9619bcd63c12e190c237d3fd6bd5ad
+Source fingerprint: 59cc88a79dcbf17852ca6cc130d45af98442e8a4e2e07979170f8bc6b9c1a90e
+Working tree      : clean except ONE modified file, the test file with the new test:
+                     M tests/test_slice5_step4.py
+                    ?? docs/gate/evidence/SLICE5-STEP4-LOCATION-TEXT-BEFORE-FIX.txt
+Test file sha256  : 10ac7a2976578ce594d82360f69b90941873f351c059b1132d18301d41891f65
+
+What is measured (review of d0e0bc9). Over HTTP, through the real run and the
+real APPROVED review, at each scope: the property's `local_location_detail`
+holds a contact written as free text:
+  "قرب المسجد، اتصل 0661-77-88-99 أو owner@contact-sentinel.example"
+The customer's raw body must contain none of its pieces (Appendix B: no
+contact at any scope); the staff property read must still show it. The
+frozen-type test expects the field absent at the two upper scopes.
+
+  tests/test_slice5_step4.py:277: AssertionError: assert {'availabilit..._detail', ...} == {'availabilit...erty_id', ...}
+  tests/test_slice5_step4.py:277: AssertionError: assert {'availabilit..._detail', ...} == {'availabilit...erty_id', ...}
+  tests/test_slice5_step4.py:312: AssertionError: ('PROPERTY_DETAILS_ALLOWED', '0661-77-88-99')
+  tests/test_slice5_step4.py:312: AssertionError: ('CONTACT_AFTER_CONFIRMATION', '0661-77-88-99')
+  PASSED tests/test_slice5_step4.py::test_the_customer_body_is_the_frozen_type_at_each_scope[SUMMARY_ONLY]
+  PASSED tests/test_slice5_step4.py::test_free_location_text_never_reaches_the_customer[SUMMARY_ONLY]
+  FAILED tests/test_slice5_step4.py::test_the_customer_body_is_the_frozen_type_at_each_scope[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_the_customer_body_is_the_frozen_type_at_each_scope[CONTACT_AFTER_CONFIRMATION]
+  FAILED tests/test_slice5_step4.py::test_free_location_text_never_reaches_the_customer[PROPERTY_DETAILS_ALLOWED]
+  FAILED tests/test_slice5_step4.py::test_free_location_text_never_reaches_the_customer[CONTACT_AFTER_CONFIRMATION]
+  4 failed, 2 passed, 37 deselected, 2 warnings in 4.63s
+
+Result: the phone number reaches the customer's body at
+PROPERTY_DETAILS_ALLOWED and at CONTACT_AFTER_CONFIRMATION, through
+`property.local_location_detail`, which `CustomerPropertyView.render`
+copies from the current property row. At SUMMARY_ONLY it does not: the
+four-field summary has no such field. The review inferred this from the code
+path; this run confirms it.

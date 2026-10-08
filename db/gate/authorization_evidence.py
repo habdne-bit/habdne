@@ -859,9 +859,11 @@ RULES: tuple[Rule, ...] = (
           "test_a_relation_to_the_property_grants_nothing")),
     Rule("S5-4 / G5-6 (a) / R9.5 / Appendix B",
          "The customer body is the frozen type at every scope: four property fields at "
-         "SUMMARY_ONLY, the full view above it, no contact, numbers exact",
+         "SUMMARY_ONLY, the view less its free text above it, no contact in any "
+         "field, numbers exact",
          ("test_the_customer_body_is_the_frozen_type_at_each_scope",
-          "test_an_area_is_an_exact_json_number")),
+          "test_an_area_is_an_exact_json_number",
+          "test_free_location_text_never_reaches_the_customer")),
     Rule("S5-4 / mandatory 5 / R8.2a / R9.3",
          "No seller expectation, claim, document value, staff field or rule reaches the "
          "customer at any scope; a claim or an expectation behind a result changes nothing "
