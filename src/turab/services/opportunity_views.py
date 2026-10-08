@@ -200,3 +200,48 @@ def queue_item(row: Mapping[str, Any]) -> dict[str, Any]:
             "created_at": row["created_at"].isoformat(), "reason": reason,
             "request_id": str(row["request_id"]), "property_id": str(row["property_id"]),
             "eligibility": row["eligibility"]}
+
+
+# --- the opportunity queue (G5-11 (a)) ----------------------------------------------------
+
+#: G5-11 (a), direction accepted in the review of `288bfdb`: no time-based
+#: membership. Open opportunities that are INVALID, NEEDS_CONFIRMATION, or
+#: VALID and not yet shared (NEW: `0006` rule 5 keeps `shared_at` null
+#: exactly while NEW). Every condition reads a stored column; no engine call
+#: per row.
+OPPORTUNITY_QUEUE = """
+    SELECT opportunity_id, created_at, request_id, property_id, status::text AS status,
+           validity_status::text AS validity_status
+      FROM turab.opportunities
+     WHERE status <> 'CLOSED'
+       AND (validity_status <> 'VALID' OR status = 'NEW')
+"""
+#: G5-11 (a)'s table, as proposed: (priority, reason) by case.
+OPPORTUNITY_CASES: Mapping[str, tuple[str, str]] = {
+    "INVALID": ("HIGH", "VALIDITY_INVALID"),
+    "NEEDS_CONFIRMATION": ("NORMAL", "VALIDITY_NEEDS_CONFIRMATION"),
+    "NOT_YET_SHARED": ("NORMAL", "NOT_YET_SHARED"),
+}
+
+
+def opportunity_queue(session: Session) -> list[dict[str, Any]]:
+    """The queue's items, ordered by priority, then `created_at`, then
+    `opportunity_id` (the match queue's order, on the opportunity's own
+    creation time)."""
+    items = [(opportunity_queue_item(row), row)
+             for row in session.execute(text(OPPORTUNITY_QUEUE)).mappings()]
+    items.sort(key=lambda pair: (PRIORITY_ORDER[pair[0]["priority"]],
+                                 pair[1]["created_at"], str(pair[1]["opportunity_id"])))
+    return [item for item, _ in items]
+
+
+def opportunity_queue_item(row: Mapping[str, Any]) -> dict[str, Any]:
+    """`QueueItem` (open), G5-11 (a): the validity decides first, so an
+    unshared INVALID opportunity is HIGH, `VALIDITY_INVALID`."""
+    case = (row["validity_status"] if row["validity_status"] != "VALID"
+            else "NOT_YET_SHARED")
+    priority, reason = OPPORTUNITY_CASES[case]
+    return {"id": str(row["opportunity_id"]), "kind": "OPPORTUNITY", "priority": priority,
+            "created_at": row["created_at"].isoformat(), "reason": reason,
+            "request_id": str(row["request_id"]), "property_id": str(row["property_id"]),
+            "status": row["status"], "validity_status": row["validity_status"]}

@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ...services import match_review, matching_run
+from ...services import match_review, matching_run, opportunity_commands
 from ...services.access import AccessDenied
 from ..deps import Access, Command
 from ..problems import ProblemCode, coded, for_denial, trace_id_of
@@ -208,3 +208,143 @@ def match_queue(request: Request, access: Access):
         return for_denial(decision.reason, trace_id_of(request),
                           customer_scoped=False, detail=decision.detail)
     return {"items": access.match_queue(operation_id=MATCH_QUEUE), "next_cursor": None}
+
+
+# --- Slice 5 step 5: revalidate, share, close, and the opportunity queue --------------
+
+REVALIDATE = "postOpportunitiesOpportunityIdRevalidate"
+SHARE = "postOpportunitiesOpportunityIdShare"
+CLOSE = "postOpportunitiesOpportunityIdClose"
+OPPORTUNITY_QUEUE = "getBackofficeQueuesOpportunities"
+
+
+class _NoNull(BaseModel):
+    """The contract types these fields as strings: absent is allowed, an
+    explicit null is not."""
+
+    @field_validator("note", "channel", "reason_code", mode="before", check_fields=False)
+    @classmethod
+    def _a_string_not_null(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("a string; omit the field rather than send null")
+        return value
+
+
+class RevalidateInput(_NoNull):
+    """The inline body: `note`. The body is open, as the contract leaves it
+    (the matching run's precedent, review of bf052f4)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    note: str | None = None
+
+
+class ShareInput(_NoNull):
+    """The inline body: `channel` (the contract's four values) and `note`.
+    Open, as the contract leaves it. Neither is stored: G5-8 (i) is not
+    decided (`services/opportunity_commands.py`)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    channel: str | None = Field(default=None, pattern="^(WHATSAPP|SMS|EMAIL|WEB)$")
+    note: str | None = None
+
+
+class CloseInput(_NoNull):
+    """`CloseCommand`, field for field (closed in the contract). The reason
+    is narrowed by G5-10 in the service, so it answers with its own code."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason_code: str
+    note: str | None = None
+
+
+@router.post("/opportunities/{opportunity_id}/revalidate", operation_id=REVALIDATE,
+             tags=["Opportunities"])
+def revalidate_opportunity(request: Request, opportunity_id: uuid.UUID,
+                           body: RevalidateInput, command: Command):
+    """G5-9: the currency check of §3.7 on the facts now, persisted. The one
+    writer of `validity_status`. A CLOSED opportunity is 409 and nothing is
+    written."""
+    for decision in (command.authorize(REVALIDATE),
+                     command.authorize_staff_only(REVALIDATE, "revalidation is a staff action"),
+                     command.authorize_opportunity_exists(opportunity_id, REVALIDATE)):
+        if not decision.allowed:
+            return for_denial(decision.reason, trace_id_of(request),
+                              customer_scoped=False, detail=decision.detail)
+
+    def prepare(session):
+        return opportunity_commands.prepare_revalidate(session, opportunity_id=opportunity_id)
+
+    def handler(session, prepared):
+        return 200, opportunity_commands.revalidate(session, prepared)
+
+    return _run(request, command, REVALIDATE,
+                f"POST /opportunities/{opportunity_id}/revalidate",
+                body.model_dump(mode="json", exclude_unset=True), handler, 200,
+                extra_errors=opportunity_commands.OpportunityRefused, prepare=prepare)
+
+
+@router.post("/opportunities/{opportunity_id}/share", operation_id=SHARE,
+             tags=["Opportunities"])
+def share_opportunity(request: Request, opportunity_id: uuid.UUID, body: ShareInput,
+                      command: Command):
+    """G5-8: the check never persists. A refusal writes nothing and consumes
+    no key; success is NEW -> SHARED the first time. No message is sent."""
+    for decision in (command.authorize(SHARE),
+                     command.authorize_staff_only(SHARE, "sharing is a staff action"),
+                     command.authorize_opportunity_exists(opportunity_id, SHARE)):
+        if not decision.allowed:
+            return for_denial(decision.reason, trace_id_of(request),
+                              customer_scoped=False, detail=decision.detail)
+
+    def prepare(session):
+        return opportunity_commands.prepare_share(session, opportunity_id=opportunity_id)
+
+    def handler(session, prepared):
+        return 200, opportunity_commands.share(session, prepared)
+
+    return _run(request, command, SHARE, f"POST /opportunities/{opportunity_id}/share",
+                body.model_dump(mode="json", exclude_unset=True), handler, 200,
+                extra_errors=opportunity_commands.OpportunityRefused, prepare=prepare)
+
+
+@router.post("/opportunities/{opportunity_id}/close", operation_id=CLOSE,
+             tags=["Opportunities"])
+def close_opportunity(request: Request, opportunity_id: uuid.UUID, body: CloseInput,
+                      command: Command):
+    """G5-10: from NEW, SHARED or ENGAGED, with one of the eight reasons.
+    CLOSED is final."""
+    for decision in (command.authorize(CLOSE),
+                     command.authorize_staff_only(CLOSE, "closing is a staff action"),
+                     command.authorize_opportunity_exists(opportunity_id, CLOSE)):
+        if not decision.allowed:
+            return for_denial(decision.reason, trace_id_of(request),
+                              customer_scoped=False, detail=decision.detail)
+
+    def prepare(session):
+        return opportunity_commands.prepare_close(session, opportunity_id=opportunity_id,
+                                                  reason_code=body.reason_code)
+
+    def handler(session, prepared):
+        return 200, opportunity_commands.close(session, prepared)
+
+    return _run(request, command, CLOSE, f"POST /opportunities/{opportunity_id}/close",
+                body.model_dump(mode="json", exclude_unset=True), handler, 200,
+                extra_errors=opportunity_commands.OpportunityRefused, prepare=prepare)
+
+
+@router.get("/backoffice/queues/opportunities", operation_id=OPPORTUNITY_QUEUE,
+            tags=["BackOffice"])
+def opportunity_queue(request: Request, access: Access):
+    """`QueuePage` of open opportunities needing follow-up (G5-11 (a)): no
+    time-based condition; every membership condition is a stored column.
+    Staff only, audited once with its count (R6.3c). The whole queue,
+    `next_cursor` null, as the Slice 3 queues."""
+    decision = access.authorize_operation(OPPORTUNITY_QUEUE)
+    if not decision.allowed:
+        return for_denial(decision.reason, trace_id_of(request),
+                          customer_scoped=False, detail=decision.detail)
+    return {"items": access.opportunity_queue(operation_id=OPPORTUNITY_QUEUE),
+            "next_cursor": None}

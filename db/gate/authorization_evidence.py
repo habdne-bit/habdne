@@ -897,6 +897,65 @@ RULES: tuple[Rule, ...] = (
           "test_an_aliased_propertys_match_leaves_the_queue",
           "test_the_queue_is_ordered_high_first_and_audited_once_with_its_count",
           "test_a_customer_cannot_read_the_match_queue")),
+    # --- Slice 5, step 5: revalidate, share, close, the opportunity queue ---------
+    Rule("S5-5 / x-roles / R6.3a",
+         "Share is ADMIN and OPERATOR, revalidate and close add REVIEWER; a customer, the "
+         "request's own party included, is refused and nothing is written; an unknown "
+         "opportunity is 403 and recorded",
+         ("test_the_roles_are_the_contracts",
+          "test_an_unknown_opportunity_is_refused_and_recorded")),
+    Rule("S5-5 / G5-9 / §3.7",
+         "Revalidate is the one writer of validity and stores exactly what the check "
+         "returns, not monotonic; only a VALID check confirms; the current binding is "
+         "recorded; agreement with the approval at a pinned instant",
+         ("test_revalidate_right_after_approval_is_valid_and_changes_no_validity",
+          "test_with_the_clock_pinned_approval_and_revalidate_agree",
+          "test_revalidate_stores_exactly_what_the_check_returns",
+          "test_a_fact_changed_after_creation_is_recorded_by_revalidate",
+          "test_validity_returns_to_valid_when_the_facts_do",
+          "test_revalidate_records_the_current_binding_and_null_when_none",
+          "test_revalidate_is_audited_once_with_its_actor")),
+    Rule("S5-5 / G5-8 / H05 / B03 / R8.4",
+         "A share checks the recorded validity, the facts now, the scope and the consent "
+         "before any write; a refusal changes nothing, writes no audit row and consumes "
+         "no key; the check is never persisted by a share",
+         ("test_b03_h05_a_share_after_a_revocation_is_refused_and_changes_nothing",
+          "test_a_stored_needs_confirmation_is_refused_until_revalidate_records_valid",
+          "test_a_share_on_facts_that_are_not_valid_now_is_refused",
+          "test_a_revoked_consent_and_another_failing_fact_answer_consent_revoked",
+          "test_a_narrowed_scope_refuses_the_share_and_a_wider_one_does_not",
+          "test_a_refused_share_consumes_no_key_and_the_same_key_is_evaluated_afresh",
+          "test_share_writes_no_validity_binding_or_confirmation",
+          "test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only")),
+    Rule("S5-5 / G5-8 (iii) PROVISIONAL",
+         "A CURRENT CONTACT_BEFORE_SHARING binding refuses the share; a revoked one does "
+         "not (pending the decision of G5-8 (iii))",
+         ("test_provisional_a_current_contact_before_sharing_binding_refuses_the_share",)),
+    Rule("S5-5 / G5-10",
+         "Close takes one of the eight reasons and writes status, time, reason and "
+         "activity together from NEW, SHARED or ENGAGED; CLOSED is final for every "
+         "command; the real close frees the pair",
+         ("test_close_from_new_writes_status_time_reason_and_activity_together",
+          "test_close_from_shared_and_from_engaged_keeps_the_event_stamps",
+          "test_a_close_reason_outside_the_eight_is_refused",
+          "test_the_eight_are_the_seeded_category_opportunity_and_other",
+          "test_closed_is_final_for_every_command",
+          "test_a_close_waits_for_a_command_holding_the_opportunity_and_reads_its_result",
+          "test_mandatory_6_the_real_close_frees_the_pair")),
+    Rule("S5-5 / G5-12 B10",
+         "No Slice 5 command writes current_offer_id: no UPDATE names it, and revalidate, "
+         "share and close keep the evaluated offer when another ACTIVE offer exists",
+         ("test_b10_static_no_update_of_an_opportunity_names_current_offer_id",
+          "test_b10_the_offer_is_never_switched_by_any_command")),
+    Rule("S5-5 / G5-11 (a) / R6.3c",
+         "The opportunity queue holds the open INVALID, NEEDS_CONFIRMATION and unshared "
+         "opportunities with G5-11's priority and reason, no time-based membership; "
+         "staff-only, audited once with its count",
+         ("test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary",
+          "test_an_unshared_invalid_opportunity_is_high_and_named_by_its_validity",
+          "test_the_queue_has_no_time_based_membership",
+          "test_the_queue_is_ordered_by_priority_then_creation",
+          "test_the_queue_is_staff_only_and_audited_once")),
 )
 
 

@@ -386,6 +386,18 @@ class AccessService:
             query_shape={"membership": "G5-11", "excluded_eligibility": ["REJECTED"]})
         return items
 
+    def opportunity_queue(self, *, operation_id: str):
+        """Slice 5 step 5: the opportunity queue (G5-11 (a)), on the READ
+        session, audited once with its count, not its ids (R6.3c)."""
+        from . import opportunity_views
+
+        items = opportunity_views.opportunity_queue(self._session)
+        self.record_list_access(
+            operation_id=operation_id, resource_kind=OPPORTUNITY_KIND,
+            result_count=len(items),
+            query_shape={"membership": "G5-11 (a)", "excluded_status": ["CLOSED"]})
+        return items
+
     def read_latest_diagnostic(self, request_id: uuid.UUID, operation_id: str):
         """Slice 4 step 8: the latest diagnostic run of a request (G4-15:
         counts and blocker summary only), staff-only and RECORDED.

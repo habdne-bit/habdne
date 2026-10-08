@@ -1,0 +1,121 @@
+TURAB — Slice 5 step 5: revalidate, share, close, the opportunity queue, BEFORE the change
+=========================================================================================
+Recorded          : 2026-10-08 14:52:25 UTC
+Base commit       : fc450f028222d38df64d550a0b263ff15a9635a0 (step 4 CLOSED; no step-5 code)
+Measured in       : an isolated git worktree at the base commit; .venv symlinked
+Source fingerprint: b076f5f4252b2f2a898be082d72add4ce7727cc5fa72c3ff1fa8ef3f0eb98db3
+Database          : the suite's own, at alembic head 0006
+Test file sha256  : 1d7d269d3c1c8bd68eb4ff1c8fb5f6a3ecabc9c51af3b23d00064d1fa026c5a1
+                    (the file of the step-5 commit, copied into the worktree)
+
+Discipline note: as in steps 2, 3 and 4, the code was written before this
+record. The test file imports no new module at module level, so it COLLECTS
+at the base commit and every test is measured.
+
+Result: 68 failed, 2 warnings in 51.95s
+
+A. Per test (pytest -rA)
+------------------------
+  FAILED tests/test_slice5_step5.py::test_revalidate_right_after_approval_is_valid_and_changes_no_validity
+  FAILED tests/test_slice5_step5.py::test_with_the_clock_pinned_approval_and_revalidate_agree
+  FAILED tests/test_slice5_step5.py::test_revalidate_stores_exactly_what_the_check_returns
+  FAILED tests/test_slice5_step5.py::test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_paused-NEEDS_CONFIRMATION-reasons0]
+  FAILED tests/test_slice5_step5.py::test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_withdrawn-INVALID-reasons1]
+  FAILED tests/test_slice5_step5.py::test_a_fact_changed_after_creation_is_recorded_by_revalidate[unavailable-INVALID-reasons2]
+  FAILED tests/test_slice5_step5.py::test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_closed-INVALID-reasons3]
+  FAILED tests/test_slice5_step5.py::test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_stale-NEEDS_CONFIRMATION-reasons4]
+  FAILED tests/test_slice5_step5.py::test_a_fact_changed_after_creation_is_recorded_by_revalidate[consent_revoked-INVALID-reasons5]
+  FAILED tests/test_slice5_step5.py::test_validity_returns_to_valid_when_the_facts_do
+  FAILED tests/test_slice5_step5.py::test_revalidate_records_the_current_binding_and_null_when_none
+  FAILED tests/test_slice5_step5.py::test_revalidate_is_audited_once_with_its_actor
+  FAILED tests/test_slice5_step5.py::test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only
+  FAILED tests/test_slice5_step5.py::test_share_writes_no_validity_binding_or_confirmation
+  FAILED tests/test_slice5_step5.py::test_b03_h05_a_share_after_a_revocation_is_refused_and_changes_nothing
+  FAILED tests/test_slice5_step5.py::test_a_stored_needs_confirmation_is_refused_until_revalidate_records_valid
+  FAILED tests/test_slice5_step5.py::test_a_share_on_facts_that_are_not_valid_now_is_refused[UPDATE turab.property_offers SET status = 'PAUSED' WHERE offer_id = :offer-OFFER_STATUS-PAUSED]
+  FAILED tests/test_slice5_step5.py::test_a_share_on_facts_that_are_not_valid_now_is_refused[UPDATE turab.properties SET current_availability = 'UNAVAILABLE' WHERE property_id = :prop-AVAILABILITY-PROPERTY_UNAVAILABLE]
+  FAILED tests/test_slice5_step5.py::test_a_share_on_facts_that_are_not_valid_now_is_refused[UPDATE turab.requests SET status = 'PAUSED' WHERE request_id = :req-REQUEST_STATUS-PAUSED]
+  FAILED tests/test_slice5_step5.py::test_a_revoked_consent_and_another_failing_fact_answer_consent_revoked
+  FAILED tests/test_slice5_step5.py::test_a_narrowed_scope_refuses_the_share_and_a_wider_one_does_not
+  FAILED tests/test_slice5_step5.py::test_provisional_a_current_contact_before_sharing_binding_refuses_the_share
+  FAILED tests/test_slice5_step5.py::test_a_refused_share_consumes_no_key_and_the_same_key_is_evaluated_afresh
+  FAILED tests/test_slice5_step5.py::test_a_share_replays_and_a_different_body_on_its_key_conflicts
+  FAILED tests/test_slice5_step5.py::test_the_share_body_is_typed_as_the_contract_types_it[body0]
+  FAILED tests/test_slice5_step5.py::test_the_share_body_is_typed_as_the_contract_types_it[body1]
+  FAILED tests/test_slice5_step5.py::test_the_share_body_is_typed_as_the_contract_types_it[body2]
+  FAILED tests/test_slice5_step5.py::test_the_share_body_is_typed_as_the_contract_types_it[body3]
+  FAILED tests/test_slice5_step5.py::test_the_share_body_is_open_and_carries_nothing_stored
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[OWNER_REJECTED]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[BUYER_REJECTED]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[PROPERTY_UNAVAILABLE]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[REQUEST_CHANGED]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[UNREACHABLE]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[DEAL_CONFIRMED]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[DUPLICATE_OPPORTUNITY_CONSOLIDATED]
+  FAILED tests/test_slice5_step5.py::test_close_from_new_writes_status_time_reason_and_activity_together[OTHER]
+  FAILED tests/test_slice5_step5.py::test_close_from_shared_and_from_engaged_keeps_the_event_stamps
+  FAILED tests/test_slice5_step5.py::test_a_closed_opportunity_can_be_closed_whatever_its_validity
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body0-422-CLOSE_REASON_NOT_ALLOWED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body1-422-CLOSE_REASON_NOT_ALLOWED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body2-422-CLOSE_REASON_NOT_ALLOWED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body3-422-CLOSE_REASON_NOT_ALLOWED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body4-422-VALIDATION_FAILED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body5-422-VALIDATION_FAILED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body6-422-VALIDATION_FAILED]
+  FAILED tests/test_slice5_step5.py::test_a_close_reason_outside_the_eight_is_refused[body7-422-VALIDATION_FAILED]
+  FAILED tests/test_slice5_step5.py::test_the_eight_are_the_seeded_category_opportunity_and_other
+  FAILED tests/test_slice5_step5.py::test_closed_is_final_for_every_command[revalidate]
+  FAILED tests/test_slice5_step5.py::test_closed_is_final_for_every_command[share]
+  FAILED tests/test_slice5_step5.py::test_closed_is_final_for_every_command[close]
+  FAILED tests/test_slice5_step5.py::test_a_close_replays_on_its_key_after_the_opportunity_is_closed
+  FAILED tests/test_slice5_step5.py::test_mandatory_6_the_real_close_frees_the_pair
+  FAILED tests/test_slice5_step5.py::test_a_closed_opportunitys_match_yields_no_second_opportunity
+  FAILED tests/test_slice5_step5.py::test_a_close_waits_for_a_command_holding_the_opportunity_and_reads_its_result
+  FAILED tests/test_slice5_step5.py::test_an_unknown_opportunity_is_refused_and_recorded[revalidate]
+  FAILED tests/test_slice5_step5.py::test_an_unknown_opportunity_is_refused_and_recorded[share]
+  FAILED tests/test_slice5_step5.py::test_an_unknown_opportunity_is_refused_and_recorded[close]
+  FAILED tests/test_slice5_step5.py::test_the_roles_are_the_contracts[revalidate-allowed0]
+  FAILED tests/test_slice5_step5.py::test_the_roles_are_the_contracts[share-allowed1]
+  FAILED tests/test_slice5_step5.py::test_the_roles_are_the_contracts[close-allowed2]
+  FAILED tests/test_slice5_step5.py::test_b10_static_no_update_of_an_opportunity_names_current_offer_id
+  FAILED tests/test_slice5_step5.py::test_b10_the_offer_is_never_switched_by_any_command
+  FAILED tests/test_slice5_step5.py::test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+  FAILED tests/test_slice5_step5.py::test_an_unshared_invalid_opportunity_is_high_and_named_by_its_validity
+  FAILED tests/test_slice5_step5.py::test_the_queue_has_no_time_based_membership
+  FAILED tests/test_slice5_step5.py::test_the_queue_is_ordered_by_priority_then_creation
+  FAILED tests/test_slice5_step5.py::test_the_queue_is_staff_only_and_audited_once
+
+B. The causes, as each test reports them (count, line: cause)
+-------------------------------------------------------------
+     37 88: AssertionError: {"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"}
+     22 118: AssertionError: {"type":"about:blank","title":"Not found","status":404,"code":"NOT_FOUND","trace_id":"…"}
+      3 690: AssertionError: assert (404, 'NOT_FOUND') == (403, 'OBJECT_NOT_AUTHORIZED')
+      1 870: AssertionError: assert (404, 'NOT_FOUND') == (403, 'ROLE_NOT_PERMITTED')
+      1 747: AssertionError: assert set() == {'src/turab/s..._commands.py'}
+      1 670: AssertionError: the close never waited
+      1 583: ImportError: cannot import name 'opportunity_commands' from 'turab.services' (worktree)
+      1 478: AssertionError: assert (404, 'NOT_FOUND') == (409, 'OPPORTUNITY_NOT_VALID')
+      1 167: ImportError: cannot import name 'opportunity_commands' from 'turab.services' (worktree)
+
+C. What these say about the base commit
+---------------------------------------
+- The three commands are not routed. POST /opportunities/{id}/revalidate,
+  /share and /close answer the generic 404 NOT_FOUND of an unknown path:
+  line 88 (`_ok`, a command expected to succeed, 37 cases), line 118
+  (`_refused`, a command expected to be refused, 22 cases), line 478 (the
+  same-key share), line 690 (an unknown opportunity, expected 403 and
+  recorded, 3 cases). Nothing can revalidate, share or close an opportunity
+  through the API; step 4's tests shared by an SQL fixture.
+- GET /backoffice/queues/opportunities is not routed: 404 (line 870, the
+  customer's refusal; the queue tests' own calls fail first at line 88 of a
+  setup command).
+- The service module does not exist (lines 167, 583), and no source file
+  UPDATEs `opportunities` (line 747: the set of writers is empty).
+- The lock-witness test finds no waiting command (line 670): no close exists
+  to wait.
+- No test passes at the base commit.
+- B10 at the schema level is unchanged since step 0 (measured there, B10:
+  `current_offer_id` → another offer is ACCEPTED by the schema after
+  `0006`). Step 5 adds no schema change; the guard is the service's.
+
+The worktree was removed after this record.

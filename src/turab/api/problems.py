@@ -120,6 +120,21 @@ class ProblemCode(StrEnum):
     MATCH_SUPERSEDED = "MATCH_SUPERSEDED"
     MATCH_CONTEXT_NOT_VALID = "MATCH_CONTEXT_NOT_VALID"
     OPPORTUNITY_ALREADY_OPEN = "OPPORTUNITY_ALREADY_OPEN"
+    #: Slice 5 step 5, the opportunity commands (G5-8, G5-9, G5-10). 409,
+    #: state, except the close reason (422, input):
+    #: - any command on a CLOSED opportunity (CLOSED is final);
+    #: - a share whose recorded validity, or the check now, is not VALID
+    #:   (permission FAIL answers CONSENT_REVOKED instead);
+    #: - a share whose offer's permission scope is now narrower than the
+    #:   opportunity's sharing scope;
+    #: - PROVISIONAL, G5-8 (iii) (a): a share while a CONTACT_BEFORE_SHARING
+    #:   binding is CURRENT;
+    #: - a close reason outside the category OPPORTUNITY and OTHER.
+    OPPORTUNITY_CLOSED = "OPPORTUNITY_CLOSED"
+    OPPORTUNITY_NOT_VALID = "OPPORTUNITY_NOT_VALID"
+    SHARING_SCOPE_NARROWED = "SHARING_SCOPE_NARROWED"
+    CONTACT_BEFORE_SHARING_REQUIRED = "CONTACT_BEFORE_SHARING_REQUIRED"
+    CLOSE_REASON_NOT_ALLOWED = "CLOSE_REASON_NOT_ALLOWED"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -166,6 +181,11 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.MATCH_SUPERSEDED: (409, "Match superseded"),
     ProblemCode.MATCH_CONTEXT_NOT_VALID: (409, "Match context not valid"),
     ProblemCode.OPPORTUNITY_ALREADY_OPEN: (409, "Opportunity already open"),
+    ProblemCode.OPPORTUNITY_CLOSED: (409, "Opportunity closed"),
+    ProblemCode.OPPORTUNITY_NOT_VALID: (409, "Opportunity not valid"),
+    ProblemCode.SHARING_SCOPE_NARROWED: (409, "Sharing scope narrowed"),
+    ProblemCode.CONTACT_BEFORE_SHARING_REQUIRED: (409, "Contact before sharing required"),
+    ProblemCode.CLOSE_REASON_NOT_ALLOWED: (422, "Close reason not allowed"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
