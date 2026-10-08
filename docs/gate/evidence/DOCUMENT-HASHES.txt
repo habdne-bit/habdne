@@ -739,3 +739,6 @@ SLICE_5_PLAN.md changed revision: 13 -> 14 (step 4 closed; step 5 authorized; G5
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   296c2eb6d2c326b49d165ae83ede0e16da7e20ec87f2cf488138306650d7dd21
 docs/gate/evidence/SLICE5-STEP5-BEFORE-FIX.txt                 new   40b65975ffe13f55d222990d0bbe2dad98cf7e86bc5a916a39e0d5849d15b09c
 docs/gate/evidence/SLICE5-STEP5-MUTATIONS.txt                  new   b58632aab662aa4d01f69ad81ce8ef907ee51b78840b27d203691f47ffba96c1
+docs/gate/SLICE_5_STEP5_DELIVERY.md                            new   f8b1d4c15afd17bdab3cff6370d85c9427a5fac184664f58be86bad77bc4a903
+docs/gate/SLICE_5_PLAN.md                                      rev15 d931fb0f09f1f48959f141949c026ee52071c98eb920c4c5699d35f623aea7e2
+SLICE_5_PLAN.md changed revision: 14 -> 15 (step 5 delivered; G5-8 (i) and (iii) PROVISIONAL; step-5 interpretations put for confirmation).
