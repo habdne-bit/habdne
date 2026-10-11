@@ -747,3 +747,6 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   10e5aa0bd86
 docs/gate/evidence/SLICE5-STEP5-R-S5-5-01-BEFORE-FIX.txt       new   d9f03c2fc4257e79c114fe674607164c1d755b750775c5e875de3052a4ac5773
 docs/gate/evidence/SLICE5-STEP5-MUTATIONS-AFTER-R-S5-5-01.txt  new   e6e81b4d957f3cad77307a589baa46d6599d1c5b10ab22c9b48d2e9a43f9383a
 docs/gate/evidence/SLICE5-STEP3-MUTATIONS-L3-L4-AFTER-LOCK-MODE.txt new   72828e1aafd6ea6bba4cb0d75b883889f9d3b7b0b02bd7d46defbfa6a3d48841
+docs/gate/SLICE_5_STEP5_DELIVERY.md                            ---   0ae680c48fceb11d6224e8d252d17ff328c3c6b1d2e612058e65b33d4f6cc8ce
+docs/gate/SLICE_5_PLAN.md                                      rev16 a06d85e94eaa20bdf07509d8e9a2a50f7a6c4f37970bc22fe3f537dc14834fec
+SLICE_5_PLAN.md changed revision: 15 -> 16 (review of 6c6e614: R-S5-5-01 measured and fixed; G5-8 (i)/(iii) decided (a); step 6 not authorized).

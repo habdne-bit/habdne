@@ -3,12 +3,17 @@
 **Authorized (review of `1556624`).** "الخطوة 5 مأذون ببدئها وفق القرارات
 المعتمدة. الشريحة 5 ككل لم تُغلق بعد."
 
-**Status:** **DELIVERED, submitted for review.** Not closed. Slice 5 as a
-whole is not closed.
+**Status:** **DELIVERED, submitted for review again.** Not closed. Slice 5
+as a whole is not closed.
+- **The review of `6c6e614`** found one blocker, R-S5-5-01: a consent
+  binding created while a share runs. It is measured, and fixed at
+  `0a5c446` (§13).
+- **The same review decided G5-8 (i) and (iii) as (a).** Both are
+  implemented (§13.5, §13.6).
+- **Step 6 is not authorized.**
 
-**Two points are PROVISIONAL.** G5-8 (i) and (iii) were put to the reviewer
-in revision 2 and have no recorded decision. Each is implemented by the
-narrower option, and isolated so that the decision changes one place (§2).
+*As first delivered, G5-8 (i) and (iii) were PROVISIONAL (§2.1, kept as
+written).*
 
 **Still open:**
 - G4-5R (STOP GATE E is SALE only);
@@ -19,7 +24,10 @@ narrower option, and isolated so that the decision changes one place (§2).
 - `93c7b37`: the code, the tests, the mutation script, the matrix rules, the
   before-fix record;
 - `ab2ea1c`, `af47f26`, `10fc3c4`, `a1cf19f`: the evidence (§8);
-- the commit that adds this note: the note and plan revision 15.
+- `6c6e614`: the note and plan revision 15;
+- after the review of `6c6e614`: `0a5c446` (the fix and G5-8 (i)), then
+  `f3dd4c3`, `04095e3`, `a7648b9`, `b3f4d9f` (the evidence), then the
+  commit that adds §13 and plan revision 16.
 
 ---
 
@@ -205,6 +213,9 @@ The three proofs the plan asks for:
 
 ### 2.1 The two open points of G5-8, implemented PROVISIONALLY
 
+*[Decided since, in the review of `6c6e614`: (i) and (iii) as (a). (i) is
+implemented as decided (§13.5); P1 below no longer describes the code.]*
+
 **P1 — G5-8 (i), where the share's `channel` and `note` are kept.**
 - **The choice: stored nowhere.** Both are accepted as the contract types
   them: `channel` is one of WHATSAPP, SMS, EMAIL, WEB; `note` is a string;
@@ -267,6 +278,9 @@ check, and no invented scope.
    - Close reads `clock_timestamp()` in its UPDATE.
 
 ### 2.3 Locks, and why no new deadlock cycle
+
+*[Superseded by §13.4 after the review of `6c6e614`: the share now takes the
+property and the offer `FOR UPDATE`.]*
 
 **The lock order of each command:**
 
@@ -468,3 +482,316 @@ writer.
   - L-S5-3a and L-S5-3b: settle each by test, by documented consistency
     model, or by synchronization;
   - K06 listed UNPROVEN.
+
+## 13. The review of `6c6e614`: R-S5-5-01, and G5-8 (i) and (iii) decided
+
+### 13.1 What the review checked itself, and what it decided
+
+**Checked by the reviewer:**
+- the bundle's SHA-256 (`2495decb…4068`) and its 380 manifest entries;
+- the source fingerprint `c93a8f86…f32d`, recomputed;
+- `bound`.
+
+The PostgreSQL, suite and mutation results remain ours, bound to the tree.
+
+**Not closed: one blocker, R-S5-5-01.** It was inferred from the code and
+the lock rules, and not measured by the reviewer:
+- `currency._lock` held the property and the offer `FOR SHARE`;
+- `FOR SHARE` does not conflict with the `FOR KEY SHARE` that the binding
+  INSERT's foreign-key check takes;
+- a lock on existing rows does not cover a binding that does not exist yet.
+
+So a CURRENT `CONTACT_BEFORE_SHARING` binding could be inserted after the
+share's negative check, and before its commit.
+
+**Decided:**
+- **G5-8 (i): option (a).**
+  - One `interactions` row, STATUS_CHANGE, written on a successful share in
+    the share's own transaction. It keeps the channel, the note, the actor
+    and the opportunity.
+  - It is not proof that a message was sent or a contact made.
+  - The free-text note goes neither to the audit log nor to the customer's
+    response.
+  - A replay creates no second row, and a refusal creates none.
+- **G5-8 (iii): option (a).** A CURRENT `CONTACT_BEFORE_SHARING` binding
+  refuses the share with a typed refusal, until a path records the
+  contact. Approving the rule does not make the implementation immune to
+  the window.
+- **I1–I8 accepted** within their scope. I4 is amended by the decision on
+  `channel` and `note` (§13.5).
+
+**Still in force:**
+- step 6 is not authorized until this correction is reviewed;
+- L-S5-3a, L-S5-3b, K06 and G4-5R keep their stated limits.
+
+### 13.2 R-S5-5-01, measured before the fix
+
+`evidence/SLICE5-STEP5-R-S5-5-01-BEFORE-FIX.txt`:
+- **at `6c6e614`**, in an isolated worktree;
+- with the review's tests added to `tests/test_slice5_step5.py`, and no
+  source file changed.
+
+**The tests the review asked for.** Each runs over HTTP, through:
+- the real share command;
+- the real binding command (`POST /consents/bindings`, purpose
+  `CONTACT_BEFORE_SHARING`, as an OPERATOR).
+
+Each command runs in its own transaction, and the witness is
+`pg_stat_activity` with `pg_blocking_pids`. Both binding targets are tried:
+the offer (`PROPERTY_OFFER`) and the property (`PROPERTY`).
+
+**Order A.** The share is held after its contact check and before its
+UPDATE. The binding is then created in another transaction.
+
+**Order B.** The binding is inserted and held before its commit. The share
+then runs.
+
+| order | target | measured at `6c6e614` |
+|---|---|---|
+| A | offer | **the binding did not wait.** It committed while the share was held; the share then committed SHARED over a CURRENT CONTACT_BEFORE_SHARING binding |
+| A | property | the same |
+| B | offer | **the share did not wait.** It did not see the uncommitted binding, committed SHARED and consumed its key; the binding then committed |
+| B | property | the same |
+
+**The window is confirmed in PostgreSQL**, in both orders and on both
+targets, as the review inferred.
+
+### 13.3 The fix
+
+**The share alone takes the property and the offer `FOR UPDATE`**
+(`currency.check(..., exclusive=True)` from `prepare_share`). The other
+users of the check keep `FOR SHARE`.
+
+**Why `FOR UPDATE`, and not another mode.**
+- A new binding's INSERT checks `fk_consent_binding_offer` or
+  `fk_consent_binding_property` with `FOR KEY SHARE` on the referenced row.
+- Of the four row-lock modes, **only `FOR UPDATE` conflicts with
+  `FOR KEY SHARE`** (PostgreSQL 16 documentation, §13.3.2, Table 13.3
+  "Conflicting Row-Level Locks").
+- Mutation **W2** replaces it with `FOR NO KEY UPDATE`, which is stronger
+  than `FOR SHARE` but does not conflict with `FOR KEY SHARE`. W2 is killed
+  by the window tests (§13.7).
+
+**What it gives, in each order:**
+- **Order A:** the binding's foreign-key check waits on the share. It
+  commits after the share has committed, so the share was right at its
+  commit.
+- **Order B:** the share waits on the binding at the offer or the property.
+  Once the binding commits, the share's next statements read the facts
+  again. Each statement under Read Committed takes a new snapshot
+  (PostgreSQL 16, §13.2.1), and the check reads every fact after its locks.
+  The binding is seen, and the share is refused with 409
+  `CONTACT_BEFORE_SHARING_REQUIRED`:
+  - it writes nothing: no row, no audit row, no interaction;
+  - it consumes no key, since the refusal comes before the claim.
+
+**Why the remedy is at the row and not in the binding command.**
+- The foreign-key check binds any writer of `resource_consent_bindings`,
+  through the API or not.
+- No migration is needed, and none is added.
+- An advisory lock in `consent.bind_consent` would bind the service only.
+
+### 13.4 The effect of the stronger lock on its ordering (as the review asked)
+
+**The share's order:** the opportunity, then the request (`FOR NO KEY
+UPDATE`), then the property, then the offer (both `FOR UPDATE`), then the
+existing bindings and grants (`FOR SHARE`). It is the approval's order, with
+two locks made stronger. A cycle would need a transaction that holds the
+offer and then waits on the property, or one that holds what the share
+locked first.
+
+| neighbour | its order | effect, tested |
+|---|---|---|
+| **approval** (another request, same property) | match → request → property `FOR SHARE` → offer `FOR SHARE` | waits on the share at the property; then creates its opportunity. `test_an_approval_on_the_same_property_waits_for_a_held_share_and_both_succeed` |
+| **a second share** (another opportunity, same property) | opportunity → request → property `FOR UPDATE` → offer | waits at the property; then succeeds. `test_two_shares_on_one_property_serialize_and_both_succeed` |
+| **revalidate** | opportunity → request → property `FOR SHARE` → offer `FOR SHARE` | the same order as the approval; it serializes with a share at the property |
+| **the matching run** (REPEATABLE READ) | the foreign keys of each `match_candidates` row: request → property → offer | waits on the share at the property; then completes 201, with no deadlock and no serialization failure. `test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes` |
+| **a binding INSERT** | one foreign key, on the offer or the property | serialized: §13.3 |
+| **offer writers** (`services/offers.py`) | the offer `FOR UPDATE`, then provenance rows that name the offer only (`num_nonnulls(...) = 1`) | never wait on a property after holding an offer |
+| **property writers, identity review, truth layer** | one property (or two, ordered by id), then rows that name that property only | never hold an offer |
+
+**Measured for the run's order.**
+- The run's foreign-key triggers on `match_candidates` are
+  `RI_ConstraintTrigger_c_…`, in the order request, property, offer (read
+  from `pg_trigger` on the suite's database).
+- PostgreSQL fires the triggers of one event "in alphabetical order by trigger
+  name" (documentation of `CREATE TRIGGER`).
+- So a run blocked at a property holds no lock on that property's offers
+  for that row, and an offer belongs to one property.
+
+**The cost, stated.**
+- A share now waits for any open transaction that holds a key lock on its
+  property or offer: a matching run that already inserted a match on the
+  property, an approval, or another share. The longest is a matching run.
+- An approval and a revalidate on that property wait for the share. A share
+  is short: a few reads and two writes.
+
+**Not changed:**
+- revalidate and the approval keep `FOR SHARE`: neither depends on the
+  absence of a binding;
+- an inserted binding cannot lower the permission gate, since `PASS` needs
+  one CURRENT binding and a revocation is an UPDATE of a row already
+  locked.
+
+### 13.5 G5-8 (i), implemented as decided
+
+**One `interactions` row per successful share**, written in its transaction
+after the opportunity's UPDATE:
+
+| column | value |
+|---|---|
+| `interaction_type` | `STATUS_CHANGE` |
+| `channel` | the body's channel (WHATSAPP, SMS, EMAIL, WEB, all values of `communication_channel`), or null |
+| `summary` | the body's note, or null |
+| `party_id` | the request's party |
+| `opportunity_id` | the opportunity |
+| `operator_account_id` | the actor |
+| `occurred_at` | the share's instant (`shared_at` on the first share) |
+| `thread_id`, `outcome_code` | null |
+| `metadata` | `source_operation` (`postOpportunitiesOpportunityIdShare`), `status_before`, `status_after` |
+
+**Not proof of a message or a contact.**
+- No thread is linked, no message is sent, and no check reads the row as a
+  contact.
+- `test_g5_8_iii_an_interaction_recorded_by_a_share_is_not_a_recorded_contact`:
+  after a share, a CURRENT `CONTACT_BEFORE_SHARING` binding still refuses
+  the next one.
+
+**The note stays out of the audit log and the responses.**
+- `interactions` has no audit trigger. The command layer writes the audit
+  row the trigger would have written (`audit_rows`), **less `summary`**
+  (`audit_rows.WITHHELD`), by the decision.
+- This is the one departure from `audit_rows`' rule ("the same columns"),
+  and it is named there.
+- The note is in no response: not the share's, which is the
+  `InternalOpportunityView` and has no note field, and not the customer's.
+
+**A replay and a refusal.**
+- A replay returns the stored response without running the handler, so it
+  writes no second row.
+- A refusal comes before the claim and the handler, so it writes none.
+
+**Each successful share is recorded, the later ones included.** A later
+share keeps the status (I5) and still carries its own channel and note.
+Recording only the first would drop them, which the decision refused.
+`status_before` and `status_after` say which share it was.
+
+**I4, amended.** The bodies of revalidate and share stay open, as the
+contract leaves them. The share's `channel` and `note` are now kept in the
+interaction.
+
+**Put to the reviewer: the `note` of revalidate and close.**
+- G5-10 wrote "the note follows G5-8 (i)", but the decision names the
+  share.
+- Both notes are still accepted and stored nowhere. A close is a status
+  change too: the same row, of type STATUS_CHANGE, would carry it.
+- I have not extended the decision on my own.
+
+### 13.6 G5-8 (iii)
+
+The rule is unchanged, and now serialized (§13.3). The PROVISIONAL marks
+are removed from the code, the tests, the matrix and the problem catalogue.
+
+### 13.7 Mutations
+
+**Step 5:** `db/dev/mutate_slice5_step5.py` has 42 mutations: the 31 of §7,
+S6 and S7 renamed, and eleven new ones:
+- **W1** the share takes the shared lock;
+- **W2** `FOR NO KEY UPDATE` instead of `FOR UPDATE`;
+- **W3** the property not locked exclusively;
+- **W4** the offer not locked exclusively;
+- **I1** no interaction;
+- **I2** the note not kept;
+- **I3** the channel not kept;
+- **I4** the operator not kept;
+- **I5** the audit row carries the note;
+- **I6** the interaction not audited;
+- **I7** the status before not recorded.
+
+**The record:** `evidence/SLICE5-STEP5-MUTATIONS-AFTER-R-S5-5-01.txt`.
+- **Run:** at `0a5c446`, on a clean tree, source fingerprint
+  `c7a5e436…8d632f`.
+- **Result: 42 of 42 fail, none survives.** The baseline is 81 passed.
+- **Restoration:** every mutated file was restored, and verified by sha256.
+- **Before the run,** a script checked each anchor (exactly one site), that
+  each mutation changes its file, and that each mutated file compiles.
+
+**What kills each new mutation:**
+
+| mutation | killed by |
+|---|---|
+| **W1** (the shared lock) | the four window cases, plus the run, approval and two-share tests (7 failed) |
+| **W2** (`FOR NO KEY UPDATE`) | the four window cases and the run test (5 failed) |
+| **W3** (property not exclusive) | the two PROPERTY window cases |
+| **W4** (offer not exclusive) | the two PROPERTY_OFFER window cases |
+| **I1–I7** | each by its own interaction test: 6, 3, 3, 1, 1, 1 and 2 failures |
+
+**About W2.** The approval and two-share tests do not kill it, because
+`FOR NO KEY UPDATE` already conflicts with `FOR SHARE` and with itself.
+Only the binding's and the run's foreign-key `FOR KEY SHARE` tell it apart
+from `FOR UPDATE`. That is the reason for the mode chosen in §13.3.
+
+**Step 3:** mutations L3 and L4 of `db/dev/mutate_slice5_step3.py` anchored
+on the text `FOR SHARE"""` that the refactor replaced. They now remove the
+lock in either mode, the same weakening. They were run again alone.
+
+**The record:** `evidence/SLICE5-STEP3-MUTATIONS-L3-L4-AFTER-LOCK-MODE.txt`,
+at `0a5c446`, on a clean tree.
+- **Result: 2 of 2 fail**, each killed by its original test,
+  `test_a_fact_being_changed_is_waited_for_and_read_after_its_commit`
+  (`property-…` and `offer-…`).
+- **Baseline:** 57 passed.
+
+### 13.8 The evidence after the fix
+
+Each row ran on a clean tree, source fingerprint `c7a5e436…8d632f`.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Before the fix | at `6c6e614`: the window confirmed in both orders on both targets; 13 failed, 67 passed | `0a5c446` | `evidence/SLICE5-STEP5-R-S5-5-01-BEFORE-FIX.txt` |
+| The fix | `currency.py`, `opportunity_commands.py`, `audit_rows.py`, the share route | `0a5c446` | §13.3, §13.5 |
+| Mutations | step 5: 42/42 fail; step 3 L3/L4: 2/2 fail | `0a5c446` → `f3dd4c3` | §13.7 |
+| Authorization matrix | **177 rules**, all PASS (two new: R-S5-5-01 and G5-8 (i); G5-8 (iii) renamed); suite 2325/2325 | `04095e3` | `AUTHORIZATION_EVIDENCE_MATRIX.md`; `--check --no-run`: current |
+| PostgreSQL gate | PASS; 70 database-level PASS notices, 0 FAIL; 67 operations in parity | `a7648b9` (run at `04095e3`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **2325 passed**, 0 failed, 0 errors, 0 skipped | `b3f4d9f` (run at `a7648b9`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+
+**The suite count:** 2312 at `6c6e614`, then +13 in
+`tests/test_slice5_step5.py`:
+- the four window cases;
+- the three neighbour tests;
+- six for G5-8 (i);
+- one for G5-8 (iii) and the interaction;
+
+less the one test it replaces
+(`test_the_share_body_is_open_and_carries_nothing_stored`, now
+`test_g5_8_i_the_note_is_kept_in_the_interaction_only`). That is 81 in the
+file.
+
+**Repetition.** Before the commit, the eight lock and witness tests passed
+10 runs out of 10.
+
+**STOP GATE D is not regenerated.** Its `--check` reports the same three
+problems as after steps 3 and 4. Step 5 adds no INSERT into
+`match_reviews` or `opportunities`.
+
+### 13.9 Limits
+
+- **`bound_at` is the binding transaction's start** (`now()`, the frozen
+  default). A binding command whose transaction started before a share, and
+  whose INSERT then waited on it, commits after the share with a `bound_at`
+  earlier than `shared_at`. The serialization is by commit; the stamp
+  records when the binding's transaction began. This changes nothing that
+  the share decided.
+- **The cost of §13.4:** a share can wait for a matching run on its
+  property.
+- **The trigger-order argument holds on this schema's names.** It rests on
+  the `pg_trigger` names read here (equal-length OIDs), and the run test
+  exercises it. A rebuilt database with OIDs of different lengths would
+  need the read again.
+- **Carried, unchanged:**
+  - L-S5-3a and L-S5-3b;
+  - K06 UNPROVEN;
+  - G4-5R open: STOP GATE E is SALE only;
+  - STOP GATE D is not regenerated in Slice 5.
+- **These results are ours.** No independent run exists.
+- **Step 6 is not authorized.**

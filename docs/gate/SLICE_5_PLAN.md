@@ -1,13 +1,15 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 15**
+## Implementation plan — **revision 16**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 (the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
 the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
 queue) is CLOSED at `1556624`. Step 5 (revalidate, share, close, the
-opportunity queue, B10) is delivered at `93c7b37` and submitted for review, with
-G5-8 (i) and (iii) implemented PROVISIONALLY. No other step's code exists.
+opportunity queue, B10) is delivered at `93c7b37`. The review of `6c6e614`
+found one blocker, R-S5-5-01, and decided G5-8 (i) and (iii) as (a). Both are
+done at `0a5c446`, and step 5 is submitted for review again. Step 6 is not
+authorized. No other step's code exists.
 **Slice 5 as a whole is not closed.**
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
@@ -241,6 +243,26 @@ re-run them.
 open were true when written. Each is now marked as decided since. Nothing
 else in them is changed.
 
+**The review of `6c6e614`. Step 5 is not closed** (`SLICE_5_STEP5_DELIVERY.md`
+§13).
+- **What the reviewer checked:** the bundle's digest and its 380 entries,
+  the source fingerprint, and `bound`. The results stay ours.
+- **R-S5-5-01, the blocker.** A consent binding created while a share runs
+  was not serialized with the share's contact check. The reviewer inferred
+  it from the code.
+  - **Measured** at `6c6e614` in both orders, on the offer and on the
+    property: confirmed.
+  - **Fixed** at `0a5c446`: the share takes the property and the offer
+    `FOR UPDATE`, in the approval's order.
+  - **The effect on the lock order** is measured against the approval, a
+    second share and the matching run.
+- **G5-8 (i): decided (a).** One `interactions` row, STATUS_CHANGE, per
+  successful share. The note stays out of the audit log and the responses.
+- **G5-8 (iii): decided (a).** It is now serialized.
+- **I1–I8 accepted** within their scope; I4 is amended by (i).
+- **Step 6 is not authorized** until this correction is reviewed.
+- L-S5-3a, L-S5-3b, K06 and G4-5R are unchanged.
+
 **Step 5 delivered at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`), submitted for
 review.**
 - Implemented under the decisions taken: G5-8's four checks, G5-9 on §3.7,
@@ -295,7 +317,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 12 | `e1ab4fb` | step 4 delivered (`SLICE_5_STEP4_DELIVERY.md`): the internal and customer reads (G5-6 (a), G5-7 (a), [R4-2]) and the match queue (G5-11, its vocabulary as proposed, put for confirmation); RFC-001 Appendix B and DL-13 amend R8.2, R8.3, S33, S34, S36a |
 | 13 | `1556624` | the review of `d0e0bc9` recorded: step 4 not closed, the free-text location detail withheld from the customer opportunity (Appendix B.1a); §2's other points accepted; **G5-10 decided** |
 | 14 | `fc450f0` | the review of `1556624` recorded: step 4 CLOSED (step 4 delivery §12); step 5 authorized; the statements that called G5-10 open marked as decided since |
-| 15 | the commit that adds this revision | step 5 delivered (`SLICE_5_STEP5_DELIVERY.md`); G5-8 (i) and (iii) marked PROVISIONAL, pending a decision; the step-5 interpretations recorded at G5-9 and G5-11; B10's proofs recorded at G5-12 |
+| 15 | `6c6e614` | step 5 delivered (`SLICE_5_STEP5_DELIVERY.md`); G5-8 (i) and (iii) marked PROVISIONAL, pending a decision; the step-5 interpretations recorded at G5-9 and G5-11; B10's proofs recorded at G5-12 |
+| 16 | the commit that adds this revision | the review of `6c6e614` recorded: R-S5-5-01 measured and fixed (the share's `FOR UPDATE`); G5-8 (i) and (iii) decided (a), and (i) implemented; I1–I8 accepted, I4 amended; step 6 not authorized |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1312,17 +1335,25 @@ says whether a NEW, not yet shared, opportunity is visible.
 > not authorize code: the approval rules, the transitions and the
 > database guards are tied to [R3-1]–[R3-4].
 
-> **Step 5 (delivered at `93c7b37`, not yet reviewed).** The four checks are
-> implemented as written below, with permission FAIL answering
-> `CONSENT_REVOKED` whatever else fails. **The open points (i) and (iii)
-> have no recorded decision. Each is implemented PROVISIONALLY, by the
-> narrower option:**
-> - (i): the channel and the note are stored nowhere. Option (a) would
->   write a Slice 7 table, and the free-text note is kept out of the audit
->   log;
-> - (iii): option (a), 409 `CONTACT_BEFORE_SHARING_REQUIRED`, fails closed.
+> **Decided in the review of `6c6e614`:**
+> - **(i): option (a).** One `interactions` row, STATUS_CHANGE, written on
+>   a successful share in its own transaction. It keeps the channel, the
+>   note, the actor and the opportunity.
+>   - It is no proof of a message sent or a contact made.
+>   - The free-text note goes neither to the audit log nor to the
+>     customer's response.
+>   - A replay writes no second row, and a refusal writes none.
+> - **(iii): option (a).** A CURRENT `CONTACT_BEFORE_SHARING` binding
+>   refuses the share until a path records the contact.
 >
-> (ii) is as proposed. See `SLICE_5_STEP5_DELIVERY.md` §2.1.
+> **R-S5-5-01, found in the same review:** a binding created during a share
+> was not serialized with it. It is measured and fixed at `0a5c446` (the share
+> locks the property and the offer `FOR UPDATE`). See
+> `SLICE_5_STEP5_DELIVERY.md` §13.
+>
+> *Step 5 as first delivered at `93c7b37` stored neither the channel nor
+> the note, and carried both points as PROVISIONAL.* (ii) is as
+> proposed.
 
 `API_CONTRACTS` §4.11 and R8.4: "Before every share, revalidate current
 permission/consent and field-level sharing scope." H05 and B03 apply.
@@ -1964,7 +1995,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **CLOSED** at `1e0d919` (`SLICE_5_STEP2_DELIVERY.md` §11); the key race of the review of `7e84702` fixed (§10 there) |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **CLOSED** at `1556624` (`SLICE_5_STEP4_DELIVERY.md` §12) |
-| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; authorized in the review of `1556624`; **delivered** at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`), submitted for review; G5-8 (i) and (iii) PROVISIONAL |
+| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; authorized in the review of `1556624`; **delivered** at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`); the review of `6c6e614`: R-S5-5-01 fixed and G5-8 (i) implemented at `0a5c446` (§13 there), submitted for review again |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
 
 **Carried to step 6 and the final closure of Slice 5 (review of `921ed01`).**
