@@ -12,6 +12,7 @@ G5-11 (a), G5-12 B10):
   (review of 6c6e614);
 - I: G5-8 (i), the share's interaction (decided (a) in the review of
   6c6e614);
+- N: the note of close and revalidate (decided in the review of 1f8a8df);
 - C: close, the eight reasons and the final state;
 - L: the lock on the opportunity, and who may act;
 - Q: the opportunity queue's membership, priority, reason, order and audit.
@@ -111,16 +112,22 @@ MUTATIONS = [
      'FROM turab.property_offers WHERE offer_id = :o """ + mode)',
      'FROM turab.property_offers WHERE offer_id = :o FOR SHARE""")'),
     # --- I: G5-8 (i), the share's interaction (review of 6c6e614) ----------------------
+    # I1-I7 follow the one writer `_record` (review of 1f8a8df): I1 and I7 act
+    # on the share's call, I2-I6 on the writer every command uses.
     ("I1 the share writes no interaction", COMMANDS,
-     "    _record_share(session, prepared, view, channel=channel, note=note,\n"
-     "                  operator_account_id=operator_account_id)\n", ""),
+     '    _record(session, prepared.opportunity, kind="STATUS_CHANGE", channel=channel, '
+     'note=note,\n',
+     '    if False: _record(session, prepared.opportunity, kind="STATUS_CHANGE", '
+     'channel=channel, note=note,\n'),
     ("I2 the note is not kept", COMMANDS,
-     "               :o, :note, :at, :operator,", "               :o, NULL, :at, :operator,"),
+     "               :o, :note, :outcome, :at, :operator,",
+     "               :o, NULL, :outcome, :at, :operator,"),
     ("I3 the channel is not kept", COMMANDS,
-     "        SELECT 'STATUS_CHANGE', CAST(:channel AS turab.communication_channel), r.party_id,",
-     "        SELECT 'STATUS_CHANGE', NULL, r.party_id,"),
+     "               CAST(:channel AS turab.communication_channel), r.party_id,",
+     "               NULL, r.party_id,"),
     ("I4 the operator is not kept", COMMANDS,
-     "               :o, :note, :at, :operator,", "               :o, :note, :at, NULL,"),
+     "               :o, :note, :outcome, :at, :operator,",
+     "               :o, :note, :outcome, :at, NULL,"),
     ("I5 the audit row carries the note", AUDIT,
      '    "interactions": ("summary",),\n', ""),
     ("I6 the interaction is not audited", COMMANDS,
@@ -128,8 +135,37 @@ MUTATIONS = [
      '                     audit_rows.row_json(session, "interactions", interaction_id))',
      "    pass"),
     ("I7 the status before is not recorded", COMMANDS,
-     '"status_before": prepared.opportunity["status"],',
-     '"status_before": view["status"],'),
+     '            metadata={"source_operation": SHARE_OPERATION,\n'
+     '                      "status_before": prepared.opportunity["status"],',
+     '            metadata={"source_operation": SHARE_OPERATION,\n'
+     '                      "status_before": view["status"],'),
+    # --- N: the note of close and revalidate (review of 1f8a8df) -----------------------
+    ("N1 the close writes no interaction", COMMANDS,
+     '    _record(session, prepared.opportunity, kind="STATUS_CHANGE", channel=None, '
+     'note=note,\n',
+     '    if False: _record(session, prepared.opportunity, kind="STATUS_CHANGE", '
+     'channel=None, note=note,\n'),
+    ("N2 the close note is not kept", COMMANDS,
+     'kind="STATUS_CHANGE", channel=None, note=note,\n',
+     'kind="STATUS_CHANGE", channel=None, note=None,\n'),
+    ("N3 the close reason is not recorded", COMMANDS,
+     "            outcome_code=prepared.reason_code, at=closed_at,",
+     "            outcome_code=None, at=closed_at,"),
+    ("N4 the close records the share's source", COMMANDS,
+     '            metadata={"source_operation": CLOSE_OPERATION,',
+     '            metadata={"source_operation": SHARE_OPERATION,'),
+    ("N5 the revalidate note is not kept", COMMANDS,
+     '        _record(session, prepared.opportunity, kind="NOTE", channel=None, note=note,',
+     '        _record(session, prepared.opportunity, kind="NOTE", channel=None, note=None,'),
+    ("N6 a revalidate without a note writes a row", COMMANDS,
+     "    if note is not None:\n        _record(", "    if True:\n        _record("),
+    ("N7 the revalidate note is typed STATUS_CHANGE", COMMANDS,
+     'kind="NOTE", channel=None, note=note,', 'kind="STATUS_CHANGE", channel=None, note=note,'),
+    ("N8 the revalidate records no validity before", COMMANDS,
+     '"validity_before": prepared.opportunity["validity_status"],',
+     '"validity_before": view["validity_status"],'),
+    ("N9 the revalidate writes no interaction", COMMANDS,
+     "    if note is not None:\n        _record(", "    if False:\n        _record("),
     # --- C: close ---------------------------------------------------------------------
     ("C1 any reason closes", COMMANDS, "    if reason_code not in CLOSE_REASONS:\n",
      "    if False:\n"),

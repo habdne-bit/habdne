@@ -951,6 +951,18 @@ RULES: tuple[Rule, ...] = (
           "test_g5_8_i_a_replay_writes_no_second_interaction_and_a_refusal_none",
           "test_g5_8_i_the_note_is_kept_in_the_interaction_only",
           "test_g5_8_i_the_share_is_the_one_writer_of_interactions")),
+    Rule("S5-5 / G5-10 note / review of 1f8a8df",
+         "Each successful close writes one STATUS_CHANGE interaction with its reason and "
+         "note; a revalidate writes one NOTE interaction only when a note is given; a "
+         "replay or a refusal writes none; the note is in no audit row and no response",
+         ("test_close_note_is_kept_in_one_status_change_interaction",
+          "test_close_without_a_note_still_records_the_status_change",
+          "test_close_from_shared_records_its_own_status_before",
+          "test_close_note_replay_and_refusal_write_no_interaction",
+          "test_revalidate_note_is_kept_in_one_note_interaction",
+          "test_revalidate_without_a_note_writes_no_interaction",
+          "test_revalidate_note_replay_and_refusal_write_no_interaction",
+          "test_a_revalidate_note_is_not_a_recorded_contact")),
     Rule("S5-5 / G5-10",
          "Close takes one of the eight reasons and writes status, time, reason and "
          "activity together from NEW, SHARED or ENGAGED; CLOSED is final for every "

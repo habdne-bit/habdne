@@ -38,9 +38,15 @@ that no Slice 5 UPDATE writes it.
   (`audit_rows.WITHHELD`): the free-text note reaches neither the audit log
   nor any response. A replay returns the stored response and writes
   nothing; a refusal writes nothing.
-- The `note` of revalidate and close: stored nowhere. The decision named the
-  share; G5-10's "the note follows G5-8 (i)" is put to the reviewer
-  (`SLICE_5_STEP5_DELIVERY.md` §13).
+- The `note` of close and revalidate, decided in the review of `1f8a8df`:
+  - each successful close writes ONE `interactions` row, STATUS_CHANGE, with
+    the reason as `outcome_code` and the note, if any, as `summary` (G5-10:
+    "the note follows G5-8 (i)");
+  - a revalidate writes ONE `interactions` row, NOTE, only when a note is
+    given; with no note, none.
+  Neither is evidence of a contact. Every row is written in the command's
+  own transaction, after its UPDATE (`_record`): a refusal or a replay writes
+  none, and the audit row leaves out `summary`.
 
 **R-S5-5-01 (review of `6c6e614`).** The share's check takes the property
 and the offer `FOR UPDATE` (`currency.check(..., exclusive=True)`), so a
@@ -164,7 +170,40 @@ def prepare_revalidate(session: Session, *, opportunity_id: uuid.UUID,
     return Prepared(opportunity=opportunity, checked=_check(session, opportunity, clock))
 
 
-def revalidate(session: Session, prepared: Prepared) -> dict[str, Any]:
+#: The source operations recorded in an interaction's `metadata`.
+SHARE_OPERATION = "postOpportunitiesOpportunityIdShare"
+REVALIDATE_OPERATION = "postOpportunitiesOpportunityIdRevalidate"
+CLOSE_OPERATION = "postOpportunitiesOpportunityIdClose"
+
+
+def _record(session: Session, opportunity: Mapping[str, Any], *, kind: str,
+            channel: str | None, note: str | None, outcome_code: str | None, at: Any,
+            operator_account_id: uuid.UUID, metadata: Mapping[str, Any]) -> None:
+    """One `interactions` row for a command on the opportunity, in its
+    transaction: the request's party, the opportunity, the operator, the
+    note as `summary`, no thread. `metadata` names the source operation. The
+    audit row is the row less `summary` (`audit_rows.WITHHELD`). The row
+    records the command; it is no proof that a message was sent or a contact
+    made, and no check reads it as one."""
+    interaction_id = session.execute(text("""
+        INSERT INTO turab.interactions (interaction_type, channel, party_id, opportunity_id,
+                                        summary, outcome_code, occurred_at,
+                                        operator_account_id, metadata)
+        SELECT CAST(:kind AS turab.interaction_type),
+               CAST(:channel AS turab.communication_channel), r.party_id,
+               :o, :note, :outcome, :at, :operator, CAST(:metadata AS jsonb)
+          FROM turab.requests r WHERE r.request_id = :r
+        RETURNING interaction_id"""),
+        {"kind": kind, "channel": channel, "o": opportunity["opportunity_id"], "note": note,
+         "outcome": outcome_code, "at": at, "operator": operator_account_id,
+         "r": opportunity["request_id"],
+         "metadata": exact_json.dumps(dict(metadata))}).scalar_one()
+    audit_rows.write(session, "interactions", interaction_id, "INSERT", None,
+                     audit_rows.row_json(session, "interactions", interaction_id))
+
+
+def revalidate(session: Session, prepared: Prepared, *, note: str | None,
+               operator_account_id: uuid.UUID) -> dict[str, Any]:
     """The one writer of `validity_status` (§3.7). Writes what the check
     found: the validity (not monotonic: INVALID returns to VALID when the
     facts do), `last_activity_at`, `last_confirmed_at` only when VALID, and
@@ -172,7 +211,10 @@ def revalidate(session: Session, prepared: Prepared) -> dict[str, Any]:
     snapshot, and never `current_offer_id` (B10). The response is the
     `InternalOpportunityView` (an open schema) plus `validity_reasons`: the
     plan's "the reasons name the failing checks, in the response"; no
-    column holds them."""
+    column holds them.
+
+    A given note is kept in one NOTE interaction (review of `1f8a8df`); with
+    no note, no interaction."""
     checked = prepared.checked
     view = _returning(session, """
         UPDATE turab.opportunities
@@ -185,6 +227,12 @@ def revalidate(session: Session, prepared: Prepared) -> dict[str, Any]:
         {"v": checked.currency.validity, "at": checked.as_of,
          "binding": checked.current_permission_binding_id,
          "o": prepared.opportunity["opportunity_id"]})
+    if note is not None:
+        _record(session, prepared.opportunity, kind="NOTE", channel=None, note=note,
+                outcome_code=None, at=checked.as_of, operator_account_id=operator_account_id,
+                metadata={"source_operation": REVALIDATE_OPERATION,
+                          "validity_before": prepared.opportunity["validity_status"],
+                          "validity_after": view["validity_status"]})
     return {**view, "validity_reasons": reasons_of(checked)}
 
 
@@ -270,11 +318,6 @@ def prepare_share(session: Session, *, opportunity_id: uuid.UUID,
     return Prepared(opportunity=opportunity, checked=checked)
 
 
-#: The operation recorded in the interaction's `metadata`, so a reader tells
-#: a share's record from a contact.
-SHARE_OPERATION = "postOpportunitiesOpportunityIdShare"
-
-
 def share(session: Session, prepared: Prepared, *, channel: str | None, note: str | None,
           operator_account_id: uuid.UUID) -> dict[str, Any]:
     """NEW → SHARED with `shared_at` the first time (migration `0006`, rule
@@ -289,34 +332,16 @@ def share(session: Session, prepared: Prepared, *, channel: str | None, note: st
                last_activity_at = :at
          WHERE opportunity_id = :o""",
         {"at": prepared.checked.as_of, "o": prepared.opportunity["opportunity_id"]})
-    _record_share(session, prepared, view, channel=channel, note=note,
-                  operator_account_id=operator_account_id)
+    # The share's one interaction (G5-8 (i) (a)): STATUS_CHANGE at the share's
+    # instant; the channel (the contract's four values are values of
+    # `communication_channel`) and the note.
+    _record(session, prepared.opportunity, kind="STATUS_CHANGE", channel=channel, note=note,
+            outcome_code=None, at=prepared.checked.as_of,
+            operator_account_id=operator_account_id,
+            metadata={"source_operation": SHARE_OPERATION,
+                      "status_before": prepared.opportunity["status"],
+                      "status_after": view["status"]})
     return view
-
-
-def _record_share(session: Session, prepared: Prepared, view: Mapping[str, Any], *,
-                  channel: str | None, note: str | None,
-                  operator_account_id: uuid.UUID) -> None:
-    """One `interactions` row, STATUS_CHANGE, at the share's instant: the
-    channel (the contract's four values are values of
-    `communication_channel`), the note as `summary`, the request's party, the
-    opportunity, the operator. No thread, no outcome. `metadata` names the
-    operation and the status before and after."""
-    interaction_id = session.execute(text("""
-        INSERT INTO turab.interactions (interaction_type, channel, party_id, opportunity_id,
-                                        summary, occurred_at, operator_account_id, metadata)
-        SELECT 'STATUS_CHANGE', CAST(:channel AS turab.communication_channel), r.party_id,
-               :o, :note, :at, :operator, CAST(:metadata AS jsonb)
-          FROM turab.requests r WHERE r.request_id = :r
-        RETURNING interaction_id"""),
-        {"channel": channel, "o": prepared.opportunity["opportunity_id"], "note": note,
-         "at": prepared.checked.as_of, "operator": operator_account_id,
-         "r": prepared.opportunity["request_id"],
-         "metadata": exact_json.dumps({"source_operation": SHARE_OPERATION,
-                                       "status_before": prepared.opportunity["status"],
-                                       "status_after": view["status"]})}).scalar_one()
-    audit_rows.write(session, "interactions", interaction_id, "INSERT", None,
-                     audit_rows.row_json(session, "interactions", interaction_id))
 
 
 # --- close (G5-10) --------------------------------------------------------------------
@@ -334,10 +359,13 @@ def prepare_close(session: Session, *, opportunity_id: uuid.UUID,
     return Prepared(opportunity=_lock(session, opportunity_id), reason_code=reason_code)
 
 
-def close(session: Session, prepared: Prepared, clock: Any = None) -> dict[str, Any]:
+def close(session: Session, prepared: Prepared, *, note: str | None,
+          operator_account_id: uuid.UUID, clock: Any = None) -> dict[str, Any]:
     """CLOSED, `closed_at`, `close_reason_code` and `last_activity_at`, in
-    one UPDATE (rule 4 of `0006`). CLOSED is final (rule 1)."""
-    return _returning(session, """
+    one UPDATE (rule 4 of `0006`). CLOSED is final (rule 1). Then the close's
+    one STATUS_CHANGE interaction, at `closed_at`, with the reason as
+    `outcome_code` and the note, if any (review of `1f8a8df`)."""
+    view = _returning(session, """
         UPDATE turab.opportunities
            SET status = 'CLOSED', closed_at = c.at, close_reason_code = :r,
                last_activity_at = c.at
@@ -345,3 +373,13 @@ def close(session: Session, prepared: Prepared, clock: Any = None) -> dict[str, 
          WHERE opportunity_id = :o""",
         {"r": prepared.reason_code, "clock": clock,
          "o": prepared.opportunity["opportunity_id"]})
+    closed_at = session.execute(text(
+        "SELECT closed_at FROM turab.opportunities WHERE opportunity_id = :o"),
+        {"o": prepared.opportunity["opportunity_id"]}).scalar_one()
+    _record(session, prepared.opportunity, kind="STATUS_CHANGE", channel=None, note=note,
+            outcome_code=prepared.reason_code, at=closed_at,
+            operator_account_id=operator_account_id,
+            metadata={"source_operation": CLOSE_OPERATION,
+                      "status_before": prepared.opportunity["status"],
+                      "status_after": view["status"]})
+    return view

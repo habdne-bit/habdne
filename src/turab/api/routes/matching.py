@@ -232,7 +232,8 @@ class _NoNull(BaseModel):
 
 class RevalidateInput(_NoNull):
     """The inline body: `note`. The body is open, as the contract leaves it
-    (the matching run's precedent, review of bf052f4)."""
+    (the matching run's precedent, review of bf052f4). A given note is kept
+    in one NOTE interaction (review of 1f8a8df)."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -253,7 +254,9 @@ class ShareInput(_NoNull):
 
 class CloseInput(_NoNull):
     """`CloseCommand`, field for field (closed in the contract). The reason
-    is narrowed by G5-10 in the service, so it answers with its own code."""
+    is narrowed by G5-10 in the service, so it answers with its own code.
+    The close's STATUS_CHANGE interaction keeps the reason and the note
+    (review of 1f8a8df)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -279,7 +282,9 @@ def revalidate_opportunity(request: Request, opportunity_id: uuid.UUID,
         return opportunity_commands.prepare_revalidate(session, opportunity_id=opportunity_id)
 
     def handler(session, prepared):
-        return 200, opportunity_commands.revalidate(session, prepared)
+        return 200, opportunity_commands.revalidate(
+            session, prepared, note=body.note,
+            operator_account_id=command.subject.account_id)
 
     return _run(request, command, REVALIDATE,
                 f"POST /opportunities/{opportunity_id}/revalidate",
@@ -331,7 +336,9 @@ def close_opportunity(request: Request, opportunity_id: uuid.UUID, body: CloseIn
                                                   reason_code=body.reason_code)
 
     def handler(session, prepared):
-        return 200, opportunity_commands.close(session, prepared)
+        return 200, opportunity_commands.close(
+            session, prepared, note=body.note,
+            operator_account_id=command.subject.account_id)
 
     return _run(request, command, CLOSE, f"POST /opportunities/{opportunity_id}/close",
                 body.model_dump(mode="json", exclude_unset=True), handler, 200,

@@ -1,0 +1,57 @@
+TURAB — Slice 5 step 5, review of 1f8a8df: the note of close and revalidate, BEFORE the change
+==============================================================================================
+Recorded          : 2026-10-11 21:34:08 UTC
+Base commit       : 1f8a8df6a5c4305c568aeb39945a9684328c4723
+Measured in       : an isolated git worktree at the base commit; .venv symlinked
+Source fingerprint: 68588ba845a64c27192743591b11a2ca1712e2c99585dd175c53157369e656c3
+Database          : the suite's own, PostgreSQL 16.13, alembic head 0006
+Test file sha256  : 2b74470f9e61856385408abc95eb6c8aa2174e2ceb89cf64f28e6df0c29ff4d5
+                    (tests/test_slice5_step5.py with the review's tests added,
+                    copied into the worktree; no source file changed)
+
+Result: 6 failed, 83 passed, 2 warnings in 38.25s
+
+A. The drop, measured over HTTP (the review's two tests)
+--------------------------------------------------------
+- POST /opportunities/{id}/close with {"reason_code": "OWNER_REJECTED",
+  "note": "close-note-…"} as ACC_REVIEWER: 200, the opportunity CLOSED.
+  No interactions row exists for the opportunity afterwards (line 1319:
+  "not enough values to unpack (expected 1, got 0)").
+- POST /opportunities/{id}/revalidate with {"note": "revalidate-note-…"} as
+  ACC_REVIEWER, after the property was made UNAVAILABLE: 200, INVALID
+  recorded. No interactions row (line 1383, the same).
+
+Each test asserts the 200 before it reads the interactions, so both commands
+ACCEPTED the note and stored it nowhere: the dropped field the review named.
+
+B. The other failures, the same cause
+-------------------------------------
+- line 1339 test_close_without_a_note_still_records_the_status_change:
+  no row for a close without a note either.
+- line 1350 test_close_from_shared_records_its_own_status_before: only the
+  share's row exists; the close wrote none.
+- line 1370 test_close_note_replay_and_refusal_write_no_interaction: 0 rows
+  after a successful close (expected 1).
+- line 1412 test_revalidate_note_replay_and_refusal_write_no_interaction:
+  0 rows after a revalidate with a note (expected 1).
+
+C. What already holds at the base commit (kept as regression guards)
+--------------------------------------------------------------------
+- test_revalidate_without_a_note_writes_no_interaction;
+- test_a_revalidate_note_is_not_a_recorded_contact;
+- in test_close_note_replay_and_refusal_write_no_interaction, the first
+  step, a 422 refusal carrying a note, wrote nothing (it passed before
+  line 1370). The replay and closed-state parts of both replay tests come
+  after their failing assertion and were not reached.
+
+D. Per test (pytest -rA)
+------------------------
+  FAILED tests/test_slice5_step5.py::test_close_note_is_kept_in_one_status_change_interaction
+  FAILED tests/test_slice5_step5.py::test_close_without_a_note_still_records_the_status_change
+  FAILED tests/test_slice5_step5.py::test_close_from_shared_records_its_own_status_before
+  FAILED tests/test_slice5_step5.py::test_close_note_replay_and_refusal_write_no_interaction
+  FAILED tests/test_slice5_step5.py::test_revalidate_note_is_kept_in_one_note_interaction
+  FAILED tests/test_slice5_step5.py::test_revalidate_note_replay_and_refusal_write_no_interaction
+  (and 83 PASSED)
+
+The worktree was removed after this record.

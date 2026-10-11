@@ -1280,8 +1280,152 @@ def test_two_shares_on_one_property_serialize_and_both_succeed(client, engine, i
 
 def test_g5_8_i_the_share_is_the_one_writer_of_interactions():
     """Computed from the tree, as the other writer checks: `interactions`
-    (a Slice 7 table) is written by the share alone."""
+    (a Slice 7 table) is written by one module, the opportunity commands
+    (share, close, and revalidate with a note), through one INSERT."""
     pattern = re.compile(r"INSERT\s+INTO\s+turab\.interactions\b")
     writers = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "src").rglob("*.py")
                      if pattern.search(p.read_text(encoding="utf-8")))
     assert writers == ["src/turab/services/opportunity_commands.py"]
+    source = (ROOT / writers[0]).read_text(encoding="utf-8")
+    assert len(pattern.findall(source)) == 1, "one writer: `_record`"
+
+
+# ======================================================================================
+# The `note` of close and revalidate (review of 1f8a8df)
+# ======================================================================================
+#
+# Decided in the review of 1f8a8df:
+# - close: G5-10's "the note follows G5-8 (i)" covers it. Each successful close
+#   writes one STATUS_CHANGE interaction with the actor, the opportunity, the
+#   request's party, the reason and the source operation; the note stays out
+#   of the audit log and the responses;
+# - revalidate: a note, when given, is kept in one NOTE interaction with the
+#   source operation, the actor, the opportunity and the request's party; with
+#   no note, no interaction. Neither row is evidence of a contact.
+# In both, the write is atomic with the command: no row on a refusal or on a
+# replay with the same key.
+
+def _note_is_nowhere_else(client, ids, engine, world, note, response):
+    assert note not in response.text
+    assert note not in json.dumps(_row(engine, world["opportunity"]))
+    assert not _one(engine, "SELECT count(*) FROM turab.audit_log "
+                            "WHERE old_row::text LIKE :n OR new_row::text LIKE :n "
+                            "OR context::text LIKE :n", n=f"%{note}%")
+
+
+def test_close_note_is_kept_in_one_status_change_interaction(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    note = f"close-note-{uuid.uuid4().hex}"
+    r = _cmd(client, world["opportunity"], "close",
+             {"reason_code": "OWNER_REJECTED", "note": note}, ids.ACC_REVIEWER)
+    assert r.status_code == 200, r.text
+    [i] = _interactions(engine, world["opportunity"])
+    party = _one(engine, "SELECT party_id FROM turab.requests WHERE request_id = :r",
+                 r=world["request"])
+    closed_at = _one(engine, "SELECT closed_at FROM turab.opportunities "
+                             "WHERE opportunity_id = :o", o=world["opportunity"])
+    assert (i["interaction_type"], i["channel"], i["summary"], i["operator_account_id"],
+            i["party_id"], i["thread_id"], i["outcome_code"], i["occurred_at"]) == (
+        "STATUS_CHANGE", None, note, ids.ACC_REVIEWER, party, None, "OWNER_REJECTED",
+        closed_at)
+    assert json.loads(i["metadata"]) == {
+        "source_operation": "postOpportunitiesOpportunityIdClose",
+        "status_before": "NEW", "status_after": "CLOSED"}
+    _note_is_nowhere_else(client, ids, engine, world, note, r)
+
+
+def test_close_without_a_note_still_records_the_status_change(client, engine, ids):
+    """Each successful close is a status change: its row is written with or
+    without a note."""
+    world = _fresh(ids, engine, client)
+    _ok(_close(client, ids, world["opportunity"], "UNREACHABLE"))
+    [i] = _interactions(engine, world["opportunity"])
+    assert (i["interaction_type"], i["summary"], i["outcome_code"]) == (
+        "STATUS_CHANGE", None, "UNREACHABLE")
+
+
+def test_close_from_shared_records_its_own_status_before(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    _ok(_share(client, ids, world["opportunity"], body={"channel": "WEB"}))
+    _ok(_cmd(client, world["opportunity"], "close",
+             {"reason_code": "DEAL_CONFIRMED", "note": "done"}, ids.ACC_OPERATOR))
+    rows = _interactions(engine, world["opportunity"])
+    assert [(r["interaction_type"], r["outcome_code"], r["summary"],
+             json.loads(r["metadata"])["source_operation"],
+             json.loads(r["metadata"])["status_before"],
+             json.loads(r["metadata"])["status_after"]) for r in rows] == [
+        ("STATUS_CHANGE", None, None, "postOpportunitiesOpportunityIdShare", "NEW", "SHARED"),
+        ("STATUS_CHANGE", "DEAL_CONFIRMED", "done", "postOpportunitiesOpportunityIdClose",
+         "SHARED", "CLOSED")]
+
+
+def test_close_note_replay_and_refusal_write_no_interaction(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    _refused(client, engine, ids, world["opportunity"], "close", 422,
+             "CLOSE_REASON_NOT_ALLOWED", body={"reason_code": "NOT_A_CODE", "note": "x"})
+    assert _interactions(engine, world["opportunity"]) == []
+    key = str(uuid.uuid4())
+    body = {"reason_code": "OTHER", "note": "once"}
+    first = _cmd(client, world["opportunity"], "close", body, ids.ACC_OPERATOR, key)
+    again = _cmd(client, world["opportunity"], "close", body, ids.ACC_OPERATOR, key)
+    assert (first.status_code, again.status_code) == (200, 200)
+    assert again.json() == first.json()
+    assert len(_interactions(engine, world["opportunity"])) == 1
+    _refused(client, engine, ids, world["opportunity"], "close", 409, "OPPORTUNITY_CLOSED",
+             body={"reason_code": "OTHER", "note": "after"})
+    assert len(_interactions(engine, world["opportunity"])) == 1
+
+
+def test_revalidate_note_is_kept_in_one_note_interaction(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    _set(engine, "UPDATE turab.properties SET current_availability = 'UNAVAILABLE' "
+                 "WHERE property_id = :p", p=world["property"])
+    note = f"revalidate-note-{uuid.uuid4().hex}"
+    r = _cmd(client, world["opportunity"], "revalidate", {"note": note}, ids.ACC_REVIEWER)
+    assert r.status_code == 200 and r.json()["validity_status"] == "INVALID", r.text
+    [i] = _interactions(engine, world["opportunity"])
+    party = _one(engine, "SELECT party_id FROM turab.requests WHERE request_id = :r",
+                 r=world["request"])
+    activity = _one(engine, "SELECT last_activity_at FROM turab.opportunities "
+                            "WHERE opportunity_id = :o", o=world["opportunity"])
+    assert (i["interaction_type"], i["channel"], i["summary"], i["operator_account_id"],
+            i["party_id"], i["thread_id"], i["outcome_code"], i["occurred_at"]) == (
+        "NOTE", None, note, ids.ACC_REVIEWER, party, None, None, activity)
+    assert json.loads(i["metadata"]) == {
+        "source_operation": "postOpportunitiesOpportunityIdRevalidate",
+        "validity_before": "VALID", "validity_after": "INVALID"}
+    _note_is_nowhere_else(client, ids, engine, world, note, r)
+
+
+def test_revalidate_without_a_note_writes_no_interaction(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    _ok(_revalidate(client, ids, world["opportunity"]))
+    _ok(_cmd(client, world["opportunity"], "revalidate", {"extra": 1}, ids.ACC_OPERATOR))
+    assert _interactions(engine, world["opportunity"]) == []
+
+
+def test_revalidate_note_replay_and_refusal_write_no_interaction(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    key = str(uuid.uuid4())
+    body = {"note": "checked by phone"}
+    first = _cmd(client, world["opportunity"], "revalidate", body, ids.ACC_OPERATOR, key)
+    again = _cmd(client, world["opportunity"], "revalidate", body, ids.ACC_OPERATOR, key)
+    assert (first.status_code, again.status_code) == (200, 200)
+    assert again.json() == first.json()
+    assert len(_interactions(engine, world["opportunity"])) == 1
+    _ok(_close(client, ids, world["opportunity"]))
+    before = len(_interactions(engine, world["opportunity"]))
+    _refused(client, engine, ids, world["opportunity"], "revalidate", 409,
+             "OPPORTUNITY_CLOSED", body={"note": "refused"})
+    assert len(_interactions(engine, world["opportunity"])) == before
+
+
+def test_a_revalidate_note_is_not_a_recorded_contact(client, engine, ids):
+    """The NOTE row records an operator's note on a revalidation. It does not
+    satisfy CONTACT_BEFORE_SHARING."""
+    world = _fresh(ids, engine, client)
+    _contact_first(engine, ids, world["offer"])
+    _ok(_cmd(client, world["opportunity"], "revalidate",
+             {"note": "the owner was called"}, ids.ACC_OPERATOR))
+    _refused(client, engine, ids, world["opportunity"], "share", 409,
+             "CONTACT_BEFORE_SHARING_REQUIRED")
