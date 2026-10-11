@@ -1,0 +1,22 @@
+TURAB — Slice 5 step 3: which test refuses which weakening of APPROVED
+============================================================
+Base commit       : 0a5c446714e0cd15c0d68248edc453cfe8b453e9
+Source fingerprint: c7a5e436124e94fa370610e853a49ef87a2d37a95706498c30ca679f8e8d632f
+Working tree      : CLEAN
+Recorded          : 2026-10-11 14:38:42 UTC
+Test file         : tests/test_slice5_step3.py
+
+=== baseline (no mutation) ===
+   57 passed, 2 warnings in 17.15s
+== L3 the property is not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   1 failed, 56 passed, 2 warnings in 47.54s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[property-UPDATE
+   cause: AssertionError: the approval never waited
+   cause: E   AssertionError: the approval never waited
+== L4 the offer is not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   1 failed, 56 passed, 2 warnings in 48.05s
+   FAILED test_a_fact_being_changed_is_waited_for_and_read_after_its_commit[offer-UPDATE
+   cause: AssertionError: the approval never waited
+   cause: E   AssertionError: the approval never waited
+
+SURVIVING MUTATIONS: none
