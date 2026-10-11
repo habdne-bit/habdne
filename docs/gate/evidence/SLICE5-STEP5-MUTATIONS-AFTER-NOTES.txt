@@ -1,0 +1,489 @@
+TURAB — Slice 5 step 5: which test refuses which weakening of the opportunity commands and queue
+============================================================
+Base commit       : 37701ce8e71626b19634ccb12dfa18265ae7a8b7
+Source fingerprint: 48b42ec4be858e5d55af1d01868ef30c4bb5b7289a0e1266f5831f32ad0c9f5f
+Working tree      : CLEAN
+Recorded          : 2026-10-11 21:42:08 UTC
+Test file         : tests/test_slice5_step5.py
+
+=== baseline (no mutation) ===
+   89 passed, 2 warnings in 30.14s
+== R1 revalidate stores no validity [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   16 failed, 73 passed, 2 warnings in 31.10s
+   FAILED test_a_closed_opportunity_can_be_closed_whatever_its_validity
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[consent_revoked-INVALID-reasons5]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_paused-NEEDS_CONFIRMATION-reasons0]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_withdrawn-INVALID-reasons1]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_closed-INVALID-reasons3]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_stale-NEEDS_CONFIRMATION-reasons4]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[unavailable-INVALID-reasons2]
+   FAILED test_a_stored_needs_confirmation_is_refused_until_revalidate_records_valid
+   FAILED test_an_unshared_invalid_opportunity_is_high_and_named_by_its_validity
+   FAILED test_b03_h05_a_share_after_a_revocation_is_refused_and_changes_nothing
+   FAILED test_b10_the_offer_is_never_switched_by_any_command
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   FAILED test_revalidate_stores_exactly_what_the_check_returns
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   FAILED test_the_queue_is_ordered_by_priority_then_creation
+   FAILED test_validity_returns_to_valid_when_the_facts_do
+   cause: AssertionError: assert 'VALID' == 'INVALID'
+   cause: AssertionError: assert 'VALID' == 'NEEDS_CONFIRMATION'
+   cause: AssertionError: assert ('NORMAL', 'N...HARED', 'NEW') == ('HIGH', 'VAL...VALID', 'NEW')
+   cause: AssertionError: assert ('VALID', '2f...800ca1fa4a7a') == ('INVALID', '...800ca1fa4a7a')
+   cause: AssertionError: assert 36 < 35
+   cause: AssertionError: assert {'new': ('OPP..._YET_SHARED')} == {'new': ('OPP...ONFIRMATION')}
+== R2 a check that is not VALID confirms [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   6 failed, 83 passed, 2 warnings in 29.41s
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[consent_revoked-INVALID-reasons5]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_paused-NEEDS_CONFIRMATION-reasons0]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_withdrawn-INVALID-reasons1]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_closed-INVALID-reasons3]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_stale-NEEDS_CONFIRMATION-reasons4]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[unavailable-INVALID-reasons2]
+   cause: AssertionError: only a VALID check confirms
+   cause: E   AssertionError: only a VALID check confirms
+== R3 a VALID check does not confirm [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 29.14s
+   FAILED test_revalidate_right_after_approval_is_valid_and_changes_no_validity
+   FAILED test_validity_returns_to_valid_when_the_facts_do
+   cause: AssertionError: assert '2026-10-11T21:43:56.761169+00:00' > '2026-10-11T21:43:56.761169+00:00'
+   cause: AssertionError: assert '2026-10-11T21:43:58.956177+00:00' > '2026-10-11T21:43:58.956177+00:00'
+   cause: E   AssertionError: assert '2026-10-11T21:43:56.761169+00:00' > '2026-10-11T21:43:56.761169+00:00'
+   cause: E   AssertionError: assert '2026-10-11T21:43:58.956177+00:00' > '2026-10-11T21:43:58.956177+00:00'
+== R4 the current binding is not recorded [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 29.76s
+   FAILED test_revalidate_records_the_current_binding_and_null_when_none
+   cause: AssertionError: assert '825cb61c-4ff6-405e-9f68-e2a8cacb0b2b' is None
+   cause: E   AssertionError: assert '825cb61c-4ff6-405e-9f68-e2a8cacb0b2b' is None
+== R5 the reasons are not in the response [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   8 failed, 81 passed, 2 warnings in 28.36s
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[consent_revoked-INVALID-reasons5]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_paused-NEEDS_CONFIRMATION-reasons0]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_withdrawn-INVALID-reasons1]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_closed-INVALID-reasons3]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_stale-NEEDS_CONFIRMATION-reasons4]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[unavailable-INVALID-reasons2]
+   FAILED test_b10_the_offer_is_never_switched_by_any_command
+   FAILED test_revalidate_stores_exactly_what_the_check_returns
+   cause: AssertionError: assert 0 == ('INVALID' != 'VALID')
+   cause: AssertionError: assert [] == [('AVAILABILI...UNAVAILABLE')]
+   cause: AssertionError: assert [] == [('OFFER_STAT... 'WITHDRAWN')]
+   cause: AssertionError: assert [] == [('OFFER_STAT...AUSED', None)]
+   cause: AssertionError: assert [] == [('OFFER_STAT...DRAWN', None)]
+   cause: AssertionError: assert [] == [('PERMISSION...ENT_REVOKED')]
+== R6 revalidate moves no activity [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   8 failed, 81 passed, 2 warnings in 29.19s
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[consent_revoked-INVALID-reasons5]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_paused-NEEDS_CONFIRMATION-reasons0]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[offer_withdrawn-INVALID-reasons1]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_closed-INVALID-reasons3]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[request_stale-NEEDS_CONFIRMATION-reasons4]
+   FAILED test_a_fact_changed_after_creation_is_recorded_by_revalidate[unavailable-INVALID-reasons2]
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   FAILED test_revalidate_right_after_approval_is_valid_and_changes_no_validity
+   cause: AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: AssertionError: assert None == '2026-10-11T21:45:36.947947+00:00'
+   cause: E   AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: E   AssertionError: assert None == '2026-10-11T21:45:36.947947+00:00'
+   cause: E   assert None is not None
+   cause: assert None is not None
+== R7 revalidate switches the offer (B10) [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 28.98s
+   FAILED test_b10_static_no_update_of_an_opportunity_names_current_offer_id
+   FAILED test_b10_the_offer_is_never_switched_by_any_command
+   cause: AssertionError: UPDATE turab.opportunities
+   cause: AssertionError: assert ('INVALID', '...c31038ce2f2b') == ('INVALID', '...f0941dee6ef5')
+   cause: E   AssertionError: UPDATE turab.opportunities
+   cause: E   AssertionError: assert ('INVALID', '...c31038ce2f2b') == ('INVALID', '...f0941dee6ef5')
+== S1 the recorded validity is ignored [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 28.79s
+   FAILED test_a_stored_needs_confirmation_is_refused_until_revalidate_records_valid
+   FAILED test_b03_h05_a_share_after_a_revocation_is_refused_and_changes_nothing
+   cause: AssertionError: {"opportunity_id":"9ca885d7-7f30-44e6-bea3-bb8d1c3cd1d4","request_id":"84dcd9f6-410a-425f-bea2-038a15317784","property_id":"09b22858-a140-43fc-9888-889b78
+   cause: E   AssertionError: {"opportunity_id":"9ca885d7-7f30-44e6-bea3-bb8d1c3cd1d4","request_id":"84dcd9f6-410a-425f-bea2-038a15317784","property_id":"09b22858-a140-43fc-9888-88
+   cause: HTTP 409 field error: PERMISSION is FAIL: INVALID
+== S2 the check now is ignored [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   7 failed, 82 passed, 2 warnings in 31.27s
+   FAILED test_a_refused_share_consumes_no_key_and_the_same_key_is_evaluated_afresh
+   FAILED test_a_revoked_consent_and_another_failing_fact_answer_consent_revoked
+   FAILED test_a_share_on_facts_that_are_not_valid_now_is_refused[UPDATE
+   FAILED test_b03_h05_a_share_after_a_revocation_is_refused_and_changes_nothing
+   FAILED test_g5_8_i_a_replay_writes_no_second_interaction_and_a_refusal_none
+   cause: AssertionError: {"opportunity_id":"00ddd8f3-4a59-4a0a-b8b3-5e1064f2433d","request_id":"c9af4869-577c-439f-9e0f-f218e1d910e1","property_id":"05e36c56-df64-4093-a57d-efb1f7
+   cause: AssertionError: {"opportunity_id":"73c5a329-0345-4389-a793-22480c739edc","request_id":"b6886e47-a3ad-422c-9bdf-3a47f04c66ec","property_id":"f5f5ca9a-be5e-46c2-844c-8a6177
+   cause: AssertionError: {"opportunity_id":"8d006160-1b70-4522-b87b-80e0f9c5d8f2","request_id":"8a3abdbd-5823-4fe2-beac-8474a4bc40bc","property_id":"e76c9e85-083e-4cda-91ac-2dec25
+   cause: AssertionError: {"opportunity_id":"902df8ae-e885-4853-a870-55ee70a6feb3","request_id":"17eea6f4-a6b3-4bea-aad3-7b4a688f99c0","property_id":"75dc5ef2-57cb-4e44-8231-96e650
+   cause: AssertionError: {"opportunity_id":"bbf60b10-99b6-4d04-9be4-3c5d1c90868e","request_id":"68bd798c-2375-432a-8746-1ada7d61ae4c","property_id":"cbc8d58b-14ed-42c7-b306-f6f30a
+   cause: AssertionError: {"opportunity_id":"ee224c4f-780d-4a4d-a855-c02695b9fa42","request_id":"b4104d8e-d299-4ac1-8da5-04f7da872167","property_id":"b39cdc38-dacb-4e82-a125-fa47dd
+== S3 a revoked consent is answered as not valid [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   3 failed, 86 passed, 2 warnings in 28.94s
+   FAILED test_a_revoked_consent_and_another_failing_fact_answer_consent_revoked
+   FAILED test_b03_h05_a_share_after_a_revocation_is_refused_and_changes_nothing
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   cause: AssertionError: {'binding_waited_on_the_share': True, 'binding_committed_while_the_share_was_held': False, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'binding_waited_on_the_share': True, 'binding_committed_while_the_share_was_held': False, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: HTTP 409 field error: OFFER_STATUS is PAUSED: NEEDS_CONFIRMATION
+   cause: HTTP 409 field error: PERMISSION is FAIL: INVALID
+== S4 a narrowed scope is ignored [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 28.81s
+   FAILED test_a_narrowed_scope_refuses_the_share_and_a_wider_one_does_not
+   cause: AssertionError: {"opportunity_id":"da04a471-7c98-48cc-88fe-6c94dcd4e75b","request_id":"2d7e05de-aaf9-46b4-a17a-4eea8e5594ae","property_id":"05a064da-ffa3-4c0f-9829-d0a3f1
+   cause: E   AssertionError: {"opportunity_id":"da04a471-7c98-48cc-88fe-6c94dcd4e75b","request_id":"2d7e05de-aaf9-46b4-a17a-4eea8e5594ae","property_id":"05a064da-ffa3-4c0f-9829-d0
+== S5 the scope is compared the wrong way [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 29.30s
+   FAILED test_a_narrowed_scope_refuses_the_share_and_a_wider_one_does_not
+   cause: HTTP 409 field error: narrower than PROPERTY_DETAILS_ALLOWED
+== S6 contact before sharing is ignored [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   5 failed, 84 passed, 2 warnings in 29.60s
+   FAILED test_a_revalidate_note_is_not_a_recorded_contact
+   FAILED test_g5_8_iii_a_current_contact_before_sharing_binding_refuses_the_share
+   FAILED test_g5_8_iii_an_interaction_recorded_by_a_share_is_not_a_recorded_contact
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   cause: AssertionError: {"opportunity_id":"146b25d5-1c13-4473-9f55-a563f7f21454","request_id":"19fa2458-9161-43cc-bbb0-ee69dc3ef6b5","property_id":"2f368a33-0a2d-4622-805d-4732db
+   cause: AssertionError: {"opportunity_id":"362ed604-78a2-4231-95e0-a0f0b9e4f234","request_id":"0d0fedf9-cf43-4e63-a50b-4e7369723d50","property_id":"531e2f7e-888f-400e-afa5-156ec2
+   cause: AssertionError: {"opportunity_id":"fd602534-17dc-4176-a7ca-b3681b5b9298","request_id":"e7b772e5-c7e8-4162-a004-6903ed29fe0a","property_id":"0d34595b-5a41-48c1-9508-4e924e
+   cause: AssertionError: {'share_waited_on_the_binding': True, 'share_answered_while_the_binding_was_held': False, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: {"opportunity_id":"146b25d5-1c13-4473-9f55-a563f7f21454","request_id":"19fa2458-9161-43cc-bbb0-ee69dc3ef6b5","property_id":"2f368a33-0a2d-4622-805d-47
+   cause: E   AssertionError: {"opportunity_id":"362ed604-78a2-4231-95e0-a0f0b9e4f234","request_id":"0d0fedf9-cf43-4e63-a50b-4e7369723d50","property_id":"531e2f7e-888f-400e-afa5-15
+== S7 a revoked contact binding still refuses [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 29.49s
+   FAILED test_g5_8_iii_a_current_contact_before_sharing_binding_refuses_the_share
+   cause: AssertionError: assert [('PERMISSION...ORE_SHARING')] == [('PERMISSION...ORE_SHARING')]
+   cause: E   AssertionError: assert [('PERMISSION...ORE_SHARING')] == [('PERMISSION...ORE_SHARING')]
+== S8 share persists the check [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 28.90s
+   FAILED test_share_writes_no_validity_binding_or_confirmation
+   cause: AssertionError: assert {'last_activi...at', 'status'} == {'last_activi...at', 'status'}
+   cause: E   AssertionError: assert {'last_activi...at', 'status'} == {'last_activi...at', 'status'}
+== S9 a later share moves no activity [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 29.58s
+   FAILED test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only
+   cause: AssertionError: assert '2026-10-11T21:51:15.574367+00:00' > '2026-10-11T21:51:15.574367+00:00'
+   cause: E   AssertionError: assert '2026-10-11T21:51:15.574367+00:00' > '2026-10-11T21:51:15.574367+00:00'
+== S10 share never moves NEW to SHARED [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   13 failed, 76 passed, 2 warnings in 31.82s
+   FAILED test_a_refused_share_consumes_no_key_and_the_same_key_is_evaluated_afresh
+   FAILED test_a_stored_needs_confirmation_is_refused_until_revalidate_records_valid
+   FAILED test_close_from_shared_and_from_engaged_keeps_the_event_stamps
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_g5_8_i_a_share_writes_one_status_change_interaction
+   FAILED test_g5_8_i_each_successful_share_records_its_own_channel_and_note
+   FAILED test_g5_8_iii_a_current_contact_before_sharing_binding_refuses_the_share
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only
+   FAILED test_share_writes_no_validity_binding_or_confirmation
+   FAILED test_the_queue_has_no_time_based_membership
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   cause: AssertionError: assert 'NEW' == 'SHARED'
+   cause: AssertionError: assert 'b945bf7b-1eed-4f46-89b7-e68e5c36b509' not in {'08bd3605-b07e-43b3-9cb7-0a443354fecf', '098943b2-09a3-48b3-8da6-08bc581c13df', '0e934046-d2c1-4836-
+   cause: AssertionError: assert ('NEW', 'NEW') == ('SHARED', 'SHARED')
+   cause: AssertionError: assert [('STATUS_CHA...W', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: AssertionError: assert [('WEB', 'fir...'NEW', 'NEW')] == [('WEB', 'fir...D', 'SHARED')]
+   cause: AssertionError: assert datetime.datetime(2026, 10, 11, 21, 51, 54, 789686, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == None
+== W1 the share takes the shared lock [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   7 failed, 82 passed, 2 warnings in 38.49s
+   FAILED test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes
+   FAILED test_an_approval_on_the_same_property_waits_for_a_held_share_and_both_succeed
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   FAILED test_two_shares_on_one_property_serialize_and_both_succeed
+   cause: AssertionError: the approval never waited on the share
+   cause: AssertionError: the run never waited on the share
+   cause: AssertionError: the second share never waited on the first
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: the approval never waited on the share
+== W2 the exclusive lock does not conflict with FOR KEY SHARE [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   5 failed, 84 passed, 2 warnings in 31.75s
+   FAILED test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   cause: AssertionError: the run never waited on the share
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: the run never waited on the share
+   cause: E   AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+== W3 the share locks the offer only [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   2 failed, 87 passed, 2 warnings in 32.06s
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+== W4 the share locks the property only [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   2 failed, 87 passed, 2 warnings in 31.54s
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+== I1 the share writes no interaction [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   7 failed, 82 passed, 2 warnings in 29.56s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_g5_8_i_a_replay_writes_no_second_interaction_and_a_refusal_none
+   FAILED test_g5_8_i_a_share_without_channel_or_note_records_nulls
+   FAILED test_g5_8_i_a_share_writes_one_status_change_interaction
+   FAILED test_g5_8_i_each_successful_share_records_its_own_channel_and_note
+   FAILED test_g5_8_i_the_note_is_kept_in_the_interaction_only
+   FAILED test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only
+   cause: AssertionError: assert 0 == 1
+   cause: AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: AssertionError: assert [] == [('WEB', 'fir...D', 'SHARED')]
+   cause: AssertionError: one interaction per successful share (G5-8 (i) (a)), and no message is sent
+   cause: E   AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+== I2 the note is not kept [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   6 failed, 83 passed, 2 warnings in 30.20s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   FAILED test_g5_8_i_a_share_writes_one_status_change_interaction
+   FAILED test_g5_8_i_each_successful_share_records_its_own_channel_and_note
+   FAILED test_g5_8_i_the_note_is_kept_in_the_interaction_only
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   cause: AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: AssertionError: assert None == 'note-9996d05b90114e3d988c8980c9e0f302'
+   cause: AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: AssertionError: assert [('WEB', None...D', 'SHARED')] == [('WEB', 'fir...D', 'SHARED')]
+   cause: E   AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+== I3 the channel is not kept [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   3 failed, 86 passed, 2 warnings in 29.42s
+   FAILED test_g5_8_i_a_share_writes_one_status_change_interaction
+   FAILED test_g5_8_i_each_successful_share_records_its_own_channel_and_note
+   FAILED test_g5_8_i_the_note_is_kept_in_the_interaction_only
+   cause: AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: AssertionError: assert ('summary' not in {'channel': None, 'metadata': {'status_after': 'SHARED', 'status_before': 'NEW', 'source_operation': 'postOpportunitiesOpportunit
+   cause: AssertionError: assert [(None, 'firs...D', 'SHARED')] == [('WEB', 'fir...D', 'SHARED')]
+   cause: E   AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: E   AssertionError: assert ('summary' not in {'channel': None, 'metadata': {'status_after': 'SHARED', 'status_before': 'NEW', 'source_operation': 'postOpportunitiesOpport
+   cause: E   AssertionError: assert [(None, 'firs...D', 'SHARED')] == [('WEB', 'fir...D', 'SHARED')]
+== I4 the operator is not kept [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   3 failed, 86 passed, 2 warnings in 30.93s
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   FAILED test_g5_8_i_a_share_writes_one_status_change_interaction
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   cause: AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: E   AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: E   AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+== I5 the audit row carries the note [src/turab/services/audit_rows.py, 1 site(s)]  restored: sha256 c3ee11b0945bb116 identical
+   3 failed, 86 passed, 2 warnings in 29.78s
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   FAILED test_g5_8_i_the_note_is_kept_in_the_interaction_only
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   cause: AssertionError: assert not 1
+   cause: E   AssertionError: assert not 1
+== I6 the interaction is not audited [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 29.14s
+   FAILED test_g5_8_i_the_note_is_kept_in_the_interaction_only
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== I7 the status before is not recorded [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   3 failed, 86 passed, 2 warnings in 29.83s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_g5_8_i_a_share_writes_one_status_change_interaction
+   FAILED test_g5_8_i_each_successful_share_records_its_own_channel_and_note
+   cause: AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: AssertionError: assert [('WEB', 'fir...D', 'SHARED')] == [('WEB', 'fir...D', 'SHARED')]
+   cause: AssertionError: assert {'status_afte...unityIdShare'} == {'source_oper...er': 'SHARED'}
+   cause: E   AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: E   AssertionError: assert [('WEB', 'fir...D', 'SHARED')] == [('WEB', 'fir...D', 'SHARED')]
+   cause: E   AssertionError: assert {'status_afte...unityIdShare'} == {'source_oper...er': 'SHARED'}
+== N1 the close writes no interaction [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   4 failed, 85 passed, 2 warnings in 30.49s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   FAILED test_close_note_replay_and_refusal_write_no_interaction
+   FAILED test_close_without_a_note_still_records_the_status_change
+   cause: AssertionError: assert 0 == 1
+   cause: AssertionError: assert [('STATUS_CHA...W', 'SHARED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: E   AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert [('STATUS_CHA...W', 'SHARED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== N2 the close note is not kept [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 29.76s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   cause: AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: E   AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: E   AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+== N3 the close reason is not recorded [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   3 failed, 86 passed, 2 warnings in 31.58s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   FAILED test_close_without_a_note_still_records_the_status_change
+   cause: AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: AssertionError: assert ('STATUS_CHANGE', None, None) == ('STATUS_CHAN...'UNREACHABLE')
+   cause: AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: E   AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('STATUS_CHAN...'), None, ...)
+   cause: E   AssertionError: assert ('STATUS_CHANGE', None, None) == ('STATUS_CHAN...'UNREACHABLE')
+   cause: E   AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+== N4 the close records the share's source [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 30.00s
+   FAILED test_close_from_shared_records_its_own_status_before
+   FAILED test_close_note_is_kept_in_one_status_change_interaction
+   cause: AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: AssertionError: assert {'status_afte...unityIdShare'} == {'source_oper...er': 'CLOSED'}
+   cause: E   AssertionError: assert [('STATUS_CHA...D', 'CLOSED')] == [('STATUS_CHA...D', 'CLOSED')]
+   cause: E   AssertionError: assert {'status_afte...unityIdShare'} == {'source_oper...er': 'CLOSED'}
+== N5 the revalidate note is not kept [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 31.48s
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   cause: AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: E   AssertionError: assert ('NOTE', None...'), None, ...) == ('NOTE', None...'), None, ...)
+== N6 a revalidate without a note writes a row [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 29.79s
+   FAILED test_revalidate_without_a_note_writes_no_interaction
+   cause: AssertionError: assert [{'interactio...00002'), ...}] == []
+   cause: E   AssertionError: assert [{'interactio...00002'), ...}] == []
+== N7 the revalidate note is typed STATUS_CHANGE [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 30.11s
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   cause: AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('NOTE', None...'), None, ...)
+   cause: E   AssertionError: assert ('STATUS_CHAN...'), None, ...) == ('NOTE', None...'), None, ...)
+== N8 the revalidate records no validity before [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 2 warnings in 30.54s
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   cause: AssertionError: assert {'validity_af...IdRevalidate'} == {'source_oper...r': 'INVALID'}
+   cause: E   AssertionError: assert {'validity_af...IdRevalidate'} == {'source_oper...r': 'INVALID'}
+== N9 the revalidate writes no interaction [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 30.67s
+   FAILED test_revalidate_note_is_kept_in_one_note_interaction
+   FAILED test_revalidate_note_replay_and_refusal_write_no_interaction
+   cause: AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert 0 == 1
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== C1 any reason closes [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   5 failed, 84 passed, 2 warnings in 30.40s
+   FAILED test_a_close_reason_outside_the_eight_is_refused[body0-422-CLOSE_REASON_NOT_ALLOWED]
+   FAILED test_a_close_reason_outside_the_eight_is_refused[body1-422-CLOSE_REASON_NOT_ALLOWED]
+   FAILED test_a_close_reason_outside_the_eight_is_refused[body2-422-CLOSE_REASON_NOT_ALLOWED]
+   FAILED test_a_close_reason_outside_the_eight_is_refused[body3-422-CLOSE_REASON_NOT_ALLOWED]
+   FAILED test_close_note_replay_and_refusal_write_no_interaction
+   cause: AssertionError: {"opportunity_id":"b18caa11-75bc-4099-b966-c5bc57eb88ef","request_id":"9f8da5e7-f74c-4099-854f-61c577fcfe35","property_id":"e6057009-5e72-49c7-90fb-e55a54
+   cause: AssertionError: {"opportunity_id":"e3b7fab7-2172-4e10-b311-d777016944d2","request_id":"727611df-1c79-4f7b-ab93-2f145a86c937","property_id":"fe5dd9a3-466f-484b-97f1-a8d3c8
+   cause: E   AssertionError: {"opportunity_id":"b18caa11-75bc-4099-b966-c5bc57eb88ef","request_id":"9f8da5e7-f74c-4099-854f-61c577fcfe35","property_id":"e6057009-5e72-49c7-90fb-e5
+   cause: E   AssertionError: {"opportunity_id":"e3b7fab7-2172-4e10-b311-d777016944d2","request_id":"727611df-1c79-4f7b-ab93-2f145a86c937","property_id":"fe5dd9a3-466f-484b-97f1-a8
+   cause: E   psycopg.errors.ForeignKeyViolation: insert or update on table "opportunities" violates foreign key constraint "opportunities_close_reason_code_fkey"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) insert or update on table "opportunities" violates foreign key constraint "opportunities_close_rea
+== C2 a reason of another category is admitted [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   2 failed, 87 passed, 2 warnings in 31.03s
+   FAILED test_a_close_reason_outside_the_eight_is_refused[body0-422-CLOSE_REASON_NOT_ALLOWED]
+   FAILED test_the_eight_are_the_seeded_category_opportunity_and_other
+   cause: AssertionError: assert {'BUYER_REJEC...EJECTED', ...} == {'BUYER_REJEC...AILABLE', ...}
+   cause: AssertionError: {"opportunity_id":"94ab3400-f635-4041-9a71-f9e7c2af0cf1","request_id":"5e97b2a0-81a0-4464-b516-4491307dec7c","property_id":"eb1e6b5c-20a5-407a-9d87-470c13
+   cause: E   AssertionError: assert {'BUYER_REJEC...EJECTED', ...} == {'BUYER_REJEC...AILABLE', ...}
+   cause: E   AssertionError: {"opportunity_id":"94ab3400-f635-4041-9a71-f9e7c2af0cf1","request_id":"5e97b2a0-81a0-4464-b516-4491307dec7c","property_id":"eb1e6b5c-20a5-407a-9d87-47
+== C3 close moves no activity [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   8 failed, 81 passed, 2 warnings in 29.04s
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[BUYER_REJECTED]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[DEAL_CONFIRMED]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[DUPLICATE_OPPORTUNITY_CONSOLIDATED]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[OTHER]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[OWNER_REJECTED]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[PROPERTY_UNAVAILABLE]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[REQUEST_CHANGED]
+   FAILED test_close_from_new_writes_status_time_reason_and_activity_together[UNREACHABLE]
+   cause: AssertionError: assert ('2026-10-11T22:05:25.877558+00:00' is not None and None == '2026-10-11T22:05:25.877558+00:00')
+   cause: AssertionError: assert ('2026-10-11T22:05:26.069769+00:00' is not None and None == '2026-10-11T22:05:26.069769+00:00')
+   cause: AssertionError: assert ('2026-10-11T22:05:26.310476+00:00' is not None and None == '2026-10-11T22:05:26.310476+00:00')
+   cause: AssertionError: assert ('2026-10-11T22:05:26.504105+00:00' is not None and None == '2026-10-11T22:05:26.504105+00:00')
+   cause: AssertionError: assert ('2026-10-11T22:05:26.978545+00:00' is not None and None == '2026-10-11T22:05:26.978545+00:00')
+   cause: AssertionError: assert ('2026-10-11T22:05:27.274711+00:00' is not None and None == '2026-10-11T22:05:27.274711+00:00')
+== C4 CLOSED is not final [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   8 failed, 81 passed, 3 warnings in 32.01s
+   FAILED test_a_close_replays_on_its_key_after_the_opportunity_is_closed
+   FAILED test_a_close_waits_for_a_command_holding_the_opportunity_and_reads_its_result
+   FAILED test_close_note_replay_and_refusal_write_no_interaction
+   FAILED test_closed_is_final_for_every_command[close]
+   FAILED test_closed_is_final_for_every_command[revalidate]
+   FAILED test_closed_is_final_for_every_command[share]
+   FAILED test_revalidate_note_replay_and_refusal_write_no_interaction
+   FAILED test_the_roles_are_the_contracts[close-allowed2]
+   cause: E   KeyError: 'r'
+   cause: E   psycopg.errors.RaiseException: Opportunity history: a CLOSED opportunity is final
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Opportunity history: a CLOSED opportunity is final
+   cause: KeyError: 'r'
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) Opportunity history: a CLOSED opportunity is final
+== L1 the opportunity is read without a lock [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   1 failed, 88 passed, 3 warnings in 31.75s
+   FAILED test_a_close_waits_for_a_command_holding_the_opportunity_and_reads_its_result
+   cause: E   KeyError: 'r'
+   cause: KeyError: 'r'
+== L2 an unknown opportunity is not recorded (share) [src/turab/api/routes/matching.py, 1 site(s)]  restored: sha256 96a91e2dbb6122be identical
+   1 failed, 88 passed, 2 warnings in 31.02s
+   FAILED test_an_unknown_opportunity_is_refused_and_recorded[share]
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== Q1 a CLOSED opportunity is queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   1 failed, 88 passed, 2 warnings in 30.07s
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   cause: AssertionError: assert {'invalid': (...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+   cause: E   AssertionError: assert {'invalid': (...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+== Q2 a shared VALID opportunity is queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   2 failed, 87 passed, 2 warnings in 31.30s
+   FAILED test_the_queue_has_no_time_based_membership
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   cause: AssertionError: assert 'eba8ca46-b0b6-4972-9bb5-cff0a8f258d6' not in {'02779897-7f8d-4413-9fda-291d20779bf2', '097800f7-e2d5-4482-bbc4-3c05b743ca92', '116b71fc-2ec2-464b-
+   cause: AssertionError: assert {'invalid': (...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+   cause: E   AssertionError: assert 'eba8ca46-b0b6-4972-9bb5-cff0a8f258d6' not in {'02779897-7f8d-4413-9fda-291d20779bf2', '097800f7-e2d5-4482-bbc4-3c05b743ca92', '116b71fc-2ec2-4
+   cause: E   AssertionError: assert {'invalid': (...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+== Q3 a NEW VALID opportunity is not queued [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   2 failed, 87 passed, 2 warnings in 30.92s
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   FAILED test_the_queue_is_ordered_by_priority_then_creation
+   cause: AssertionError: assert {'invalid': (...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+   cause: E   AssertionError: assert {'invalid': (...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+   cause: E   ValueError: '65d755ec-7b17-4fbe-8c52-8072f5aa3317' is not in list
+   cause: ValueError: '65d755ec-7b17-4fbe-8c52-8072f5aa3317' is not in list
+== Q4 a time-based condition joins the queue [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   1 failed, 88 passed, 2 warnings in 29.64s
+   FAILED test_the_queue_has_no_time_based_membership
+   cause: AssertionError: assert '30f0bb02-11a9-46e5-961f-e45e3fac6dee' not in {'031445a3-0ce8-4103-8b53-5c22fe125bcc', '0fbd9bc5-ae1a-48f7-b5ff-63fdf4a33b8e', '105714de-db74-4e3d-
+   cause: E   AssertionError: assert '30f0bb02-11a9-46e5-961f-e45e3fac6dee' not in {'031445a3-0ce8-4103-8b53-5c22fe125bcc', '0fbd9bc5-ae1a-48f7-b5ff-63fdf4a33b8e', '105714de-db74-4
+== Q5 INVALID is NORMAL [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   3 failed, 86 passed, 2 warnings in 30.71s
+   FAILED test_an_unshared_invalid_opportunity_is_high_and_named_by_its_validity
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   FAILED test_the_queue_is_ordered_by_priority_then_creation
+   cause: AssertionError: assert ('NORMAL', 'V...VALID', 'NEW') == ('HIGH', 'VAL...VALID', 'NEW')
+   cause: AssertionError: assert 35 < 34
+   cause: AssertionError: assert {'new': ('OPP...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+   cause: E   AssertionError: assert ('NORMAL', 'V...VALID', 'NEW') == ('HIGH', 'VAL...VALID', 'NEW')
+   cause: E   AssertionError: assert 35 < 34
+   cause: E   AssertionError: assert {'new': ('OPP...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+== Q6 an unshared opportunity is named by its status first [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   3 failed, 86 passed, 2 warnings in 29.25s
+   FAILED test_an_unshared_invalid_opportunity_is_high_and_named_by_its_validity
+   FAILED test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary
+   FAILED test_the_queue_is_ordered_by_priority_then_creation
+   cause: AssertionError: assert ('NORMAL', 'N...HARED', 'NEW') == ('HIGH', 'VAL...VALID', 'NEW')
+   cause: AssertionError: assert 35 < 34
+   cause: AssertionError: assert {'new': ('OPP...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+   cause: E   AssertionError: assert ('NORMAL', 'N...HARED', 'NEW') == ('HIGH', 'VAL...VALID', 'NEW')
+   cause: E   AssertionError: assert 35 < 34
+   cause: E   AssertionError: assert {'new': ('OPP...ONFIRMATION')} == {'new': ('OPP...ONFIRMATION')}
+== Q7 the order ignores the priority [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   1 failed, 88 passed, 2 warnings in 28.29s
+   FAILED test_the_queue_is_ordered_by_priority_then_creation
+   cause: AssertionError: assert 35 < 34
+   cause: E   AssertionError: assert 35 < 34
+== Q8 the queue is not audited [src/turab/services/access.py, 1 site(s)]  restored: sha256 51ef436eb68af086 identical
+   1 failed, 88 passed, 2 warnings in 30.43s
+   FAILED test_the_queue_is_staff_only_and_audited_once
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+
+SURVIVING MUTATIONS: none
