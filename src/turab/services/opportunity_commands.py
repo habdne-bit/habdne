@@ -28,11 +28,25 @@ approved on: another offer is a new run and a new review (G5-9). The schema
 leaves the column writable for a later slice; a test of the source pins
 that no Slice 5 UPDATE writes it.
 
-**What the request body carries and where it goes.** The share's `channel`
-and `note`, and the `note` of revalidate and close, are accepted as the
-contract types them and stored nowhere: G5-8 (i) is not decided, and its
-option (a) writes a Slice 7 table (`interactions`). This is the narrower of
-its two options, recorded as PROVISIONAL in `SLICE_5_STEP5_DELIVERY.md`.
+**What the request body carries and where it goes.**
+- The share's `channel` and `note`: G5-8 (i), decided (a) in the review of
+  `6c6e614`. Each successful share writes ONE `interactions` row
+  (STATUS_CHANGE), in its own transaction: the channel, the note as
+  `summary`, the operator, the opportunity and the request's party. It
+  records the share. It is no proof that a message was sent or a contact
+  made, and no check reads it as one. Its audit row leaves out `summary`
+  (`audit_rows.WITHHELD`): the free-text note reaches neither the audit log
+  nor any response. A replay returns the stored response and writes
+  nothing; a refusal writes nothing.
+- The `note` of revalidate and close: stored nowhere. The decision named the
+  share; G5-10's "the note follows G5-8 (i)" is put to the reviewer
+  (`SLICE_5_STEP5_DELIVERY.md` §13).
+
+**R-S5-5-01 (review of `6c6e614`).** The share's check takes the property
+and the offer `FOR UPDATE` (`currency.check(..., exclusive=True)`), so a
+consent binding inserted on either is serialized with the share
+(`currency.py`, the measured record in
+`evidence/SLICE5-STEP5-R-S5-5-01-BEFORE-FIX.txt`).
 """
 from __future__ import annotations
 
@@ -44,7 +58,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .. import exact_json
-from . import currency, match_review
+from . import audit_rows, currency, match_review
 
 #: G5-10 (decided in the review of `d0e0bc9`): the reason category
 #: OPPORTUNITY, plus `OTHER`. A test pins this tuple to the seed.
@@ -54,9 +68,9 @@ CLOSE_REASONS = ("OWNER_REJECTED", "BUYER_REJECTED", "PROPERTY_UNAVAILABLE",
 #: The sharing scopes, narrowest first (RFC-001 R8.2).
 SCOPE_RANK: Mapping[str, int] = {"SUMMARY_ONLY": 0, "PROPERTY_DETAILS_ALLOWED": 1,
                                  "CONTACT_AFTER_CONFIRMATION": 2}
-#: G5-8 (iii), PROVISIONAL (option (a), recommended by the plan, not yet
-#: decided): a CURRENT binding with this purpose refuses the share, since
-#: nothing in the pack records the contact it asks for.
+#: G5-8 (iii), decided (a) in the review of `6c6e614`: a CURRENT binding with
+#: this purpose refuses the share, until a path that records the contact
+#: exists. The share's own interaction is not such a record.
 CONTACT_FIRST = "CONTACT_BEFORE_SHARING"
 
 
@@ -178,10 +192,12 @@ def revalidate(session: Session, prepared: Prepared) -> dict[str, Any]:
 
 def _contact_first(session: Session, opportunity: Mapping[str, Any], match: Mapping[str, Any],
                    checked: currency.Checked) -> list[str]:
-    """G5-8 (iii), PROVISIONAL: the CURRENT bindings with purpose
-    CONTACT_BEFORE_SHARING on the offer or its property, by the binding-state
-    rule the match recorded, at the check's instant. The rows were locked by
-    the check (every purpose)."""
+    """G5-8 (iii): the CURRENT bindings with purpose CONTACT_BEFORE_SHARING on
+    the offer or its property, by the binding-state rule the match recorded,
+    at the check's instant. The existing rows were locked by the check (every
+    purpose). A binding being inserted on the offer or the property was
+    waited for by the check's `FOR UPDATE` and is read here, by a new
+    statement, once committed (R-S5-5-01)."""
     from ..matching import snapshots
 
     rule = currency._engine_rule(match, "permission_binding_state")
@@ -217,8 +233,8 @@ def prepare_share(session: Session, *, opportunity_id: uuid.UUID,
        fact is named;
     4. the offer's `permission_scope` now is not narrower than the
        opportunity's `sharing_scope`, else 409 `SHARING_SCOPE_NARROWED`;
-    5. PROVISIONAL, G5-8 (iii) (a): no CURRENT CONTACT_BEFORE_SHARING
-       binding, else 409 `CONTACT_BEFORE_SHARING_REQUIRED`.
+    5. G5-8 (iii) (a): no CURRENT CONTACT_BEFORE_SHARING binding, else 409
+       `CONTACT_BEFORE_SHARING_REQUIRED`.
     What the check found is NOT stored by a refusal: `revalidate` stores it."""
     opportunity = _lock(session, opportunity_id)
     if opportunity["validity_status"] != currency.VALID:
@@ -230,7 +246,7 @@ def prepare_share(session: Session, *, opportunity_id: uuid.UUID,
               "message": "the recorded validity is not VALID"}])
     match = _match_context(session, opportunity["approved_match_id"])
     checked = currency.check(session, match=match, offer_id=opportunity["current_offer_id"],
-                             clock=clock)
+                             clock=clock, exclusive=True)
     if checked.currency.validity != currency.VALID:
         revoked = checked.facts["PERMISSION"] == "FAIL"
         raise OpportunityRefused(
@@ -254,12 +270,18 @@ def prepare_share(session: Session, *, opportunity_id: uuid.UUID,
     return Prepared(opportunity=opportunity, checked=checked)
 
 
-def share(session: Session, prepared: Prepared) -> dict[str, Any]:
+#: The operation recorded in the interaction's `metadata`, so a reader tells
+#: a share's record from a contact.
+SHARE_OPERATION = "postOpportunitiesOpportunityIdShare"
+
+
+def share(session: Session, prepared: Prepared, *, channel: str | None, note: str | None,
+          operator_account_id: uuid.UUID) -> dict[str, Any]:
     """NEW → SHARED with `shared_at` the first time (migration `0006`, rule
     5); a later share keeps the status and moves `last_activity_at` only.
     No validity, binding or offer is written, and no message is sent
-    (Slice 7)."""
-    return _returning(session, """
+    (Slice 7). Then the share's one interaction (G5-8 (i) (a))."""
+    view = _returning(session, """
         UPDATE turab.opportunities
            SET status = CASE WHEN status = 'NEW' THEN 'SHARED'::turab.opportunity_status
                              ELSE status END,
@@ -267,6 +289,34 @@ def share(session: Session, prepared: Prepared) -> dict[str, Any]:
                last_activity_at = :at
          WHERE opportunity_id = :o""",
         {"at": prepared.checked.as_of, "o": prepared.opportunity["opportunity_id"]})
+    _record_share(session, prepared, view, channel=channel, note=note,
+                  operator_account_id=operator_account_id)
+    return view
+
+
+def _record_share(session: Session, prepared: Prepared, view: Mapping[str, Any], *,
+                  channel: str | None, note: str | None,
+                  operator_account_id: uuid.UUID) -> None:
+    """One `interactions` row, STATUS_CHANGE, at the share's instant: the
+    channel (the contract's four values are values of
+    `communication_channel`), the note as `summary`, the request's party, the
+    opportunity, the operator. No thread, no outcome. `metadata` names the
+    operation and the status before and after."""
+    interaction_id = session.execute(text("""
+        INSERT INTO turab.interactions (interaction_type, channel, party_id, opportunity_id,
+                                        summary, occurred_at, operator_account_id, metadata)
+        SELECT 'STATUS_CHANGE', CAST(:channel AS turab.communication_channel), r.party_id,
+               :o, :note, :at, :operator, CAST(:metadata AS jsonb)
+          FROM turab.requests r WHERE r.request_id = :r
+        RETURNING interaction_id"""),
+        {"channel": channel, "o": prepared.opportunity["opportunity_id"], "note": note,
+         "at": prepared.checked.as_of, "operator": operator_account_id,
+         "r": prepared.opportunity["request_id"],
+         "metadata": exact_json.dumps({"source_operation": SHARE_OPERATION,
+                                       "status_before": prepared.opportunity["status"],
+                                       "status_after": view["status"]})}).scalar_one()
+    audit_rows.write(session, "interactions", interaction_id, "INSERT", None,
+                     audit_rows.row_json(session, "interactions", interaction_id))
 
 
 # --- close (G5-10) --------------------------------------------------------------------

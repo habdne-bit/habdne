@@ -927,10 +927,30 @@ RULES: tuple[Rule, ...] = (
           "test_a_refused_share_consumes_no_key_and_the_same_key_is_evaluated_afresh",
           "test_share_writes_no_validity_binding_or_confirmation",
           "test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only")),
-    Rule("S5-5 / G5-8 (iii) PROVISIONAL",
+    Rule("S5-5 / G5-8 (iii)",
          "A CURRENT CONTACT_BEFORE_SHARING binding refuses the share; a revoked one does "
-         "not (pending the decision of G5-8 (iii))",
-         ("test_provisional_a_current_contact_before_sharing_binding_refuses_the_share",)),
+         "not; the share's own interaction is not a recorded contact",
+         ("test_g5_8_iii_a_current_contact_before_sharing_binding_refuses_the_share",
+          "test_g5_8_iii_an_interaction_recorded_by_a_share_is_not_a_recorded_contact")),
+    Rule("S5-5 / R-S5-5-01",
+         "A consent binding created while a share runs is serialized with it, on the offer "
+         "and on the property: a binding waits for a held share, and a share waits for a "
+         "binding in flight, reads it, and is refused without writing or consuming its key",
+         ("test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it",
+          "test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it",
+          "test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes",
+          "test_an_approval_on_the_same_property_waits_for_a_held_share_and_both_succeed",
+          "test_two_shares_on_one_property_serialize_and_both_succeed")),
+    Rule("S5-5 / G5-8 (i)",
+         "Each successful share writes one STATUS_CHANGE interaction with its channel, note, "
+         "operator, opportunity and party; a replay or a refusal writes none; the note is in "
+         "no audit row and no response",
+         ("test_g5_8_i_a_share_writes_one_status_change_interaction",
+          "test_g5_8_i_a_share_without_channel_or_note_records_nulls",
+          "test_g5_8_i_each_successful_share_records_its_own_channel_and_note",
+          "test_g5_8_i_a_replay_writes_no_second_interaction_and_a_refusal_none",
+          "test_g5_8_i_the_note_is_kept_in_the_interaction_only",
+          "test_g5_8_i_the_share_is_the_one_writer_of_interactions")),
     Rule("S5-5 / G5-10",
          "Close takes one of the eight reasons and writes status, time, reason and "
          "activity together from NEW, SHARED or ENGAGED; CLOSED is final for every "

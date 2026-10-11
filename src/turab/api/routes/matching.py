@@ -241,8 +241,9 @@ class RevalidateInput(_NoNull):
 
 class ShareInput(_NoNull):
     """The inline body: `channel` (the contract's four values) and `note`.
-    Open, as the contract leaves it. Neither is stored: G5-8 (i) is not
-    decided (`services/opportunity_commands.py`)."""
+    Open, as the contract leaves it. Both are kept in the share's one
+    `interactions` row (G5-8 (i), decided (a) in the review of 6c6e614;
+    `services/opportunity_commands.py`)."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -303,7 +304,9 @@ def share_opportunity(request: Request, opportunity_id: uuid.UUID, body: ShareIn
         return opportunity_commands.prepare_share(session, opportunity_id=opportunity_id)
 
     def handler(session, prepared):
-        return 200, opportunity_commands.share(session, prepared)
+        return 200, opportunity_commands.share(
+            session, prepared, channel=body.channel, note=body.note,
+            operator_account_id=command.subject.account_id)
 
     return _run(request, command, SHARE, f"POST /opportunities/{opportunity_id}/share",
                 body.model_dump(mode="json", exclude_unset=True), handler, 200,

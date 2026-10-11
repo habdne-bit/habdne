@@ -6,13 +6,13 @@ G5-9 (revalidate); G5-10 (close: decided in the review of d0e0bc9); G5-11 (a)
 (the opportunity queue, no time-based membership); G5-12 (B10, the service
 guard); §6.1 mandatory test 6 through the real close; H05, B03.
 
-**PROVISIONAL, not decided** (G5-8's open points, recorded in
-`SLICE_5_STEP5_DELIVERY.md`):
-- (i) the share's `channel` and `note` are stored nowhere (option (b)'s
-  narrower reading: no Slice 7 table is written);
-- (iii) a CURRENT `CONTACT_BEFORE_SHARING` binding refuses the share (the
-  plan's recommended option (a)).
-The tests of these two are marked so, and change with the decision.
+**G5-8's open points, decided in the review of 6c6e614:**
+- (i) option (a): each successful share writes one `interactions` row
+  (STATUS_CHANGE) with its channel and note; the note reaches no audit row
+  and no response;
+- (iii) option (a): a CURRENT `CONTACT_BEFORE_SHARING` binding refuses the
+  share. R-S5-5-01, the window in which a binding is created while a share
+  runs, is measured and closed at the end of this file.
 
 **What is a fixture here.** ENGAGED has no Slice 5 path (G5-1): the one
 ENGAGED opportunity is written by SQL, SHARED -> ENGAGED with its stamp, as
@@ -75,7 +75,7 @@ def _revalidate(client, ids, opportunity, account=None, key=None):
 
 
 def _share(client, ids, opportunity, account=None, key=None, body=None):
-    return _cmd(client, opportunity, "share", body or {"channel": "WEB"},
+    return _cmd(client, opportunity, "share", {"channel": "WEB"} if body is None else body,
                 account or ids.ACC_OPERATOR, key)
 
 
@@ -332,8 +332,8 @@ def test_share_moves_new_to_shared_once_and_a_later_share_moves_activity_only(cl
     again = _row(engine, world["opportunity"])
     assert second["status"] == "SHARED" and again["shared_at"] == row["shared_at"]
     assert again["last_activity_at"] > row["last_activity_at"]
-    assert _one(engine, "SELECT count(*) FROM turab.interactions") == interactions, \
-        "no message is sent, and no interaction is written (G5-8 (i): PROVISIONAL)"
+    assert _one(engine, "SELECT count(*) FROM turab.interactions") == interactions + 2, \
+        "one interaction per successful share (G5-8 (i) (a)), and no message is sent"
 
 
 def test_share_writes_no_validity_binding_or_confirmation(client, engine, ids):
@@ -447,9 +447,9 @@ def _contact_first(engine, ids, offer, *, revoked=False):
         RETURNING consent_binding_id""", c=grant, o=offer, r=revoked)
 
 
-def test_provisional_a_current_contact_before_sharing_binding_refuses_the_share(client,
-                                                                              engine, ids):
-    """PROVISIONAL, G5-8 (iii) (a), recommended and not yet decided: a CURRENT
+def test_g5_8_iii_a_current_contact_before_sharing_binding_refuses_the_share(client,
+                                                                           engine, ids):
+    """G5-8 (iii), decided (a) in the review of 6c6e614: a CURRENT
     CONTACT_BEFORE_SHARING binding refuses the share; a revoked one does not.
     It is not a matching purpose, so the validity is untouched."""
     world = _fresh(ids, engine, client)
@@ -502,18 +502,111 @@ def test_the_share_body_is_typed_as_the_contract_types_it(client, engine, ids, b
              body=body)
 
 
-def test_the_share_body_is_open_and_carries_nothing_stored(client, engine, ids):
-    """The contract leaves the body open (no `additionalProperties: false`):
-    an undeclared field is accepted, as for the matching run; the channel and
-    the note are stored nowhere (G5-8 (i): PROVISIONAL)."""
+def _interactions(engine, opportunity):
+    return _all(engine, """
+        SELECT interaction_id, interaction_type::text AS interaction_type,
+               channel::text AS channel, party_id, request_id, property_id, opportunity_id,
+               thread_id, summary, outcome_code, occurred_at, operator_account_id,
+               metadata::text AS metadata
+          FROM turab.interactions WHERE opportunity_id = :o
+         ORDER BY occurred_at, interaction_id""", o=opportunity)
+
+
+def test_g5_8_i_a_share_writes_one_status_change_interaction(client, engine, ids):
+    """G5-8 (i), decided (a) in the review of 6c6e614: one `interactions`
+    row of type STATUS_CHANGE, in the share's own transaction, keeping the
+    channel, the note, the operator, the opportunity and the request's party.
+    It records the share; it is no proof that a message was sent or a contact
+    made, and it links no thread."""
     world = _fresh(ids, engine, client)
     note = f"note-{uuid.uuid4().hex}"
-    _ok(_share(client, ids, world["opportunity"],
-               body={"channel": "WHATSAPP", "note": note, "extra": 1}))
+    _ok(_share(client, ids, world["opportunity"], account=ids.ACC_ADMIN,
+               body={"channel": "WHATSAPP", "note": note}))
+    row = _row(engine, world["opportunity"])
+    [i] = _interactions(engine, world["opportunity"])
+    party = _one(engine, "SELECT party_id FROM turab.requests WHERE request_id = :r",
+                 r=world["request"])
+    assert (i["interaction_type"], i["channel"], i["summary"], i["operator_account_id"],
+            i["party_id"], i["thread_id"], i["outcome_code"]) == (
+        "STATUS_CHANGE", "WHATSAPP", note, ids.ACC_ADMIN, party, None, None)
+    assert i["occurred_at"] == _one(engine, "SELECT shared_at FROM turab.opportunities "
+                                            "WHERE opportunity_id = :o", o=world["opportunity"])
+    assert row["status"] == "SHARED"
+    assert json.loads(i["metadata"]) == {
+        "source_operation": "postOpportunitiesOpportunityIdShare",
+        "status_before": "NEW", "status_after": "SHARED"}
+
+
+def test_g5_8_i_a_share_without_channel_or_note_records_nulls(client, engine, ids):
+    world = _fresh(ids, engine, client)
+    _ok(_share(client, ids, world["opportunity"], body={}))
+    [i] = _interactions(engine, world["opportunity"])
+    assert (i["interaction_type"], i["channel"], i["summary"]) == ("STATUS_CHANGE", None, None)
+
+
+def test_g5_8_i_each_successful_share_records_its_own_channel_and_note(client, engine, ids):
+    """A later share keeps the status and is recorded too, with its own
+    channel and note: dropping them is what the decision refused."""
+    world = _fresh(ids, engine, client)
+    _ok(_share(client, ids, world["opportunity"], body={"channel": "WEB", "note": "first"}))
+    _ok(_share(client, ids, world["opportunity"], body={"channel": "SMS", "note": "second"}))
+    rows = _interactions(engine, world["opportunity"])
+    assert [(r["channel"], r["summary"], json.loads(r["metadata"])["status_before"],
+             json.loads(r["metadata"])["status_after"]) for r in rows] == [
+        ("WEB", "first", "NEW", "SHARED"), ("SMS", "second", "SHARED", "SHARED")]
+
+
+def test_g5_8_i_a_replay_writes_no_second_interaction_and_a_refusal_none(client, engine,
+                                                                        ids):
+    world = _fresh(ids, engine, client)
+    key = str(uuid.uuid4())
+    body = {"channel": "EMAIL", "note": "once"}
+    _ok(_share(client, ids, world["opportunity"], key=key, body=body))
+    _ok(_share(client, ids, world["opportunity"], key=key, body=body))
+    assert len(_interactions(engine, world["opportunity"])) == 1
+    _set(engine, "UPDATE turab.property_offers SET status = 'PAUSED' WHERE offer_id = :o",
+         o=world["offer"])
+    _refused(client, engine, ids, world["opportunity"], "share", 409, "OPPORTUNITY_NOT_VALID",
+             body={"channel": "EMAIL", "note": "refused"})
+    assert len(_interactions(engine, world["opportunity"])) == 1
+
+
+def test_g5_8_i_the_note_is_kept_in_the_interaction_only(client, engine, ids):
+    """The note is in the interaction's `summary`, and nowhere else: not in
+    the opportunity row, not in the share's response, not in the customer's
+    response, and not in the audit log. The interaction's audit row is the
+    row less its `summary`. The body stays open, as the contract leaves it."""
+    world = _fresh(ids, engine, client)
+    note = f"note-{uuid.uuid4().hex}"
+    response = _share(client, ids, world["opportunity"],
+                      body={"channel": "WHATSAPP", "note": note, "extra": 1})
+    assert response.status_code == 200 and note not in response.text
     assert note not in json.dumps(_row(engine, world["opportunity"]))
+    assert note not in _customer(client, ids, world).text
     assert not _one(engine, "SELECT count(*) FROM turab.audit_log "
                             "WHERE old_row::text LIKE :n OR new_row::text LIKE :n "
                             "OR context::text LIKE :n", n=f"%{note}%")
+    [i] = _interactions(engine, world["opportunity"])
+    assert i["summary"] == note
+    [audited] = _all(engine, """SELECT action, actor_account_id, new_row::text AS new_row
+                                  FROM turab.audit_log
+                                 WHERE entity_table = 'interactions' AND entity_id = :i""",
+                     i=i["interaction_id"])
+    new_row = json.loads(audited["new_row"])
+    assert (audited["action"], audited["actor_account_id"]) == ("INSERT", ids.ACC_OPERATOR)
+    assert "summary" not in new_row and new_row["channel"] == "WHATSAPP"
+    assert new_row["opportunity_id"] == str(world["opportunity"])
+
+
+def test_g5_8_iii_an_interaction_recorded_by_a_share_is_not_a_recorded_contact(client,
+                                                                             engine, ids):
+    """The interaction a share writes does not satisfy CONTACT_BEFORE_SHARING:
+    after a share, a CURRENT contact-first binding still refuses the next."""
+    world = _fresh(ids, engine, client)
+    _ok(_share(client, ids, world["opportunity"], body={"channel": "WHATSAPP"}))
+    _contact_first(engine, ids, world["offer"])
+    _refused(client, engine, ids, world["opportunity"], "share", 409,
+             "CONTACT_BEFORE_SHARING_REQUIRED")
 
 
 # ======================================================================================
@@ -873,3 +966,322 @@ def test_the_queue_is_staff_only_and_audited_once(client, engine, ids, sink):
     [record] = [r for r in sink.records[before:] if r.event.value == "LIST"]
     assert record.resource_kind == "OPPORTUNITY" and record.resource_id is None
     assert record.result_count == len(page["items"])
+
+
+# ======================================================================================
+# R-S5-5-01 (review of 6c6e614): a consent binding inserted while a share runs
+# ======================================================================================
+#
+# A binding INSERT checks its foreign key to the offer or the property with
+# `FOR KEY SHARE` on that row; of the four row-lock modes only `FOR UPDATE`
+# conflicts with it (PostgreSQL 16 documentation, §13.3.2). Two orders are
+# measured, each with the binding on the offer and on the property, through
+# the real binding command (`POST /consents/bindings`), and each with a
+# `pg_blocking_pids` witness:
+# - A: the share is held after its contact check, before its UPDATE; the
+#   binding is then created in another transaction;
+# - B: the binding is held after its INSERT, before its commit; the share
+#   then runs.
+
+def _contact_grant(engine, ids):
+    return _one(engine, """
+        INSERT INTO turab.consent_grants (party_id, scope, channel, consent_version, granted_at)
+        VALUES (:party, 'CONTACT_BEFORE_SHARING', 'PHONE_CONFIRMED', 'v1',
+                now() - interval '1 hour') RETURNING consent_id""", party=ids.BRAHIM)
+
+
+def _bind_body(engine, ids, world, on):
+    """The binding command's body, on the offer or on the property. A
+    property binding needs an active relation of the grant's party to the
+    property (the frozen `enforce_consent_binding`, as `0003` corrected it):
+    a fixture, read by no code of this slice."""
+    grant = _contact_grant(engine, ids)
+    if on == "PROPERTY":
+        _exec(engine, """INSERT INTO turab.party_property_relations
+                                (party_id, property_id, relation_code, valid_from)
+                         VALUES (:party, :p, 'OWNER_DECLARED', now() - interval '1 day')""",
+              party=ids.BRAHIM, p=world["property"])
+        return {"consent_id": str(grant), "purpose": "CONTACT_BEFORE_SHARING",
+                "resource_type": "PROPERTY", "resource_id": str(world["property"])}
+    return {"consent_id": str(grant), "purpose": "CONTACT_BEFORE_SHARING",
+            "resource_type": "PROPERTY_OFFER", "resource_id": str(world["offer"])}
+
+
+def _bind(client, ids, body):
+    return client.post("/consents/bindings", json=body,
+                       headers={"Authorization": f"Bearer {ids.ACC_OPERATOR}",
+                                "Idempotency-Key": str(uuid.uuid4())})
+
+
+def _blocked_by(engine, pid):
+    """The backends waiting on a lock that `pid` holds (the witness)."""
+    return [r["pid"] for r in _all(engine, """
+        SELECT pid FROM pg_stat_activity
+         WHERE pid <> :w AND wait_event_type = 'Lock'
+           AND :w = ANY(pg_blocking_pids(pid))""", w=pid)]
+
+
+def _watch(engine, pid, thread, seconds=8.0):
+    """Until a backend waits on `pid`, or `thread` ends: True if one waited."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if _blocked_by(engine, pid):
+            return True
+        if not thread.is_alive():
+            return False
+        time.sleep(0.02)
+    return False
+
+
+def _in_thread(engine, out, name, call):
+    from turab.app import create_app
+
+    def run():
+        with TestClient(create_app(engine=engine)) as c:
+            out[name] = call(c)
+            out[f"{name}_done"] = time.monotonic()
+    t = threading.Thread(target=run)
+    t.start()
+    return t
+
+
+def _hold_share_after_its_check(monkeypatch, out):
+    """The share stops after its contact check and before its UPDATE, with
+    every lock it took still held. Its backend pid is recorded."""
+    from turab.services import opportunity_commands
+
+    checked, release = threading.Event(), threading.Event()
+    real = opportunity_commands._contact_first
+
+    def held(session, *args, **kwargs):
+        found = real(session, *args, **kwargs)
+        out.setdefault("share_pid", session.execute(
+            text("SELECT pg_backend_pid()")).scalar_one())
+        checked.set()
+        assert release.wait(30), "the share was never released"
+        return found
+    monkeypatch.setattr(opportunity_commands, "_contact_first", held)
+    return checked, release
+
+
+def _contact_facts(engine, world, key=None):
+    return {
+        "status": _one(engine, "SELECT status::text FROM turab.opportunities "
+                               "WHERE opportunity_id = :o", o=world["opportunity"]),
+        "current_contact_bindings": _one(engine, """
+            SELECT count(*) FROM turab.resource_consent_bindings b
+              JOIN turab.consent_grants g ON g.consent_id = b.consent_id
+             WHERE b.purpose = 'CONTACT_BEFORE_SHARING' AND b.revoked_at IS NULL
+               AND g.status = 'GRANTED'
+               AND (b.offer_id = :o OR b.property_id = :p)""",
+            o=world["offer"], p=world["property"]),
+        "share_key_records": None if key is None else _one(
+            engine, "SELECT count(*) FROM turab.idempotency_records "
+                    "WHERE idempotency_key = :k", k=key),
+    }
+
+
+@pytest.mark.parametrize("on", ["PROPERTY_OFFER", "PROPERTY"])
+def test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it(
+        client, engine, ids, monkeypatch, on):
+    """Order A. The share holds after its check. The binding command, in
+    another transaction, must wait on the share (witness), and commit only
+    after the share has committed: the share was right when it committed.
+    Without the serialization the binding commits while the share is held,
+    and the share then commits SHARED over a CURRENT CONTACT_BEFORE_SHARING
+    binding."""
+    world = _fresh(ids, engine, client)
+    body = _bind_body(engine, ids, world, "PROPERTY" if on == "PROPERTY" else "OFFER")
+    out = {}
+    checked, release = _hold_share_after_its_check(monkeypatch, out)
+    share = _in_thread(engine, out, "share", lambda c: _share(c, ids, world["opportunity"]))
+    binder = None
+    try:
+        assert checked.wait(30), "the share never reached its contact check"
+        binder = _in_thread(engine, out, "bind", lambda c: _bind(c, ids, body))
+        waited = _watch(engine, out["share_pid"], binder)
+        bound_while_held = not binder.is_alive()
+    finally:
+        release.set()
+        share.join(30)
+        if binder is not None:
+            binder.join(30)
+    observed = {
+        "binding_waited_on_the_share": waited,
+        "binding_committed_while_the_share_was_held": bound_while_held,
+        "share": (out["share"].status_code, out["share"].json().get("status")),
+        "bind": out["bind"].status_code,
+        "share_committed_first": out["share_done"] < out["bind_done"],
+        **_contact_facts(engine, world),
+    }
+    assert observed == {
+        "binding_waited_on_the_share": True,
+        "binding_committed_while_the_share_was_held": False,
+        "share": (200, "SHARED"), "bind": 200, "share_committed_first": True,
+        "status": "SHARED", "current_contact_bindings": 1, "share_key_records": None,
+    }, observed
+
+
+@pytest.mark.parametrize("on", ["PROPERTY_OFFER", "PROPERTY"])
+def test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it(
+        client, engine, ids, monkeypatch, on):
+    """Order B. The binding is inserted and held before its commit. The share
+    must wait on it (witness), read the facts again after the wait, and be
+    refused 409 CONTACT_BEFORE_SHARING_REQUIRED, writing nothing and
+    consuming no key. Without the serialization the share does not see the
+    uncommitted binding and commits SHARED before the binding commits."""
+    from turab.services import consent as consent_service
+
+    world = _fresh(ids, engine, client)
+    body = _bind_body(engine, ids, world, "PROPERTY" if on == "PROPERTY" else "OFFER")
+    out, inserted, release = {}, threading.Event(), threading.Event()
+    real = consent_service.bind_consent
+
+    def held(session, **kwargs):
+        row = real(session, **kwargs)
+        out["bind_pid"] = session.execute(text("SELECT pg_backend_pid()")).scalar_one()
+        inserted.set()
+        assert release.wait(30), "the binding was never released"
+        return row
+    monkeypatch.setattr(consent_service, "bind_consent", held)
+    key = str(uuid.uuid4())
+    before = _footprint(engine, world["opportunity"], key)
+    binder = _in_thread(engine, out, "bind", lambda c: _bind(c, ids, body))
+    share = None
+    try:
+        assert inserted.wait(30), "the binding was never inserted"
+        share = _in_thread(engine, out, "share",
+                           lambda c: _share(c, ids, world["opportunity"], key=key))
+        waited = _watch(engine, out["bind_pid"], share)
+        shared_while_held = not share.is_alive()
+    finally:
+        release.set()
+        binder.join(30)
+        if share is not None:
+            share.join(30)
+    observed = {
+        "share_waited_on_the_binding": waited,
+        "share_answered_while_the_binding_was_held": shared_while_held,
+        "bind": out["bind"].status_code,
+        "share": (out["share"].status_code, out["share"].json().get("code")
+                  or out["share"].json().get("status")),
+        **_contact_facts(engine, world, key),
+    }
+    assert observed == {
+        "share_waited_on_the_binding": True,
+        "share_answered_while_the_binding_was_held": False,
+        "bind": 200, "share": (409, "CONTACT_BEFORE_SHARING_REQUIRED"),
+        "status": "NEW", "current_contact_bindings": 1, "share_key_records": 0,
+    }, observed
+    after = _footprint(engine, world["opportunity"], key)
+    assert {k: after[k] for k in ("row", "key", "interactions", "opportunities")} == {
+        k: before[k] for k in ("row", "key", "interactions", "opportunities")}, \
+        "the refused share wrote nothing and consumed no key"
+
+
+# --- the remedy's effect on its neighbours (lock order with the approval) -----------
+
+def test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes(
+        client, engine, ids, monkeypatch):
+    """A run inserts match rows whose foreign keys lock the property, then the
+    offer (in that order, the order the share locks them). Held behind a
+    share that holds both, it waits (witness) and then completes, under its
+    REPEATABLE READ, without a deadlock or a serialization failure."""
+    from tests.test_slice4_step7 import _criterion, _request
+
+    world = _fresh(ids, engine, client)
+    other = _request(engine, ids)
+    _criterion(engine, other, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
+    out = {}
+    checked, release = _hold_share_after_its_check(monkeypatch, out)
+    share = _in_thread(engine, out, "share", lambda c: _share(c, ids, world["opportunity"]))
+    run = None
+    try:
+        assert checked.wait(30)
+        run = _in_thread(engine, out, "run", lambda c: _run(c, ids, other, [world["property"]]))
+        waited = _watch(engine, out["share_pid"], run)
+    finally:
+        release.set()
+        share.join(30)
+        if run is not None:
+            run.join(60)
+    assert waited, "the run never waited on the share"
+    assert out["share"].status_code == 200, out["share"].text
+    assert out["run"].status_code == 201, out["run"].text
+    assert [m["property_id"] for m in out["run"].json()["matches"]] == [
+        str(world["property"])]
+
+
+def test_an_approval_on_the_same_property_waits_for_a_held_share_and_both_succeed(
+        client, engine, ids, monkeypatch):
+    """Approval and share take the request, then the property, then the
+    offer. Two requests on one property: the approval waits on the share at
+    the property (witness), then creates its own opportunity."""
+    from tests.test_slice4_step7 import _criterion, _request
+
+    world = _fresh(ids, engine, client)
+    other = _request(engine, ids)
+    _criterion(engine, other, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
+    r = _run(client, ids, other, [world["property"]])
+    assert r.status_code == 201, r.text
+    [m] = r.json()["matches"]
+    out = {}
+    checked, release = _hold_share_after_its_check(monkeypatch, out)
+    share = _in_thread(engine, out, "share", lambda c: _share(c, ids, world["opportunity"]))
+    approval = None
+    try:
+        assert checked.wait(30)
+        approval = _in_thread(engine, out, "approve",
+                              lambda c: _approve(c, m["match_id"], ids.ACC_REVIEWER))
+        waited = _watch(engine, out["share_pid"], approval)
+    finally:
+        release.set()
+        share.join(30)
+        if approval is not None:
+            approval.join(30)
+    assert waited, "the approval never waited on the share"
+    assert out["share"].status_code == 200, out["share"].text
+    assert out["approve"].status_code == 200, out["approve"].text
+    assert out["approve"].json()["opportunity"]["property_id"] == str(world["property"])
+
+
+def test_two_shares_on_one_property_serialize_and_both_succeed(client, engine, ids,
+                                                               monkeypatch):
+    """Two opportunities of two requests on one property: the second share
+    waits on the first at the property (witness), then succeeds. Both take
+    the property before the offer, so neither holds what the other waits
+    for."""
+    from tests.test_slice4_step7 import _criterion, _request
+
+    world = _fresh(ids, engine, client)
+    other = _request(engine, ids)
+    _criterion(engine, other, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
+    r = _run(client, ids, other, [world["property"]])
+    [m] = r.json()["matches"]
+    second = uuid.UUID(_ok(_approve(client, m["match_id"], ids.ACC_REVIEWER))[
+        "opportunity"]["opportunity_id"])
+    out = {}
+    checked, release = _hold_share_after_its_check(monkeypatch, out)
+    first = _in_thread(engine, out, "first", lambda c: _share(c, ids, world["opportunity"]))
+    later = None
+    try:
+        assert checked.wait(30)
+        later = _in_thread(engine, out, "second", lambda c: _share(c, ids, second))
+        waited = _watch(engine, out["share_pid"], later)
+    finally:
+        release.set()
+        first.join(30)
+        if later is not None:
+            later.join(30)
+    assert waited, "the second share never waited on the first"
+    assert (out["first"].status_code, out["second"].status_code) == (200, 200), (
+        out["first"].text, out["second"].text)
+
+
+def test_g5_8_i_the_share_is_the_one_writer_of_interactions():
+    """Computed from the tree, as the other writer checks: `interactions`
+    (a Slice 7 table) is written by the share alone."""
+    pattern = re.compile(r"INSERT\s+INTO\s+turab\.interactions\b")
+    writers = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "src").rglob("*.py")
+                     if pattern.search(p.read_text(encoding="utf-8")))
+    assert writers == ["src/turab/services/opportunity_commands.py"]

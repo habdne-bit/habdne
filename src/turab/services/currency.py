@@ -26,12 +26,32 @@ after the caller's lock on the match:
   serialize here, so the open-opportunity check that follows is made
   against every opportunity committed before it, aliases included
   (the index cannot see them, §3.3);
-- the property and the offer, `FOR SHARE`;
+- the property and the offer, `FOR SHARE`; `FOR UPDATE` for a share
+  (`exclusive`, below);
 - the offer's and the property's consent bindings and their grants,
   `FOR SHARE`.
 
 A writer of any of these facts waits until the approval commits. So the
 facts the check classed are the facts at commit.
+
+**`exclusive`: the share's stronger lock (R-S5-5-01, review of 6c6e614).**
+Locking the existing binding rows cannot cover a binding that does not exist
+yet. A new binding's INSERT checks its foreign key to the offer or the
+property with `FOR KEY SHARE`, and of the row-lock modes only `FOR UPDATE`
+conflicts with it (PostgreSQL 16, §13.3.2, Table 13.3). So the share takes
+the property and the offer `FOR UPDATE`:
+- a binding being inserted on either makes the share wait, and the share's
+  next statements read it once committed;
+- a binding inserted after the share's lock waits until the share commits.
+
+Measured in `evidence/SLICE5-STEP5-R-S5-5-01-BEFORE-FIX.txt`.
+
+**The order stays the approval's:** request, property, offer. A share and an
+approval on one property therefore wait at the same row, and neither holds
+what the other waits for. The matching run's foreign keys on
+`match_candidates` lock the property before the offer, in the same order.
+Revalidate keeps `FOR SHARE`: it does not depend on the absence of a
+binding.
 """
 from __future__ import annotations
 
@@ -128,18 +148,20 @@ def _engine_rule(match: Mapping[str, Any], name: str):
     return REGISTRY.resolve(rule_id, version)
 
 
-def _lock(session: Session, *, request_id, property_id, offer_id) -> dict:
+def _lock(session: Session, *, request_id, property_id, offer_id,
+          exclusive: bool = False) -> dict:
+    mode = "FOR UPDATE" if exclusive else "FOR SHARE"
     request = session.execute(text("""
         SELECT status::text AS status, last_confirmed_at
           FROM turab.requests WHERE request_id = :r FOR NO KEY UPDATE"""),
         {"r": request_id}).mappings().one()
     prop = session.execute(text("""
         SELECT current_availability::text AS availability, availability_last_confirmed_at
-          FROM turab.properties WHERE property_id = :p FOR SHARE"""),
+          FROM turab.properties WHERE property_id = :p """ + mode),
         {"p": property_id}).mappings().one()
     offer = session.execute(text("""
         SELECT status::text AS status, commercial_terms_last_confirmed_at
-          FROM turab.property_offers WHERE offer_id = :o FOR SHARE"""),
+          FROM turab.property_offers WHERE offer_id = :o """ + mode),
         {"o": offer_id}).mappings().one()
     session.execute(text("""
         SELECT 1 FROM turab.resource_consent_bindings b
@@ -160,7 +182,7 @@ def _binding_order(binding: Mapping[str, Any]):
 
 
 def check(session: Session, *, match: Mapping[str, Any], offer_id: uuid.UUID,
-          clock: Any = None) -> Checked:
+          clock: Any = None, exclusive: bool = False) -> Checked:
     """Lock the facts, read them now, and classify them (§3.7).
 
     `match` carries `request_id`, `property_id`, `engine` (the match's
@@ -172,7 +194,7 @@ def check(session: Session, *, match: Mapping[str, Any], offer_id: uuid.UUID,
     writer judges freshness at the instant it reads the facts. `clock` pins
     it for a test; production passes None (`clock_timestamp()`)."""
     rows = _lock(session, request_id=match["request_id"], property_id=match["property_id"],
-                 offer_id=offer_id)
+                 offer_id=offer_id, exclusive=exclusive)
     as_of = session.execute(text(
         "SELECT COALESCE(CAST(:clock AS timestamptz), clock_timestamp())"),
         {"clock": clock}).scalar_one()

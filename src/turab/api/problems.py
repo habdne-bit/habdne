@@ -127,8 +127,8 @@ class ProblemCode(StrEnum):
     #:   (permission FAIL answers CONSENT_REVOKED instead);
     #: - a share whose offer's permission scope is now narrower than the
     #:   opportunity's sharing scope;
-    #: - PROVISIONAL, G5-8 (iii) (a): a share while a CONTACT_BEFORE_SHARING
-    #:   binding is CURRENT;
+    #: - G5-8 (iii) (a), decided in the review of 6c6e614: a share while a
+    #:   CONTACT_BEFORE_SHARING binding is CURRENT;
     #: - a close reason outside the category OPPORTUNITY and OTHER.
     OPPORTUNITY_CLOSED = "OPPORTUNITY_CLOSED"
     OPPORTUNITY_NOT_VALID = "OPPORTUNITY_NOT_VALID"

@@ -7,7 +7,11 @@ G5-11 (a), G5-12 B10):
 - R: revalidate, the one writer of validity (R7 is B10's proof 3: an
   injected `current_offer_id` update);
 - S: share, the check that never persists (S6 and S7 are G5-8 (iii),
-  PROVISIONAL);
+  decided (a) in the review of 6c6e614);
+- W: R-S5-5-01, the share's lock that serializes a binding being created
+  (review of 6c6e614);
+- I: G5-8 (i), the share's interaction (decided (a) in the review of
+  6c6e614);
 - C: close, the eight reasons and the final state;
 - L: the lock on the opportunity, and who may act;
 - Q: the opportunity queue's membership, priority, reason, order and audit.
@@ -22,6 +26,8 @@ COMMANDS = "src/turab/services/opportunity_commands.py"
 VIEWS = "src/turab/services/opportunity_views.py"
 ACCESS = "src/turab/services/access.py"
 ROUTES = "src/turab/api/routes/matching.py"
+CURRENCY = "src/turab/services/currency.py"
+AUDIT = "src/turab/services/audit_rows.py"
 TESTS = "tests/test_slice5_step5.py"
 
 CONFIRMED = ("               last_confirmed_at = CASE WHEN CAST(:v AS text) = 'VALID' THEN :at\n"
@@ -72,9 +78,9 @@ MUTATIONS = [
     ("S5 the scope is compared the wrong way", COMMANDS,
      '    if SCOPE_RANK[checked.sharing_scope] < SCOPE_RANK[opportunity["sharing_scope"]]:\n',
      '    if SCOPE_RANK[checked.sharing_scope] != SCOPE_RANK[opportunity["sharing_scope"]]:\n'),
-    ("S6 contact before sharing is ignored (PROVISIONAL)", COMMANDS,
+    ("S6 contact before sharing is ignored", COMMANDS,
      "    if contact:\n", "    if False:\n"),
-    ("S7 a revoked contact binding still refuses (PROVISIONAL)", COMMANDS,
+    ("S7 a revoked contact binding still refuses", COMMANDS,
      'party, checked.as_of) == "CURRENT":', 'party, checked.as_of) != "OTHER_PARTY":'),
     ("S8 share persists the check", COMMANDS,
      "               shared_at = CASE WHEN status = 'NEW' THEN :at ELSE shared_at END,\n",
@@ -91,6 +97,39 @@ MUTATIONS = [
      "                             ELSE status END,\n"
      "               shared_at = CASE WHEN status = 'NEW' THEN :at ELSE shared_at END,\n",
      "           SET status = status,\n"),
+    # --- W: R-S5-5-01, the share's lock (review of 6c6e614) ----------------------------
+    ("W1 the share takes the shared lock", COMMANDS,
+     "                             clock=clock, exclusive=True)",
+     "                             clock=clock)"),
+    ("W2 the exclusive lock does not conflict with FOR KEY SHARE", CURRENCY,
+     '    mode = "FOR UPDATE" if exclusive else "FOR SHARE"',
+     '    mode = "FOR NO KEY UPDATE" if exclusive else "FOR SHARE"'),
+    ("W3 the share locks the offer only", CURRENCY,
+     'FROM turab.properties WHERE property_id = :p """ + mode)',
+     'FROM turab.properties WHERE property_id = :p FOR SHARE""")'),
+    ("W4 the share locks the property only", CURRENCY,
+     'FROM turab.property_offers WHERE offer_id = :o """ + mode)',
+     'FROM turab.property_offers WHERE offer_id = :o FOR SHARE""")'),
+    # --- I: G5-8 (i), the share's interaction (review of 6c6e614) ----------------------
+    ("I1 the share writes no interaction", COMMANDS,
+     "    _record_share(session, prepared, view, channel=channel, note=note,\n"
+     "                  operator_account_id=operator_account_id)\n", ""),
+    ("I2 the note is not kept", COMMANDS,
+     "               :o, :note, :at, :operator,", "               :o, NULL, :at, :operator,"),
+    ("I3 the channel is not kept", COMMANDS,
+     "        SELECT 'STATUS_CHANGE', CAST(:channel AS turab.communication_channel), r.party_id,",
+     "        SELECT 'STATUS_CHANGE', NULL, r.party_id,"),
+    ("I4 the operator is not kept", COMMANDS,
+     "               :o, :note, :at, :operator,", "               :o, :note, :at, NULL,"),
+    ("I5 the audit row carries the note", AUDIT,
+     '    "interactions": ("summary",),\n', ""),
+    ("I6 the interaction is not audited", COMMANDS,
+     '    audit_rows.write(session, "interactions", interaction_id, "INSERT", None,\n'
+     '                     audit_rows.row_json(session, "interactions", interaction_id))',
+     "    pass"),
+    ("I7 the status before is not recorded", COMMANDS,
+     '"status_before": prepared.opportunity["status"],',
+     '"status_before": view["status"],'),
     # --- C: close ---------------------------------------------------------------------
     ("C1 any reason closes", COMMANDS, "    if reason_code not in CLOSE_REASONS:\n",
      "    if False:\n"),

@@ -76,12 +76,15 @@ MUTATIONS = [
     ("L2 the request lock is shared", CUR,
      "FROM turab.requests WHERE request_id = :r FOR NO KEY UPDATE",
      "FROM turab.requests WHERE request_id = :r FOR SHARE"),
+    # L3 and L4 follow the refactor of the review of 6c6e614: the lock mode is
+    # a variable (`FOR SHARE`, or `FOR UPDATE` for a share). The weakening is
+    # unchanged: the row is read with no lock at all, in either mode.
     ("L3 the property is not locked", CUR,
-     "FROM turab.properties WHERE property_id = :p FOR SHARE",
-     "FROM turab.properties WHERE property_id = :p"),
+     'FROM turab.properties WHERE property_id = :p """ + mode)',
+     'FROM turab.properties WHERE property_id = :p """)'),
     ("L4 the offer is not locked", CUR,
-     "FROM turab.property_offers WHERE offer_id = :o FOR SHARE",
-     "FROM turab.property_offers WHERE offer_id = :o"),
+     'FROM turab.property_offers WHERE offer_id = :o """ + mode)',
+     'FROM turab.property_offers WHERE offer_id = :o """)'),
     ("L5 the bindings are not locked", CUR,
      "           FOR SHARE OF b, g", ""),
     # --- O: one open opportunity ------------------------------------------------------

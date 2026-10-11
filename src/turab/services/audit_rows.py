@@ -39,13 +39,26 @@ AUDITED_BY_COMMAND = {
     "match_candidates": "match_id",
     "match_criterion_results": "match_criterion_result_id",
     "match_diagnostic_runs": "diagnostic_run_id",
+    # Slice 5 step 5 (G5-8 (i), decided (a) in the review of 6c6e614): the
+    # share's interaction. `interactions` has no audit trigger.
+    "interactions": "interaction_id",
+}
+
+#: Columns a command-layer audit row leaves out. The review of 6c6e614
+#: decided that the share's free-text note (`interactions.summary`) is kept
+#: in the interaction and is not carried into the audit log: free text can
+#: hold contact data (the review of d0e0bc9). The audit row is the row the
+#: trigger would have written, less these columns.
+WITHHELD: dict[str, tuple[str, ...]] = {
+    "interactions": ("summary",),
 }
 
 
 def row_json(session: Session, table: str, entity_id: uuid.UUID) -> str:
     key = AUDITED_BY_COMMAND[table]
+    withheld = "".join(f" - '{column}'" for column in WITHHELD.get(table, ()))
     return session.execute(
-        text(f"SELECT to_jsonb(r)::text FROM turab.{table} r WHERE {key} = :id"),
+        text(f"SELECT (to_jsonb(r){withheld})::text FROM turab.{table} r WHERE {key} = :id"),
         {"id": entity_id},
     ).scalar_one()
 
