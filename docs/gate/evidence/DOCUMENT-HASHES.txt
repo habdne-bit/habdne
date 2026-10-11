@@ -742,3 +742,8 @@ docs/gate/evidence/SLICE5-STEP5-MUTATIONS.txt                  new   b58632aab66
 docs/gate/SLICE_5_STEP5_DELIVERY.md                            new   f8b1d4c15afd17bdab3cff6370d85c9427a5fac184664f58be86bad77bc4a903
 docs/gate/SLICE_5_PLAN.md                                      rev15 d931fb0f09f1f48959f141949c026ee52071c98eb920c4c5699d35f623aea7e2
 SLICE_5_PLAN.md changed revision: 14 -> 15 (step 5 delivered; G5-8 (i) and (iii) PROVISIONAL; step-5 interpretations put for confirmation).
+--- Review of 6c6e614: R-S5-5-01 measured and fixed; G5-8 (i) and (iii) decided (a) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   10e5aa0bd8603a6274b3cd2c1102e7149c494ebddc9bbac6ca87c0761a7f36ae
+docs/gate/evidence/SLICE5-STEP5-R-S5-5-01-BEFORE-FIX.txt       new   d9f03c2fc4257e79c114fe674607164c1d755b750775c5e875de3052a4ac5773
+docs/gate/evidence/SLICE5-STEP5-MUTATIONS-AFTER-R-S5-5-01.txt  new   e6e81b4d957f3cad77307a589baa46d6599d1c5b10ab22c9b48d2e9a43f9383a
+docs/gate/evidence/SLICE5-STEP3-MUTATIONS-L3-L4-AFTER-LOCK-MODE.txt new   72828e1aafd6ea6bba4cb0d75b883889f9d3b7b0b02bd7d46defbfa6a3d48841
