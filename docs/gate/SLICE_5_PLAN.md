@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 16**
+## Implementation plan — **revision 17**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
@@ -8,8 +8,9 @@ the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
 queue) is CLOSED at `1556624`. Step 5 (revalidate, share, close, the
 opportunity queue, B10) is delivered at `93c7b37`. The review of `6c6e614`
 found one blocker, R-S5-5-01, and decided G5-8 (i) and (iii) as (a). Both are
-done at `0a5c446`, and step 5 is submitted for review again. Step 6 is not
-authorized. No other step's code exists.
+done at `0a5c446`. The review of `1f8a8df` accepted them and decided the
+`note` of close and revalidate, done at `37701ce`. Step 5 is submitted for review
+again. Step 6 is not authorized. No other step's code exists.
 **Slice 5 as a whole is not closed.**
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
@@ -243,6 +244,25 @@ re-run them.
 open were true when written. Each is now marked as decided since. Nothing
 else in them is changed.
 
+**The review of `1f8a8df`. Step 5 is not closed**
+(`SLICE_5_STEP5_DELIVERY.md` §14).
+- **Checked by the reviewer:** the archive, its 384 entries, `bound`, the
+  command path and the two window tests.
+- **Accepted:** the remedy of R-S5-5-01, and G5-8 (i) and (iii) as
+  implemented.
+- **The one place left:** two commands accepted a `note` and dropped it.
+  - **Close:** G5-10's "the note follows G5-8 (i)" covers it. Each
+    successful close writes one STATUS_CHANGE interaction (the actor, the
+    opportunity, the request's party, the reason, the source operation). The
+    note stays out of the audit log and the responses.
+  - **Revalidate:** a given note is kept in one NOTE interaction; with no
+    note, no row. It is no evidence of a contact.
+  - **In both,** the write is atomic with the command: no row on a refusal
+    or on a replay.
+- **Done:** measured at `1f8a8df`, then implemented at `37701ce`.
+- Step 5 and Slice 5 stay open. Step 6 is not authorized. L-S5-3a,
+  L-S5-3b, K06 and G4-5R are unchanged.
+
 **The review of `6c6e614`. Step 5 is not closed** (`SLICE_5_STEP5_DELIVERY.md`
 §13).
 - **What the reviewer checked:** the bundle's digest and its 380 entries,
@@ -318,7 +338,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 13 | `1556624` | the review of `d0e0bc9` recorded: step 4 not closed, the free-text location detail withheld from the customer opportunity (Appendix B.1a); §2's other points accepted; **G5-10 decided** |
 | 14 | `fc450f0` | the review of `1556624` recorded: step 4 CLOSED (step 4 delivery §12); step 5 authorized; the statements that called G5-10 open marked as decided since |
 | 15 | `6c6e614` | step 5 delivered (`SLICE_5_STEP5_DELIVERY.md`); G5-8 (i) and (iii) marked PROVISIONAL, pending a decision; the step-5 interpretations recorded at G5-9 and G5-11; B10's proofs recorded at G5-12 |
-| 16 | the commit that adds this revision | the review of `6c6e614` recorded: R-S5-5-01 measured and fixed (the share's `FOR UPDATE`); G5-8 (i) and (iii) decided (a), and (i) implemented; I1–I8 accepted, I4 amended; step 6 not authorized |
+| 16 | `1f8a8df` | the review of `6c6e614` recorded: R-S5-5-01 measured and fixed (the share's `FOR UPDATE`); G5-8 (i) and (iii) decided (a), and (i) implemented; I1–I8 accepted, I4 amended; step 6 not authorized |
+| 17 | the commit that adds this revision | the review of `1f8a8df` recorded: the R-S5-5-01 remedy and G5-8 (i)/(iii) accepted; the note of close (STATUS_CHANGE) and revalidate (NOTE) decided, measured and kept; G5-10 marked; step 6 not authorized |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -1497,7 +1518,9 @@ switched in this slice.
   `DEAL_CONFIRMED`, and the seed is what exists.
 - **What close writes:** CLOSED, `closed_at`, `close_reason_code`,
   `last_activity_at`, all in one UPDATE, as rule 4 of `0006` requires. The
-  note follows G5-8 (i).
+  note follows G5-8 (i). *[Decided in the review of `1f8a8df`: each
+  successful close writes one STATUS_CHANGE interaction with its reason and
+  its note; done at `37701ce` (`SLICE_5_STEP5_DELIVERY.md` §14).]*
 - **From which status [R3-3].** Close is permitted from NEW, SHARED and
   ENGAGED: these are the three closing edges of G5-12. A never-shared
   opportunity is closed directly, and the "closing frees the pair" test
@@ -1995,7 +2018,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 2 | the review: REJECTED and NMI, with its task, under the ordering rule of §3.1. APPROVED stays refused. | G5-3 (decided (a)), G5-4; **CLOSED** at `1e0d919` (`SLICE_5_STEP2_DELIVERY.md` §11); the key race of the review of `7e84702` fixed (§10 there) |
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **CLOSED** at `1556624` (`SLICE_5_STEP4_DELIVERY.md` §12) |
-| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; authorized in the review of `1556624`; **delivered** at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`); the review of `6c6e614`: R-S5-5-01 fixed and G5-8 (i) implemented at `0a5c446` (§13 there), submitted for review again |
+| 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; authorized in the review of `1556624`; **delivered** at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`); the review of `6c6e614`: R-S5-5-01 fixed and G5-8 (i) implemented at `0a5c446` (§13 there); the review of `1f8a8df`: the note of close and revalidate kept at `37701ce` (§14), submitted for review again |
 | 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), and the closure evidence | all |
 
 **Carried to step 6 and the final closure of Slice 5 (review of `921ed01`).**

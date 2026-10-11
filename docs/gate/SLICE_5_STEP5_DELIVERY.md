@@ -10,6 +10,10 @@ as a whole is not closed.
   `0a5c446` (§13).
 - **The same review decided G5-8 (i) and (iii) as (a).** Both are
   implemented (§13.5, §13.6).
+- **The review of `1f8a8df`** accepted the remedy and G5-8 (i) and (iii).
+  It decided the `note` of close (a STATUS_CHANGE interaction) and of
+  revalidate (a NOTE interaction, when given). Measured, and done at
+  `37701ce` (§14).
 - **Step 6 is not authorized.**
 
 *As first delivered, G5-8 (i) and (iii) were PROVISIONAL (§2.1, kept as
@@ -27,7 +31,10 @@ written).*
 - `6c6e614`: the note and plan revision 15;
 - after the review of `6c6e614`: `0a5c446` (the fix and G5-8 (i)), then
   `f3dd4c3`, `04095e3`, `a7648b9`, `b3f4d9f` (the evidence), then the
-  commit that adds §13 and plan revision 16.
+  commit that adds §13 and plan revision 16 (`1f8a8df`);
+- after the review of `1f8a8df`: `37701ce` (the note of close and
+  revalidate), then `2b55e20`, `3301208`, `ee48c4f`, `30bccf5` (the
+  evidence), then the commit that adds §14 and plan revision 17.
 
 ---
 
@@ -680,6 +687,7 @@ Recording only the first would drop them, which the decision refused.
 contract leaves them. The share's `channel` and `note` are now kept in the
 interaction.
 
+*[Decided since, in the review of `1f8a8df`, and done: §14.]*
 **Put to the reviewer: the `note` of revalidate and close.**
 - G5-10 wrote "the note follows G5-8 (i)", but the decision names the
   share.
@@ -788,6 +796,199 @@ problems as after steps 3 and 4. Step 5 adds no INSERT into
   the `pg_trigger` names read here (equal-length OIDs), and the run test
   exercises it. A rebuilt database with OIDs of different lengths would
   need the read again.
+- **Carried, unchanged:**
+  - L-S5-3a and L-S5-3b;
+  - K06 UNPROVEN;
+  - G4-5R open: STOP GATE E is SALE only;
+  - STOP GATE D is not regenerated in Slice 5.
+- **These results are ours.** No independent run exists.
+- **Step 6 is not authorized.**
+
+## 14. The review of `1f8a8df`: the note of close and revalidate
+
+### 14.1 What the review accepted, and what it left open
+
+**Checked by the reviewer:**
+- the archive's digest, its 384 manifest entries, and `bound` inside the
+  extracted tree;
+- the command path and the two window tests: the share locks the property
+  and the offer `FOR UPDATE` before it reads the bindings again, and the
+  tests separate the two orders of the race, on the offer and on the
+  property;
+- the interaction row written in the share's transaction, with `summary`
+  left out of the audit.
+
+PostgreSQL, the suite and the mutations were not re-run by the reviewer.
+The 2325 tests, the 42 mutations and the gate stay our results.
+
+**Accepted:**
+- the remedy of R-S5-5-01;
+- G5-8 (i) and (iii) as implemented.
+
+**Not closed: one place.** Two commands accepted a `note` and dropped it.
+
+**Decided:**
+- **Close.** G5-10's "the note follows G5-8 (i)" covers it. Each
+  successful close writes one STATUS_CHANGE `interactions` row with:
+  - the actor, the opportunity and the request's party;
+  - the reason, and the source operation;
+  - the note, which stays out of the audit log and the responses.
+- **Revalidate.** A note, when given, is kept in one NOTE `interactions`
+  row, with the source operation, the actor, the opportunity and the
+  request's party. With no note, no row. The row is no evidence of a
+  contact.
+- **In both,** the write is atomic with the command: no row on a refusal,
+  and none on a replay with the same key.
+- **The order asked for:**
+  1. measure the drop on the current code with two HTTP tests;
+  2. then pin the keeping, the absence of leaks and the replay with
+     dedicated tests and mutations.
+
+**Until this is reviewed:** step 5 and Slice 5 stay open, and step 6 is not
+authorized. L-S5-3a, L-S5-3b, K06 and G4-5R keep their stated limits.
+
+### 14.2 The drop, measured before the change
+
+`evidence/SLICE5-STEP5-NOTES-BEFORE-FIX.txt`:
+- **at `1f8a8df`**, in an isolated worktree;
+- with the new tests added, and no source file changed.
+
+**What the two HTTP tests show:**
+- **Close.** `POST /opportunities/{id}/close` with `reason_code` and a note
+  answered **200**, and the opportunity is CLOSED. Afterwards **no
+  `interactions` row** exists for it, and the note is nowhere.
+- **Revalidate.** `POST /opportunities/{id}/revalidate` with a note, on an
+  UNAVAILABLE property, answered **200** and recorded INVALID. Again **no
+  row**.
+
+**The result: 6 failed, 83 passed.**
+- All six failures are the missing rows.
+- The two tests that hold already are kept as regression guards: no row
+  for a revalidate without a note, and a note that is not a recorded
+  contact.
+
+### 14.3 The change (`37701ce`)
+
+**One writer, `_record`,** used by the share, the close and the revalidate.
+It writes one `interactions` row in the command's transaction, after the
+command's UPDATE:
+- the request's party, the opportunity and the operator;
+- the note as `summary`, and no thread;
+- `metadata` with the source operation.
+
+The audit row is the row less `summary` (`audit_rows.WITHHELD`, unchanged
+since §13.5). A test pins one INSERT into `interactions` in one module.
+
+| command | when | `interaction_type` | `outcome_code` | `occurred_at` | `metadata` |
+|---|---|---|---|---|---|
+| share | each success | STATUS_CHANGE | null | the share's instant | `source_operation`, `status_before`, `status_after` |
+| **close** | **each success, note or not** | **STATUS_CHANGE** | **the close reason** | **`closed_at`** | `source_operation`, `status_before`, `status_after` |
+| **revalidate** | **only when a note is given** | **NOTE** | null | the check's instant (= `last_activity_at`) | `source_operation`, `validity_before`, `validity_after` |
+
+**Two notes on the choices made:**
+- **The close reason goes into `outcome_code`.** That is the column of the
+  frozen schema that references `reason_codes`, and the eight close reasons
+  are seeded codes.
+- **"Given" means present in the body.** An absent field is no note. An
+  explicit null is refused 422, as before. An empty string is a given
+  note, and is kept.
+
+**Atomicity.**
+- A refusal is decided in `prepare`, before the claim and the handler, so
+  it writes no row.
+- A replay with the same key returns the stored response without running
+  the handler, so it writes no second row.
+- The tests check both, for close and for revalidate.
+
+**No leak.** The tests check that the note is in none of these:
+- the command's response;
+- the opportunity row;
+- the audit log.
+
+### 14.4 Tests: 8 new, 89 in the file
+
+**Close:**
+- the note kept, with the reason, the actor, the party, `closed_at`, the
+  source operation and the statuses;
+- without a note, the row is still written;
+- from SHARED, its own `status_before`, after the share's row;
+- a 422 refusal, a replay, and a 409 on a closed opportunity write no row.
+
+**Revalidate:**
+- the note kept, with the validity before and after;
+- without a note, or with only an undeclared field, no row;
+- a replay and a 409 on a closed opportunity write no row;
+- a revalidate note is not a recorded contact: a CURRENT
+  CONTACT_BEFORE_SHARING binding still refuses the share.
+
+**The writer test** now pins one module and one INSERT.
+
+### 14.5 Mutations
+
+`db/dev/mutate_slice5_step5.py`: **51 mutations.**
+- **I1–I7** follow the one writer: I1 and I7 act on the share's call, I2–I6
+  on the writer every command uses.
+- **N1–N9 are new:**
+  - **N1** the close writes no row;
+  - **N2** the close note is not kept;
+  - **N3** the close reason is not recorded;
+  - **N4** the close records the share's source;
+  - **N5** the revalidate note is not kept;
+  - **N6** a revalidate without a note writes a row;
+  - **N7** the revalidate note is typed STATUS_CHANGE;
+  - **N8** the validity before is not recorded;
+  - **N9** the revalidate writes no row.
+
+**The record:** `evidence/SLICE5-STEP5-MUTATIONS-AFTER-NOTES.txt`.
+- **Run:** at `37701ce`, on a clean tree, source fingerprint
+  `48b42ec4…c9f5f`.
+- **Result: 51 of 51 fail, none survives.** The baseline is 89 passed.
+- **Restoration:** every mutated file was restored, and verified by sha256.
+- **Before the run,** a script checked each anchor (exactly one site), that
+  each mutation changes its file, and that each mutated file compiles.
+
+**What kills each of N1–N9:**
+
+| mutation | failed | killed by |
+|---|---|---|
+| N1 | 4 | the four close tests |
+| N2 | 2 | the close note test, and the close-from-SHARED test |
+| N3 | 3 | the close tests that read `outcome_code` |
+| N4 | 2 | the tests that read `source_operation` |
+| N5 | 1 | the revalidate note test |
+| N6 | 1 | `test_revalidate_without_a_note_writes_no_interaction` |
+| N7 | 1 | the revalidate note test, which reads the type |
+| N8 | 1 | the revalidate note test, which reads `validity_before` |
+| N9 | 2 | the revalidate note test, and the revalidate replay test |
+
+**No leak, per command.** I5 restores `summary` to the audit row, and it is
+now killed by the share's, the close's and the revalidate's no-leak tests
+(3 failed).
+
+### 14.6 The evidence
+
+Each row ran on a clean tree, source fingerprint `48b42ec4…c9f5f`.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Before the change | at `1f8a8df`: both commands answer 200 and store the note nowhere; 6 failed, 83 passed | `37701ce` | `evidence/SLICE5-STEP5-NOTES-BEFORE-FIX.txt` |
+| The change | `opportunity_commands.py` (`_record`, close, revalidate), the two routes | `37701ce` | §14.3 |
+| Mutations | 51/51 fail | `37701ce` → `2b55e20` | §14.5 |
+| Authorization matrix | **178 rules**, all PASS (one new); suite 2333/2333 | `3301208` | `AUTHORIZATION_EVIDENCE_MATRIX.md`; `--check --no-run`: current |
+| PostgreSQL gate | PASS; 70 database-level PASS notices, 0 FAIL; 67 operations in parity | `ee48c4f` (run at `3301208`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **2333 passed**, 0 failed, 0 errors, 0 skipped | `30bccf5` (run at `ee48c4f`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+
+**The suite count.** 2325 at `0a5c446`, plus the 8 tests of §14.4.
+
+**STOP GATE D is not regenerated.** Its `--check` reports the same three
+problems as before.
+
+### 14.7 Limits
+
+- **No interaction is written for a refused command.** The decision says
+  so; an attempt is not a fact about the opportunity.
+- **An empty string is kept as a note** (§14.3). The contract types `note`
+  as a string, and nothing narrows it.
 - **Carried, unchanged:**
   - L-S5-3a and L-S5-3b;
   - K06 UNPROVEN;

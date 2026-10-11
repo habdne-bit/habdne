@@ -754,3 +754,6 @@ SLICE_5_PLAN.md changed revision: 15 -> 16 (review of 6c6e614: R-S5-5-01 measure
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   57242f49ef0d09cf9c156dbbb4b6cb1292b5ebf28bcff3a6c74ddcf0896d6879
 docs/gate/evidence/SLICE5-STEP5-NOTES-BEFORE-FIX.txt           new   fc31a592daf54bdee9395fcb74955992650621bb57913cc89c7b77bdcbfdd3d8
 docs/gate/evidence/SLICE5-STEP5-MUTATIONS-AFTER-NOTES.txt      new   a44439920eaec7afecae404b141a14e9bdc4374eff7427ca5e0c2a949d06863c
+docs/gate/SLICE_5_STEP5_DELIVERY.md                            ---   080bb67de6691e2b0b51856b1446347e0e5dbfc0ab57405dc0bd8cbaaa72508b
+docs/gate/SLICE_5_PLAN.md                                      rev17 02d0810138d1da5f42f72f5d899f1c43347cb7a2fcee474c08934826b2e4695c
+SLICE_5_PLAN.md changed revision: 16 -> 17 (review of 1f8a8df: the note of close and revalidate kept; step 6 not authorized).
