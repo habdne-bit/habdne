@@ -761,3 +761,8 @@ SLICE_5_PLAN.md changed revision: 16 -> 17 (review of 1f8a8df: the note of close
 docs/gate/SLICE_5_STEP5_DELIVERY.md                            ---   e4b0d502953b9f7d43497621247654b2773af8e29cf5a9646a5531910888942c
 docs/gate/SLICE_5_PLAN.md                                      rev18 ee8d6213cf749a7a50197c7d818cd69fa146f32c410474395608a271d7c7992b
 SLICE_5_PLAN.md changed revision: 17 -> 18 (step 5 closed; step 6 authorized).
+--- Slice 5 step 6: L-S5-3a/3b, E04, K05, STOP GATE E (review of 3a60b3b) ---
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   54837a277e3f554f8be62d7902c831aace7366939786bc05f5c26dcd5621e905
+docs/gate/evidence/SLICE5-STEP6-L-S5-3-BEFORE-FIX.txt          new   0db5beff12262305c8c6ff91df137d2504b3c39b798f4106b7018e5f9c38def7
+docs/gate/evidence/SLICE5-STEP6-MUTATIONS.txt                  new   38541185877ed07d74a6bce330acec42ace4d22fc46831fa4eb2622d1a153da2
+docs/gate/evidence/SLICE5-STEP3-MUTATIONS-L1-L2-AFTER-L-S5-3B.txt new   58d4cab86d853468b3271bbda42adde075898a8eb22c5ef79e7de86cc58febc7

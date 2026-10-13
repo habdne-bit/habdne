@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **178**
-- Distinct tests cited: **571**
-- Suite total: **2333/2333** test cases passing (1326 distinct test functions)
+- Rules and invariants covered: **183**
+- Distinct tests cited: **586**
+- Suite total: **2367/2367** test cases passing (1346 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -191,6 +191,11 @@ matrix, because it reads as assurance.
 | `S5-5 / G5-10` | Close takes one of the eight reasons and writes status, time, reason and activity together from NEW, SHARED or ENGAGED; CLOSED is final for every command; the real close frees the pair | `test_close_from_new_writes_status_time_reason_and_activity_together`<br>`test_close_from_shared_and_from_engaged_keeps_the_event_stamps`<br>`test_a_close_reason_outside_the_eight_is_refused`<br>`test_the_eight_are_the_seeded_category_opportunity_and_other`<br>`test_closed_is_final_for_every_command`<br>`test_a_close_waits_for_a_command_holding_the_opportunity_and_reads_its_result`<br>`test_mandatory_6_the_real_close_frees_the_pair` | PASS |
 | `S5-5 / G5-12 B10` | No Slice 5 command writes current_offer_id: no UPDATE names it, and revalidate, share and close keep the evaluated offer when another ACTIVE offer exists | `test_b10_static_no_update_of_an_opportunity_names_current_offer_id`<br>`test_b10_the_offer_is_never_switched_by_any_command` | PASS |
 | `S5-5 / G5-11 (a) / R6.3c` | The opportunity queue holds the open INVALID, NEEDS_CONFIRMATION and unshared opportunities with G5-11's priority and reason, no time-based membership; staff-only, audited once with its count | `test_the_queue_holds_exactly_the_three_cases_with_their_vocabulary`<br>`test_an_unshared_invalid_opportunity_is_high_and_named_by_its_validity`<br>`test_the_queue_has_no_time_based_membership`<br>`test_the_queue_is_ordered_by_priority_then_creation`<br>`test_the_queue_is_staff_only_and_audited_once` | PASS |
+| `S5-6 / L-S5-3a / G5-2` | Supersession is per policy: a later match under another policy supersedes nothing, for the approval and the queue; under the same policy it does | `test_l_s5_3a_a_later_match_under_another_policy_supersedes_nothing`<br>`test_l_s5_3a_a_later_match_under_the_same_policy_still_supersedes` | PASS |
+| `S5-6 / L-S5-3b` | No matching run commits between the approval's supersession check and its commit: a run waits for a held approval; an approval waits for a run in flight and is refused as superseded, writing nothing | `test_l_s5_3b_a_run_while_an_approval_is_held_waits_for_it`<br>`test_l_s5_3b_an_approval_waits_for_a_run_in_flight_and_is_refused_superseded`<br>`test_a_revalidate_waits_for_a_request_writer_and_reads_its_commit` | PASS |
+| `S5-6 / E04 / K05` | Consolidating two properties with real open opportunities raises one task naming the duplicate and closes nothing; each Slice 5 POST replays and a changed body on its key is 409 | `test_e04_consolidation_with_two_real_open_opportunities_surfaces_work_and_closes_none`<br>`test_k05_each_slice_5_post_replays_and_a_changed_body_is_409` | PASS |
+| `S5-6 / K06 (UNPROVEN) / trigger-level` | K06 is UNPROVEN (EN-02, G5-13): these are trigger-level refusals of a change or delete of a review or an opportunity, never counted as K06 | `test_trigger_level_a_review_row_cannot_be_changed_or_deleted`<br>`test_the_frozen_delete_guard_is_unchanged` | PASS |
+| `S5-6 / STOP GATE E` | One SALE over HTTP from a new party to the customer's view, reconstructed; the generator refuses a missing, failed or unbound proof, a new writer and a general opportunity create | `test_stop_gate_e_a_sale_from_a_new_party_to_the_customer_view_over_http`<br>`test_e_a_mapped_test_that_is_absent_is_a_problem`<br>`test_e_an_unbound_report_is_not_evidence`<br>`test_e_a_new_writer_is_a_problem`<br>`test_e_a_general_opportunity_create_is_a_problem`<br>`test_e_a_proof_of_another_transaction_type_is_a_problem` | PASS |
 
 ## Reading this table
 
