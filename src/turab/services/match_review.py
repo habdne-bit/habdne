@@ -27,7 +27,8 @@ consumes no key:
       409 `MATCH_GATES_NOT_PASS`. The frozen `trg_match_review_gate` refuses
       the same, as an untyped database error; this check names it first;
    b. supersession, per offer (G5-2): a later match of the same request,
-      property, policy AND evaluated offer, else 409 `MATCH_SUPERSEDED`;
+      property, policy AND evaluated offer, else 409 `MATCH_SUPERSEDED`.
+      It is read under the request's `FOR UPDATE` (L-S5-3b, below);
    c. the currency check (`currency.check`, §3.7), on the facts now, under
       locks: VALID, else 409 `MATCH_CONTEXT_NOT_VALID`, every reason listed;
    d. no open opportunity for the same request and the same canonical
@@ -35,6 +36,22 @@ consumes no key:
       `OPPORTUNITY_ALREADY_OPEN`. The currency check's request lock
       serializes approvals on one request, so this read sees every
       opportunity committed before it.
+
+**L-S5-3b: the supersession check holds until the commit (Slice 5 step 6).**
+The approval locks its request `FOR UPDATE` BEFORE the supersession check.
+A matching run stores each match with a foreign key on the request, and
+that check takes `FOR KEY SHARE`. Of the row-lock modes, only `FOR UPDATE`
+conflicts with it (PostgreSQL 16, §13.3.2, Table 13.3). So:
+- a run that has stored a match of the request makes the approval wait, and
+  the approval's check then reads that match;
+- a run that stores a match after the lock waits until the approval
+  commits.
+
+No match of the request is committed between the check and the commit.
+This was measured before the change in
+`evidence/SLICE5-STEP6-L-S5-3-BEFORE-FIX.txt`. The run itself (Slice 4) is
+unchanged. The currency check's `FOR NO KEY UPDATE` on the same row, taken
+later, is then already covered.
 
 **The review stamp (§3.1, [R3-1]).** Under the lock, one statement computes
 `GREATEST(clock, max(reviewed_at) + 1 µs)` over the match's reviews. The
@@ -243,6 +260,13 @@ def _gates_not_pass(match: Mapping[str, Any]) -> list[dict[str, str]]:
     return failing
 
 
+def _lock_request(session: Session, request_id: uuid.UUID) -> None:
+    """L-S5-3b: `FOR UPDATE`, the one mode that conflicts with the run's
+    foreign-key `FOR KEY SHARE` on the request (module docstring)."""
+    session.execute(text("SELECT 1 FROM turab.requests WHERE request_id = :r FOR UPDATE"),
+                    {"r": request_id})
+
+
 def _superseded_by(session: Session, match: Mapping[str, Any]) -> uuid.UUID | None:
     """5b, G5-2: a match of the same request, property, policy AND evaluated
     offer, strictly later on (`evaluated_at`, `created_at`). A tie on both is
@@ -281,6 +305,7 @@ def _approval(session: Session, match: Mapping[str, Any], clock: Any) -> currenc
         raise ReviewRefused("MATCH_GATES_NOT_PASS",
                             "this match was not evaluated ELIGIBLE with all four gates PASS; "
                             "it cannot be approved", failing)
+    _lock_request(session, match["request_id"])
     newer = _superseded_by(session, match)
     if newer is not None:
         raise ReviewRefused("MATCH_SUPERSEDED",

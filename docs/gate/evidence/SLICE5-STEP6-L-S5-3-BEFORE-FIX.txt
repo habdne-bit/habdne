@@ -1,0 +1,79 @@
+TURAB — Slice 5 step 6: L-S5-3a and L-S5-3b, BEFORE any change
+=============================================================
+Recorded          : 2026-10-13 22:07:02 UTC
+Base commit       : c9e676b29132fd92b2d9dbbc84f3457cc880d1bc (step 5 CLOSED at 3a60b3b; step 6 authorized)
+Measured in       : an isolated git worktree at the base commit; .venv symlinked
+Source fingerprint: bb218c85f28c71caec90cb22c7bf94c4592d1af939132a918356ce9a10d8f9b3
+Database          : the suite's own, PostgreSQL 16.13, alembic head 0006
+Test file sha256  : 89321ae5696714a7b4bd101233690a59529b5b908854d0fa4582401e615234d2
+                    (tests/test_slice5_step6.py, new, copied into the worktree;
+                    no source file changed)
+
+Result: 2 failed, 2 passed
+
+A. L-S5-3a — supersession across two policies: PROVEN on the code as it is
+--------------------------------------------------------------------------
+PASSED test_l_s5_3a_a_later_match_under_another_policy_supersedes_nothing
+  - match A: a committed run under 0.2.0;
+  - in one later transaction (rolled back): a second policy with 0.2.0's
+    rules made active, the REAL run under it (match B, same request,
+    property and offer, evaluated strictly later), then the REAL approval
+    of A;
+  - B does not supersede A: both are in the match queue,
+    `_superseded_by` finds nothing for A, and A's APPROVED review creates the opportunity;
+  - after the rollback: 0.2.0 is the active policy again, and no
+    opportunity exists for A.
+PASSED test_l_s5_3a_a_later_match_under_the_same_policy_still_supersedes
+  - the control: a later committed run under the SAME policy supersedes:
+    409 MATCH_SUPERSEDED.
+
+No change is needed for L-S5-3a. That these tests can FAIL is shown by
+the step-6 mutations that drop `matching_policy_id` from the supersession
+check and from the match queue (recorded separately).
+
+B. L-S5-3b — a run committing between the approval's check and its commit
+-------------------------------------------------------------------------
+Over HTTP: the real approval (POST /matches/{id}/review APPROVED) and the
+real run (POST /requests/{id}/matching/run), each in its own transaction;
+one of them held at a fixed point; witness pg_stat_activity with
+pg_blocking_pids. A committed change of the offer's terms confirmation
+makes the run store a NEW match of the same request, property, policy and
+offer (identical facts would return the same match, G4-13).
+
+Order A — the approval is held after its supersession check, before its
+commit; the run is then sent.
+  run_waited_on_the_approval                : False   (expected True)
+  run_committed_while_the_approval_was_held : True    (expected False)
+  approval_committed_first                  : False   (expected True)
+  approve                                   : 200
+  run                                       : 201
+  newer matches of the approved match       : 1
+  opportunity from the held (approved) match: yes
+
+  => THE WINDOW IS CONFIRMED. The run committed a newer match of the
+     same offer while the approval was held after its check; the approval
+     then committed an opportunity from a match that a committed run had
+     already superseded.
+
+Order B — the run is held after storing its match, before its commit; the
+approval is then sent.
+  approval_waited_on_the_run                : False   (expected True)
+  approval_answered_while_the_run_was_held  : True    (expected False)
+  approve                                   : (200, 'APPROVED')
+                                              (expected 409 MATCH_SUPERSEDED)
+  reviews / opportunity / key records       : 1 / yes / 1 (expected 0 / no / 0)
+  run                                       : 201; newer matches: 1
+
+  => The approval committed first, then the run. That order is itself
+     serial: at the approval's commit no newer match was committed. It is
+     recorded because the remedy changes it: under the remedy a run that
+     has stored its match takes precedence, and the approval, made after
+     it, is refused as superseded.
+
+Why: the run's foreign key on `match_candidates.request_id` locks the
+request FOR KEY SHARE. The approval locks the match FOR UPDATE and,
+inside the currency check, the request FOR NO KEY UPDATE, which does not
+conflict with FOR KEY SHARE (PostgreSQL 16, §13.3.2, Table 13.3); and its
+supersession check comes before that lock.
+
+The worktree was removed after this record.

@@ -714,9 +714,15 @@ def test_mandatory_6_two_concurrent_approvals_of_one_pair_make_one_opportunity(
     """Two reviewers approve the two offers' matches of one pair at once, over
     HTTP. A is paused after writing its opportunity, uncommitted. B, on the
     OTHER match, holds its own match lock and waits on the request lock A
-    holds (witness: `pg_blocking_pids`, in the request's `FOR NO KEY UPDATE`).
+    holds (witness: `pg_blocking_pids`, in a locking read of the request).
     A commits; B then sees A's opportunity and is refused, typed. One
-    opportunity; B wrote nothing."""
+    opportunity; B wrote nothing.
+
+    Since Slice 5 step 6 (L-S5-3b), B waits at the approval's own
+    `FOR UPDATE` on the request, taken before the supersession check, and
+    no longer reaches the currency check's `FOR NO KEY UPDATE`. The witness
+    matches the request's locking read in either mode; what it proves is
+    unchanged."""
     from turab.app import create_app
 
     req, prop, _, [m1, m2] = _world(client, engine, ids, offers=2)
@@ -750,7 +756,7 @@ def test_mandatory_6_two_concurrent_approvals_of_one_pair_make_one_opportunity(
             SELECT pid FROM pg_stat_activity
              WHERE pid <> :a AND wait_event_type = 'Lock'
                AND :a = ANY(pg_blocking_pids(pid))
-               AND query LIKE '%FROM turab.requests WHERE request_id = %FOR NO KEY UPDATE%'""",
+               AND query LIKE '%FROM turab.requests WHERE request_id = %FOR%UPDATE%'""",
                        a=pids[0])
         assert waiting or time.monotonic() < deadline, "B never waited on A's request lock"
         time.sleep(0.02)

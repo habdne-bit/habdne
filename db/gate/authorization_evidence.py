@@ -988,6 +988,40 @@ RULES: tuple[Rule, ...] = (
           "test_the_queue_has_no_time_based_membership",
           "test_the_queue_is_ordered_by_priority_then_creation",
           "test_the_queue_is_staff_only_and_audited_once")),
+    # --- Slice 5, step 6: the carried limits, the red-team cases, STOP GATE E ---------
+    Rule("S5-6 / L-S5-3a / G5-2",
+         "Supersession is per policy: a later match under another policy supersedes "
+         "nothing, for the approval and the queue; under the same policy it does",
+         ("test_l_s5_3a_a_later_match_under_another_policy_supersedes_nothing",
+          "test_l_s5_3a_a_later_match_under_the_same_policy_still_supersedes")),
+    Rule("S5-6 / L-S5-3b",
+         "No matching run commits between the approval's supersession check and its "
+         "commit: a run waits for a held approval; an approval waits for a run in flight "
+         "and is refused as superseded, writing nothing",
+         ("test_l_s5_3b_a_run_while_an_approval_is_held_waits_for_it",
+          "test_l_s5_3b_an_approval_waits_for_a_run_in_flight_and_is_refused_superseded",
+          "test_a_revalidate_waits_for_a_request_writer_and_reads_its_commit")),
+    Rule("S5-6 / E04 / K05",
+         "Consolidating two properties with real open opportunities raises one task "
+         "naming the duplicate and closes nothing; each Slice 5 POST replays and a "
+         "changed body on its key is 409",
+         ("test_e04_consolidation_with_two_real_open_opportunities_surfaces_work_and_closes_none",
+          "test_k05_each_slice_5_post_replays_and_a_changed_body_is_409")),
+    Rule("S5-6 / K06 (UNPROVEN) / trigger-level",
+         "K06 is UNPROVEN (EN-02, G5-13): these are trigger-level refusals of a change or "
+         "delete of a review or an opportunity, never counted as K06",
+         ("test_trigger_level_a_review_row_cannot_be_changed_or_deleted",
+          "test_the_frozen_delete_guard_is_unchanged")),
+    Rule("S5-6 / STOP GATE E",
+         "One SALE over HTTP from a new party to the customer's view, reconstructed; the "
+         "generator refuses a missing, failed or unbound proof, a new writer and a general "
+         "opportunity create",
+         ("test_stop_gate_e_a_sale_from_a_new_party_to_the_customer_view_over_http",
+          "test_e_a_mapped_test_that_is_absent_is_a_problem",
+          "test_e_an_unbound_report_is_not_evidence",
+          "test_e_a_new_writer_is_a_problem",
+          "test_e_a_general_opportunity_create_is_a_problem",
+          "test_e_a_proof_of_another_transaction_type_is_a_problem")),
 )
 
 
