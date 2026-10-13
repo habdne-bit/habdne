@@ -3,8 +3,8 @@
 **Authorized (review of `1556624`).** "الخطوة 5 مأذون ببدئها وفق القرارات
 المعتمدة. الشريحة 5 ككل لم تُغلق بعد."
 
-**Status:** **DELIVERED, submitted for review again.** Not closed. Slice 5
-as a whole is not closed.
+**Status:** **CLOSED at `3a60b3b`**, within its approved scope (§15).
+Slice 5 as a whole is not closed. Step 6 is authorized.
 - **The review of `6c6e614`** found one blocker, R-S5-5-01: a consent
   binding created while a share runs. It is measured, and fixed at
   `0a5c446` (§13).
@@ -14,7 +14,7 @@ as a whole is not closed.
   It decided the `note` of close (a STATUS_CHANGE interaction) and of
   revalidate (a NOTE interaction, when given). Measured, and done at
   `37701ce` (§14).
-- **Step 6 is not authorized.**
+- **The review of `3a60b3b` closed step 5** and authorized step 6 (§15).
 
 *As first delivered, G5-8 (i) and (iii) were PROVISIONAL (§2.1, kept as
 written).*
@@ -996,3 +996,35 @@ problems as before.
   - STOP GATE D is not regenerated in Slice 5.
 - **These results are ours.** No independent run exists.
 - **Step 6 is not authorized.**
+
+## 15. The review of `3a60b3b`: step 5 CLOSED
+
+**Decision.** "أُغلق الخطوة 5 عند 3a60b3b ضمن نطاقها المعتمد، وأجيز بدء
+الخطوة 6. تبقى Slice 5 مفتوحة."
+
+**What the reviewer checked:**
+- the bundle's SHA-256, matching the value delivered;
+- its 385 manifest entries;
+- `bound`, from `run_binding.py` in the extracted tree;
+- in the code: the close writes a STATUS_CHANGE row with its reason and its
+  note, and the revalidate writes a NOTE row only when a note is given.
+  Both rows are written after the opportunity's UPDATE, in the command's
+  transaction;
+- in the HTTP tests: the refusal, the replay, and the absence of the note
+  from the response and the audit log.
+
+**What the review relies on.** This was a check of the bundle, the code and
+the recorded evidence, not an independent run of PostgreSQL, the tests or
+the mutations. 2333/2333, 51/51 and the gate remain the implementation
+team's results.
+
+**Accepted:** the two interpretations of §14.3:
+- the close reason in `outcome_code`;
+- an empty string kept as a note, and an explicit null refused.
+
+**Carried to step 6, and binding on the closure of Slice 5:**
+- **L-S5-3a and L-S5-3b** must each be settled explicitly before the
+  slice closes: by proof, or by an accepted, documented limit;
+- **K06** stays UNPROVEN;
+- **G4-5R** stays open;
+- **STOP GATE E** covers SALE only.

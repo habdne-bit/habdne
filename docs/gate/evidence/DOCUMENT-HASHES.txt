@@ -757,3 +757,7 @@ docs/gate/evidence/SLICE5-STEP5-MUTATIONS-AFTER-NOTES.txt      new   a44439920ea
 docs/gate/SLICE_5_STEP5_DELIVERY.md                            ---   080bb67de6691e2b0b51856b1446347e0e5dbfc0ab57405dc0bd8cbaaa72508b
 docs/gate/SLICE_5_PLAN.md                                      rev17 02d0810138d1da5f42f72f5d899f1c43347cb7a2fcee474c08934826b2e4695c
 SLICE_5_PLAN.md changed revision: 16 -> 17 (review of 1f8a8df: the note of close and revalidate kept; step 6 not authorized).
+--- Review of 3a60b3b: Slice 5 step 5 CLOSED; step 6 authorized ---
+docs/gate/SLICE_5_STEP5_DELIVERY.md                            ---   e4b0d502953b9f7d43497621247654b2773af8e29cf5a9646a5531910888942c
+docs/gate/SLICE_5_PLAN.md                                      rev18 ee8d6213cf749a7a50197c7d818cd69fa146f32c410474395608a271d7c7992b
+SLICE_5_PLAN.md changed revision: 17 -> 18 (step 5 closed; step 6 authorized).
