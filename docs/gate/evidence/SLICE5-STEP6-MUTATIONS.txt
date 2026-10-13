@@ -1,0 +1,58 @@
+TURAB — Slice 5 step 6: which test refuses which weakening (L-S5-3a, L-S5-3b, the request lock, E04)
+============================================================
+Base commit       : 0183106f212d343a6218cc9e201bc5e0ad2704b6
+Source fingerprint: 9e6c68cc5c12971ff8d4e188b029e3c9b65266fe0802b00bee3cf5349ba584d7
+Working tree      : CLEAN
+Recorded          : 2026-10-13 22:22:09 UTC
+Test file         : tests/test_slice5_step6.py
+
+=== baseline (no mutation) ===
+   15 passed, 2 warnings in 6.41s
+== P1 the approval's supersession ignores the policy [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 2cf47d7e274001f3 identical
+   1 failed, 14 passed, 2 warnings in 6.15s
+   FAILED test_l_s5_3a_a_later_match_under_another_policy_supersedes_nothing
+   cause: AssertionError: assert UUID('0e491919-1d02-4c4c-9221-9619c3933f6b') is None
+   cause: E   AssertionError: assert UUID('0e491919-1d02-4c4c-9221-9619c3933f6b') is None
+== P2 the match queue's supersession ignores the policy [src/turab/services/opportunity_views.py, 1 site(s)]  restored: sha256 8577768397307bd7 identical
+   1 failed, 14 passed, 2 warnings in 6.25s
+   FAILED test_l_s5_3a_a_later_match_under_another_policy_supersedes_nothing
+   cause: AssertionError: per policy: both are current
+   cause: E   AssertionError: per policy: both are current
+== R1 the approval takes no request lock [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 2cf47d7e274001f3 identical
+   2 failed, 13 passed, 2 warnings in 6.54s
+   FAILED test_l_s5_3b_a_run_while_an_approval_is_held_waits_for_it
+   FAILED test_l_s5_3b_an_approval_waits_for_a_run_in_flight_and_is_refused_superseded
+   cause: AssertionError: {'approval_waited_on_the_run': False, 'approval_answered_while_the_run_was_held': True, 'run': 201, 'approve': (200, 'APPROVED'), ...}
+   cause: AssertionError: {'run_waited_on_the_approval': False, 'run_committed_while_the_approval_was_held': True, 'approve': 200, 'run': 201, ...}
+   cause: E   AssertionError: {'approval_waited_on_the_run': False, 'approval_answered_while_the_run_was_held': True, 'run': 201, 'approve': (200, 'APPROVED'), ...}
+   cause: E   AssertionError: {'run_waited_on_the_approval': False, 'run_committed_while_the_approval_was_held': True, 'approve': 200, 'run': 201, ...}
+== R2 the request lock does not conflict with FOR KEY SHARE [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 2cf47d7e274001f3 identical
+   2 failed, 13 passed, 2 warnings in 5.96s
+   FAILED test_l_s5_3b_a_run_while_an_approval_is_held_waits_for_it
+   FAILED test_l_s5_3b_an_approval_waits_for_a_run_in_flight_and_is_refused_superseded
+   cause: AssertionError: {'approval_waited_on_the_run': False, 'approval_answered_while_the_run_was_held': True, 'run': 201, 'approve': (200, 'APPROVED'), ...}
+   cause: AssertionError: {'run_waited_on_the_approval': False, 'run_committed_while_the_approval_was_held': True, 'approve': 200, 'run': 201, ...}
+   cause: E   AssertionError: {'approval_waited_on_the_run': False, 'approval_answered_while_the_run_was_held': True, 'run': 201, 'approve': (200, 'APPROVED'), ...}
+   cause: E   AssertionError: {'run_waited_on_the_approval': False, 'run_committed_while_the_approval_was_held': True, 'approve': 200, 'run': 201, ...}
+== R3 the request lock is taken after the supersession check [src/turab/services/match_review.py, 1 site(s)]  restored: sha256 2cf47d7e274001f3 identical
+   2 failed, 13 passed, 2 warnings in 6.19s
+   FAILED test_l_s5_3b_a_run_while_an_approval_is_held_waits_for_it
+   FAILED test_l_s5_3b_an_approval_waits_for_a_run_in_flight_and_is_refused_superseded
+   cause: AssertionError: {'approval_waited_on_the_run': True, 'approval_answered_while_the_run_was_held': False, 'run': 201, 'approve': (200, 'APPROVED'), ...}
+   cause: AssertionError: {'run_waited_on_the_approval': False, 'run_committed_while_the_approval_was_held': True, 'approve': 200, 'run': 201, ...}
+   cause: E   AssertionError: {'approval_waited_on_the_run': True, 'approval_answered_while_the_run_was_held': False, 'run': 201, 'approve': (200, 'APPROVED'), ...}
+   cause: E   AssertionError: {'run_waited_on_the_approval': False, 'run_committed_while_the_approval_was_held': True, 'approve': 200, 'run': 201, ...}
+== C1 the currency check does not lock the request [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   1 failed, 14 passed, 2 warnings in 6.09s
+   FAILED test_a_revalidate_waits_for_a_request_writer_and_reads_its_commit
+   cause: AssertionError: the revalidate never waited on the request writer
+   cause: E   AssertionError: the revalidate never waited on the request writer
+== C2 the currency check's request lock is shared [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   15 passed, 2 warnings in 6.15s
+== E1 the consolidation task names no duplicate [src/turab/services/identity.py, 1 site(s)]  restored: sha256 bb32dd456738a7cb identical
+   1 failed, 14 passed, 2 warnings in 6.15s
+   FAILED test_e04_consolidation_with_two_real_open_opportunities_surfaces_work_and_closes_none
+   cause: AssertionError: assert ('OPPORTUNITY...19195a38', []) == ('OPPORTUNITY...095f8126f35'])
+   cause: E   AssertionError: assert ('OPPORTUNITY...19195a38', []) == ('OPPORTUNITY...095f8126f35'])
+
+SURVIVING MUTATIONS: C2 the currency check's request lock is shared
