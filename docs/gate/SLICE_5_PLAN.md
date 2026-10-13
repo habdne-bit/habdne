@@ -1,13 +1,14 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 18**
+## Implementation plan — **revision 19**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 (the review, without APPROVED) is CLOSED at `1e0d919`; step 3 (APPROVED and
 the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
 queue) is CLOSED at `1556624`. Step 5 (revalidate, share, close, the
-opportunity queue, B10) is CLOSED at `3a60b3b`. Step 6 is authorized. No
-other step's code exists.
+opportunity queue, B10) is CLOSED at `3a60b3b`. Step 6 (the carried limits,
+the red-team cases, STOP GATE E) is delivered and submitted for review: L-S5-3a
+proven; L-S5-3b measured and closed at `e9904c0`. No other step's code exists.
 **Slice 5 as a whole is not closed.**
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
@@ -241,6 +242,20 @@ re-run them.
 open were true when written. Each is now marked as decided since. Nothing
 else in them is changed.
 
+**Step 6 delivered (`SLICE_5_STEP6_DELIVERY.md`), submitted for review.**
+- **L-S5-3a: PROVEN** with no code change. A later match under another
+  policy supersedes nothing (the real run and the real approval, in a
+  rolled-back transaction); under the same policy it does.
+- **L-S5-3b: measured, then CLOSED.** At `c9e676b` a run committed a newer
+  match inside the window. At `e9904c0` the approval locks its request
+  `FOR UPDATE` before the supersession check. Both orders are tested over
+  HTTP with witnesses.
+- **E04 on real opportunities; K05 for each Slice 5 POST;** K06 UNPROVEN,
+  with its trigger-level refusals labelled.
+- **STOP GATE E:** generated and bound, 49 rows PASS, SALE only.
+- **One mutation survives (C2), an equivalent mutant,** put to the reviewer
+  with the L-S5-3b remedy itself.
+
 **The review of `3a60b3b`. Step 5 is CLOSED at `3a60b3b`** within its
 approved scope (`SLICE_5_STEP5_DELIVERY.md` §15). **Step 6 is authorized.
 Slice 5 as a whole is not closed.**
@@ -349,7 +364,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 15 | `6c6e614` | step 5 delivered (`SLICE_5_STEP5_DELIVERY.md`); G5-8 (i) and (iii) marked PROVISIONAL, pending a decision; the step-5 interpretations recorded at G5-9 and G5-11; B10's proofs recorded at G5-12 |
 | 16 | `1f8a8df` | the review of `6c6e614` recorded: R-S5-5-01 measured and fixed (the share's `FOR UPDATE`); G5-8 (i) and (iii) decided (a), and (i) implemented; I1–I8 accepted, I4 amended; step 6 not authorized |
 | 17 | `3a60b3b` | the review of `1f8a8df` recorded: the R-S5-5-01 remedy and G5-8 (i)/(iii) accepted; the note of close (STATUS_CHANGE) and revalidate (NOTE) decided, measured and kept; G5-10 marked; step 6 not authorized |
-| 18 | the commit that adds this revision | the review of `3a60b3b` recorded: step 5 CLOSED (step 5 delivery §15); step 6 authorized; L-S5-3a and L-S5-3b binding on the closure of the slice |
+| 18 | `c9e676b` | the review of `3a60b3b` recorded: step 5 CLOSED (step 5 delivery §15); step 6 authorized; L-S5-3a and L-S5-3b binding on the closure of the slice |
+| 19 | the commit that adds this revision | step 6 delivered (`SLICE_5_STEP6_DELIVERY.md`): L-S5-3a proven, L-S5-3b measured and closed by the approval's request lock, E04, K05, STOP GATE E generated and bound; the carried table marked |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -2029,7 +2045,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **CLOSED** at `1556624` (`SLICE_5_STEP4_DELIVERY.md` §12) |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; authorized in the review of `1556624`; **delivered** at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`); the review of `6c6e614`: R-S5-5-01 fixed and G5-8 (i) implemented at `0a5c446` (§13 there); the review of `1f8a8df`: the note of close and revalidate kept at `37701ce` (§14); **CLOSED** at `3a60b3b` (§15) |
-| 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), L-S5-3a and L-S5-3b settled, and the closure evidence | all; **authorized** in the review of `3a60b3b` |
+| 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), L-S5-3a and L-S5-3b settled, and the closure evidence | all; authorized in the review of `3a60b3b`; **delivered** (`SLICE_5_STEP6_DELIVERY.md`), submitted for review |
 
 **Carried to step 6 and the final closure of Slice 5 (review of `921ed01`).**
 These are not closed by any step before them. Each is settled explicitly at
@@ -2037,8 +2053,8 @@ step 6 or in the closure record:
 
 | Id | What | To settle |
 |---|---|---|
-| **L-S5-3a** | supersession across two policies is not proven: no two-policy test, no mutation dropping `matching_policy_id` | prove it, or record the weaker proof as accepted |
-| **L-S5-3b** | a new matching run can commit between the approval's supersession check and its commit: the Slice 4 engine does not take the request lock | either accept it as a documented consistency model, or add a synchronization mechanism if "the current match at commit" is decided strict |
+| **L-S5-3a** | supersession across two policies is not proven: no two-policy test, no mutation dropping `matching_policy_id` | prove it, or record the weaker proof as accepted. **Step 6: PROVEN** (step 6 delivery §2; mutations P1, P2) |
+| **L-S5-3b** | a new matching run can commit between the approval's supersession check and its commit: the Slice 4 engine does not take the request lock | either accept it as a documented consistency model, or add a synchronization mechanism if "the current match at commit" is decided strict. **Step 6: measured, then CLOSED by synchronization** in the approval (step 6 delivery §3); put to the reviewer |
 
 **A maintenance change, outside this sequence (review of `f5a9d88`,
 decision 3).** `db/dev/mutate_input_hardening.py` ran its mutations when

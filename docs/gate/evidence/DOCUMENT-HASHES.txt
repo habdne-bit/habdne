@@ -766,3 +766,7 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   54837a277e3
 docs/gate/evidence/SLICE5-STEP6-L-S5-3-BEFORE-FIX.txt          new   0db5beff12262305c8c6ff91df137d2504b3c39b798f4106b7018e5f9c38def7
 docs/gate/evidence/SLICE5-STEP6-MUTATIONS.txt                  new   38541185877ed07d74a6bce330acec42ace4d22fc46831fa4eb2622d1a153da2
 docs/gate/evidence/SLICE5-STEP3-MUTATIONS-L1-L2-AFTER-L-S5-3B.txt new   58d4cab86d853468b3271bbda42adde075898a8eb22c5ef79e7de86cc58febc7
+docs/gate/SLICE_5_STOP_GATE_E.md                               new   869ef7772d4b5aa9560c2e2ec21a01abb4655b8f550ce4811f42a03a89d6b9c8
+docs/gate/SLICE_5_STEP6_DELIVERY.md                            new   452ffcbe1350551ba1b3e2bcd76aa462d9ec4e666eb440c2c1961f43d56578b9
+docs/gate/SLICE_5_PLAN.md                                      rev19 03768e0474916c91f89038a322f7a4cddd2b99026f9eb1a27bbb60d0bdc20b4f
+SLICE_5_PLAN.md changed revision: 18 -> 19 (step 6 delivered; L-S5-3a proven; L-S5-3b closed; STOP GATE E bound).
