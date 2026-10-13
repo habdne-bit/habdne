@@ -1,0 +1,16 @@
+TURAB — Slice 5 step 3: which test refuses which weakening of APPROVED
+============================================================
+Base commit       : e9904c0e359057acdb8c9ad9a37bb07fdada1474
+Source fingerprint: d5321ce01add2187b2aadcbf0c7697eef444122342e9f33fc1190eedd1bc7c8f
+Working tree      : CLEAN
+Recorded          : 2026-10-13 22:21:03 UTC
+Test file         : tests/test_slice5_step3.py
+
+=== baseline (no mutation) ===
+   57 passed, 2 warnings in 10.16s
+== L1 the request is not locked [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   57 passed, 2 warnings in 10.13s
+== L2 the request lock is shared [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   57 passed, 2 warnings in 10.04s
+
+SURVIVING MUTATIONS: L1 the request is not locked, L2 the request lock is shared

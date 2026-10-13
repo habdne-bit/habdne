@@ -44,6 +44,9 @@ MUTATIONS = [
     ("C1 the currency check does not lock the request", CURRENCY,
      "FROM turab.requests WHERE request_id = :r FOR NO KEY UPDATE",
      "FROM turab.requests WHERE request_id = :r"),
+    ("C2 the currency check's request lock is shared", CURRENCY,
+     "FROM turab.requests WHERE request_id = :r FOR NO KEY UPDATE",
+     "FROM turab.requests WHERE request_id = :r FOR SHARE"),
     # --- E: E04 -----------------------------------------------------------------------
     ("E1 the consolidation task names no duplicate", IDENTITY,
      '"duplicate_open_opportunity_ids": [str(d) for d in o["duplicates"]]',
