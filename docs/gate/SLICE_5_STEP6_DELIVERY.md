@@ -6,14 +6,17 @@ and L-S5-3b must each be settled explicitly, by proof or by an accepted,
 documented limit, before the slice closes. K06 stays UNPROVEN, G4-5R open,
 and STOP GATE E covers SALE only.
 
-**Status:** **DELIVERED, submitted for review.** Not closed. Slice 5 as a
-whole is not closed; its closure record follows this review.
+**Status:** **ACCEPTED at `735211c`** in the review of `735211c` (§11),
+which authorized the closure record of Slice 5 within the SALE scope.
+Slice 5 is not closed until that record is reviewed.
 
 **What step 6 settles:**
 - **L-S5-3a: PROVEN**, with no code change (§2);
 - **L-S5-3b: measured, then CLOSED** by one lock in the approval (§3).
 
-**One mutation survives:** C2, an equivalent mutant. It is stated in §7
+**One mutation survives:** C2. *[Classified in the review of `735211c`:
+not required by the approved correctness condition, not counted as killed,
+and not "equivalent" without qualification (§11).]* It is stated in §7
 and put to the reviewer.
 
 **Commits:**
@@ -175,7 +178,8 @@ revalidate waits on an uncommitted change of the request's status, then
 records it. Mutation **C1** removes the lock, and is killed.
 
 **Its strength is no longer observable: C2.** C2 weakens the lock to
-`FOR SHARE`, and survives. That is an **equivalent mutant**:
+`FOR SHARE`, and survives. *[The word "equivalent" below is corrected by
+the review of `735211c`: §11.]* That is an **equivalent mutant**:
 - `FOR SHARE` conflicts with a request writer's UPDATE just as
   `FOR NO KEY UPDATE` does;
 - the only difference, serializing two checkers on one request, is now
@@ -321,7 +325,7 @@ That makes **2367**.
 | R2 | the lock is `FOR NO KEY UPDATE` | both L-S5-3b tests |
 | R3 | the lock is taken after the check | both L-S5-3b tests |
 | C1 | the currency check takes no request lock | the revalidate test |
-| **C2** | the currency check's lock is `FOR SHARE` | **survives: equivalent (§3.4)** |
+| **C2** | the currency check's lock is `FOR SHARE` | **survives; not required by the approved correctness condition, not counted as killed (§11)** |
 | E1 | the consolidation task names no duplicate | the E04 test |
 
 **The record:** `evidence/SLICE5-STEP6-MUTATIONS.txt`.
@@ -343,7 +347,7 @@ Each row ran on a clean tree, source fingerprint `9e6c68cc…84d7`.
 | Evidence | Result | Commit | Record |
 |---|---|---|---|
 | Before any change | L-S5-3a proven; L-S5-3b's window confirmed (order A) | `e9904c0` | `evidence/SLICE5-STEP6-L-S5-3-BEFORE-FIX.txt` |
-| Mutations | 7/8 fail; C2 equivalent | `0183106` → `e63e693` | §7 |
+| Mutations | 7/8 fail; C2 survives (§11) | `0183106` → `e63e693` | §7 |
 | Authorization matrix | **183 rules**, all PASS (five new); suite 2367/2367 | `cd5511f` | `AUTHORIZATION_EVIDENCE_MATRIX.md`; `--check --no-run`: current |
 | PostgreSQL gate | PASS; 70 database-level PASS notices, 0 FAIL; 67 operations in parity | `975a448` (run at `cd5511f`) | `evidence/gate-run.txt` |
 | Suite (`record_test_run.py`) | **2367 passed**, 0 failed, 0 errors, 0 skipped | `82f7995` (run at `975a448`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
@@ -359,7 +363,7 @@ problems.
 - **"From an empty database"** is read as stated in §5.
 - **L-S5-3a's second policy** lives inside one rolled-back transaction.
   The proof uses the real run and the real approval.
-- **C2 survives as an equivalent mutant** (§3.4).
+- **C2 survives** (§3.4; classified in §11).
 - **The cost of the approval's request lock** is stated in §3.3.
 - **These results are ours.** No independent run exists.
 
@@ -372,3 +376,44 @@ problems.
   - C2 (§3.4);
   - the remedy of L-S5-3b itself. It is a proof, and the reviewer may
     prefer the documented-limit alternative the plan named.
+
+## 11. The review of `735211c`: step 6 accepted
+
+**Decision.** "أقبل الخطوة 6 عند 735211c وأجيز إعداد سجل إغلاق Slice 5، ضمن
+نطاق البيع المعلن. لا أعدّ الشريحة مغلقة قبل مراجعة سجل الإغلاق نفسه."
+
+**What the reviewer checked:**
+- the bundle's digest, its 397 manifest entries, the full source
+  fingerprint, `bound`, and STOP GATE E's `--check` (exit 0);
+- the two limits' tests, and the place of the lock: the request lock
+  precedes the supersession check, and the tests separate the two orders
+  of the race with a wait witness.
+
+**What the review relies on.** PostgreSQL, the suite and the mutations were
+not re-run by the reviewer. 2367/2367, the gate and 7/8 are the
+implementation team's results, bound to the tree.
+
+**Accepted:**
+- the remedy of L-S5-3b, by the lock;
+- the proof of L-S5-3a, within its declared limit: the second policy and
+  its match live inside a rolled-back transaction.
+
+**C2, decided.**
+- `FOR NO KEY UPDATE` is kept.
+- C2 is a mutation **not required by the approved correctness condition**.
+  It is **not counted as killed**: the record stays **7/8**, never 8/8.
+- It is not "equivalent" without qualification, since `FOR SHARE` changes
+  how two checkers on the same request wait.
+- The revalidate test proves that a lock conflicting with the request's
+  writer is necessary. The approval's new lock provides the serialization
+  the approval requires.
+- §3.4 and §7 above called C2 "equivalent". That word is corrected by this
+  decision; the marks in place point here.
+- Step 3's L2 is the same weakening, classified the same way. Its
+  survival, and C2's, are stated in the closure record
+  (`SLICE_5_CLOSURE.md` §4).
+
+**Required in the closure record:**
+- STOP GATE E covers SALE;
+- K06 is still UNPROVEN, and G4-5R is open;
+- STOP GATE D remains the record of Slice 4's tree.

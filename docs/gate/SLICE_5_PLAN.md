@@ -1,5 +1,5 @@
 # Slice 5 — Human Review → OPPORTUNITY
-## Implementation plan — **revision 19**
+## Implementation plan — **revision 20**
 
 **Status:** submitted for review. **Code is written one approved step at a
 time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
@@ -7,8 +7,9 @@ time, never ahead of its approval** (§8). Step 1 (`0006`) is CLOSED; step 2
 the one opportunity) is CLOSED at `921ed01`; step 4 (the reads and the match
 queue) is CLOSED at `1556624`. Step 5 (revalidate, share, close, the
 opportunity queue, B10) is CLOSED at `3a60b3b`. Step 6 (the carried limits,
-the red-team cases, STOP GATE E) is delivered and submitted for review: L-S5-3a
-proven; L-S5-3b measured and closed at `e9904c0`. No other step's code exists.
+the red-team cases, STOP GATE E) is ACCEPTED at `735211c`. The closure record,
+`SLICE_5_CLOSURE.md`, is submitted for review: the slice is not closed until
+it is reviewed.
 **Slice 5 as a whole is not closed.**
 Slice 4 kept `match_reviews` and `opportunities` closed by an approved
 boundary (G4-15 D1). Step 2 opened `match_reviews` to the review command;
@@ -242,6 +243,19 @@ re-run them.
 open were true when written. Each is now marked as decided since. Nothing
 else in them is changed.
 
+**The review of `735211c`. Step 6 is ACCEPTED; the closure record is
+authorized, within the SALE scope** (`SLICE_5_STEP6_DELIVERY.md` §11).
+- **Accepted:** the remedy of L-S5-3b by the lock; the proof of L-S5-3a
+  within its declared limit (the second policy inside a rolled-back
+  transaction).
+- **C2:** `FOR NO KEY UPDATE` kept. C2 is not required by the approved
+  correctness condition, is not counted as killed (7/8 stays), and is not
+  called "equivalent" without qualification.
+- **The closure record must state:** STOP GATE E covers SALE; K06 UNPROVEN;
+  G4-5R open; STOP GATE D remains the record of Slice 4's tree; C2's and
+  L2's survival.
+- **The slice is not closed** before the closure record is reviewed.
+
 **Step 6 delivered (`SLICE_5_STEP6_DELIVERY.md`), submitted for review.**
 - **L-S5-3a: PROVEN** with no code change. A later match under another
   policy supersedes nothing (the real run and the real approval, in a
@@ -365,7 +379,8 @@ the system's confirmation at approval, not a manual confirmation by anyone.
 | 16 | `1f8a8df` | the review of `6c6e614` recorded: R-S5-5-01 measured and fixed (the share's `FOR UPDATE`); G5-8 (i) and (iii) decided (a), and (i) implemented; I1–I8 accepted, I4 amended; step 6 not authorized |
 | 17 | `3a60b3b` | the review of `1f8a8df` recorded: the R-S5-5-01 remedy and G5-8 (i)/(iii) accepted; the note of close (STATUS_CHANGE) and revalidate (NOTE) decided, measured and kept; G5-10 marked; step 6 not authorized |
 | 18 | `c9e676b` | the review of `3a60b3b` recorded: step 5 CLOSED (step 5 delivery §15); step 6 authorized; L-S5-3a and L-S5-3b binding on the closure of the slice |
-| 19 | the commit that adds this revision | step 6 delivered (`SLICE_5_STEP6_DELIVERY.md`): L-S5-3a proven, L-S5-3b measured and closed by the approval's request lock, E04, K05, STOP GATE E generated and bound; the carried table marked |
+| 19 | `735211c` | step 6 delivered (`SLICE_5_STEP6_DELIVERY.md`): L-S5-3a proven, L-S5-3b measured and closed by the approval's request lock, E04, K05, STOP GATE E generated and bound; the carried table marked |
+| 20 | the commit that adds this revision | the review of `735211c` recorded: step 6 accepted; C2 classified; the closure record `SLICE_5_CLOSURE.md` submitted for review |
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:210–242`.
@@ -2045,7 +2060,7 @@ Each step is delivered, evidenced and reviewed before the next starts.
 | 3 | APPROVED: the currency check of §3.7 and its exhaustive test, the opportunity, the uniqueness layers, concurrency | G5-2, G5-5 (decided (a)), §3.7; **CLOSED** at `921ed01` (`SLICE_5_STEP3_DELIVERY.md` §11) |
 | 4 | the reads: internal, customer (F5-1, F5-2, F5-3 corrected), and the match queue | G5-6, G5-7, G5-11; **CLOSED** at `1556624` (`SLICE_5_STEP4_DELIVERY.md` §12) |
 | 5 | revalidate, share, close, the opportunity queue, and the B10 service guard | G5-1, G5-8, G5-9, G5-10 (decided), G5-11, G5-12; authorized in the review of `1556624`; **delivered** at `93c7b37` (`SLICE_5_STEP5_DELIVERY.md`); the review of `6c6e614`: R-S5-5-01 fixed and G5-8 (i) implemented at `0a5c446` (§13 there); the review of `1f8a8df`: the note of close and revalidate kept at `37701ce` (§14); **CLOSED** at `3a60b3b` (§15) |
-| 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), L-S5-3a and L-S5-3b settled, and the closure evidence | all; authorized in the review of `3a60b3b`; **delivered** (`SLICE_5_STEP6_DELIVERY.md`), submitted for review |
+| 6 | the mandatory and red-team tests, mutations, STOP GATE E (K06 listed UNPROVEN unless G5-13 (b) is done), L-S5-3a and L-S5-3b settled, and the closure evidence | all; authorized in the review of `3a60b3b`; delivered (`SLICE_5_STEP6_DELIVERY.md`); **ACCEPTED** at `735211c` (§11); the closure record submitted for review |
 
 **Carried to step 6 and the final closure of Slice 5 (review of `921ed01`).**
 These are not closed by any step before them. Each is settled explicitly at
