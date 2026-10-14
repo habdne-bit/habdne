@@ -2,20 +2,58 @@
 
 **Slice 5 — Human Review → OPPORTUNITY**
 
-**Status: closure record SUBMITTED FOR REVIEW.** Slice 5 is **not closed**.
-The review of `735211c` accepted step 6 and authorized this record. It did
-not close the slice: "لا أعدّ الشريحة مغلقة قبل مراجعة سجل الإغلاق نفسه".
+**Status: Slice 5 is CLOSED at `339dbc4`, within the SALE scope only.**
+The review of `339dbc4` approved this record and closed the slice (§0).
+**This is the closure of the slice within its scope. It is not a release
+authorization.**
 
-**The scope it asks to close:** the approved scope, **SALE only**.
+**The scope closed:** the approved scope, **SALE only**.
 
 **Baseline:** Developer Handoff v1.0.3, technical pack v0.2.3, frozen.
 
-**Plan:** `docs/gate/SLICE_5_PLAN.md`, revision 20.
+**Plan:** `docs/gate/SLICE_5_PLAN.md`, revision 20 at `339dbc4`; revision 21
+records the closure and the RENT qualification.
 
 The decisions in this record are the reviewer's. It states them, and their
 limits, as they were given, and adds no claim of its own.
 
 ---
+
+## 0. The closing decision (review of `339dbc4`)
+
+> I approve the closure record, and I close Slice 5 at `339dbc4`, within the
+> SALE scope only. This is a closure of the slice within its scope, not a
+> release authorization.
+> (The review of `339dbc4`; translated from the Arabic: "أعتمد سجل الإغلاق،
+> وأُغلق Slice 5 عند 339dbc4 في نطاق البيع (SALE) فقط. هذا إغلاق للشريحة
+> ضمن نطاقها، وليس إجازة إصدار.")
+
+**What the review checked itself:**
+- the bundle's digest and its 398 manifest entries;
+- that the record attached matches its copy in the bundle;
+- that `src` and `tests` are unchanged since step 6, and the source
+  fingerprint with them;
+- `bound`, and `stop_gate_e_evidence.py --check` (exit 0).
+
+**What it did not do:** it re-ran no suite and no mutation. 2367/2367 and
+7/8 remain our results (§2, limit 1).
+
+**The limits it kept, as this record states them:**
+- C2 and L2 survive; C2 is not counted as killed (§4);
+- K06 is UNPROVEN; the application role must be remedied before any
+  release gate (§2, limit 3);
+- G4-5R is open; STOP GATE E covers SALE (§2, limit 2);
+- STOP GATE D is the record of Slice 4's tree (§7).
+
+**A documentary correction, not blocking.** The phrase "no RENT opportunity
+can exist" (§2, limit 2, and the plan's §0) is qualified to "is not created
+through the currently approved matching and approval path". The unqualified
+phrase does not prove that a direct insert is impossible, the more so while
+K06 is UNPROVEN. The correction is made in place, at both places, and
+marked. It does not reopen the slice: "لا حاجة لإعادة فتح Slice 5 لهذا
+التصويب".
+
+**Next:** no code for the next slice before its plan is approved (§8).
 
 ## 1. The decision this record follows
 
@@ -60,7 +98,12 @@ implementer.
 
    None is an independent run.
 2. **SALE only.** STOP GATE E's proof is one SALE. G4-5R is open: a RENT
-   request is never matched, so no RENT opportunity can exist.
+   request is never matched, so no RENT opportunity is created through the
+   currently approved matching and approval path. This does not prove that
+   a direct insert of one is impossible, the more so while K06 is UNPROVEN
+   (limit 3).
+   *(Qualified in the review of `339dbc4`. As submitted at `339dbc4`, it
+   read "so no RENT opportunity can exist".)*
 3. **K06 is UNPROVEN.**
    - The application role is a superuser and owns every table (EN-02,
      G5-13).
@@ -225,6 +268,10 @@ in its §11 by this decision.
 
 ## 8. Next
 
-- **The review of this record.** Slice 5 closes only on that review.
-- Then the planning of the next slice, when the reviewer directs it. No
-  code for it until its plan is approved.
+- ~~**The review of this record.** Slice 5 closes only on that review.~~
+  Done: the review of `339dbc4` approved this record and closed the slice,
+  SALE only (§0).
+- The planning of the next slice, when the reviewer directs it. No code
+  for it until its plan is approved.
+- Before any release gate: G5-13 (b)(ii), the application role's remedy
+  and K06's test under a role that is neither superuser nor owner.
