@@ -785,3 +785,7 @@ docs/gate/SLICE_6_PLAN.md                                      rev1  589ba6a9a45
 docs/gate/evidence/SLICE6-PLAN-MEASUREMENTS.txt                new   84468bba67c4077284d2145add9ff7fcb1c6541e2525dd52e9209fa9fb5dfb16
 docs/gate/SLICE_6_PLAN.md                                      rev2  4bbf90aafd2b2105ff8a8c2a22f8e7704ea56f365c5571d87ff97397b36ea135
 SLICE_6_PLAN.md changed revision: 1 -> 2 (step 0 measured; G6-4 (iii)-(iv), G6-6, G6-8, G6-11 rewritten; 0007 text proposed).
+--- Review of 1fd7bdf: step 0 accepted as basis; Slice 6 plan revision 3 ---
+docs/gate/evidence/SLICE6-PLAN-MEASUREMENTS-R3.txt             new   fac400ec358e9686b8e04c1b11c6bb6289b680095d513b61ad3edc3e3c759f55
+docs/gate/SLICE_6_PLAN.md                                      rev3  f968156b4824ea4cb8ebe4d253fb34349ffdb9cb86233e64f988f4106164fe8b
+SLICE_6_PLAN.md changed revision: 2 -> 3 (completion/observation race measured; lock order; suggestions pure; CORRECTION-005 proposed).

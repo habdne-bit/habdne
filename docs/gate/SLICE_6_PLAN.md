@@ -1,11 +1,13 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 2**
+## Implementation plan — **revision 3**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Code is then written one approved
 step at a time, never ahead of its approval (§8). Step 0 (measurements only)
-was authorized in the review of `f7469e8` and is delivered with this
-revision: `evidence/SLICE6-PLAN-MEASUREMENTS.txt`.
+was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
+in the review of `1fd7bdf` as the basis for review:
+`evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
+asked for: `evidence/SLICE6-PLAN-MEASUREMENTS-R3.txt`.
 
 **What this revision does not decide.** Every choice below that is not
 already fixed by a source is put to the reviewer as a decision (§5), with a
@@ -16,7 +18,8 @@ recommendation. A recommendation is not a decision.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `f7469e8` | first plan |
-| 2 | the commit that adds this revision | the review of `f7469e8` recorded; step 0 measured (`SLICE6-PLAN-MEASUREMENTS.txt`); G6-4 (iii)–(iv), G6-6, G6-8 and G6-11 rewritten on the measurements; F6-10 to F6-17 added; the text of migration `0007` proposed (§5.1) |
+| 2 | `1fd7bdf` | the review of `f7469e8` recorded; step 0 measured (`SLICE6-PLAN-MEASUREMENTS.txt`); G6-4 (iii)–(iv), G6-6, G6-8 and G6-11 rewritten on the measurements; F6-10 to F6-17 added; the text of migration `0007` proposed (§5.1) |
+| 3 | the commit that adds this revision | the review of `1fd7bdf` recorded; the completion/observation race measured (`SLICE6-PLAN-MEASUREMENTS-R3.txt`) and the completion's lock order specified (G6-8 (iv)); the suggestions kept pure, the task outcome read from the task rows (G6-4 (iii)); `stored` treated as a recorded fact (G6-11); the F6-12 staff-view test (G6-4 (v)); CORRECTION-005 proposed for `outcome_code` (§5.2); F6-18 to F6-20 |
 
 **The review of `f7469e8`. Step 0 is AUTHORIZED, for measurements only, with
 no code. The decisions G6-1 to G6-12 and the implementation plan are NOT
@@ -57,7 +60,61 @@ sha256 (`589ba6a9…e3c`) against the one delivered.
 - **Still deferred to the approval of their decisions:** writing `0007`,
   the task paths, and any change to the run's writers.
 
-**Step 0, delivered with this revision** (`SLICE6-PLAN-MEASUREMENTS.txt`,
+**The review of `1fd7bdf`.** The reviewer checked both files' digests
+against the stated values, and re-ran no PostgreSQL: the measurements are
+ours.
+- **Accepted:**
+  - step 0's results, as the basis for review;
+  - two directions: LOCATION IN handled by evaluating every requested
+    location and storing their chains (G6-6); each diagnostic linked
+    explicitly to the matches it evaluated (G6-11);
+  - the measurement supports a partial unique index over OPEN and
+    IN_PROGRESS for diagnostic tasks (G6-4 (iii)).
+- **Not approved:** the text of `0007`; writing any code. Three reasons:
+  1. **The observation guard does not close a concurrent race.** Part D
+     checks for a completion event before an observation changes, but the
+     event may be inserted by another transaction after the check and
+     before the commit. The FK's FOR KEY SHARE lock does not conflict with
+     an UPDATE that leaves the key unchanged. So the guard alone cannot keep
+     the body that existed at completion. Measure both orders; then specify
+     the lock the completion takes on the observation before inserting the
+     event, its order with the task lock, and test the wait and the final
+     result.
+  2. **ALREADY_OPEN makes the suggestions not derivable from their stored
+     inputs.** G6-4 marked a suggested action after an index conflict, while
+     G6-11 promised to re-derive the suggestions from the matches and the
+     location chains. An open task, possibly committed after the
+     REPEATABLE READ snapshot, is not among those inputs. Keep the computed
+     suggestion fixed; record the task's creation in a separate trace of
+     defined source if one is needed; test the replay and the concurrent
+     conflict. The report on snapshot visibility agrees with the PostgreSQL
+     16 documentation.
+  3. **Requiring `outcome_code` needs an explicit contract correction.** The
+     frozen `TaskCompletionInput` makes the field optional and accepts null.
+     G6-8 (ii) (a) refuses both. That is a reasonable narrowing, but it must
+     appear in the effective contract, with the application and the
+     contract generator using the same validation, on the precedent of
+     CORRECTION-004. The four codes' stated meanings are not objected to,
+     provided `TASK_INFORMATION_OBTAINED` is never read as an automatic
+     raise of a verification level, nor as proof that the information is
+     true.
+- **G6-11:** treat `stored: NEW/EXISTING` as a recorded fact of storage. It
+  cannot be re-derived from the match row alone after the run. The
+  reconstruction test must separate verifying this recorded fact from
+  recomputing the decisions from the inputs.
+- **F6-12 stays declared.** If tasks are raised by the run, a task may point
+  to a diagnostic that the "latest" read does not return, because of the
+  `run_at` order. A test must show what staff will see in that case before
+  G6-4 is closed.
+- **Next:** revision 3 may present the race measurement, the form of the
+  contract correction, and the separation of the suggestion from the task's
+  trace. G6-1 to G6-12 and the text of `0007` are decided then. K06 stays
+  UNPROVEN and G4-5R open.
+
+**Revision 3's measurement** (`SLICE6-PLAN-MEASUREMENTS-R3.txt`, at
+`1fd7bdf`, twice, each on a freshly rebuilt scratch database; ours): F6-18.
+
+**Step 0, delivered with revision 2** (`SLICE6-PLAN-MEASUREMENTS.txt`,
 measured at `f7469e8` on a clean tree, twice, each on a freshly rebuilt
 scratch database; ours, not re-run by anyone else). Its results are F6-10 to
 F6-17 (§4); each rewritten decision cites them.
@@ -480,6 +537,45 @@ E2).**
   READ COMMITTED, the default of every command except the run, the second
   reads DONE once the first commits; under REPEATABLE READ it fails 40001.
 
+
+**Measured for revision 3** (`SLICE6-PLAN-MEASUREMENTS-R3.txt`), and read from
+the contract and the code:
+
+**F6-18 · The guard on cited observations needs a lock taken by the
+completion (R1–R3).** The completion C and a change U race on one
+observation O, under READ COMMITTED.
+- **The guard alone (part D):**
+  - with U an UPDATE of O's body, in either order, neither transaction
+    waits, both commit, and the event cites a body changed after the
+    citation (R1a, R1b). The FK check takes FOR KEY SHARE, and a non-key
+    UPDATE takes FOR NO KEY UPDATE; they do not conflict (PostgreSQL 16
+    documentation, §13.3.2, Table 13.3);
+  - with U a DELETE: U waits on C's FK lock, then the guard refuses it
+    (R1c); or C's FK check waits on U, then fails 23503 (R1d).
+- **The guard plus a FOR SHARE lock taken by C on O, after the task's lock
+  and before the event:**
+  - C first: U waits, then the guard refuses it (R2a, R2c);
+  - U first, an UPDATE: C waits, then reads the changed body and cites it.
+    Nothing can change it afterwards (R2b);
+  - U first, a DELETE: C waits, its read finds no row, and it refuses,
+    writing nothing (R2d).
+- **Under REPEATABLE READ,** R2b's order makes the completion fail 40001
+  (R3).
+
+**F6-19 · The existing narrowing mechanism cannot express the outcome
+correction.**
+- `load_request_body_narrowings` (`src/turab/auth/contract.py`) accepts an
+  inline body only, and only `require`. The frozen
+  `postTasksTaskIdComplete` body is `$ref: TaskCompletionInput`
+  (`openapi_v0.2.3.yaml:1551`), a component used by this operation alone
+  (one `$ref` in the file).
+- Its `outcome_code` is `type: [string, null]`, with no enum. Requiring the
+  field alone would still accept null.
+
+**F6-20 · The run's response has no place for a task trace.** The frozen
+201 of `postRequestsRequestIdMatchingRun` is `{matches, diagnostic}`. A
+field reporting task outcomes would widen the contract.
+
 ---
 
 ## 5. Decisions needed — none is taken by this plan
@@ -578,12 +674,42 @@ E2).**
       - Each task insert runs under its own savepoint, as the run's match
         inserts do.
       - A 23505 on this index means the work is already open. The savepoint
-        is rolled back, and the suggested action records
-        `"task": "ALREADY_OPEN"`. The existing task may have been committed
-        after the run's snapshot, so its id is not read.
+        is rolled back and the run continues. **Nothing is written about it**
+        (revision 3, review of `1fd7bdf`, point 2).
+    - **The suggestions stay what was computed** (revision 3):
+      - `suggested_actions` is written once, from the run's evaluations,
+        before any task insert. Nothing about tasks enters it.
+      - So G6-11's replay re-derives it from its stored inputs alone.
+    - **The trace of task creation is the task rows themselves**, a source
+      already defined (the run, audited by `audit_rows`):
+      - each task the run creates names `diagnostic_run_id` and the
+        suggestion's subject key in its `payload`;
+      - every HIGH suggestion is attempted, and an attempt has exactly two
+        outcomes: the task is created, or the index refuses it (any other
+        error fails the whole run, writing nothing).
+      - So a HIGH suggestion of diagnostic D with no task naming D in its
+        payload is one whose work was already open. That reading is exact
+        from stored rows.
+      - **Its stated limit:** it holds while no task is deleted. No path
+        deletes a task, and a task with a completion event cannot be
+        deleted (F6-16, the FK RESTRICT); an OPEN one can be, by a
+        superuser (K06).
+      - No other trace is proposed. The run's response has no field for one
+        (F6-20).
     - **The index covers only the run's tasks**
       (`payload->>'source' = 'DIAGNOSTIC'`). Slice 3's and Slice 5's tasks
       are outside it and unchanged.
+    - **Tests (revision 3):**
+      - **replay:** the reconstruction re-derives `suggested_actions` from
+        the stored inputs, and never reads `tasks`;
+      - **re-run:** a second run on unchanged facts writes a second
+        diagnostic with an identical `suggested_actions` and no new task;
+        the existing task still names the first diagnostic;
+      - **concurrent conflict:** two runs on one subject, the second
+        inserting while the first holds its uncommitted task. A
+        `pg_blocking_pids` witness shows the wait. One task results; it
+        names one of the two diagnostics. Both diagnostics replay, and
+        their suggestions are equal.
   - **(iv) The relation with Slice 5's NMI task (F6-14).**
     - **(a) Recommended: independent records.**
       - An NMI task records a reviewer's request. G5-4 (a) decided that a
@@ -600,7 +726,25 @@ E2).**
       - an NMI task's reason may name other work than its stored
         recommendation (F6-14), so the skip could suppress work no reviewer
         asked for.
-  - **(v) Cost:** it changes Slice 4's approved boundary (G4-15 D1: "no task
+  - **(v) What staff see when a task's diagnostic is not "the latest"
+    (F6-12), a test before G6-4 is closed (revision 3).**
+    - **Built at service level:** two sessions, the real run function, and
+      a controlled start order. Run A starts first and raises the task. Run B
+      starts later, finds the work open, and commits last.
+    - **What the test asserts staff see:**
+      - `GET /requests/{id}/diagnostic` returns B's row: the later
+        `run_at`, F6-12;
+      - `GET /tasks` returns the task, whose `payload.diagnostic_run_id`
+        names A's row;
+      - no contract operation reads a diagnostic by id, so A's row is not
+        reachable from the task through the API;
+      - the task is therefore self-contained: its type, priority,
+        `reason_code`, `match_id` and `payload.subject` state the work
+        without A's row;
+      - `GET /matches/{match_id}` returns the match the task names.
+    - Also asserted: when B's facts changed and B no longer suggests the
+      subject, the task stays OPEN and says so by itself (G6-10 (a)).
+  - **(vi) Cost:** it changes Slice 4's approved boundary (G4-15 D1: "no task
     created"). `matching_run.py` becomes a third writer of `tasks`, after
     `identity.py` and `match_review.py`. That is a writer change requiring
     this decision.
@@ -748,16 +892,31 @@ E2).**
     | `TASK_PARTY_UNREACHABLE` | The party could not be reached | تعذر الوصول إلى الطرف |
     | `TASK_NO_LONGER_NEEDED` | The task is no longer needed | لم تعد المهمة لازمة |
 
-    - `outcome_code` is then REQUIRED, and only these four are accepted;
-      anything else is **422** `TASK_OUTCOME_NOT_ALLOWED`. Requiring it
-      narrows the contract's nullable field; it adds nothing to it.
+    - `outcome_code` is then REQUIRED, NOT NULL, and one of these four.
+      The frozen `TaskCompletionInput` makes it optional and nullable, so
+      this is a **contract correction**, CORRECTION-005 (§5.2), applied in
+      the effective contract. The application and the generator of the
+      effective contract validate it with the same loader, on
+      CORRECTION-004's precedent.
+      - A body that violates it is refused as any body that violates the
+        effective schema: 422, writing nothing.
+      - **The loader must first be extended** (F6-19), as §5.2 states.
+        That extension is code, written only once this decision is
+        approved.
     - **What a code means, and does not:**
       - `TASK_INFORMATION_OBTAINED` says only that the work was done;
+      - it raises no verification level, automatically or otherwise, and
+        it proves nothing about whether the information is true (review of
+        `1fd7bdf`);
       - the fact itself is recorded through its own command (Slice 3's
-        truth layer);
-      - the code changes no fact (v).
+        truth layer), with its own evidence and level;
+      - the code changes no fact (v). A test completes a VERIFY_DOCUMENT
+        task with it and asserts that no claim, resolved value, attribute,
+        verification level, match or opportunity changed.
   - **(b) Null only.**
-    - `outcome_code` must be null; any code is **422**.
+    - `outcome_code` must be null or absent; any code is **422**. That
+      also narrows the frozen type, so it too is a correction (§5.2's
+      mechanism, with `enum: [null]`).
     - **The meaning of null, stated:** "this task is done; its outcome is
       not coded; what happened is in the note and the evidence".
     - **Its limits:** no structured outcome exists for reporting or later
@@ -785,6 +944,33 @@ E2).**
     it said at completion.
   - Both are proven at trigger level only, under the superuser role (K06
     UNPROVEN).
+  - **Under (a), the completion locks the observation (revision 3,
+    F6-18).** Part D alone does not keep the cited body (R1a, R1b). The
+    command's order, under READ COMMITTED:
+    1. lock the task `FOR UPDATE`, and check that it is OPEN or
+       IN_PROGRESS (409 otherwise);
+    2. if `evidence_observation_id` is given, lock that observation
+       `FOR SHARE`. If no row is found, including one deleted while it
+       waited, refuse with **422** `EVIDENCE_OBSERVATION_NOT_FOUND`,
+       writing nothing (R2d);
+    3. insert the event;
+    4. set the task DONE with `completed_at`.
+
+    - **Why FOR SHARE:** it conflicts with the FOR NO KEY UPDATE of a body
+      UPDATE and with the FOR UPDATE of a DELETE; FOR KEY SHARE, the FK's
+      lock, conflicts with neither UPDATE (Table 13.3).
+    - **Why this order:** task, then observation. No other path locks an
+      observation and then a task: no application path writes
+      observations at all (step 0). So the order cannot invert.
+    - **The body cited is the one committed when the lock is granted.**
+      After the completion commits, part D refuses any change (R2a, R2c).
+      A change committed before the lock is granted is the body cited
+      (R2b).
+    - **Tests:** R2a–R2d as tests, each with a `pg_blocking_pids` witness
+      of the wait and the final rows asserted. A mutation removing the
+      FOR SHARE must turn R2a into R1a's result.
+  - **Under (b),** no observation lock is taken: without part D, the lock
+    would only delay a change it cannot refuse.
 - **(v) No side effect on facts.**
   - Completing a task changes no property, offer, request, claim,
     verification level or consent.
@@ -855,20 +1041,35 @@ E2).**
 - **The input document.** `turab.diagnostic-input/2` adds the requested
   location chains to format 1's document. The match ids are not in it: they
   are outputs, and an identical input must give an identical hash.
-- **Replay.**
-  - A reconstruction, run as a test in every run of the suite, reads the
-    diagnostic row.
-  - It loads the match rows that `evaluated` names, by id and in that
-    order, and checks each one's `input_hash` against the entry.
-  - It re-derives `suggested_actions`, `relaxation_scenarios` and the
-    format-2 summary from those rows and the stored chains. Any difference
-    fails.
-  - It never infers the evaluated matches from `evaluated_at` (F6-11).
+- **Replay, in two separate checks (revision 3, review of `1fd7bdf`).**
+  - **(R) The recorded facts are verified, not re-derived.** `evaluated`
+    and `stored` are what the run recorded when it stored or found each
+    match. They cannot be re-derived after the run: a reused match may have
+    been committed by a concurrent run and read on another connection
+    (Slice 4, measured D5). The check verifies only their consistency with
+    the stored rows:
+    - every listed `match_id` exists, and its `input_hash` equals the
+      entry's;
+    - an entry `NEW` has `evaluated_at` equal to the diagnostic's `run_at`
+      (one transaction, one instant).
+    - An entry `EXISTING` is checked only for existence and hash. Nothing
+      is inferred from its timestamps.
+  - **(D) The decisions are recomputed from the inputs:**
+    - the match rows `evaluated` names, by id and in that order;
+    - the stored location chains.
+
+    From these it re-derives `suggested_actions`, `relaxation_scenarios`
+    and the computed parts of the format-2 summary, and compares them. Any
+    difference fails. It never infers the evaluated matches from
+    `evaluated_at` (F6-11), and never reads `tasks` (G6-4 (iii)).
+  - A failure names which check failed, (R) or (D).
 - **The test the review asked for:**
   - two runs of one request, with an offer's price changed between them;
   - run 2's `evaluated` names P1's REUSED match (`EXISTING`, run 1's id)
     and P2's NEW one;
-  - both diagnostic rows replay;
+  - both diagnostic rows pass (R) and (D);
+  - a stored entry altered in the test's copy (a wrong `stored`, a wrong
+    hash) fails (R), not (D); a stored suggestion altered fails (D);
   - after a requested location is re-parented, the replay still gives the
     stored scenario.
 - **Blocks:** step 3.
@@ -940,7 +1141,9 @@ existing writer of `tasks` puts a `source` key in the payload
 `match_review.py`: `match_review_id`, `next_action`), so the index applies
 to no task they write.
 
-**D. A cited observation is kept as cited** (G6-8 (iv) (a)):
+**D. A cited observation is kept as cited** (G6-8 (iv) (a)). **Not
+sufficient alone** (F6-18): it holds only with the completion's FOR SHARE
+lock of G6-8 (iv), which is part of the same decision.
 
 ```sql
 CREATE FUNCTION turab.prevent_cited_observation_change()
@@ -967,6 +1170,69 @@ CREATE TRIGGER trg_cited_observation_unchanged
   - No application path deletes a source, a party or an account (grep of
     `src/` at `f7469e8`).
   - Step 1's tests prove this consequence by measurement.
+
+
+### 5.2 CORRECTION-005, proposed (for approval; not written)
+
+**Kind:** a request-body narrowing, through the corrections overlay, on
+CORRECTION-004's precedent. Only under G6-8 (ii) (a), or, in the form
+`enum: [null]`, (b).
+
+**What it would add to `docs/contract/CONTRACT_CORRECTIONS.yaml`:**
+
+```yaml
+  - id: CORRECTION-005
+    decision: "G6-8 (ii) (a), Slice 6 plan revision 3 (docs/gate/SLICE_6_PLAN.md)"
+    approved: "<the date of approval>"
+    operation_id: postTasksTaskIdComplete
+    require: [outcome_code]
+    non_null: [outcome_code]
+    enum:
+      outcome_code: [TASK_INFORMATION_OBTAINED, TASK_INFORMATION_UNAVAILABLE,
+                     TASK_PARTY_UNREACHABLE, TASK_NO_LONGER_NEEDED]
+    frozen_defaults: {}
+    rationale: >-
+      A completion states its outcome, from the codes of category
+      TASK_OUTCOME (migration 0007, part B). The general seeded codes are
+      accepted by the FK but describe no task outcome (measured,
+      SLICE6-PLAN-MEASUREMENTS.txt §E3).
+    runtime_rule: >-
+      outcome_code is required, not null, and one of the four codes. A code
+      changes no fact and raises no verification level.
+    reference: docs/contract/CORRECTION-005-task-outcome-code.md
+```
+
+**What the loader must accept first (F6-19); each check is a narrowing
+check:**
+- **A body given by `$ref`** to a component:
+  - accepted only when that component is referenced by this operation
+    alone (counted in the frozen file);
+  - the generator writes an operation-local, narrowed copy into the
+    effective contract;
+  - the frozen component stays as it is.
+- **`non_null`:** each field's frozen type must include `null`; the
+  effective type removes it.
+- **`enum`:** each field's frozen schema must have no enum, or a superset
+  of the given values; the given values must be of the field's type.
+- **Refused, as today:** an unknown key, a field not in the body, a second
+  narrowing of the operation, a stale `frozen_defaults`.
+
+**One validation, in three places:**
+- the generator and the runtime use the same loader (as CORRECTION-004);
+- the route's body model refuses what the effective schema refuses. A test
+  runs the same bodies through both:
+  - absent;
+  - null;
+  - an empty string;
+  - each of the four codes;
+  - a seeded general code;
+  - an unknown code;
+- a test asserts that the enum equals the ACTIVE codes of category
+  TASK_OUTCOME in the database.
+
+**Its note,** `CORRECTION-005-task-outcome-code.md`, follows CORRECTION-004's
+form: the frozen text (`openapi_v0.2.3.yaml:4727–4743`), the measured
+reason, the effective text, and why it only narrows.
 
 ---
 
@@ -1020,7 +1286,8 @@ CREATE TRIGGER trg_cited_observation_unchanged
 ### 6.5 Measurements (step 0, delivered)
 
 Delivered in `evidence/SLICE6-PLAN-MEASUREMENTS.txt` (sections L, D, T, E,
-S). Its results are F6-10 to F6-17.
+S). Its results are F6-10 to F6-17. Revision 3's race is in
+`evidence/SLICE6-PLAN-MEASUREMENTS-R3.txt` (F6-18).
 
 **What it could not measure:**
 - the size of `blocker_summary` format 2, which does not exist before its
@@ -1058,7 +1325,7 @@ S). Its results are F6-10 to F6-17.
 |---|---|---|
 | 0 | the measurements of §6.5, folded into revision 2; no code | **done** (authorized in the review of `f7469e8`); `SLICE6-PLAN-MEASUREMENTS.txt` |
 | 1 | migration `0007`, the parts of §5.1 whose decisions are approved, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv) |
-| 2 | `getTasks` and `postTasksTaskIdComplete` | G6-8, G6-9 |
+| 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2), if G6-8 (ii) is decided | G6-8, G6-9 |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11 |
 | 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10 | G6-4, G6-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4) | all |

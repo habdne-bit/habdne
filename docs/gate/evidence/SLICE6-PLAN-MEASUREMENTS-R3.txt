@@ -1,0 +1,313 @@
+TURAB — Slice 6 plan, revision 3: a completion citing an observation, raced with a change to it
+================================================================================================
+Recorded : 2026-10-15 08:41:06 UTC
+Tree     : commit 1fd7bdfb015f839d74359f6ff99e5198194f2f70 (plan revision 2); working
+           tree CLEAN before the run, CLEAN after it
+Source fingerprint: 9e6c68cc5c12971ff8d4e188b029e3c9b65266fe0802b00bee3cf5349ba584d7
+Database : a SCRATCH database, turab_s6_probe, rebuilt just before the run by
+           `db/dev/reset_db.sh --fixtures` (frozen schema v0.2.3, master seed,
+           migrations 0002-0006, dev fixtures).
+Server   : PostgreSQL 16.13
+
+What this is. The measurement the review of 1fd7bdf asks for (point 1): the
+candidate guard of plan §5.1 part D, raced in both orders, without and with a
+lock taken by the completion on the observation. No Slice 6 code exists; the
+completion is written by plain SQL as the planned command would write it,
+under READ COMMITTED (the default of every command except the run). The
+candidate trigger exists only for the run and is dropped at its end. The run
+was made twice, each on a freshly rebuilt database; the two outputs are
+identical once generated ids are removed. These results are ours; nobody else
+has re-run them.
+
+C = the completion: lock the task FOR UPDATE; [remedy: lock the observation
+    FOR SHARE and read its body]; INSERT the event citing it; task -> DONE.
+U = a change to the observation: UPDATE of its body, or DELETE.
+
+Findings:
+  R1  The guard alone does NOT keep the body cited at completion.
+      R1a (C first) and R1b (U first), U an UPDATE: neither waits; both
+      commit; the event cites O and O's body is the changed one. The event's
+      FK check takes FOR KEY SHARE on O, and a non-key UPDATE takes FOR NO
+      KEY UPDATE; the two do not conflict (PostgreSQL 16 documentation,
+      §13.3.2, Table 13.3). The guard's EXISTS does not see an event that is
+      not yet committed (R1a), and C's insert does not wait for U (R1b).
+      R1c (C first, U a DELETE): U waits (DELETE takes FOR UPDATE, which
+      conflicts with FOR KEY SHARE), then the guard refuses it: it sees C's
+      committed event. R1d (U first, DELETE): C's FK check waits, then fails
+      23503; no event, the task stays OPEN.
+  R2  With C locking O FOR SHARE after the task and before the event, the
+      cited body cannot change after the citation, in either order.
+      R2a (C first, UPDATE): U waits on C, then the guard refuses it; the
+      body is the one C read. R2b (U first, UPDATE): C waits on U, then reads
+      the CHANGED body under its lock and cites that; nothing can change it
+      afterwards. R2c (C first, DELETE): U waits, then is refused. R2d (U
+      first, DELETE): C waits; its FOR SHARE read then finds no row, and the
+      command refuses, writing nothing.
+      FOR SHARE conflicts with FOR NO KEY UPDATE and FOR UPDATE (Table 13.3);
+      FOR KEY SHARE does not conflict with FOR NO KEY UPDATE.
+  R3  Under REPEATABLE READ, R2b's order makes the completion fail 40001
+      ("could not serialize access due to concurrent update"): the reason
+      the completion is planned READ COMMITTED.
+
+The run's output (run 2 of 2), verbatim:
+----------------------------------------------------------------------
+Database : turab_s6_probe | PostgreSQL 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu
+Commit   : 1fd7bdfb015f839d74359f6ff99e5198194f2f70
+Migrations: 0006_opportunity_history
+
+==============================================================================
+R1  The candidate guard alone (plan §5.1 part D), no lock taken by C
+==============================================================================
+  R1a: C first, U = UPDATE [READ COMMITTED]
+     U waited on the other: False
+     C: committed | U: committed
+     final: observation body = BODY-CHANGED; event = cites O; task = DONE
+  R1b: U first, U = UPDATE [READ COMMITTED]
+     C waited on the other: False
+     C: committed | U: committed
+     final: observation body = BODY-CHANGED; event = cites O; task = DONE
+  R1c: C first, U = DELETE [READ COMMITTED]
+     U waited on the other: True
+     C: committed | U: REFUSED P0001: Observation b9ad20ac-37d6-4e68-aa70-8510886f2850
+     final: observation body = BODY-AT-CITATION; event = cites O; task = DONE
+  R1d: U first, U = DELETE [READ COMMITTED]
+     C waited on the other: True
+     C: REFUSED 23503: insert or update on table "task_completion_events" violates foreign key constraint "task_c | U: committed
+     final: observation body = DELETED; event = none; task = OPEN
+
+==============================================================================
+R2  The guard, with C locking O FOR SHARE after the task, before the event
+==============================================================================
+  R2a: C first, U = UPDATE, remedy [READ COMMITTED]
+     U waited on the other: True
+     C: committed | U: REFUSED P0001: Observation 924be550-4bd4-4743-b580-621edba4f49a
+     body C read under its FOR SHARE lock: BODY-AT-CITATION
+     final: observation body = BODY-AT-CITATION; event = cites O; task = DONE
+  R2b: U first, U = UPDATE, remedy [READ COMMITTED]
+     C waited on the other: True
+     C: committed | U: committed
+     body C read under its FOR SHARE lock: BODY-CHANGED
+     final: observation body = BODY-CHANGED; event = cites O; task = DONE
+  R2c: C first, U = DELETE, remedy [READ COMMITTED]
+     U waited on the other: True
+     C: committed | U: REFUSED P0001: Observation c577c008-7841-494c-87f3-e0964cc9543f
+     body C read under its FOR SHARE lock: BODY-AT-CITATION
+     final: observation body = BODY-AT-CITATION; event = cites O; task = DONE
+  R2d: U first, U = DELETE, remedy [READ COMMITTED]
+     C waited on the other: True
+     C: REFUSED by the command: its FOR SHARE read finds no row; rolled back | U: committed
+     body C read under its FOR SHARE lock: NO ROW (the observation is gone)
+     final: observation body = DELETED; event = none; task = OPEN
+
+==============================================================================
+R3  The same remedy if the completion ran REPEATABLE READ (not proposed)
+==============================================================================
+  R3b: U first, U = UPDATE, remedy [REPEATABLE READ]
+     C waited on the other: True
+     C: REFUSED 40001: could not serialize access due to concurrent update | U: committed
+     final: observation body = BODY-CHANGED; event = none; task = OPEN
+
+  candidate trigger dropped; triggers left on observations: 0
+----------------------------------------------------------------------
+
+The harness, verbatim (run: s6_probe_r3.py <repo root>, with PG* variables and
+PGDATABASE=turab_s6_probe):
+
+"""Slice 6 plan, revision 3: the race between a task completion citing an
+observation and a change to that observation (review of 1fd7bdf, point 1).
+
+Runs against a SCRATCH database built by `db/dev/reset_db.sh --fixtures`. It
+is not a test and it changes no file of the repository. There is no Slice 6
+code: the completion is written here by plain SQL, as the planned command
+would write it. The CANDIDATE trigger of plan §5.1 part D is created in the
+scratch database for the duration of the run and dropped at the end.
+
+Two writers race on one observation O:
+- C, a completion: [lock the task FOR UPDATE] [lock O FOR SHARE, remedy only]
+  INSERT the event citing O; UPDATE the task to DONE;
+- U, a change to O: UPDATE its body, or DELETE it.
+Each pair is run in both orders: C first (C holds its writes uncommitted while
+U starts), and U first.
+
+Usage: s6_probe_r3.py <repo root>   (PG* variables and PGDATABASE set)
+"""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import threading
+import time
+
+import psycopg
+
+ROOT = sys.argv[1]
+DB = os.environ["PGDATABASE"]
+CONNINFO = (f"host={os.environ['PGHOST']} user={os.environ['PGUSER']} "
+            f"password={os.environ['PGPASSWORD']} dbname={DB}")
+ACC_OPERATOR = "f3000000-0000-4000-8000-000000000002"
+
+TRIGGER_D = """
+CREATE FUNCTION turab.prevent_cited_observation_change()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM turab.task_completion_events
+              WHERE evidence_observation_id = OLD.observation_id) THEN
+    RAISE EXCEPTION 'Observation % is the evidence of a task completion and cannot change',
+      OLD.observation_id;
+  END IF;
+  RETURN CASE TG_OP WHEN 'DELETE' THEN OLD ELSE NEW END;
+END $$;
+CREATE TRIGGER trg_cited_observation_unchanged
+  BEFORE UPDATE OR DELETE ON turab.observations
+  FOR EACH ROW EXECUTE FUNCTION turab.prevent_cited_observation_change();
+"""
+
+
+def connect(autocommit=False, isolation="READ COMMITTED"):
+    c = psycopg.connect(CONNINFO, autocommit=autocommit)
+    c.execute("SET search_path = turab, public")
+    if not autocommit:
+        c.commit()
+        c.execute(f"SET TRANSACTION ISOLATION LEVEL {isolation}")
+    return c
+
+
+SETUP = connect(autocommit=True)
+
+
+def one(sql, **p):
+    return SETUP.execute(sql, p).fetchone()[0]
+
+
+def section(title):
+    print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
+
+
+def world():
+    obs = one("""INSERT INTO observations (kind, raw_text, payload, recorded_by_account_id)
+                 VALUES ('CALL_NOTE', 'BODY-AT-CITATION', '{}', %(a)s)
+                 RETURNING observation_id""", a=ACC_OPERATOR)
+    task = one("""INSERT INTO tasks (task_type, priority, title)
+                  VALUES ('VERIFY_DOCUMENT', 'HIGH', 'probe') RETURNING task_id""")
+    return obs, task
+
+
+def completion_steps(c, obs, task, remedy, record):
+    c.execute("SELECT status::text FROM tasks WHERE task_id = %s FOR UPDATE", (task,))
+    if remedy:
+        row = c.execute(
+            "SELECT raw_text FROM observations WHERE observation_id = %s FOR SHARE",
+            (obs,)).fetchone()
+        if row is None:
+            # The planned command refuses here (422: no such observation), and
+            # writes nothing: the transaction is rolled back.
+            record["body_read_by_C"] = "NO ROW (the observation is gone)"
+            raise LookupError("observation gone after the wait")
+        record["body_read_by_C"] = row[0]
+    c.execute("""INSERT INTO task_completion_events (task_id, outcome_code,
+                     evidence_observation_id, completed_by_account_id)
+                 VALUES (%s, NULL, %s, %s)""", (task, obs, ACC_OPERATOR))
+    c.execute("UPDATE tasks SET status = 'DONE', completed_at = now() WHERE task_id = %s",
+              (task,))
+
+
+def change_steps(u, obs, kind):
+    if kind == "UPDATE":
+        u.execute("UPDATE observations SET raw_text = 'BODY-CHANGED' "
+                  "WHERE observation_id = %s", (obs,))
+    else:
+        u.execute("DELETE FROM observations WHERE observation_id = %s", (obs,))
+
+
+def run_case(label, order, kind, remedy, isolation="READ COMMITTED"):
+    obs, task = world()
+    first, second = connect(isolation=isolation), connect(isolation=isolation)
+    record: dict = {}
+    if order == "C first":
+        c, u = first, second
+        completion_steps(c, obs, task, remedy, record)
+        holder, waiter, waiter_name = c, u, "U"
+
+        def later():
+            try:
+                change_steps(u, obs, kind)
+                u.commit()
+                record["U"] = "committed"
+            except psycopg.Error as e:
+                u.rollback()
+                record["U"] = f"REFUSED {e.sqlstate}: {e.diag.message_primary.split(' is the')[0]}"
+    else:
+        u, c = first, second
+        change_steps(u, obs, kind)
+        holder, waiter, waiter_name = u, c, "C"
+
+        def later():
+            try:
+                completion_steps(c, obs, task, remedy, record)
+                c.commit()
+                record["C"] = "committed"
+            except psycopg.Error as e:
+                c.rollback()
+                record["C"] = f"REFUSED {e.sqlstate}: {e.diag.message_primary[:90]}"
+            except LookupError:
+                c.rollback()
+                record["C"] = "REFUSED by the command: its FOR SHARE read finds no row; rolled back"
+    th = threading.Thread(target=later)
+    th.start()
+    time.sleep(0.4)
+    waited = one("SELECT %(h)s = ANY(pg_blocking_pids(%(w)s))",
+                 h=holder.info.backend_pid, w=waiter.info.backend_pid)
+    holder.commit()
+    record["C" if holder is c else "U"] = "committed"
+    th.join()
+    body = SETUP.execute("SELECT raw_text FROM observations WHERE observation_id = %s",
+                         (obs,)).fetchone()
+    event = SETUP.execute("""SELECT evidence_observation_id FROM task_completion_events
+                              WHERE task_id = %s""", (task,)).fetchone()
+    status = one("SELECT status::text FROM tasks WHERE task_id = %(t)s", t=task)
+    print(f"  {label}: {order}, U = {kind}{', remedy' if remedy else ''} [{isolation}]")
+    print(f"     {waiter_name} waited on the other: {waited}")
+    print(f"     C: {record.get('C')} | U: {record.get('U')}")
+    if remedy and "body_read_by_C" in record:
+        print(f"     body C read under its FOR SHARE lock: {record['body_read_by_C']}")
+    print(f"     final: observation body = {body[0] if body else 'DELETED'}; "
+          f"event = {'none' if event is None else ('cites O' if event[0] == obs else event[0])}; "
+          f"task = {status}")
+    first.close()
+    second.close()
+
+
+def main():
+    git = lambda *a: subprocess.run(["git", "-C", ROOT, *a], capture_output=True,
+                                    text=True).stdout.strip()
+    print("Database :", DB, "|", one("SELECT version()").split(",")[0])
+    print("Commit   :", git("rev-parse", "HEAD"))
+    print("Migrations:", one("SELECT version_num FROM alembic_version"))
+
+    SETUP.execute(TRIGGER_D)
+    try:
+        section("R1  The candidate guard alone (plan §5.1 part D), no lock taken by C")
+        run_case("R1a", "C first", "UPDATE", remedy=False)
+        run_case("R1b", "U first", "UPDATE", remedy=False)
+        run_case("R1c", "C first", "DELETE", remedy=False)
+        run_case("R1d", "U first", "DELETE", remedy=False)
+
+        section("R2  The guard, with C locking O FOR SHARE after the task, before the event")
+        run_case("R2a", "C first", "UPDATE", remedy=True)
+        run_case("R2b", "U first", "UPDATE", remedy=True)
+        run_case("R2c", "C first", "DELETE", remedy=True)
+        run_case("R2d", "U first", "DELETE", remedy=True)
+
+        section("R3  The same remedy if the completion ran REPEATABLE READ (not proposed)")
+        run_case("R3b", "U first", "UPDATE", remedy=True, isolation="REPEATABLE READ")
+    finally:
+        SETUP.execute("DROP TRIGGER trg_cited_observation_unchanged ON turab.observations")
+        SETUP.execute("DROP FUNCTION turab.prevent_cited_observation_change()")
+    left = one("""SELECT count(*) FROM pg_trigger
+                   WHERE tgrelid = 'turab.observations'::regclass AND NOT tgisinternal""")
+    print(f"\n  candidate trigger dropped; triggers left on observations: {left}")
+
+
+if __name__ == "__main__":
+    main()
