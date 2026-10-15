@@ -1,9 +1,11 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 1**
+## Implementation plan — **revision 2**
 
 **Status:** submitted for review. **No code for this slice exists, and none
 is written until this plan is approved.** Code is then written one approved
-step at a time, never ahead of its approval (§8).
+step at a time, never ahead of its approval (§8). Step 0 (measurements only)
+was authorized in the review of `f7469e8` and is delivered with this
+revision: `evidence/SLICE6-PLAN-MEASUREMENTS.txt`.
 
 **What this revision does not decide.** Every choice below that is not
 already fixed by a source is put to the reviewer as a decision (§5), with a
@@ -13,7 +15,52 @@ recommendation. A recommendation is not a decision.
 
 | rev | commit | what changed |
 |---|---|---|
-| 1 | the commit that adds this file | first plan |
+| 1 | `f7469e8` | first plan |
+| 2 | the commit that adds this revision | the review of `f7469e8` recorded; step 0 measured (`SLICE6-PLAN-MEASUREMENTS.txt`); G6-4 (iii)–(iv), G6-6, G6-8 and G6-11 rewritten on the measurements; F6-10 to F6-17 added; the text of migration `0007` proposed (§5.1) |
+
+**The review of `f7469e8`. Step 0 is AUTHORIZED, for measurements only, with
+no code. The decisions G6-1 to G6-12 and the implementation plan are NOT
+approved** in their revision-1 form. The reviewer checked the file's full
+sha256 (`589ba6a9…e3c`) against the one delivered.
+- **Four points for revision 2, before any implementation is approved:**
+  1. **G6-6 assumed one requested location.** `location_v2` accepts
+     `LOCATION IN` with several locations, and passes when the property lies
+     under ANY of them. The scenario must say which chain it chose among all
+     the requested locations, how a tie is broken, and store enough to
+     reproduce the result later. Measure an IN with two different locations,
+     not EQ alone.
+  2. **G6-11 did not say how the matches of an old diagnostic run are
+     known.** The row names no match; its hash reduces its input list to a
+     digest; a run may reuse an existing match row and still write a new
+     diagnostic row. Format 2 must keep an ordered, stored link to each
+     match and its input, and the exclusions. Test two runs of one request
+     with an offer changed between them and an existing match reused.
+  3. **G6-4 (iii)'s key was narrower than the subject of the work.**
+     `action.next@1` can name a specific OFFER as the subject of
+     CONFIRM_PRICE; the key could merge the work of two offers of one
+     property. Restricting it to OPEN lets a second task in while the first
+     is IN_PROGRESS. Build the key from `subject.entity`, `subject.id` and
+     the specific reason; state the relation between an NMI task and a
+     diagnostic task; measure the insert race with that key.
+  4. **G6-8 needs measurement of how the completion's evidence is kept and
+     what its outcome means.** The options allowed a general reason code that
+     describes no task outcome. `evidence_observation_id` is ON DELETE SET
+     NULL: verify what happens when the cited observation is deleted once an
+     append-only guard exists, and what remains of the evidence if the
+     observation's body is changed. Then offer an explicit choice between
+     dedicated outcome codes and accepting null within stated limits.
+- **Accepted:** F6-1's reading (150 million centimes = 1,500,000 DZD,
+  consistent with spec §14). I03's wording is recorded literally in the
+  test evidence; the frozen source is not changed.
+- **Accepted:** K06 stays UNPROVEN; this slice's closure evidence is not
+  called a new STOP GATE.
+- **Still deferred to the approval of their decisions:** writing `0007`,
+  the task paths, and any change to the run's writers.
+
+**Step 0, delivered with this revision** (`SLICE6-PLAN-MEASUREMENTS.txt`,
+measured at `f7469e8` on a clean tree, twice, each on a freshly rebuilt
+scratch database; ours, not re-run by anyone else). Its results are F6-10 to
+F6-17 (§4); each rewritten decision cites them.
 
 **Baseline:** Handoff v1.0.3, technical pack v0.2.3, frozen.
 **Authority for the scope:** `docs/handoff/06_IMPLEMENTATION/IMPLEMENTATION_SLICES_v0.2.md:246–272`.
@@ -346,6 +393,93 @@ of that phrase" (G6-5 (ii)).
 when the match has any blocking unknown. A task raised by the run for the
 same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
 
+
+**Measured in step 0** (`SLICE6-PLAN-MEASUREMENTS.txt`, sections L, D, T,
+E):
+
+**F6-10 · A requested location's chain is stored nowhere, and can change
+(L1–L5).**
+- A match stores the requested ids (`request_value.value`), the property's
+  location and the property's chain (its snapshot). In L3, ADR-KSOUR, an
+  ancestor of the requested ADR-KSAR-TILILANE and not of the property, is
+  in none of the match, criterion or diagnostic rows.
+- `locations.parent_id` can be updated; the only trigger stamps
+  `updated_at`. No application path writes `locations` today.
+- With `LOCATION IN`, two requested locations can give different nearest
+  common ancestors (L1: C-ADRAR, COMMUNE; W-ADRAR, WILAYA), or the same one
+  (L2, L3). Every common ancestor lies on the property's chain, so a tie is
+  never between two different ancestors at one depth: it is between the
+  requested locations that reach the same ancestor, widened by the same or
+  by a different number of levels (L3: 2 against 1).
+
+**F6-11 · A diagnostic row cannot name the matches it evaluated (D).**
+- Run 2, after offer O2's price changed, reused P1's match (same id) and
+  stored a new one for P2. The diagnostic row has no column naming a match.
+- The reused match keeps run 1's `evaluated_at`: only P2's match carries
+  run 2's `run_at`.
+- The `input_hash` digests a document listing `[property, offer, match
+  input_hash]` per candidate; the document is not stored. The exclusions
+  are stored (`blocker_summary.excluded`, with ids).
+
+**F6-12 · "Latest" diagnostic is by transaction start (D4).** Of two
+overlapping runs, the one that committed last is not the one
+`read_latest_diagnostic` returns (`ORDER BY run_at DESC`, `run_at` being the
+transaction's start). Recorded, not changed: it is Slice 4's delivered read
+(§0's boundary). Tasks under G6-4 (a) are raised by the run from its own
+evaluations, never from "the latest" row, so they do not depend on it.
+
+**F6-13 · The narrow task key merges distinct work (T).** One property with
+two offers, both above the maximum and negotiable: `action.next@1` names two
+subjects (PROPERTY_OFFER A and B), each CONFIRM_PRICE on BUDGET_MAX. The key
+(request, property, type, criterion, ordinal) gives ONE key for the two; the
+key (entity, id, gate, criterion, ordinal, basis) gives two. Offer B also
+carries OFFER_STALE on the OFFER: the same type, another gate and basis.
+
+**F6-14 · An NMI task's reason and its stored recommendation can name
+different work (T3).** Slice 5's NMI task stores `payload =
+{match_review_id, next_action}`. A second NMI on the same match with the
+reason OFFER_STALE made a task with `reason_code = OFFER_STALE` and a
+`next_action.subject` naming the INFORMATION unknown on BUDGET_MAX.
+
+**F6-15 · Under REPEATABLE READ only a unique index prevents the duplicate
+(T4, T5).**
+- A partial unique index on the subject key: the second of two concurrent
+  inserts waits on the first, then fails 23505 once it commits.
+  `WHERE status = 'OPEN'` lets a second OPEN task in while the first is
+  IN_PROGRESS; `WHERE status IN ('OPEN','IN_PROGRESS')` refuses it.
+- A lock-then-check does NOT prevent it, with an advisory lock on the key
+  or with the request row `FOR NO KEY UPDATE`: the second transaction's
+  snapshot predates the first's commit, it sees no task, and two result.
+  The run is REPEATABLE READ (Slice 4, condition 1). PostgreSQL 16
+  documentation, §13.2.2: a Repeatable Read transaction "sees a snapshot as
+  of the start of the first non-transaction-control statement in the
+  transaction".
+
+**F6-16 · An append-only guard on completion events also forbids deleting
+the cited observation; it does not protect the observation's body (E1,
+E2).**
+- No trigger exists on `observations`, `evidence_artifacts`, `tasks` or
+  `task_completion_events`. Unlike claims, observations have no
+  hard-delete guard (schema lines 1302–1307).
+- Without a guard: the observation's body can be updated; the observation
+  can be deleted, and the event's `evidence_observation_id` silently
+  becomes NULL; an event can be updated and deleted; a DONE task can be
+  reopened.
+- With a candidate append-only trigger on the events: UPDATE of an event is
+  refused, and DELETE of the cited observation is refused too, because its
+  SET NULL action is an UPDATE of the event that fires the trigger. UPDATE
+  of the observation's body is still accepted.
+- No application path updates or deletes an observation today.
+
+**F6-17 · The outcome FK accepts any code, of any category, active or not
+(E3); and a second completion under REPEATABLE READ fails 40001 (E4).**
+- `DEAL_CONFIRMED` and `BUYER_REJECTED` (category OPPORTUNITY) are accepted,
+  as is a code made inactive; null is accepted; an unknown code is refused
+  (23503). No seeded category describes the outcome of a task.
+- Two completions of one task, the second waiting on `FOR UPDATE`: under
+  READ COMMITTED, the default of every command except the run, the second
+  reads DONE once the first commits; under REPEATABLE READ it fails 40001.
+
 ---
 
 ## 5. Decisions needed — none is taken by this plan
@@ -424,22 +558,48 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
     - a fixed English `title` per type, as Slice 5's `TASK_TITLES`;
     - `payload`:
       - `diagnostic_run_id`;
-      - the subject (entity, id, criterion, ordinal, basis);
+      - the subject (entity, id, gate, criterion, ordinal, basis);
       - `"source": "DIAGNOSTIC"`.
-  - **(iii) No duplicate open work.** A task is not raised when an OPEN
-    task already exists for the same `(request, property, task_type,
-    criterion, ordinal)`. The run writes a new diagnostic row on every run
-    (§2), so without this rule each re-run would raise the same task again.
-    Two concurrent runs must not both raise it. **Mechanism, to choose
-    after measurement (§6.5):**
-    - (iii-1) migration `0007`: a partial unique index on OPEN tasks over a
-      dedicated key column or an expression on `payload`;
-    - (iii-2) serialization by a lock taken by the run. Its interaction with
-      the approval's request lock (L-S5-3b) must be measured first.
-  - **(iv) Slice 5's NMI tasks** (F6-9) count as existing open work for
-    (iii) when their payload's `next_action.subject` names the same
-    criterion. The record of the reviewer's request is never merged into, or
-    replaced by, a run's task.
+  - **(iii) No duplicate open work (revision 2, on F6-13 and F6-15).**
+    - **The key is the subject of the work**, as `action.next@1` and
+      `diagnostic.actions@1` name it:
+      `(request_id, subject.entity, subject.id, subject.gate,
+      subject.criterion, subject.ordinal, subject.basis)`. The entity and id
+      are the request, the property or the specific OFFER. The gate,
+      criterion, ordinal and basis are the specific reason.
+      - Two offers of one property are two subjects (F6-13).
+      - Offer B's price unknown (INFORMATION, BUDGET_MAX) and its stale
+        terms (FRESHNESS, OFFER) are two subjects of the same type
+        CONFIRM_PRICE: two tasks.
+    - **It covers OPEN and IN_PROGRESS**, so work taken up is not raised
+      again (F6-15).
+    - **The mechanism is a partial unique index** (§5.1, part C). A lock
+      cannot do it inside the run's REPEATABLE READ snapshot (F6-15).
+      - Each task insert runs under its own savepoint, as the run's match
+        inserts do.
+      - A 23505 on this index means the work is already open. The savepoint
+        is rolled back, and the suggested action records
+        `"task": "ALREADY_OPEN"`. The existing task may have been committed
+        after the run's snapshot, so its id is not read.
+    - **The index covers only the run's tasks**
+      (`payload->>'source' = 'DIAGNOSTIC'`). Slice 3's and Slice 5's tasks
+      are outside it and unchanged.
+  - **(iv) The relation with Slice 5's NMI task (F6-14).**
+    - **(a) Recommended: independent records.**
+      - An NMI task records a reviewer's request. G5-4 (a) decided that a
+        repeated NMI makes a second task, so it cannot share the index.
+      - The run does not consult NMI tasks. An NMI task and a diagnostic
+        task may therefore name the same work. `GET /tasks` shows both;
+        each says its source (`match_review_id` against
+        `"source": "DIAGNOSTIC"`).
+      - No race and no inference.
+    - **(b) The run skips a subject named by an OPEN or IN_PROGRESS NMI
+      task's `payload.next_action.subject`.** Not recommended:
+      - the check reads the run's snapshot, so an NMI committed after it is
+        not seen (F6-15);
+      - an NMI task's reason may name other work than its stored
+        recommendation (F6-14), so the skip could suppress work no reviewer
+        asked for.
   - **(v) Cost:** it changes Slice 4's approved boundary (G4-15 D1: "no task
     created"). `matching_run.py` becomes a third writer of `tasks`, after
     `identity.py` and `match_review.py`. That is a writer change requiring
@@ -506,18 +666,47 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
   them, and R9.5's allow-list tests keep it so.
 - **Blocks:** step 3.
 
-### G6-6 · The location magnitude
+### G6-6 · The location magnitude (revision 2, on F6-10)
 
-- **Recommendation:** the nearest common ancestor of the property's location
-  and the requested location, with its `location_type` (WILAYA, COMMUNE,
-  AREA, KSAR, NEIGHBORHOOD, LANDMARK, OTHER).
-  - Stated as `{"widen_to": <location id>, "level": <location_type>}`. For
-    example: the property lies in the same COMMUNE as the requested
-    neighbourhood. If none exists: `{"widen_to": null, "level": "NONE"}`.
-  - **`adjacent_zone` is not produced:** the schema has no adjacency
-    (F6-3), and coordinates are optional. The plan does not approximate it.
-  - **The requested location's chain is read at the run and stored in the
-    scenario** (F6-2), so the scenario replays from the stored row.
+- **Which requested location.** A LOCATION criterion is EQ (one requested
+  location, including the column `primary_location_id`) or IN (several:
+  `location_v2` passes when the property lies under ANY of them). For a FAIL,
+  the function evaluates **every** requested location `w`, in the order the
+  stored `request_value.value` gives:
+  - `common(w)`: the first location of the property's chain (nearest first)
+    that is also in `w`'s chain; null if none;
+  - `property_below(w)`: the position of `common(w)` in the property's chain;
+  - `widened(w)`: its position in `w`'s chain, the number of levels `w`
+    would be widened by.
+- **The choice, total and reproducible:**
+  1. the smallest `property_below`: the nearest ancestor of the property,
+     so the narrowest widening;
+  2. then the smallest `widened`: the requested location closest to it
+     (L3: ADR-NEW-TIL, 1 level, before ADR-KSAR-TILILANE, 2 levels);
+  3. then the earliest position in `request_value.value`.
+
+  As F6-10 shows, step 1 already fixes WHICH ancestor. Steps 2 and 3 only
+  fix which requested location is named. A requested location with no common
+  ancestor is ranked last; if none has one, the scenario is
+  `{"widen_to": null, "level": "NONE"}`.
+- **Stated as:**
+  - `{"widen_to": <common id>, "level": <its location_type>,
+    "from": <the chosen w>, "levels_widened": <widened>}`;
+  - with every evaluated `w` listed with its own three values, so the
+    choice can be checked.
+  - The scenario reads "add `widen_to` to the requested locations". It is
+    taken only through `postRequestsRequestIdCriteria` (§3.1).
+- **What is stored, so the scenario replays without reading `locations`
+  again** (F6-10: chains can change):
+  - each requested location's chain, as read in the run's snapshot, as
+    `[{location_id, location_type}, …]`, nearest first;
+  - it is stored in the diagnostic row (§5, G6-11), and enters the
+    diagnostic's input document.
+  - The property's chain is already in the match's snapshot (format 2).
+- **`adjacent_zone` is not produced:** the schema has no adjacency (F6-3).
+- **The measured cases L1–L4 become the tests:** two different ancestors;
+  a full tie on one ancestor; one ancestor by different widenings; two
+  ancestors at two depths. EQ is tested as IN of one.
 - **Blocks:** step 3.
 
 ### G6-7 · Blocking and non-blocking unknowns in the diagnostic
@@ -534,31 +723,68 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
   - The three counts keep D3's meaning.
 - **Blocks:** step 3.
 
-### G6-8 · Completing a task (`postTasksTaskIdComplete`)
+### G6-8 · Completing a task (`postTasksTaskIdComplete`) (revision 2, on F6-16 and F6-17)
 
-- **(i) Which tasks.** An OPEN or IN_PROGRESS task is completed. A DONE or
-  CANCELLED task: **409** `TASK_NOT_OPEN`, writing nothing. A replay of the
-  same key returns the first response (K05). The task row is locked
-  `FOR UPDATE` before the check, so two completions of one task make one
-  event.
-- **(ii) `outcome_code`.** The contract types it nullable and any string.
-  - **(a) Recommended:** null, or an ACTIVE seeded code of category MATCH,
-    FRESHNESS, PERMISSION, IDENTITY or GENERAL. Anything else: **422**
-    `TASK_OUTCOME_NOT_ALLOWED`. The overlay narrows; no code is added.
-  - **(b)** New outcome codes ("DOCUMENT_CONFIRMED", "NO_RESPONSE", …) by a
-    migration, as Slice 2 did for request closure (`0002`). That adds
-    domain vocabulary and requires its own approval.
-- **(iii) `evidence_observation_id`.** Null, or an existing observation:
-  **422** otherwise. The plan does not require the observation to concern
-  the task's subject: the schema gives no link from an observation to a
-  property or a request except through claims and sources. A stricter check
-  would be new domain logic.
-- **(iv) Append-only.** Migration `0007` adds
-  `prevent_task_completion_event_update` (BEFORE UPDATE OR DELETE, as
-  `0005`'s triggers). Recommended: the contract says the completion
-  "Appends" (F6-5). This is a schema change and requires this decision.
-  K06's limit applies to it as to the others: proven at trigger level
-  only, under the superuser role.
+- **(i) Which tasks.**
+  - An OPEN or IN_PROGRESS task is completed.
+  - A DONE or CANCELLED task: **409** `TASK_NOT_OPEN`, writing nothing.
+  - A replay of the same key returns the first response (K05).
+  - The command runs READ COMMITTED, as every command but the run. It locks
+    the task row `FOR UPDATE` before the check. A second, concurrent
+    completion then waits, reads DONE, and is refused 409 (F6-17, E4).
+    Under REPEATABLE READ it would fail 40001 instead, a 500 the command
+    does not need.
+- **(ii) `outcome_code`: an explicit choice (F6-17).** The general codes are
+  withdrawn as an option: the FK accepts OPPORTUNITY codes such as
+  `DEAL_CONFIRMED`, which would misdescribe a task.
+  - **(a) Recommended: dedicated outcome codes**, by migration `0007`
+    (§5.1, part B), category `TASK_OUTCOME`. Proposed, for approval as
+    domain vocabulary:
+
+    | code | label_en | label_ar |
+    |---|---|---|
+    | `TASK_INFORMATION_OBTAINED` | The information asked for was obtained | تم الحصول على المعلومة المطلوبة |
+    | `TASK_INFORMATION_UNAVAILABLE` | The information asked for could not be obtained | تعذر الحصول على المعلومة المطلوبة |
+    | `TASK_PARTY_UNREACHABLE` | The party could not be reached | تعذر الوصول إلى الطرف |
+    | `TASK_NO_LONGER_NEEDED` | The task is no longer needed | لم تعد المهمة لازمة |
+
+    - `outcome_code` is then REQUIRED, and only these four are accepted;
+      anything else is **422** `TASK_OUTCOME_NOT_ALLOWED`. Requiring it
+      narrows the contract's nullable field; it adds nothing to it.
+    - **What a code means, and does not:**
+      - `TASK_INFORMATION_OBTAINED` says only that the work was done;
+      - the fact itself is recorded through its own command (Slice 3's
+        truth layer);
+      - the code changes no fact (v).
+  - **(b) Null only.**
+    - `outcome_code` must be null; any code is **422**.
+    - **The meaning of null, stated:** "this task is done; its outcome is
+      not coded; what happened is in the note and the evidence".
+    - **Its limits:** no structured outcome exists for reporting or later
+      learning (Definition of Done: "data needed by future learning is
+      preserved"). I02's "stores outcome code" is met only by storing null.
+- **(iii) `evidence_observation_id`.**
+  - Null, or an existing observation: **422** otherwise.
+  - The observation is not required to concern the task's subject. The
+    schema links an observation to a property or a request only through
+    claims and sources.
+- **(iv) The evidence, kept (F6-16).**
+  - **(a) Recommended: two guards, in `0007` (§5.1, parts A and D):**
+    - the events are append-only (part A). As measured, this also refuses
+      deleting an observation cited by an event, because the FK's SET NULL
+      is an UPDATE of the event. That consequence is intended ("evidence
+      must not be discarded") and is tested explicitly;
+    - an observation cited by an event cannot be updated or deleted
+      (part D), with its own message, so the refusal is not the SET NULL's
+      side effect.
+    - **Cost:** part D touches a Slice 3 table, `observations`. No
+      application path updates or deletes an observation today.
+  - **(b) Part A only.** The reference is kept, but the cited observation's
+    body can still change, with no audit trigger on `observations`. **The
+    stated limit:** the event proves which observation was cited, not what
+    it said at completion.
+  - Both are proven at trigger level only, under the superuser role (K06
+    UNPROVEN).
 - **(v) No side effect on facts.**
   - Completing a task changes no property, offer, request, claim,
     verification level or consent.
@@ -568,6 +794,11 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
   - The operator re-runs matching to see the effect.
 - **(vi) The response** is the contract's `Task`, now DONE. The note is not
   returned: `Task` has no field for it.
+- **(vii) A DONE task stays DONE.**
+  - No path reopens it. The schema permits it (F6-16), so a test asserts
+    the command never does.
+  - Guarding it in the database is not proposed: `tasks` has no history
+    trigger, and none is asked for.
 - **Blocks:** step 2.
 
 ### G6-9 · Listing tasks (`getTasks`)
@@ -599,20 +830,47 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
   and this adds a second write path to task state.
 - **Blocks:** step 4.
 
-### G6-11 · Versions and replay
+### G6-11 · Versions and replay (revision 2, on F6-11)
 
-- **Recommendation:**
-  - `diagnostic.actions@1`, `diagnostic.relaxation@1`, and, under G6-2 (a),
-    `diagnostic.value@1` (the high-value classification) are registered in
-    the registry and recorded in `registry_history.HISTORY` in the same
-    change.
-  - The diagnostic's input-hash format goes to
-    `turab.diagnostic-input/2`, adding the requested-location chains read
-    for G6-6.
-  - A reconstruction, run as a test on every run of the suite, re-derives
-    `suggested_actions`, `relaxation_scenarios` and `blocker_summary`
-    format 2 from the stored match rows and the stored chains. Any
-    difference fails.
+- **Versions.** `diagnostic.actions@1`, `diagnostic.relaxation@1`, and,
+  under G6-2 (a), `diagnostic.value@1` (the high-value classification) are
+  registered in the registry. They are recorded in
+  `registry_history.HISTORY` in the same change.
+- **The stored link from a diagnostic row to what it evaluated.**
+  `blocker_summary` format 2 (G6-7) carries `evaluated`: one entry per
+  candidate, in the run's evaluation order. Each entry has:
+  - `property_id` and `offer_id`;
+  - `match_id`: the row the run wrote, or the identical row it found and
+    reused (G4-13);
+  - the match's `input_hash`;
+  - `stored`: `NEW` or `EXISTING`.
+
+  It also carries:
+  - `requested_location_chains` (G6-6);
+  - the exclusions, as in format 1.
+
+  The table has no column for the link; the plan adds none. The size grows
+  with the candidates, one entry each (§6.5 could not measure format 2
+  before its code).
+- **The input document.** `turab.diagnostic-input/2` adds the requested
+  location chains to format 1's document. The match ids are not in it: they
+  are outputs, and an identical input must give an identical hash.
+- **Replay.**
+  - A reconstruction, run as a test in every run of the suite, reads the
+    diagnostic row.
+  - It loads the match rows that `evaluated` names, by id and in that
+    order, and checks each one's `input_hash` against the entry.
+  - It re-derives `suggested_actions`, `relaxation_scenarios` and the
+    format-2 summary from those rows and the stored chains. Any difference
+    fails.
+  - It never infers the evaluated matches from `evaluated_at` (F6-11).
+- **The test the review asked for:**
+  - two runs of one request, with an offer's price changed between them;
+  - run 2's `evaluated` names P1's REUSED match (`EXISTING`, run 1's id)
+    and P2's NEW one;
+  - both diagnostic rows replay;
+  - after a requested location is re-parented, the replay still gives the
+    stored scenario.
 - **Blocks:** step 3.
 
 ### G6-12 · K06 and the application role (not blocking this plan)
@@ -622,6 +880,93 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
 - **The question:** whether it is scheduled before Slice 6's code, in
   parallel, or after. Recommended: decided by the reviewer independently of
   this plan. Nothing here depends on it, and nothing here claims K06.
+
+
+### 5.1 The proposed text of migration `0007` (for approval; not written)
+
+`0007_task_work_and_evidence`, revising `0006_opportunity_history`. Four
+parts, each tied to its decision. A part whose decision is not approved is
+left out; the others stand alone. Structural only, except part B's codes.
+Proven at trigger level only, under the superuser role (K06 UNPROVEN).
+
+**A. The events are append-only** (G6-8 (iv)). It reuses the frozen
+function `prevent_immutable_history_change()`, as `0005`'s triggers do:
+
+```sql
+CREATE TRIGGER prevent_task_completion_event_change
+  BEFORE UPDATE OR DELETE ON turab.task_completion_events
+  FOR EACH ROW EXECUTE FUNCTION turab.prevent_immutable_history_change();
+```
+
+Consequence, measured (F6-16) and tested: deleting a cited observation is
+refused through the FK's SET NULL.
+
+**B. The task outcome codes** (G6-8 (ii) (a)), inserted as `0002` inserts
+its codes. `downgrade()` refuses, for the same reason as `0002`'s: an event
+may reference them.
+
+```sql
+INSERT INTO turab.reason_codes (code, category, label_ar, label_en, active)
+SELECT v.code, 'TASK_OUTCOME', v.label_ar, v.label_en, true
+  FROM (VALUES
+    ('TASK_INFORMATION_OBTAINED',    'تم الحصول على المعلومة المطلوبة', 'The information asked for was obtained'),
+    ('TASK_INFORMATION_UNAVAILABLE', 'تعذر الحصول على المعلومة المطلوبة', 'The information asked for could not be obtained'),
+    ('TASK_PARTY_UNREACHABLE',       'تعذر الوصول إلى الطرف', 'The party could not be reached'),
+    ('TASK_NO_LONGER_NEEDED',        'لم تعد المهمة لازمة', 'The task is no longer needed')
+  ) AS v(code, label_ar, label_en)
+ WHERE NOT EXISTS (SELECT 1 FROM turab.reason_codes r WHERE r.code = v.code);
+```
+
+**C. One open task per subject of work** (G6-4 (a) (iii)):
+
+```sql
+CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks (
+    request_id,
+    (payload -> 'subject' ->> 'entity'),
+    (payload -> 'subject' ->> 'id'),
+    (payload -> 'subject' ->> 'gate'),
+    (coalesce(payload -> 'subject' ->> 'criterion', '')),
+    (coalesce(payload -> 'subject' ->> 'ordinal', '')),
+    (payload -> 'subject' ->> 'basis'))
+  WHERE status IN ('OPEN', 'IN_PROGRESS')
+    AND payload ->> 'source' = 'DIAGNOSTIC';
+```
+
+Measured (T4) with the same key and status predicate, without the `source`
+predicate. The `source` predicate only narrows which rows the index
+covers; step 1's tests prove the race again with this exact text. Neither
+existing writer of `tasks` puts a `source` key in the payload
+(`identity.py`: alias, canonical, candidate and affected ids;
+`match_review.py`: `match_review_id`, `next_action`), so the index applies
+to no task they write.
+
+**D. A cited observation is kept as cited** (G6-8 (iv) (a)):
+
+```sql
+CREATE FUNCTION turab.prevent_cited_observation_change()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM turab.task_completion_events
+              WHERE evidence_observation_id = OLD.observation_id) THEN
+    RAISE EXCEPTION 'Observation % is the evidence of a task completion and cannot change',
+      OLD.observation_id;
+  END IF;
+  RETURN CASE TG_OP WHEN 'DELETE' THEN OLD ELSE NEW END;
+END $$;
+CREATE TRIGGER trg_cited_observation_unchanged
+  BEFORE UPDATE OR DELETE ON turab.observations
+  FOR EACH ROW EXECUTE FUNCTION turab.prevent_cited_observation_change();
+```
+
+- **Its message carries an id.** Like every trigger message (Slice 5,
+  §6.4.7), it never reaches a response body.
+- **A further consequence, stated (derived from the schema; not measured).**
+  `observations` references `sources`, `parties` and `user_accounts`, each
+  ON DELETE SET NULL (schema lines 498, 500, 505). Deleting one of them
+  would UPDATE a cited observation, and part D refuses that UPDATE.
+  - No application path deletes a source, a party or an account (grep of
+    `src/` at `f7469e8`).
+  - Step 1's tests prove this consequence by measurement.
 
 ---
 
@@ -672,19 +1017,16 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
   generator with `--check`, as STOP GATE E's, mapping each mandatory test
   and red-team case to its bound test. It is not called a STOP GATE.
 
-### 6.5 Measurements for revision 2 (PostgreSQL, no code)
+### 6.5 Measurements (step 0, delivered)
 
-1. Two concurrent runs on one request, each attempting the same task insert
-   (G6-4 (iii)). Measure under REPEATABLE READ:
-   - (iii-1): the partial unique index's error, and how the savepoint
-     recovers;
-   - (iii-2): the lock's waits, and its interaction with the approval's
-     request lock (L-S5-3b).
-2. Two concurrent completions of one task under `FOR UPDATE` (G6-8 (i)).
-3. The trigger of G6-8 (iv) against UPDATE and DELETE, and that the FK from
-   `task_completion_events` to `tasks` (RESTRICT) keeps a completed task.
-4. The size of `blocker_summary` format 2 and of the scenarios on the
-   largest seeded scenario. Reported, not optimized.
+Delivered in `evidence/SLICE6-PLAN-MEASUREMENTS.txt` (sections L, D, T, E,
+S). Its results are F6-10 to F6-17.
+
+**What it could not measure:**
+- the size of `blocker_summary` format 2, which does not exist before its
+  code;
+- the index of §5.1 part C with its `source` predicate. Step 1 measures
+  both, in its tests.
 
 ---
 
@@ -714,8 +1056,8 @@ same unknown (G6-4 (a)) would be a second, independent record (G6-4 (iv)).
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | the measurements of §6.5, folded into revision 2; no code | the review of this revision |
-| 1 | migration `0007`, if G6-8 (iv) and/or G6-4 (iii-1) are decided: its exact text in revision 2, tests, mutations | G6-4 (iii), G6-8 (iv) |
+| 0 | the measurements of §6.5, folded into revision 2; no code | **done** (authorized in the review of `f7469e8`); `SLICE6-PLAN-MEASUREMENTS.txt` |
+| 1 | migration `0007`, the parts of §5.1 whose decisions are approved, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv) |
 | 2 | `getTasks` and `postTasksTaskIdComplete` | G6-8, G6-9 |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11 |
 | 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10 | G6-4, G6-10 |

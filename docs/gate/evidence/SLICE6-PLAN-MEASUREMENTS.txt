@@ -1,0 +1,912 @@
+TURAB — Slice 6 plan: the facts the review of f7469e8 asks for, measured before any code
+=======================================================================================
+Recorded : 2026-10-15 05:48:55 UTC
+Tree     : commit f7469e857595bb14dcf2c04a73baa1fd3c535483 (plan revision 1); working
+           tree CLEAN before the run, CLEAN after it
+Source fingerprint: 9e6c68cc5c12971ff8d4e188b029e3c9b65266fe0802b00bee3cf5349ba584d7
+Database : a SCRATCH database, turab_s6_probe, rebuilt just before the run by
+           `db/dev/reset_db.sh --fixtures` (frozen schema v0.2.3, master seed,
+           migrations 0002-0006, dev fixtures).
+Server   : PostgreSQL 16.13
+
+What this is. Step 0 of Slice 6, authorized in the review of f7469e8 for
+measurements only: plan §6.5, and the four points of that review. No Slice 6
+code exists and no repository file was changed by the run. Matches and
+diagnostic rows come from the DELIVERED Slice 4 route; the NMI tasks from the
+DELIVERED Slice 5 route. Tasks, completion events, a candidate unique index
+and a candidate trigger are written by plain SQL to observe what the SCHEMA
+permits; each is rolled back or dropped, except the rows section D4 and the
+routes leave in the scratch database. The run was made twice, each on a
+freshly rebuilt database; the two outputs are identical once generated ids
+are removed. These results are ours; nobody else has re-run them.
+
+Findings, per section:
+  L  Review point 1 (G6-6). LOCATION IN with two requested locations.
+     L1: the two requested locations give DIFFERENT nearest common ancestors
+     with the property (C-ADRAR, a COMMUNE, through ADR-NEW-TIL; W-ADRAR, a
+     WILAYA, through C-TIMEKTEN). L2: two requested locations give the SAME
+     ancestor, each widened by one level: a full tie. L3: the same ancestor,
+     reached by widening one requested location 2 levels and the other 1.
+     L4: different ancestors at different depths (ADR-KSOUR, an AREA;
+     C-ADRAR). Every common ancestor lies on the PROPERTY's chain, so two
+     candidates at the same depth are the same location; a tie is only about
+     WHICH requested location is named and how far it is widened.
+     What a match stores: the requested ids (request_value.value), the
+     property's location and the property's chain (property snapshot). It
+     stores NO chain of a requested location: in L3, ADR-KSOUR (an ancestor
+     of the requested ADR-KSAR-TILILANE, off the property's chain) appears in
+     none of the match, criterion or diagnostic rows.
+     L5: locations.parent_id can be updated (the only trigger is
+     trg_locations_updated, which stamps updated_at), and no application
+     path writes locations. A chain read later may differ from the run's.
+  D  Review point 2 (G6-11). Two runs of one request, offer O2's price
+     changed between them: run 2 REUSED P1's match (same id, 23505 path) and
+     stored a NEW match for P2. match_diagnostic_runs has no column naming a
+     match. The reused match keeps run 1's evaluated_at, so "the matches of
+     run 2" cannot be read from evaluated_at: only P2's carries run 2's
+     run_at. Three matches are stored for the request; run 2 evaluated two.
+     The diagnostic's input_hash is the sha256 of a document listing
+     [property, offer, match input_hash] per candidate; the document is not
+     stored. The exclusions ARE stored (blocker_summary.excluded, with ids).
+     D4: run_at is the transaction START. Of two overlapping diagnostic
+     inserts, the one committed LAST (B) is not the one the delivered read
+     returns as latest (A).
+  T  Review point 3 (G6-4 (iii)). One property with two offers, both above
+     the maximum and negotiable: action.next@1 names TWO subjects
+     (PROPERTY_OFFER A and B), with the same type CONFIRM_PRICE and the same
+     criterion BUDGET_MAX. The key (request, property, type, criterion,
+     ordinal) gives 1 key for 2 subjects; the key (entity, id, gate,
+     criterion, ordinal, basis) gives 2. Offer B also carries a FRESHNESS
+     reason on the OFFER (OFFER_STALE): the same type, another gate and
+     basis.
+     T3: Slice 5's NMI task stores payload {match_review_id, next_action}.
+     A second NMI on the same match with the reason OFFER_STALE makes a task
+     whose reason_code is OFFER_STALE while its payload.next_action.subject
+     is the INFORMATION unknown on BUDGET_MAX: the reviewer's reason and the
+     stored recommendation may name different work.
+     T4: a partial unique index on the subject key, raced by two REPEATABLE
+     READ transactions: the second insert waits on the first
+     (pg_blocking_pids), then fails 23505 once the first commits. With
+     WHERE status = 'OPEN', a task moved to IN_PROGRESS lets a second OPEN
+     task in; with WHERE status IN ('OPEN','IN_PROGRESS'), it is refused.
+     T5: a lock-then-check under REPEATABLE READ does NOT prevent the
+     duplicate, with an advisory lock on the key or with the request row
+     FOR NO KEY UPDATE: B's snapshot predates A's commit, B sees 0 tasks,
+     and 2 tasks result. The run is REPEATABLE READ (Slice 4, condition 1).
+  E  Review point 4 (G6-8). No trigger on observations, evidence_artifacts,
+     tasks or task_completion_events. The FK from task_completion_events to
+     observations is ON DELETE SET NULL; to tasks, RESTRICT.
+     E1, without a guard: an observation's body (raw_text, payload) can be
+     UPDATED; the observation can be DELETED, and the event's
+     evidence_observation_id silently becomes NULL; an event can be updated
+     and deleted; a task with an event cannot be deleted (23503); a DONE task
+     can be reopened (status OPEN, completed_at NULL).
+     E2, with a candidate append-only trigger on task_completion_events:
+     UPDATE of the event is refused; DELETE of the cited observation is ALSO
+     refused, because its SET NULL action is an UPDATE of the event that
+     fires the trigger; UPDATE of the observation's body is still accepted.
+     E3: the FK accepts any existing code, whatever its category
+     (DEAL_CONFIRMED and BUYER_REJECTED, category OPPORTUNITY) and whether
+     or not it is active; null is accepted; an unknown code is refused
+     (23503). No seeded category describes the outcome of a task.
+     E4: two completions of one task, the second waiting on FOR UPDATE:
+     under READ COMMITTED (the server default, and the default of every
+     command but the run) the second reads DONE once the first commits;
+     under REPEATABLE READ it fails 40001.
+  S  §6.5 item 4. blocker_summary format 1 measured 239-360 bytes on this
+     probe's own runs (at most 2 candidates). Format 2 does not exist and
+     cannot be measured before its code.
+
+Not found by this run: any application path that updates or deletes an
+observation or a location (grep of src/ and db/ at this commit).
+
+The run's output (run 2 of 2), verbatim:
+----------------------------------------------------------------------
+/home/user/habdne/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+Database : turab_s6_probe | PostgreSQL 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu
+Commit   : f7469e857595bb14dcf2c04a73baa1fd3c535483
+Migrations: 0006_opportunity_history
+default_transaction_isolation: read committed
+
+==============================================================================
+L  Review point 1 (G6-6): LOCATION IN with two requested locations
+==============================================================================
+  the seeded tree, as read now (location -> parent):
+    ADR-AIRPORT          AREA     parent=C-ADRAR
+    ADR-CENTER           AREA     parent=C-ADRAR
+    ADR-KSAR-MERAGUEN    KSAR     parent=ADR-KSOUR
+    ADR-KSAR-TILILANE    KSAR     parent=ADR-KSOUR
+    ADR-KSOUR            AREA     parent=C-ADRAR
+    ADR-NEW-TIL          AREA     parent=C-ADRAR
+    C-ADRAR              COMMUNE  parent=W-ADRAR
+    C-TIMEKTEN           COMMUNE  parent=W-ADRAR
+    W-ADRAR              WILAYA   parent=None
+
+  L1 LOCATION IN ['ADR-NEW-TIL', 'C-TIMEKTEN'], property in ADR-AIRPORT
+     stored: compatibility=FAIL reason=LOCATION_MISMATCH rule=criterion.location@2
+     stored request_value.value = ['ADR-NEW-TIL', 'C-TIMEKTEN'] | property_value = ADR-AIRPORT
+     property snapshot location_ancestry = ['ADR-AIRPORT', 'C-ADRAR', 'W-ADRAR']
+     requested ADR-NEW-TIL        chain=['ADR-NEW-TIL', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = C-ADRAR (COMMUNE), requested widened by 1 level(s), property 1 level(s) below it
+     requested C-TIMEKTEN         chain=['C-TIMEKTEN', 'W-ADRAR']
+        nearest common ancestor = W-ADRAR (WILAYA), requested widened by 1 level(s), property 2 level(s) below it
+     ancestors of a requested location off the property's chain: none; found in the match, criterion or diagnostic rows: n/a
+
+  L2 LOCATION IN ['ADR-NEW-TIL', 'ADR-CENTER'], property in ADR-AIRPORT
+     stored: compatibility=FAIL reason=LOCATION_MISMATCH rule=criterion.location@2
+     stored request_value.value = ['ADR-NEW-TIL', 'ADR-CENTER'] | property_value = ADR-AIRPORT
+     property snapshot location_ancestry = ['ADR-AIRPORT', 'C-ADRAR', 'W-ADRAR']
+     requested ADR-NEW-TIL        chain=['ADR-NEW-TIL', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = C-ADRAR (COMMUNE), requested widened by 1 level(s), property 1 level(s) below it
+     requested ADR-CENTER         chain=['ADR-CENTER', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = C-ADRAR (COMMUNE), requested widened by 1 level(s), property 1 level(s) below it
+     ancestors of a requested location off the property's chain: none; found in the match, criterion or diagnostic rows: n/a
+
+  L3 LOCATION IN ['ADR-KSAR-TILILANE', 'ADR-NEW-TIL'], property in ADR-AIRPORT
+     stored: compatibility=FAIL reason=LOCATION_MISMATCH rule=criterion.location@2
+     stored request_value.value = ['ADR-KSAR-TILILANE', 'ADR-NEW-TIL'] | property_value = ADR-AIRPORT
+     property snapshot location_ancestry = ['ADR-AIRPORT', 'C-ADRAR', 'W-ADRAR']
+     requested ADR-KSAR-TILILANE  chain=['ADR-KSAR-TILILANE', 'ADR-KSOUR', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = C-ADRAR (COMMUNE), requested widened by 2 level(s), property 1 level(s) below it
+     requested ADR-NEW-TIL        chain=['ADR-NEW-TIL', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = C-ADRAR (COMMUNE), requested widened by 1 level(s), property 1 level(s) below it
+     ancestors of a requested location off the property's chain: ['ADR-KSOUR']; found in the match, criterion or diagnostic rows: none
+
+  L4 LOCATION IN ['ADR-KSAR-TILILANE', 'ADR-NEW-TIL'], property in ADR-KSAR-MERAGUEN
+     stored: compatibility=FAIL reason=LOCATION_MISMATCH rule=criterion.location@2
+     stored request_value.value = ['ADR-KSAR-TILILANE', 'ADR-NEW-TIL'] | property_value = ADR-KSAR-MERAGUEN
+     property snapshot location_ancestry = ['ADR-KSAR-MERAGUEN', 'ADR-KSOUR', 'C-ADRAR', 'W-ADRAR']
+     requested ADR-KSAR-TILILANE  chain=['ADR-KSAR-TILILANE', 'ADR-KSOUR', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = ADR-KSOUR (AREA), requested widened by 1 level(s), property 1 level(s) below it
+     requested ADR-NEW-TIL        chain=['ADR-NEW-TIL', 'C-ADRAR', 'W-ADRAR']
+        nearest common ancestor = C-ADRAR (COMMUNE), requested widened by 1 level(s), property 2 level(s) below it
+     ancestors of a requested location off the property's chain: none; found in the match, criterion or diagnostic rows: n/a
+
+  L5 are the chains fixed? an UPDATE of a requested location's parent, rolled back:
+  UPDATE locations SET parent_id (ADR-NEW-TIL -> C-TIMEKTEN)       ACCEPTED (rows=1)
+     triggers on locations: ['trg_locations_updated']
+
+==============================================================================
+D  Review point 2 (G6-11): which matches a diagnostic row evaluated
+==============================================================================
+  run 1 matches: P1=cc4d7e86 P2=cc2edeeb
+  run 2 (after O2's price changed): P1=cc4d7e86 (reused: True) P2=980be018 (new: True)
+  diagnostic rows for the request: 2
+  match_diagnostic_runs columns: ['diagnostic_run_id', 'request_id', 'request_version', 'matching_policy_id', 'matching_policy_version', 'request_snapshot', 'input_hash', 'run_at', 'ready_opportunity_count', 'actionable_unknown_count', 'near_match_count', 'blocker_summary', 'suggested_actions', 'relaxation_scenarios']
+  a column naming a match: ['near_match_count']
+  matches with evaluated_at = run 2's run_at: [('P2', '980be018')]
+  -> the reused P1 match carries run 1's evaluated_at; 'the matches of run 2' cannot be read from evaluated_at
+  matches stored for the request: 3 (run 2 evaluated 2 of them)
+  run 2's input_hash: baf6113656cdcc99... (sha256 of a document listing [property, offer, match input_hash] per candidate; the document is not stored)
+  exclusions stored in blocker_summary.excluded: True | excluded_counts: {}
+
+  D4 which row is 'latest': two diagnostic inserts in overlapping transactions (plain SQL, kept in the scratch database)
+  committed order: A then B; the read's 'latest' (run_at DESC): A
+  -> run_at is the transaction START: the run committed last is not necessarily the one read as latest
+
+==============================================================================
+T  Review point 3 (G6-4 (iii)): the subject of task work, and its key
+==============================================================================
+  one property, two offers, each above the maximum and negotiable; offer B's terms 40 days old
+  match on offer A: eligibility=NEED_MORE_INFORMATION
+     next_action: type=CONFIRM_PRICE priority=HIGH entity=PROPERTY_OFFER id=offer A criterion=BUDGET_MAX basis=PRICE_ABOVE_MAX_NEGOTIATION_UNCONFIRMED
+     reason: gate=INFORMATION subject=None criterion=BUDGET_MAX code=PRICE_NEGOTIATION_UNCONFIRMED basis=BLOCKING_UNKNOWN
+  match on offer B: eligibility=NEED_MORE_INFORMATION
+     next_action: type=CONFIRM_PRICE priority=HIGH entity=PROPERTY_OFFER id=offer B criterion=BUDGET_MAX basis=PRICE_ABOVE_MAX_NEGOTIATION_UNCONFIRMED
+     reason: gate=INFORMATION subject=None criterion=BUDGET_MAX code=PRICE_NEGOTIATION_UNCONFIRMED basis=BLOCKING_UNKNOWN
+     reason: gate=FRESHNESS subject=OFFER criterion=None code=OFFER_STALE basis=STALE
+  key (request, property, type, criterion, ordinal): 1 distinct for 2 subjects
+  key (entity, id, gate, criterion, ordinal, basis): 2 distinct
+  offer B also carries a FRESHNESS reason on its OFFER: the same type CONFIRM_PRICE, another gate and basis
+
+  T3 the NMI task of Slice 5, over HTTP, on offer A's match:
+     status 200
+     task_type=CONFIRM_PRICE priority=HIGH reason_code=PRICE_NEGOTIATION_UNCONFIRMED match_id=offer A's
+     payload keys: ['match_review_id', 'next_action']
+     payload.next_action.subject: entity=PROPERTY_OFFER id=offer A gate=INFORMATION criterion=BUDGET_MAX basis=PRICE_ABOVE_MAX_NEGOTIATION_UNCONFIRMED
+     a second NMI on the same match, reason OFFER_STALE: status 200, task_type=CONFIRM_PRICE reason_code=OFFER_STALE, its next_action.subject.gate=INFORMATION
+     -> the NMI task's reason_code is the reviewer's; its payload.next_action is the match's stored recommendation; the two may name different work
+
+  T4 a candidate partial unique index, raced by two REPEATABLE READ transactions (index created and dropped here)
+  WHERE status = 'OPEN': second insert waited on the first: True; after the first commits: REFUSED 23505 [probe_open_work]
+    ... first task IN_PROGRESS, a new OPEN one (WHERE status = 'OPEN') ACCEPTED (rows=1)
+  WHERE status IN ('OPEN','IN_PROGRESS'): second insert waited on the first: True; after the first commits: REFUSED 23505 [probe_open_work]
+    ... first task IN_PROGRESS, a new OPEN one (WHERE status IN ('OPEN','IN_) REFUSED 23505 [probe_open_work]: duplicate key value violates unique constraint "probe_open_work"
+
+  T5 the lock alternative under REPEATABLE READ: B's snapshot is taken before A commits; B then waits for the lock A held, and checks
+  advisory lock on the key        : B saw 0 existing task(s); B committed; tasks now: 2
+  request row FOR NO KEY UPDATE   : B saw 0 existing task(s); B committed; tasks now: 2
+
+==============================================================================
+E  Review point 4 (G6-8): what keeps the evidence of a completion
+==============================================================================
+  triggers on observations, evidence_artifacts, tasks, task_completion_events: none
+  FK claims_observation_id_fkey                                 on claims                   ON DELETE SET NULL
+  FK evidence_artifacts_observation_id_fkey                     on evidence_artifacts       ON DELETE SET NULL
+  FK fk_consent_evidence_observation                            on consent_grants           ON DELETE SET NULL
+  FK task_completion_events_evidence_observation_id_fkey        on task_completion_events   ON DELETE SET NULL
+  FK task_completion_events_task_id_fkey                        on task_completion_events   ON DELETE RESTRICT
+
+  E1 without an append-only trigger (each statement rolled back):
+  UPDATE observations SET raw_text, payload (the evidence's body)  ACCEPTED (rows=1)
+  DELETE the observation                                           ACCEPTED; the event's evidence_observation_id is now None
+  UPDATE task_completion_events SET note                           ACCEPTED (rows=1)
+  DELETE the completion event                                      ACCEPTED (rows=1)
+  DELETE the task (it has an event)                                REFUSED 23503 [task_completion_events_task_id_fkey]: update or delete on table "tasks" violates foreign key constraint "task_completion_events_task_id_fkey" on table "task_completion_events"
+  UPDATE the DONE task back to OPEN, completed_at NULL             ACCEPTED (rows=1)
+
+  E2 with a candidate append-only trigger on task_completion_events (created in this transaction, rolled back):
+  UPDATE task_completion_events SET note                           REFUSED P0001: append-only (probe)
+  DELETE the observation (its FK action is SET NULL)               REFUSED P0001: append-only (probe)
+  UPDATE observations SET raw_text, payload                        ACCEPTED (rows=1)
+
+  E3 outcome_code against reason_codes:
+  outcome_code = NOT_A_CODE                                        REFUSED 23503 [task_completion_events_outcome_code_fkey]: insert or update on table "task_completion_events" violates foreign key constraint "task_completion_events_outcome_code_fkey"
+  outcome_code = DEAL_CONFIRMED                                    ACCEPTED (rows=1)
+  outcome_code = BUYER_REJECTED                                    ACCEPTED (rows=1)
+  outcome_code = None                                              ACCEPTED (rows=1)
+  outcome_code = OTHER, after OTHER is made inactive               ACCEPTED (rows=1)
+  seeded codes by category:
+    FRESHNESS        ['OFFER_STALE', 'PROPERTY_STALE', 'REQUEST_STALE']
+    GENERAL          ['OTHER']
+    IDENTITY         ['DISTINCT_PROPERTY_CONFIRMED', 'IDENTITY_CONSOLIDATED', 'SAME_PROPERTY_CONFIRMED', 'SIMILAR_UNITS_SAME_DEVELOPMENT_NOT_SAME_PROPERTY']
+    MATCH            ['ACTIONABLE_UNKNOWN', 'AREA_BELOW_PREFERENCE', 'BUDGET_EXCEEDED', 'DOCUMENT_MISMATCH', 'DOCUMENT_NOT_KNOWN', 'LOCATION_MISMATCH', 'PRICE_NEGOTIATION_UNCONFIRMED', 'PRICE_NOT_KNOWN', 'PROPERTY_TYPE_MISMATCH']
+    OPPORTUNITY      ['BUYER_REJECTED', 'DEAL_CONFIRMED', 'DUPLICATE_OPPORTUNITY_CONSOLIDATED', 'OWNER_REJECTED', 'PROPERTY_UNAVAILABLE', 'REQUEST_CHANGED', 'UNREACHABLE']
+    PERMISSION       ['CONSENT_REVOKED', 'PERMISSION_MISSING']
+    REQUEST_CLOSURE  ['REQUEST_CLOSED_OTHER', 'REQUEST_FULFILLED', 'REQUEST_WITHDRAWN']
+
+  E4 two completions of one task, the second waiting on FOR UPDATE:
+  READ COMMITTED  : second waited: True; once the first commits, it reads: DONE
+  REPEATABLE READ : second waited: True; once the first commits, it reads: REFUSED 40001: could not serialize access due to concurrent update
+
+==============================================================================
+S  §6.5 item 4: the size of what a diagnostic stores today (format 1)
+==============================================================================
+  blocker_summary: 360 bytes, 2 candidates evaluated, 0 excluded
+  blocker_summary: 239 bytes, 1 candidates evaluated, 0 excluded
+  blocker_summary: 239 bytes, 1 candidates evaluated, 0 excluded
+  These are this probe's own runs (at most 2 candidates each); the scratch database holds no larger scenario.
+  Format 2 does not exist yet: its size cannot be measured before its code.
+----------------------------------------------------------------------
+
+The harness, verbatim (run: s6_probe.py <repo root>, with PG* variables and
+PGDATABASE=turab_s6_probe):
+
+"""Slice 6 plan, step 0: measure the facts the review of f7469e8 asks for,
+before any Slice 6 code exists.
+
+Runs against a SCRATCH database built by `db/dev/reset_db.sh --fixtures`
+(frozen schema + seed + migrations 0002-0006 + dev fixtures). It is not a
+test and it changes no file of the repository.
+
+Matches and diagnostics come from the DELIVERED Slice 4 route
+(`POST /requests/{id}/matching/run`); the NMI task from the DELIVERED Slice 5
+route (`POST /matches/{id}/review`). Tasks, completion events, candidate
+indexes and candidate triggers are written here by plain SQL, to observe what
+the SCHEMA permits; every such object is created inside a transaction that is
+rolled back, unless the section says otherwise.
+
+Usage: s6_probe.py <repo root>   (PG* variables and PGDATABASE set)
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+import uuid
+
+import psycopg
+
+ROOT = sys.argv[1]
+sys.path.insert(0, os.path.join(ROOT, "src"))
+DB = os.environ["PGDATABASE"]
+CONNINFO = (f"host={os.environ['PGHOST']} user={os.environ['PGUSER']} "
+            f"password={os.environ['PGPASSWORD']} dbname={DB}")
+URL = (f"postgresql+psycopg://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}"
+       f"@{os.environ['PGHOST']}/{DB}")
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from turab.app import create_app  # noqa: E402
+from turab.auth.audit import AccessAuditor, RecordingAuditSink  # noqa: E402
+from turab.db.session import create_app_engine  # noqa: E402
+
+AMINA = "f1000000-0000-4000-8000-000000000001"
+BRAHIM = "f1000000-0000-4000-8000-000000000002"
+ACC_OPERATOR = "f3000000-0000-4000-8000-000000000002"
+ACC_REVIEWER = "f3000000-0000-4000-8000-000000000003"
+POLICY = "0.2.0"
+
+client = TestClient(create_app(engine=create_app_engine(URL),
+                               auditor=AccessAuditor(RecordingAuditSink())))
+
+
+def connect(autocommit=False) -> psycopg.Connection:
+    c = psycopg.connect(CONNINFO, autocommit=autocommit)
+    c.execute("SET search_path = turab, public")
+    if not autocommit:
+        c.commit()
+    return c
+
+
+SETUP = connect(autocommit=True)
+
+
+def one(sql, **p):
+    return SETUP.execute(sql, p).fetchone()[0]
+
+
+def rows(sql, **p):
+    cur = SETUP.execute(sql, p)
+    names = [d.name for d in cur.description]
+    return [dict(zip(names, r)) for r in cur.fetchall()]
+
+
+def section(title):
+    print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
+
+
+def attempt(c, label, sql, params=None):
+    """One statement in a savepoint, always rolled back."""
+    c.execute("SAVEPOINT probe")
+    try:
+        cur = c.execute(sql, params or {})
+        n = cur.rowcount
+        c.execute("ROLLBACK TO SAVEPOINT probe")
+        print(f"  {label:64} ACCEPTED (rows={n})")
+        return "ACCEPTED"
+    except psycopg.Error as e:
+        c.execute("ROLLBACK TO SAVEPOINT probe")
+        d = e.diag
+        print(f"  {label:64} REFUSED {e.sqlstate}"
+              + (f" [{d.constraint_name}]" if d.constraint_name else "")
+              + f": {d.message_primary}")
+        return "REFUSED"
+
+
+def loc(code):
+    return one("SELECT location_id FROM locations WHERE code = %(c)s", c=code)
+
+
+def code_of(location_id):
+    return None if location_id is None else one(
+        "SELECT code FROM locations WHERE location_id = %(l)s", l=location_id)
+
+
+def chain(location_id):
+    """The location and its ancestors, nearest first, from the CURRENT table."""
+    return [r["code"] for r in rows("""
+        WITH RECURSIVE up(location_id, parent_id, code, location_type, depth) AS (
+            SELECT location_id, parent_id, code, location_type, 0 FROM locations
+             WHERE location_id = %(l)s
+            UNION ALL
+            SELECT l.location_id, l.parent_id, l.code, l.location_type, up.depth + 1
+              FROM locations l JOIN up ON l.location_id = up.parent_id)
+        SELECT code FROM up ORDER BY depth""", l=location_id)]
+
+
+def typ(code):
+    return one("SELECT location_type FROM locations WHERE code = %(c)s", c=code)
+
+
+# --- the world, as the Slice 4 and 5 tests build it ------------------------------
+
+def request(criteria, *, budget=30_000_000, confirmed="1 day"):
+    req = one(f"""
+        INSERT INTO requests (party_id, transaction_intent, status, management_mode,
+                              claim_status, budget_max_dzd, budget_importance,
+                              property_type_importance, last_confirmed_at)
+        VALUES (%(p)s, 'BUY', 'ACTIVE', 'ASSISTED', 'UNCLAIMED', %(b)s, 'REQUIRED',
+                'REQUIRED', now() - interval '{confirmed}')
+        RETURNING request_id""", p=AMINA, b=budget)
+    for i, (code, op, value, importance) in enumerate(criteria):
+        SETUP.execute("""
+            INSERT INTO request_criteria (request_id, criterion_code, importance, operator,
+                                          value, blocking_if_unknown, sort_order)
+            VALUES (%(r)s, %(c)s, %(i)s, %(o)s, %(v)s, false, %(s)s)""",
+                      {"r": req, "c": code, "i": importance, "o": op,
+                       "v": json.dumps(value), "s": i})
+    return req
+
+
+def prop(*, location=None, document="LAND_BOOK"):
+    p = one("""
+        INSERT INTO properties (property_type, canonical_location_id, supply_mode,
+                                management_mode, claim_status, land_area_m2,
+                                availability_last_confirmed_at, current_availability)
+        VALUES ('LAND', %(l)s, 'PUBLIC', 'ASSISTED', 'UNCLAIMED', 400,
+                now() - interval '1 day', 'AVAILABLE')
+        RETURNING property_id""", l=location)
+    if document is not None:
+        SETUP.execute("""
+            INSERT INTO property_attributes (property_id, attribute_definition_id, value)
+            SELECT %(p)s, attribute_definition_id, %(v)s
+              FROM attribute_definitions WHERE code = 'DOCUMENT_TYPE'""",
+                      {"p": p, "v": json.dumps(document)})
+    return p
+
+
+def offer(p, *, price=20_000_000, negotiable="NO", terms="1 day"):
+    o = one(f"""
+        INSERT INTO property_offers (property_id, party_id, transaction_type, status,
+                                     asking_price_dzd, price_negotiable, permission_scope,
+                                     commercial_terms_last_confirmed_at)
+        VALUES (%(p)s, %(party)s, 'SALE', 'ACTIVE', %(price)s, %(n)s, 'SUMMARY_ONLY',
+                now() - interval '{terms}')
+        RETURNING offer_id""", p=p, party=BRAHIM, price=price, n=negotiable)
+    grant = one("""
+        INSERT INTO consent_grants (party_id, scope, channel, consent_version, granted_at)
+        VALUES (%(party)s, 'PRIVATE_MATCHING_ONLY', 'PHONE_CONFIRMED', 'v1',
+                now() - interval '2 days')
+        RETURNING consent_id""", party=BRAHIM)
+    SETUP.execute("""
+        INSERT INTO resource_consent_bindings (consent_id, purpose, offer_id, bound_at)
+        VALUES (%(c)s, 'PRIVATE_MATCHING_ONLY', %(o)s, now() - interval '1 day')""",
+                  {"c": grant, "o": o})
+    return o
+
+
+def run(req, props):
+    r = client.post(f"/requests/{req}/matching/run",
+                    headers={"Authorization": f"Bearer {ACC_OPERATOR}",
+                             "Idempotency-Key": str(uuid.uuid4())},
+                    json={"matching_policy_version": POLICY,
+                          "property_ids": [str(p) for p in props]})
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def criterion_row(match_id, code):
+    return rows("""SELECT compatibility::text AS compatibility, request_value, property_value,
+                          reason_code, rule_id, rule_version
+                     FROM match_criterion_results
+                    WHERE match_id = %(m)s AND criterion_code = %(c)s""",
+                m=match_id, c=code)[0]
+
+
+def main():
+    git = lambda *a: subprocess.run(["git", "-C", ROOT, *a], capture_output=True,
+                                    text=True).stdout.strip()
+    print("Database :", DB, "|", one("SELECT version()").split(",")[0])
+    print("Commit   :", git("rev-parse", "HEAD"))
+    print("Migrations:", one("SELECT version_num FROM alembic_version"))
+    print("default_transaction_isolation:", one("SHOW default_transaction_isolation"))
+
+    # ===================================================================== L
+    section("L  Review point 1 (G6-6): LOCATION IN with two requested locations")
+    print("  the seeded tree, as read now (location -> parent):")
+    for r in rows("""SELECT c.code, c.location_type, p.code AS parent
+                       FROM locations c LEFT JOIN locations p ON p.location_id = c.parent_id
+                      WHERE c.code NOT LIKE 'TEST-%%' AND (p.code IS NULL OR p.code IN
+                            ('W-ADRAR','C-ADRAR','ADR-KSOUR'))
+                        AND c.code IN ('W-ADRAR','C-ADRAR','C-TIMEKTEN','ADR-AIRPORT',
+                            'ADR-NEW-TIL','ADR-CENTER','ADR-KSOUR','ADR-KSAR-TILILANE',
+                            'ADR-KSAR-MERAGUEN')
+                      ORDER BY c.code"""):
+        print(f"    {r['code']:20} {r['location_type']:8} parent={r['parent']}")
+
+    cases = [
+        ("L1", ["ADR-NEW-TIL", "C-TIMEKTEN"], "ADR-AIRPORT"),
+        ("L2", ["ADR-NEW-TIL", "ADR-CENTER"], "ADR-AIRPORT"),
+        ("L3", ["ADR-KSAR-TILILANE", "ADR-NEW-TIL"], "ADR-AIRPORT"),
+        ("L4", ["ADR-KSAR-TILILANE", "ADR-NEW-TIL"], "ADR-KSAR-MERAGUEN"),
+    ]
+    for label, wanted, here in cases:
+        req = request([("LOCATION", "IN", [str(loc(w)) for w in wanted], "REQUIRED")])
+        p = prop(location=loc(here))
+        offer(p)
+        body = run(req, [p])
+        m = body["matches"][0]["match_id"]
+        row = criterion_row(m, "LOCATION")
+        snap = rows("SELECT property_snapshot FROM match_candidates WHERE match_id = %(m)s",
+                    m=m)[0]["property_snapshot"]
+        print(f"\n  {label} LOCATION IN {wanted}, property in {here}")
+        print(f"     stored: compatibility={row['compatibility']} reason={row['reason_code']}"
+              f" rule={row['rule_id']}@{row['rule_version']}")
+        print(f"     stored request_value.value = {[code_of(v) for v in row['request_value']['value']]}"
+              f" | property_value = {code_of(row['property_value'])}")
+        print(f"     property snapshot location_ancestry = "
+              f"{[code_of(x) for x in snap['location_ancestry']]}")
+        pchain = chain(loc(here))
+        for w in wanted:
+            wchain = chain(loc(w))
+            common = next((c for c in pchain if c in wchain), None)
+            print(f"     requested {w:18} chain={wchain}")
+            print(f"        nearest common ancestor = {common} ({typ(common) if common else '-'}),"
+                  f" requested widened by {wchain.index(common) if common else '-'} level(s),"
+                  f" property {pchain.index(common) if common else '-'} level(s) below it")
+        # The ancestors of a requested location that are NOT on the property's
+        # own chain: if the run stored a requested chain, they would appear in
+        # the match row, its criterion rows or the run's diagnostic row.
+        only_requested = sorted({a for w in wanted for a in chain(loc(w))[1:]} - set(pchain))
+        stored_text = one("SELECT to_jsonb(m)::text FROM match_candidates m "
+                          "WHERE match_id = %(m)s", m=m) + "".join(
+            r["t"] for r in rows("SELECT to_jsonb(c)::text AS t FROM match_criterion_results c "
+                                 "WHERE match_id = %(m)s", m=m)) + "".join(
+            r["t"] for r in rows("SELECT to_jsonb(d)::text AS t FROM match_diagnostic_runs d "
+                                 "WHERE request_id = %(r)s", r=req))
+        found = [a for a in only_requested if str(loc(a)) in stored_text]
+        print(f"     ancestors of a requested location off the property's chain: "
+              f"{only_requested or 'none'}; found in the match, criterion or diagnostic"
+              f" rows: {found or ('none' if only_requested else 'n/a')}")
+
+    print("\n  L5 are the chains fixed? an UPDATE of a requested location's parent,"
+          " rolled back:")
+    with connect() as c:
+        attempt(c, "UPDATE locations SET parent_id (ADR-NEW-TIL -> C-TIMEKTEN)",
+                "UPDATE locations SET parent_id = %(p)s WHERE code = 'ADR-NEW-TIL'",
+                {"p": loc("C-TIMEKTEN")})
+        c.rollback()
+    trig = [r["tgname"] for r in rows("""SELECT tgname FROM pg_trigger
+                                          WHERE tgrelid = 'turab.locations'::regclass
+                                            AND NOT tgisinternal""")]
+    print(f"     triggers on locations: {trig}")
+
+    # ===================================================================== D
+    section("D  Review point 2 (G6-11): which matches a diagnostic row evaluated")
+    req = request([("DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")])
+    p1, p2 = prop(), prop()
+    o1, o2 = offer(p1), offer(p2)
+    first = run(req, [p1, p2])
+    m1 = {m["property_id"]: m["match_id"] for m in first["matches"]}
+    SETUP.execute("UPDATE property_offers SET asking_price_dzd = 21000000 WHERE offer_id = %s",
+                  (o2,))
+    time.sleep(0.01)
+    second = run(req, [p1, p2])
+    m2 = {m["property_id"]: m["match_id"] for m in second["matches"]}
+    print(f"  run 1 matches: P1={m1[str(p1)][:8]} P2={m1[str(p2)][:8]}")
+    print(f"  run 2 (after O2's price changed): P1={m2[str(p1)][:8]} "
+          f"(reused: {m1[str(p1)] == m2[str(p1)]}) P2={m2[str(p2)][:8]} "
+          f"(new: {m1[str(p2)] != m2[str(p2)]})")
+    diags = rows("""SELECT diagnostic_run_id, run_at, input_hash, blocker_summary
+                      FROM match_diagnostic_runs WHERE request_id = %(r)s ORDER BY run_at""",
+                 r=req)
+    print(f"  diagnostic rows for the request: {len(diags)}")
+    cols = [r["column_name"] for r in rows("""
+        SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'turab' AND table_name = 'match_diagnostic_runs'
+         ORDER BY ordinal_position""")]
+    print(f"  match_diagnostic_runs columns: {cols}")
+    print("  a column naming a match: "
+          f"{[c for c in cols if 'match' in c and 'policy' not in c] or 'none'}")
+    d2 = diags[1]
+    same_instant = rows("""SELECT property_id, match_id FROM match_candidates
+                            WHERE request_id = %(r)s AND evaluated_at = %(t)s""",
+                        r=req, t=d2["run_at"])
+    print(f"  matches with evaluated_at = run 2's run_at: "
+          f"{[(('P1' if str(x['property_id']) == str(p1) else 'P2'), str(x['match_id'])[:8]) for x in same_instant]}")
+    print("  -> the reused P1 match carries run 1's evaluated_at; 'the matches of run 2'"
+          " cannot be read from evaluated_at")
+    all_ms = rows("SELECT match_id FROM match_candidates WHERE request_id = %(r)s", r=req)
+    print(f"  matches stored for the request: {len(all_ms)} (run 2 evaluated 2 of them)")
+    print(f"  run 2's input_hash: {d2['input_hash'][:16]}... (sha256 of a document listing"
+          " [property, offer, match input_hash] per candidate; the document is not stored)")
+    print(f"  exclusions stored in blocker_summary.excluded: "
+          f"{'excluded' in d2['blocker_summary']} | excluded_counts: "
+          f"{d2['blocker_summary'].get('excluded_counts')}")
+
+    print("\n  D4 which row is 'latest': two diagnostic inserts in overlapping"
+          " transactions (plain SQL, kept in the scratch database)")
+    pol = one("SELECT matching_policy_id FROM matching_policies WHERE version = %(v)s",
+              v=POLICY)
+    ins = """INSERT INTO match_diagnostic_runs (request_id, request_version,
+                 matching_policy_id, matching_policy_version, request_snapshot, input_hash,
+                 run_at)
+             VALUES (%(r)s, 1, %(p)s, %(v)s, '{}'::jsonb, %(h)s, transaction_timestamp())
+             RETURNING diagnostic_run_id"""
+    req4 = request([])
+    b = connect()
+    b.execute("SELECT 1")  # B's transaction starts first
+    time.sleep(0.02)
+    a = connect()
+    a_id = a.execute(ins, {"r": req4, "p": pol, "v": POLICY, "h": "A"}).fetchone()[0]
+    a.commit()
+    b_id = b.execute(ins, {"r": req4, "p": pol, "v": POLICY, "h": "B"}).fetchone()[0]
+    b.commit()
+    latest = one("""SELECT input_hash FROM match_diagnostic_runs WHERE request_id = %(r)s
+                     ORDER BY run_at DESC, diagnostic_run_id DESC LIMIT 1""", r=req4)
+    print(f"  committed order: A then B; the read's 'latest' (run_at DESC): {latest}")
+    print("  -> run_at is the transaction START: the run committed last is not"
+          " necessarily the one read as latest")
+    a.close(); b.close()
+
+    # ===================================================================== T
+    section("T  Review point 3 (G6-4 (iii)): the subject of task work, and its key")
+    req = request([("DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")], budget=20_000_000)
+    p = prop()
+    oa = offer(p, price=22_000_000, negotiable="YES")
+    ob = offer(p, price=23_000_000, negotiable="YES", terms="40 days")
+    body = run(req, [p])
+    print("  one property, two offers, each above the maximum and negotiable;"
+          " offer B's terms 40 days old")
+    subjects = []
+    for m in sorted(body["matches"], key=lambda x: x["evaluated_offer_id"] == str(ob)):
+        name = "A" if m["evaluated_offer_id"] == str(oa) else "B"
+        na = m["next_action"]
+        reasons = rows("SELECT explanation -> 'reasons' AS r FROM match_candidates "
+                       "WHERE match_id = %(m)s", m=m["match_id"])[0]["r"]
+        print(f"  match on offer {name}: eligibility={m['eligibility']}")
+        print(f"     next_action: type={na['type']} priority={na['priority']} "
+              f"entity={na['subject']['entity']} id=offer {name} "
+              f"criterion={na['subject'].get('criterion')} basis={na['subject']['basis']}")
+        for r in reasons:
+            print(f"     reason: gate={r['gate']} subject={r.get('subject')} "
+                  f"criterion={r.get('criterion')} code={r['reason_code']} basis={r['basis']}")
+        subjects.append((name, m, na))
+    narrow = {(str(req), str(p), na["type"], na["subject"].get("criterion"),
+               na["subject"].get("ordinal")) for _, _, na in subjects}
+    wide = {(na["subject"]["entity"], na["subject"]["id"], na["subject"]["gate"],
+             na["subject"].get("criterion"), na["subject"].get("ordinal"),
+             na["subject"]["basis"]) for _, _, na in subjects}
+    print(f"  key (request, property, type, criterion, ordinal): {len(narrow)} distinct"
+          f" for {len(subjects)} subjects")
+    print(f"  key (entity, id, gate, criterion, ordinal, basis): {len(wide)} distinct")
+    print("  offer B also carries a FRESHNESS reason on its OFFER: the same type"
+          " CONFIRM_PRICE, another gate and basis")
+
+    print("\n  T3 the NMI task of Slice 5, over HTTP, on offer A's match:")
+    ma = subjects[0][1]
+    r = client.post(f"/matches/{ma['match_id']}/review",
+                    headers={"Authorization": f"Bearer {ACC_REVIEWER}",
+                             "Idempotency-Key": str(uuid.uuid4())},
+                    json={"decision": "NEED_MORE_INFORMATION",
+                          "reason_code": "PRICE_NEGOTIATION_UNCONFIRMED"})
+    print(f"     status {r.status_code}")
+    task = r.json()["task"]
+    print(f"     task_type={task['task_type']} priority={task['priority']} "
+          f"reason_code={task['reason_code']} match_id=offer A's")
+    print(f"     payload keys: {sorted(task['payload'])}")
+    sub = task["payload"]["next_action"]["subject"]
+    print(f"     payload.next_action.subject: entity={sub['entity']} "
+          f"id={'offer A' if sub['id'] == str(oa) else sub['id']} gate={sub['gate']} "
+          f"criterion={sub.get('criterion')} basis={sub['basis']}")
+    r2 = client.post(f"/matches/{ma['match_id']}/review",
+                     headers={"Authorization": f"Bearer {ACC_REVIEWER}",
+                              "Idempotency-Key": str(uuid.uuid4())},
+                     json={"decision": "NEED_MORE_INFORMATION", "reason_code": "OFFER_STALE"})
+    t2 = r2.json().get("task") if r2.status_code == 200 else None
+    print(f"     a second NMI on the same match, reason OFFER_STALE: status {r2.status_code}"
+          + (f", task_type={t2['task_type']} reason_code={t2['reason_code']}, its"
+             f" next_action.subject.gate={t2['payload']['next_action']['subject']['gate']}"
+             if t2 else f" {r2.text[:160]}"))
+    print("     -> the NMI task's reason_code is the reviewer's; its payload.next_action"
+          " is the match's stored recommendation; the two may name different work")
+
+    print("\n  T4 a candidate partial unique index, raced by two REPEATABLE READ"
+          " transactions (index created and dropped here)")
+    key = ("(request_id, (payload->'subject'->>'entity'), (payload->'subject'->>'id'),"
+           " (payload->'subject'->>'gate'), coalesce(payload->'subject'->>'criterion',''),"
+           " coalesce(payload->'subject'->>'ordinal',''), (payload->'subject'->>'basis'))")
+    task_ins = """INSERT INTO tasks (task_type, priority, title, request_id, property_id,
+                                     match_id, payload, status)
+                  VALUES ('CONFIRM_PRICE', 'HIGH', 't', %(r)s, %(p)s, %(m)s, %(pl)s,
+                          %(s)s) RETURNING task_id"""
+    payload = json.dumps({"source": "DIAGNOSTIC", "subject": subjects[0][2]["subject"]})
+    args = {"r": req, "p": p, "m": ma["match_id"], "pl": payload, "s": "OPEN"}
+    for where in ("status = 'OPEN'", "status IN ('OPEN','IN_PROGRESS')"):
+        SETUP.execute(f"CREATE UNIQUE INDEX probe_open_work ON tasks {key} WHERE {where}")
+        try:
+            a, b = connect(), connect()
+            for c in (a, b):
+                c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                c.execute("SELECT 1")
+            a.execute(task_ins, args)
+            result = {}
+
+            def second():
+                try:
+                    b.execute(task_ins, args)
+                    result["b"] = "ACCEPTED"
+                except psycopg.Error as e:
+                    result["b"] = f"REFUSED {e.sqlstate} [{e.diag.constraint_name}]"
+            th = threading.Thread(target=second)
+            th.start()
+            time.sleep(0.3)
+            waited = one("SELECT %(b)s = ANY(pg_blocking_pids(%(bp)s))",
+                         b=a.info.backend_pid, bp=b.info.backend_pid)
+            a.commit()
+            th.join()
+            b.rollback()
+            print(f"  WHERE {where}: second insert waited on the first: {waited}; after the"
+                  f" first commits: {result['b']}")
+            with connect() as c:
+                c.execute("UPDATE tasks SET status = 'IN_PROGRESS' WHERE payload = %(pl)s::jsonb",
+                          {"pl": payload})
+                attempt(c, f"  ... first task IN_PROGRESS, a new OPEN one (WHERE {where[:22]})",
+                        task_ins, args)
+                c.rollback()
+            SETUP.execute("DELETE FROM tasks WHERE payload = %(pl)s::jsonb", {"pl": payload})
+            a.close(); b.close()
+        finally:
+            SETUP.execute("DROP INDEX probe_open_work")
+
+    print("\n  T5 the lock alternative under REPEATABLE READ: B's snapshot is taken"
+          " before A commits; B then waits for the lock A held, and checks")
+    for lock_name, lock_sql in (
+            ("advisory lock on the key", "SELECT pg_advisory_xact_lock(hashtext(%(k)s))"),
+            ("request row FOR NO KEY UPDATE",
+             "SELECT 1 FROM requests WHERE request_id = %(r)s FOR NO KEY UPDATE")):
+        a, b = connect(), connect()
+        for c in (a, b):
+            c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            c.execute("SELECT 1")
+        lk = {"k": payload, "r": req}
+        exists = """SELECT count(*) FROM tasks WHERE payload = %(pl)s::jsonb
+                     AND status IN ('OPEN','IN_PROGRESS')"""
+        a.execute(lock_sql, lk)
+        if not a.execute(exists, {"pl": payload}).fetchone()[0]:
+            a.execute(task_ins, args)
+        out = {}
+
+        def later():
+            try:
+                b.execute(lock_sql, lk)
+                n = b.execute(exists, {"pl": payload}).fetchone()[0]
+                out["seen"] = n
+                if not n:
+                    b.execute(task_ins, args)
+                b.commit()
+                out["b"] = "committed"
+            except psycopg.Error as e:
+                b.rollback()
+                out["b"] = f"REFUSED {e.sqlstate}: {e.diag.message_primary}"
+        th = threading.Thread(target=later)
+        th.start()
+        time.sleep(0.3)
+        a.commit()
+        th.join()
+        n = one("SELECT count(*) FROM tasks WHERE payload = %(pl)s::jsonb", pl=payload)
+        print(f"  {lock_name:32}: B saw {out.get('seen')} existing task(s); B {out['b']};"
+              f" tasks now: {n}")
+        SETUP.execute("DELETE FROM tasks WHERE payload = %(pl)s::jsonb", {"pl": payload})
+        a.close(); b.close()
+
+    # ===================================================================== E
+    section("E  Review point 4 (G6-8): what keeps the evidence of a completion")
+    trig = rows("""SELECT tgrelid::regclass::text AS t, tgname FROM pg_trigger
+                    WHERE NOT tgisinternal AND tgrelid IN ('turab.observations'::regclass,
+                          'turab.evidence_artifacts'::regclass, 'turab.tasks'::regclass,
+                          'turab.task_completion_events'::regclass)""")
+    print(f"  triggers on observations, evidence_artifacts, tasks, task_completion_events:"
+          f" {[(r['t'], r['tgname']) for r in trig] or 'none'}")
+    for r in rows("""SELECT conname, conrelid::regclass::text AS t,
+                            CASE confdeltype WHEN 'n' THEN 'SET NULL' WHEN 'r' THEN 'RESTRICT'
+                                 WHEN 'c' THEN 'CASCADE' WHEN 'a' THEN 'NO ACTION' END AS del
+                       FROM pg_constraint
+                      WHERE confrelid IN ('turab.observations'::regclass,
+                                          'turab.tasks'::regclass)
+                      ORDER BY conname"""):
+        print(f"  FK {r['conname']:58} on {r['t']:24} ON DELETE {r['del']}")
+
+    def world(c):
+        obs = c.execute("""INSERT INTO observations (kind, raw_text, payload,
+                                                     recorded_by_account_id)
+                           VALUES ('CALL_NOTE', 'seller confirmed land book',
+                                   '{"document":"LAND_BOOK"}', %(a)s)
+                           RETURNING observation_id""", {"a": ACC_OPERATOR}).fetchone()[0]
+        t = c.execute("""INSERT INTO tasks (task_type, priority, title, request_id)
+                         VALUES ('VERIFY_DOCUMENT', 'HIGH', 't', %(r)s)
+                         RETURNING task_id""", {"r": req}).fetchone()[0]
+        e = c.execute("""INSERT INTO task_completion_events (task_id, outcome_code, note,
+                             evidence_observation_id, completed_by_account_id)
+                         VALUES (%(t)s, 'OTHER', 'called', %(o)s, %(a)s)
+                         RETURNING task_completion_event_id""",
+                      {"t": t, "o": obs, "a": ACC_OPERATOR}).fetchone()[0]
+        c.execute("UPDATE tasks SET status = 'DONE', completed_at = now() WHERE task_id = %s",
+                  (t,))
+        return obs, t, e
+
+    with connect() as c:
+        obs, t, e = world(c)
+        print("\n  E1 without an append-only trigger (each statement rolled back):")
+        attempt(c, "UPDATE observations SET raw_text, payload (the evidence's body)",
+                "UPDATE observations SET raw_text = 'changed', payload = '{}' "
+                "WHERE observation_id = %(o)s", {"o": obs})
+        c.execute("SAVEPOINT s")
+        c.execute("DELETE FROM observations WHERE observation_id = %s", (obs,))
+        left = c.execute("SELECT evidence_observation_id FROM task_completion_events "
+                         "WHERE task_completion_event_id = %s", (e,)).fetchone()[0]
+        c.execute("ROLLBACK TO SAVEPOINT s")
+        print(f"  {'DELETE the observation':64} ACCEPTED; the event's"
+              f" evidence_observation_id is now {left}")
+        attempt(c, "UPDATE task_completion_events SET note",
+                "UPDATE task_completion_events SET note = 'x' "
+                "WHERE task_completion_event_id = %(e)s", {"e": e})
+        attempt(c, "DELETE the completion event",
+                "DELETE FROM task_completion_events WHERE task_completion_event_id = %(e)s",
+                {"e": e})
+        attempt(c, "DELETE the task (it has an event)",
+                "DELETE FROM tasks WHERE task_id = %(t)s", {"t": t})
+        attempt(c, "UPDATE the DONE task back to OPEN, completed_at NULL",
+                "UPDATE tasks SET status = 'OPEN', completed_at = NULL WHERE task_id = %(t)s",
+                {"t": t})
+
+        print("\n  E2 with a candidate append-only trigger on task_completion_events"
+              " (created in this transaction, rolled back):")
+        c.execute("""CREATE FUNCTION pg_temp.probe_append_only() RETURNS trigger
+                     LANGUAGE plpgsql AS $$ BEGIN
+                       RAISE EXCEPTION 'append-only (probe)'; END $$""")
+        c.execute("""CREATE TRIGGER probe_append_only BEFORE UPDATE OR DELETE
+                     ON task_completion_events FOR EACH ROW
+                     EXECUTE FUNCTION pg_temp.probe_append_only()""")
+        attempt(c, "UPDATE task_completion_events SET note",
+                "UPDATE task_completion_events SET note = 'x' "
+                "WHERE task_completion_event_id = %(e)s", {"e": e})
+        attempt(c, "DELETE the observation (its FK action is SET NULL)",
+                "DELETE FROM observations WHERE observation_id = %(o)s", {"o": obs})
+        attempt(c, "UPDATE observations SET raw_text, payload",
+                "UPDATE observations SET raw_text = 'changed', payload = '{}' "
+                "WHERE observation_id = %(o)s", {"o": obs})
+        c.rollback()
+
+    print("\n  E3 outcome_code against reason_codes:")
+    with connect() as c:
+        t = c.execute("""INSERT INTO tasks (task_type, title, request_id)
+                         VALUES ('OTHER', 't', %(r)s) RETURNING task_id""",
+                      {"r": req}).fetchone()[0]
+        ev = ("INSERT INTO task_completion_events (task_id, outcome_code,"
+              " completed_by_account_id) VALUES (%(t)s, %(c)s, %(a)s)")
+        for code in ("NOT_A_CODE", "DEAL_CONFIRMED", "BUYER_REJECTED", None):
+            attempt(c, f"outcome_code = {code}", ev, {"t": t, "c": code, "a": ACC_OPERATOR})
+        c.execute("UPDATE reason_codes SET active = false WHERE code = 'OTHER'")
+        attempt(c, "outcome_code = OTHER, after OTHER is made inactive", ev,
+                {"t": t, "c": "OTHER", "a": ACC_OPERATOR})
+        c.rollback()
+    print("  seeded codes by category:")
+    for r in rows("""SELECT category, array_agg(code ORDER BY code) AS codes
+                       FROM reason_codes GROUP BY category ORDER BY category"""):
+        print(f"    {r['category']:16} {r['codes']}")
+
+    print("\n  E4 two completions of one task, the second waiting on FOR UPDATE:")
+    for iso in ("READ COMMITTED", "REPEATABLE READ"):
+        t = one("""INSERT INTO tasks (task_type, title, request_id)
+                   VALUES ('OTHER', 't', %(r)s) RETURNING task_id""", r=req)
+        a, b = connect(), connect()
+        for c in (a, b):
+            c.execute(f"SET TRANSACTION ISOLATION LEVEL {iso}")
+            c.execute("SELECT 1")
+        lock = "SELECT status::text FROM tasks WHERE task_id = %s FOR UPDATE"
+        a.execute(lock, (t,))
+        a.execute("""INSERT INTO task_completion_events (task_id, completed_by_account_id)
+                     VALUES (%s, %s)""", (t, ACC_OPERATOR))
+        a.execute("UPDATE tasks SET status = 'DONE', completed_at = now() WHERE task_id = %s",
+                  (t,))
+        out = {}
+
+        def other():
+            try:
+                out["status"] = b.execute(lock, (t,)).fetchone()[0]
+                b.rollback()
+            except psycopg.Error as e:
+                b.rollback()
+                out["status"] = f"REFUSED {e.sqlstate}: {e.diag.message_primary}"
+        th = threading.Thread(target=other)
+        th.start()
+        time.sleep(0.3)
+        waited = one("SELECT %(a)s = ANY(pg_blocking_pids(%(b)s))",
+                     a=a.info.backend_pid, b=b.info.backend_pid)
+        a.commit()
+        th.join()
+        print(f"  {iso:16}: second waited: {waited}; once the first commits, it reads:"
+              f" {out['status']}")
+        a.close(); b.close()
+
+    # ===================================================================== S
+    section("S  §6.5 item 4: the size of what a diagnostic stores today (format 1)")
+    for r in rows("""SELECT octet_length(blocker_summary::text) AS bytes,
+                            jsonb_array_length(blocker_summary -> 'excluded') AS excluded,
+                            (blocker_summary ->> 'candidates_evaluated')::int AS evaluated
+                       FROM match_diagnostic_runs ORDER BY bytes DESC LIMIT 3"""):
+        print(f"  blocker_summary: {r['bytes']} bytes, {r['evaluated']} candidates evaluated,"
+              f" {r['excluded']} excluded")
+    print("  These are this probe's own runs (at most 2 candidates each); the scratch"
+          " database holds no larger scenario.")
+    print("  Format 2 does not exist yet: its size cannot be measured before its code.")
+
+
+if __name__ == "__main__":
+    main()

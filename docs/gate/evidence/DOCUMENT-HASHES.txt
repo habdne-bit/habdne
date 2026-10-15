@@ -781,3 +781,7 @@ docs/gate/SLICE_5_PLAN.md                                      rev21 1b657c175dd
 SLICE_5_PLAN.md changed revision: 20 -> 21 (Slice 5 closed at 339dbc4, SALE only; the RENT phrase qualified to the approved path).
 --- Slice 6 plan, revision 1, submitted for review (no code) ---
 docs/gate/SLICE_6_PLAN.md                                      rev1  589ba6a9a455ea90be7e0a73c66d84992c7bf2c37214a71aa49c86ecd4003e3c
+--- Review of f7469e8: step 0 authorized (measurements only); Slice 6 plan revision 2 ---
+docs/gate/evidence/SLICE6-PLAN-MEASUREMENTS.txt                new   84468bba67c4077284d2145add9ff7fcb1c6541e2525dd52e9209fa9fb5dfb16
+docs/gate/SLICE_6_PLAN.md                                      rev2  4bbf90aafd2b2105ff8a8c2a22f8e7704ea56f365c5571d87ff97397b36ea135
+SLICE_6_PLAN.md changed revision: 1 -> 2 (step 0 measured; G6-4 (iii)-(iv), G6-6, G6-8, G6-11 rewritten; 0007 text proposed).
