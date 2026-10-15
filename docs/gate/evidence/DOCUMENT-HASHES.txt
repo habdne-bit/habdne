@@ -779,3 +779,5 @@ SLICE_5_PLAN.md changed revision: 19 -> 20 (step 6 accepted; C2 classified; clos
 docs/gate/SLICE_5_CLOSURE.md                                   ---   8f04196747620f5262ff8708cb69b284570173daaabac238a4c0e46744d8ca85
 docs/gate/SLICE_5_PLAN.md                                      rev21 1b657c175dd0b4fd4b0f2a6e05da8d04563ed80ba4f7d783a406b11aee01580e
 SLICE_5_PLAN.md changed revision: 20 -> 21 (Slice 5 closed at 339dbc4, SALE only; the RENT phrase qualified to the approved path).
+--- Slice 6 plan, revision 1, submitted for review (no code) ---
+docs/gate/SLICE_6_PLAN.md                                      rev1  589ba6a9a455ea90be7e0a73c66d84992c7bf2c37214a71aa49c86ecd4003e3c
