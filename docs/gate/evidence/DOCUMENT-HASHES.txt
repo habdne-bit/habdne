@@ -789,3 +789,6 @@ SLICE_6_PLAN.md changed revision: 1 -> 2 (step 0 measured; G6-4 (iii)-(iv), G6-6
 docs/gate/evidence/SLICE6-PLAN-MEASUREMENTS-R3.txt             new   fac400ec358e9686b8e04c1b11c6bb6289b680095d513b61ad3edc3e3c759f55
 docs/gate/SLICE_6_PLAN.md                                      rev3  f968156b4824ea4cb8ebe4d253fb34349ffdb9cb86233e64f988f4106164fe8b
 SLICE_6_PLAN.md changed revision: 2 -> 3 (completion/observation race measured; lock order; suggestions pure; CORRECTION-005 proposed).
+--- Review of bd54216: every recommendation approved; step 1 authorized ---
+docs/gate/SLICE_6_PLAN.md                                      rev4  730e48782fa6c315c9910f2f6d12e9c7a16b2d104904871e80734a40dfd0b4aa
+SLICE_6_PLAN.md changed revision: 3 -> 4 (G6-1..G6-12, 0007 and CORRECTION-005 approved; step 1 authorized).

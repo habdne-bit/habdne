@@ -1,9 +1,10 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 3**
+## Implementation plan — **revision 4**
 
-**Status:** submitted for review. **No code for this slice exists, and none
-is written until this plan is approved.** Code is then written one approved
-step at a time, never ahead of its approval (§8). Step 0 (measurements only)
+**Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
+CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
+Code is written one approved step at a time, never ahead of its approval
+(§8). Step 1 (`0007`) is authorized. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -19,7 +20,8 @@ recommendation. A recommendation is not a decision.
 |---|---|---|
 | 1 | `f7469e8` | first plan |
 | 2 | `1fd7bdf` | the review of `f7469e8` recorded; step 0 measured (`SLICE6-PLAN-MEASUREMENTS.txt`); G6-4 (iii)–(iv), G6-6, G6-8 and G6-11 rewritten on the measurements; F6-10 to F6-17 added; the text of migration `0007` proposed (§5.1) |
-| 3 | the commit that adds this revision | the review of `1fd7bdf` recorded; the completion/observation race measured (`SLICE6-PLAN-MEASUREMENTS-R3.txt`) and the completion's lock order specified (G6-8 (iv)); the suggestions kept pure, the task outcome read from the task rows (G6-4 (iii)); `stored` treated as a recorded fact (G6-11); the F6-12 staff-view test (G6-4 (v)); CORRECTION-005 proposed for `outcome_code` (§5.2); F6-18 to F6-20 |
+| 3 | `bd54216` | the review of `1fd7bdf` recorded; the completion/observation race measured (`SLICE6-PLAN-MEASUREMENTS-R3.txt`) and the completion's lock order specified (G6-8 (iv)); the suggestions kept pure, the task outcome read from the task rows (G6-4 (iii)); `stored` treated as a recorded fact (G6-11); the F6-12 staff-view test (G6-4 (v)); CORRECTION-005 proposed for `outcome_code` (§5.2); F6-18 to F6-20 |
+| 4 | the commit that adds this revision | the review of `bd54216` recorded: every recommendation of the decision table approved; each decision marked DECIDED; step 1 authorized |
 
 **The review of `f7469e8`. Step 0 is AUTHORIZED, for measurements only, with
 no code. The decisions G6-1 to G6-12 and the implementation plan are NOT
@@ -59,6 +61,39 @@ sha256 (`589ba6a9…e3c`) against the one delivered.
   called a new STOP GATE.
 - **Still deferred to the approval of their decisions:** writing `0007`,
   the task paths, and any change to the run's writers.
+
+**The review of `bd54216`. APPROVED: «اعتمد» ("I approve").**
+- **What was answered.** After revision 3, the reply to a bare "continue"
+  stated that it was not an approval. It set out a table of the open
+  decisions with the plan's recommendation for each, and said that an
+  answer of «أعتمد» per item would suffice. The reviewer answered «اعتمد»
+  once, for the table.
+- **How this plan reads it, stated so it can be corrected.** Every
+  recommendation of that table is approved, as follows. No alternative
+  option was chosen.
+
+  | Decision | Approved |
+  |---|---|
+  | G6-1 | the scope as proposed |
+  | G6-2 | (a): high-value is the unknown that ALONE stands between the candidate and ELIGIBLE; HIGH for it, NORMAL otherwise |
+  | G6-3 | `diagnostic.actions@1` as specified; computed once, before any task insert |
+  | G6-4 | (a): the run raises tasks for its HIGH suggestions only; (iii) the subject key and the partial unique index over OPEN and IN_PROGRESS, diagnostic tasks only; (iv) (a) NMI tasks independent; (v) the F6-12 staff-view test; the trace is the task rows |
+  | G6-5 | (i) (a), (ii) (a), (iii) the table, (iv) the budget from the asking price, (v), (vi) |
+  | G6-6 | as revision 2: every requested location, the total order, the chains stored |
+  | G6-7 | `blocker_summary` format 2 |
+  | G6-8 | (i); (ii) (a), the four codes, required, through CORRECTION-005; (iii); (iv) (a), parts A and D with the completion's FOR SHARE lock; (v)–(vii) |
+  | G6-9 | as proposed |
+  | G6-10 | (a): no automatic change |
+  | G6-11 | as revision 3: `evaluated` stored; checks (R) and (D) kept apart |
+  | G6-12 | decided independently of this plan; this plan schedules nothing for K06 |
+  | `0007` | parts A, B, C and D of §5.1, as written |
+  | CORRECTION-005 | §5.2, with the loader's extension |
+
+  - If that reading is wrong for any item, the reviewer says so. The step
+    that depends on the item has not been written yet.
+- **Carried, unchanged:** K06 is UNPROVEN; G4-5R is open; SALE only.
+- **Authorized:** step 1, migration `0007`, exactly as §5.1 writes it, with
+  its tests and mutation record (§8). The later steps follow one at a time.
 
 **The review of `1fd7bdf`.** The reviewer checked both files' digests
 against the stated values, and re-ran no PostgreSQL: the measurements are
@@ -578,9 +613,11 @@ field reporting task outcomes would widen the contract.
 
 ---
 
-## 5. Decisions needed — none is taken by this plan
+## 5. Decisions (all DECIDED in the review of `bd54216`)
 
 ### G6-1 · Scope: which operations and writes are Slice 6's
+
+> **DECIDED (review of `bd54216`): the scope as proposed.**
 
 - **Recommendation:** §0 and §1 as proposed.
   - Route `getTasks` and `postTasksTaskIdComplete`.
@@ -590,6 +627,8 @@ field reporting task outcomes would widen the contract.
 - **Blocks:** everything.
 
 ### G6-2 · What "high-value" means, and the priority of information work
+
+> **DECIDED (review of `bd54216`): option (a).**
 
 - **(a) Recommended. High-value = the unknown alone stands between the
   candidate and ELIGIBLE.** For a NEED_MORE_INFORMATION candidate:
@@ -612,6 +651,8 @@ field reporting task outcomes would widen the contract.
 - **Blocks:** step 3.
 
 ### G6-3 · `suggested_actions`: content and order
+
+> **DECIDED (review of `bd54216`): as recommended.**
 
 - **Recommendation:** a pinned function, `diagnostic.actions@1`, over the
   run's own evaluations. It is stored with its version.
@@ -639,6 +680,8 @@ field reporting task outcomes would widen the contract.
 - **Blocks:** step 3.
 
 ### G6-4 · Tasks raised from the diagnostic
+
+> **DECIDED (review of `bd54216`): option (a), with (iii), (iv) (a) and (v).**
 
 - **(a) Recommended. The run materializes its suggested actions as tasks.**
   - **Which:** every HIGH entry of `suggested_actions` (G6-2 (a): the
@@ -760,6 +803,8 @@ field reporting task outcomes would widen the contract.
 
 ### G6-5 · Relaxation scenarios
 
+> **DECIDED (review of `bd54216`): (i) (a), (ii) (a), (iii)–(vi).**
+
 - **(i) When they are computed.**
   - **(a) Recommended:** on every run, stored, and **ranked after every
     HIGH information action**. Each scenario carries `"subordinate_to"`:
@@ -812,6 +857,8 @@ field reporting task outcomes would widen the contract.
 
 ### G6-6 · The location magnitude (revision 2, on F6-10)
 
+> **DECIDED (review of `bd54216`): as written.**
+
 - **Which requested location.** A LOCATION criterion is EQ (one requested
   location, including the column `primary_location_id`) or IN (several:
   `location_v2` passes when the property lies under ANY of them). For a FAIL,
@@ -855,6 +902,8 @@ field reporting task outcomes would widen the contract.
 
 ### G6-7 · Blocking and non-blocking unknowns in the diagnostic
 
+> **DECIDED (review of `bd54216`): as recommended.**
+
 - **Recommendation:** `blocker_summary` format 2 (`turab.blocker-summary/2`)
   adds `unknowns`: per criterion key (`CODE#ordinal`), the number of
   candidates with that criterion UNKNOWN. These are split into `blocking`
@@ -868,6 +917,8 @@ field reporting task outcomes would widen the contract.
 - **Blocks:** step 3.
 
 ### G6-8 · Completing a task (`postTasksTaskIdComplete`) (revision 2, on F6-16 and F6-17)
+
+> **DECIDED (review of `bd54216`): (ii) (a) and (iv) (a), with (i), (iii) and (v)–(vii).**
 
 - **(i) Which tasks.**
   - An OPEN or IN_PROGRESS task is completed.
@@ -989,6 +1040,8 @@ field reporting task outcomes would widen the contract.
 
 ### G6-9 · Listing tasks (`getTasks`)
 
+> **DECIDED (review of `bd54216`): as recommended.**
+
 - **Recommendation:**
   - **`status` and `priority`** are compared as TEXT: the contract types
     them as plain strings with no enum, as `identity.list_candidates`
@@ -1007,6 +1060,8 @@ field reporting task outcomes would widen the contract.
 
 ### G6-10 · Tasks whose cause has gone
 
+> **DECIDED (review of `bd54216`): option (a).**
+
 - **(a) Recommended. No automatic change.** A later run that no longer
   finds the unknown leaves the task OPEN. The task records that the work was
   asked for, and staff complete it with an outcome. The diagnostic no longer
@@ -1017,6 +1072,8 @@ field reporting task outcomes would widen the contract.
 - **Blocks:** step 4.
 
 ### G6-11 · Versions and replay (revision 2, on F6-11)
+
+> **DECIDED (review of `bd54216`): as written.**
 
 - **Versions.** `diagnostic.actions@1`, `diagnostic.relaxation@1`, and,
   under G6-2 (a), `diagnostic.value@1` (the high-value classification) are
@@ -1076,6 +1133,8 @@ field reporting task outcomes would widen the contract.
 
 ### G6-12 · K06 and the application role (not blocking this plan)
 
+> **DECIDED (review of `bd54216`): decided independently of this plan.**
+
 - G5-13 (b)(ii) is a separate, cross-cutting step, mandatory before any
   release gate. It is not a Slice 6 deliverable.
 - **The question:** whether it is scheduled before Slice 6's code, in
@@ -1083,7 +1142,7 @@ field reporting task outcomes would widen the contract.
   this plan. Nothing here depends on it, and nothing here claims K06.
 
 
-### 5.1 The proposed text of migration `0007` (for approval; not written)
+### 5.1 The text of migration `0007` (APPROVED in the review of `bd54216`; step 1)
 
 `0007_task_work_and_evidence`, revising `0006_opportunity_history`. Four
 parts, each tied to its decision. A part whose decision is not approved is
@@ -1172,7 +1231,7 @@ CREATE TRIGGER trg_cited_observation_unchanged
   - Step 1's tests prove this consequence by measurement.
 
 
-### 5.2 CORRECTION-005, proposed (for approval; not written)
+### 5.2 CORRECTION-005 (APPROVED in the review of `bd54216`; step 2)
 
 **Kind:** a request-body narrowing, through the corrections overlay, on
 CORRECTION-004's precedent. Only under G6-8 (ii) (a), or, in the form
@@ -1324,7 +1383,7 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements of §6.5, folded into revision 2; no code | **done** (authorized in the review of `f7469e8`); `SLICE6-PLAN-MEASUREMENTS.txt` |
-| 1 | migration `0007`, the parts of §5.1 whose decisions are approved, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv) |
+| 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216` |
 | 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2), if G6-8 (ii) is decided | G6-8, G6-9 |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11 |
 | 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10 | G6-4, G6-10 |
