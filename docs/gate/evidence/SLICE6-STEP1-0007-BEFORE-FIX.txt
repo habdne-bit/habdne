@@ -1,0 +1,93 @@
+TURAB — Slice 6 step 1: migration 0007's tests, run BEFORE the migration exists
+==============================================================================
+Recorded : 2026-10-17 12:18:47 UTC
+Base     : commit 62d3589 (plan revision 4; no 0007), in an ISOLATED worktree
+           (git worktree, detached at 62d3589), into which only the new test file
+           was copied. The base's migrations stop at 0006_opportunity_history.
+Test file: tests/test_migration_0007_task_work_and_evidence.py
+           sha256 197e2e8767ffbc7cc21ed522758226a5b174dcfad101f8a57a51358d6f1a3981
+Database : turab_s6_before, built by the suite's own conftest (frozen schema,
+           seed, fixtures, stamp 0001, upgrade head = 0006).
+Server   : PostgreSQL 16.13
+Result   : 34 failed, 21 passed in 26.69s
+
+What this measures. The defect, before the fix: the schema at 0006 accepts
+what plan §5.1 parts A-D are approved to refuse. These are our runs; nobody
+else has re-run them.
+
+A first run of this measurement was discarded: its event fixture used a part B
+code by default, so parts A and D failed on the outcome FK, not on the missing
+guard. The fixture now records events with no outcome code (as the frozen
+schema permits), and part B is tested on its own.
+
+Reading:
+  FAILED because the guard is absent ("DID NOT RAISE"): every refusal of part A
+    (8 updates, the delete), part C (the four OPEN/IN_PROGRESS pairs, the
+    IN_PROGRESS move, the criterion-less subject), part D (6 updates, the
+    delete, the 3 referenced-row deletes, the message test).
+  FAILED because part B's codes are absent: the seeded-codes test, and the 4
+    inserts of each code (outcome FK).
+  FAILED because the object is absent: the index text (no row); part A alone
+    (the trigger part D adds does not exist to be disabled); the race, where
+    the contender was NOT blocked and BOTH inserts committed.
+  PASSED, as they must at the base too: the closed-work and key-component
+    cases, the other writers' tasks, the NULL-request pin, the uncited deletes,
+    and R1a's pin (the guard-alone race needs no guard to show the UPDATE goes
+    through).
+
+Per test:
+PASSED test_a_completion_event_can_still_be_appended
+PASSED test_no_task_outcome_code_existed_before_under_another_category
+PASSED test_work_closed_may_be_raised_again[DONE]
+PASSED test_work_closed_may_be_raised_again[CANCELLED]
+PASSED test_each_component_of_the_key_separates_two_subjects[request]
+PASSED test_each_component_of_the_key_separates_two_subjects[entity]
+PASSED test_each_component_of_the_key_separates_two_subjects[id]
+PASSED test_each_component_of_the_key_separates_two_subjects[gate]
+PASSED test_each_component_of_the_key_separates_two_subjects[criterion]
+PASSED test_each_component_of_the_key_separates_two_subjects[ordinal]
+PASSED test_each_component_of_the_key_separates_two_subjects[basis]
+PASSED test_tasks_of_the_other_writers_are_outside_the_index[no-source]
+PASSED test_tasks_of_the_other_writers_are_outside_the_index[other-source]
+PASSED test_tasks_of_the_other_writers_are_outside_the_index[nmi-task]
+PASSED test_tasks_of_the_other_writers_are_outside_the_index[identity-task]
+PASSED test_a_diagnostic_task_with_no_request_is_not_deduplicated
+PASSED test_an_uncited_observation_stays_writable
+PASSED test_the_same_delete_is_accepted_when_the_observation_is_not_cited[source]
+PASSED test_the_same_delete_is_accepted_when_the_observation_is_not_cited[party]
+PASSED test_the_same_delete_is_accepted_when_the_observation_is_not_cited[recording account]
+PASSED test_the_guard_alone_does_not_see_an_uncommitted_citation
+FAILED test_a_completion_event_cannot_be_updated[note = 'rewritten']
+FAILED test_a_completion_event_cannot_be_updated[note = NULL]
+FAILED test_a_completion_event_cannot_be_updated[outcome_code = 'OTHER']
+FAILED test_a_completion_event_cannot_be_updated[outcome_code = NULL]
+FAILED test_a_completion_event_cannot_be_updated[evidence_observation_id = NULL]
+FAILED test_a_completion_event_cannot_be_updated[completed_by_account_id = :other]
+FAILED test_a_completion_event_cannot_be_updated[completed_at = completed_at
+FAILED test_a_completion_event_cannot_be_updated[task_id = :other_task]
+FAILED test_a_completion_event_cannot_be_deleted
+FAILED test_part_a_alone_refuses_the_set_null_of_a_deleted_observation
+FAILED test_the_four_task_outcome_codes_are_seeded_exactly
+FAILED test_a_completion_event_accepts_each_outcome_code[TASK_INFORMATION_OBTAINED]
+FAILED test_a_completion_event_accepts_each_outcome_code[TASK_INFORMATION_UNAVAILABLE]
+FAILED test_a_completion_event_accepts_each_outcome_code[TASK_NO_LONGER_NEEDED]
+FAILED test_a_completion_event_accepts_each_outcome_code[TASK_PARTY_UNREACHABLE]
+FAILED test_the_index_is_the_approved_text
+FAILED test_the_same_open_work_is_refused[OPEN-OPEN]
+FAILED test_the_same_open_work_is_refused[OPEN-IN_PROGRESS]
+FAILED test_the_same_open_work_is_refused[IN_PROGRESS-OPEN]
+FAILED test_the_same_open_work_is_refused[IN_PROGRESS-IN_PROGRESS]
+FAILED test_moving_an_open_task_to_in_progress_keeps_its_work_taken
+FAILED test_a_subject_without_criterion_or_ordinal_is_still_one_key
+FAILED test_two_concurrent_runs_raise_one_task
+FAILED test_a_cited_observation_cannot_be_updated[raw_text = 'BODY-CHANGED']
+FAILED test_a_cited_observation_cannot_be_updated[payload = '{}'::jsonb]
+FAILED test_a_cited_observation_cannot_be_updated[kind = 'TEXT']
+FAILED test_a_cited_observation_cannot_be_updated[observed_at = now()]
+FAILED test_a_cited_observation_cannot_be_updated[source_id = NULL]
+FAILED test_a_cited_observation_cannot_be_updated[recorded_by_account_id = NULL]
+FAILED test_a_cited_observation_cannot_be_deleted
+FAILED test_deleting_what_a_cited_observation_references_is_refused[source]
+FAILED test_deleting_what_a_cited_observation_references_is_refused[party]
+FAILED test_deleting_what_a_cited_observation_references_is_refused[recording account]
+FAILED test_part_d_names_the_observation_in_its_message

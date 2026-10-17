@@ -366,6 +366,85 @@ DELTAS: tuple[Delta, ...] = (
             "test_any_other_birth_is_refused",
         ),
     ),
+    Delta(
+        revision="0007_task_work_and_evidence",
+        section="triggers",
+        object_name="task_completion_events.prevent_task_completion_event_change",
+        kind="BEFORE UPDATE OR DELETE trigger calling the frozen "
+             "prevent_immutable_history_change()",
+        digest_before=None,
+        digest_after="fd7e4d5f148f347d6face087fefd28933cec14b6567c18e3e757dd971e5bc087",
+        reason=(
+            "A completion event could be updated and deleted, although the "
+            "contract says the completion appends it and that its outcome and "
+            "evidence must not be discarded (measured, step 0 E1). Slice 6 plan "
+            "§5.1 part A (G6-8 (iv) (a)). It reuses the frozen function, so no "
+            "function is added for it."
+        ),
+        proven_by=(
+            "test_a_completion_event_cannot_be_updated",
+            "test_a_completion_event_cannot_be_deleted",
+            "test_a_completion_event_can_still_be_appended",
+            "test_part_a_alone_refuses_the_set_null_of_a_deleted_observation",
+        ),
+    ),
+    Delta(
+        revision="0007_task_work_and_evidence",
+        section="indexes",
+        object_name="tasks.ux_one_open_task_per_subject",
+        kind="partial unique expression index",
+        digest_before=None,
+        digest_after="9458c0de1029b93a0b23fc428fb0fe2acb643bfceab92f1c09ad1e022f4c0dfc",
+        reason=(
+            "Nothing prevented two open tasks for the same work, and under "
+            "REPEATABLE READ a lock-then-check does not prevent the duplicate "
+            "(measured, step 0 T4-T5). Slice 6 plan §5.1 part C (G6-4 (iii)): "
+            "one OPEN or IN_PROGRESS diagnostic task per subject of work."
+        ),
+        proven_by=(
+            "test_the_same_open_work_is_refused",
+            "test_each_component_of_the_key_separates_two_subjects",
+            "test_tasks_of_the_other_writers_are_outside_the_index",
+            "test_two_concurrent_runs_raise_one_task",
+        ),
+    ),
+    Delta(
+        revision="0007_task_work_and_evidence",
+        section="functions",
+        object_name="prevent_cited_observation_change()",
+        kind="trigger function",
+        digest_before=None,
+        digest_after="680baf51be46c3cac5a6412406c21a791ad4ef6facd141fbe79928bb39499bd6",
+        reason=(
+            "The observation a completion cites could be updated or deleted, the "
+            "event's reference then becoming NULL silently (measured, step 0 E1). "
+            "Slice 6 plan §5.1 part D (G6-8 (iv) (a)): a cited observation cannot "
+            "change. Not sufficient alone (F6-18): the completion command's FOR "
+            "SHARE lock completes it (step 2)."
+        ),
+        proven_by=(
+            "test_a_cited_observation_cannot_be_updated",
+            "test_a_cited_observation_cannot_be_deleted",
+            "test_an_uncited_observation_stays_writable",
+            "test_deleting_what_a_cited_observation_references_is_refused",
+        ),
+    ),
+    Delta(
+        revision="0007_task_work_and_evidence",
+        section="triggers",
+        object_name="observations.trg_cited_observation_unchanged",
+        kind="BEFORE UPDATE OR DELETE trigger calling prevent_cited_observation_change()",
+        digest_before=None,
+        digest_after="7a7401aefd2d76d2eaf29a5a9a6424270472a484bff7e65ace63d1d256664de7",
+        reason=(
+            "Attaches the guard above to observations. Declared separately because "
+            "the check compares catalog objects one by one, and a function without "
+            "its trigger would guard nothing."
+        ),
+        proven_by=(
+            "test_a_cited_observation_cannot_be_updated",
+        ),
+    ),
 )
 
 

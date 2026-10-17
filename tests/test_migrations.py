@@ -43,7 +43,7 @@ VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
 sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
 from migration_deltas import DELTAS, for_revision, split_row  # noqa: E402
 BASELINE = "0001_frozen_baseline_v0_2_3"
-HEAD = "0006_opportunity_history"
+HEAD = "0007_task_work_and_evidence"
 
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGUSER = os.environ.get("PGUSER", "turab")
@@ -261,9 +261,9 @@ def _migration_data(connection) -> dict[str, object]:
     """The ROW data a migration writes, which the structural fingerprint does
     not cover and a re-run could therefore disturb unnoticed.
 
-    Only `0002` writes rows (three `reason_codes` in category
-    `REQUEST_CLOSURE`); `0003` replaces a function body and `0004` adds a
-    constraint, neither of which touches data. The whole `reason_codes` table
+    `0002` writes rows (three `reason_codes` in category `REQUEST_CLOSURE`),
+    and so does `0007` (four in category `TASK_OUTCOME`); `0003` replaces a
+    function body and `0004` adds a constraint, neither of which touches data. The whole `reason_codes` table
     is digested rather than just that category, so a migration that modified a
     SEEDED row — the thing a migration must never do — would also show up.
     """
@@ -924,11 +924,30 @@ def test_0005_refuses_to_downgrade(migrated):
 
 def test_0006_refuses_to_downgrade(migrated):
     """Reverting 0006 re-opens an opportunity's history to silent rewriting
-    (G5-12)."""
+    (G5-12).
+
+    Since 0007, `alembic downgrade` from head stops at 0007's own refusal and
+    never reaches 0006's, so 0006's is asserted on the revision itself, and
+    the alembic-level refusal is asserted generically (as 0005's has been
+    since 0006)."""
+    with pytest.raises(RuntimeError, match="0006 has no downgrade"):
+        _revision_module("0006_opportunity_history.py").downgrade()
     result = _alembic("downgrade", "0005_match_history_immutability")
     output = result.stderr + result.stdout
     assert result.returncode != 0, output
-    assert "0006 has no downgrade" in output, output
+    assert "has no downgrade" in output, output
+    with migrated.connect() as c:
+        still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+    assert still == HEAD, "a refused downgrade must leave the version untouched"
+
+
+def test_0007_refuses_to_downgrade(migrated):
+    """Reverting 0007 lets a task completion's evidence be rewritten (G6-8
+    (iv)) and strips the outcome codes events may name."""
+    result = _alembic("downgrade", "0006_opportunity_history")
+    output = result.stderr + result.stdout
+    assert result.returncode != 0, output
+    assert "0007 has no downgrade" in output, output
     with migrated.connect() as c:
         still = c.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
     assert still == HEAD, "a refused downgrade must leave the version untouched"
@@ -943,6 +962,19 @@ def test_the_declared_deltas_for_0005_are_exactly_its_four_guards():
         ("triggers", "match_diagnostic_runs.prevent_match_diagnostic_run_update"),
         ("triggers", "matching_policies.trg_matching_policy_immutable"),
         ("functions", "enforce_matching_policy_immutability()"),
+    }
+
+
+def test_the_declared_deltas_for_0007_are_exactly_its_four_objects():
+    """Approved scope (Slice 6 plan §5.1, review of bd54216): part A's trigger
+    (on the frozen function), part C's index, part D's function and trigger.
+    Part B is data, not structure."""
+    got = {(d.section, d.object_name) for d in for_revision("0007_task_work_and_evidence")}
+    assert got == {
+        ("triggers", "task_completion_events.prevent_task_completion_event_change"),
+        ("indexes", "tasks.ux_one_open_task_per_subject"),
+        ("functions", "prevent_cited_observation_change()"),
+        ("triggers", "observations.trg_cited_observation_unchanged"),
     }
 
 
