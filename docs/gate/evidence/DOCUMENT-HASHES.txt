@@ -796,3 +796,6 @@ SLICE_6_PLAN.md changed revision: 3 -> 4 (G6-1..G6-12, 0007 and CORRECTION-005 a
 docs/gate/evidence/SLICE6-STEP1-0007-BEFORE-FIX.txt            new   8a072d5565f3ad20e90213b330f858306c27bc981c03d7479ef9dd0dd2c3bf0e
 docs/gate/evidence/SLICE6-STEP1-0007-MUTATIONS.txt             new   3f19d004b9b9f9681eec4818e493182428d8f41d0e3e3520350b9e0174ffb103
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   73496fdb69558c6cb371ad2bc6dbd9dbda33763c2df58c91c081cc51b6999a42
+docs/gate/SLICE_6_STEP1_DELIVERY.md                            new   f47846e8fc826b89970c10932a55e89e551230ce7697b8e1dfdc37d6ce69aebf
+docs/gate/SLICE_6_PLAN.md                                      rev5  76f6efa8a13ee4d7c964f41cc6ebb0180dfbcc0cb7c68abe8e812b5064b08186
+SLICE_6_PLAN.md changed revision: 4 -> 5 (step 1 delivered).

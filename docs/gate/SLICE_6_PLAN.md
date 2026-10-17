@@ -1,10 +1,10 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 4**
+## Implementation plan — **revision 5**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
 Code is written one approved step at a time, never ahead of its approval
-(§8). Step 1 (`0007`) is authorized. Step 0 (measurements only)
+(§8). Step 1 (`0007`) is authorized and **delivered** (`SLICE_6_STEP1_DELIVERY.md`), for review. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -21,7 +21,8 @@ recommendation. A recommendation is not a decision.
 | 1 | `f7469e8` | first plan |
 | 2 | `1fd7bdf` | the review of `f7469e8` recorded; step 0 measured (`SLICE6-PLAN-MEASUREMENTS.txt`); G6-4 (iii)–(iv), G6-6, G6-8 and G6-11 rewritten on the measurements; F6-10 to F6-17 added; the text of migration `0007` proposed (§5.1) |
 | 3 | `bd54216` | the review of `1fd7bdf` recorded; the completion/observation race measured (`SLICE6-PLAN-MEASUREMENTS-R3.txt`) and the completion's lock order specified (G6-8 (iv)); the suggestions kept pure, the task outcome read from the task rows (G6-4 (iii)); `stored` treated as a recorded fact (G6-11); the F6-12 staff-view test (G6-4 (v)); CORRECTION-005 proposed for `outcome_code` (§5.2); F6-18 to F6-20 |
-| 4 | the commit that adds this revision | the review of `bd54216` recorded: every recommendation of the decision table approved; each decision marked DECIDED; step 1 authorized |
+| 4 | `62d3589` | the review of `bd54216` recorded: every recommendation of the decision table approved; each decision marked DECIDED; step 1 authorized |
+| 5 | the commit that adds this revision | step 1 delivered (`SLICE_6_STEP1_DELIVERY.md`): `0007` at `cd5b868`, 55 tests, 23/23 mutations; no other change |
 
 **The review of `f7469e8`. Step 0 is AUTHORIZED, for measurements only, with
 no code. The decisions G6-1 to G6-12 and the implementation plan are NOT
@@ -1383,7 +1384,7 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements of §6.5, folded into revision 2; no code | **done** (authorized in the review of `f7469e8`); `SLICE6-PLAN-MEASUREMENTS.txt` |
-| 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216` |
+| 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216`; **delivered** at `cd5b868` (`SLICE_6_STEP1_DELIVERY.md`), for review |
 | 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2), if G6-8 (ii) is decided | G6-8, G6-9 |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11 |
 | 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10 | G6-4, G6-10 |
