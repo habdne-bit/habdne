@@ -1,0 +1,236 @@
+TURAB — Slice 6 step 1: which guard of migration 0007 refuses which write
+============================================================
+Base commit       : caa9d33c3b706ceefcdac8f80f24c48c3b9c33ab
+Source fingerprint: 642d3e5908c87625cd033c43d99be86521ebc1f85d8d77385f3c56fcd88f0019
+Working tree      : CLEAN
+Recorded          : 2026-10-20 15:24:14 UTC
+Test file         : tests/test_migration_0007_task_work_and_evidence.py
+
+=== baseline (no mutation) ===
+   57 passed in 4.00s
+== A1 part A trigger not created [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   10 failed, 47 passed in 3.91s
+   FAILED test_a_completion_event_cannot_be_deleted
+   FAILED test_a_completion_event_cannot_be_updated[completed_at
+   FAILED test_a_completion_event_cannot_be_updated[completed_by_account_id
+   FAILED test_a_completion_event_cannot_be_updated[evidence_observation_id
+   FAILED test_a_completion_event_cannot_be_updated[note
+   FAILED test_a_completion_event_cannot_be_updated[outcome_code
+   FAILED test_a_completion_event_cannot_be_updated[task_id
+   FAILED test_part_a_alone_refuses_the_set_null_of_a_deleted_observation
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A2 part A on UPDATE only: an event may be deleted [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   1 failed, 56 passed in 4.49s
+   FAILED test_a_completion_event_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A3 part A on DELETE only: an event may be rewritten [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   9 failed, 48 passed in 4.39s
+   FAILED test_a_completion_event_cannot_be_updated[completed_at
+   FAILED test_a_completion_event_cannot_be_updated[completed_by_account_id
+   FAILED test_a_completion_event_cannot_be_updated[evidence_observation_id
+   FAILED test_a_completion_event_cannot_be_updated[note
+   FAILED test_a_completion_event_cannot_be_updated[outcome_code
+   FAILED test_a_completion_event_cannot_be_updated[task_id
+   FAILED test_part_a_alone_refuses_the_set_null_of_a_deleted_observation
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B1 one outcome code not inserted [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 4.50s
+   FAILED test_a_completion_event_accepts_each_outcome_code[TASK_NO_LONGER_NEEDED]
+   FAILED test_the_four_task_outcome_codes_are_seeded_exactly
+   cause: AssertionError: assert {'TASK_INFORM... be reached')} == {'TASK_INFORM...nger needed')}
+   cause: E   AssertionError: assert {'TASK_INFORM... be reached')} == {'TASK_INFORM...nger needed')}
+   cause: E   psycopg.errors.ForeignKeyViolation: insert or update on table "task_completion_events" violates foreign key constraint "task_completion_events_outcome_code_fkey"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) insert or update on table "task_completion_events" violates foreign key constraint "task_completio
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) insert or update on table "task_completion_events" violates foreign key constraint "task_completion_ev
+== B2 the codes under another category [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 4.32s
+   FAILED test_no_task_outcome_code_existed_before_under_another_category
+   FAILED test_the_four_task_outcome_codes_are_seeded_exactly
+   cause: AssertionError: assert {} == {'TASK_INFORM...nger needed')}
+   cause: E   AssertionError: assert {} == {'TASK_INFORM...nger needed')}
+   cause: E   assert 4 == 0
+   cause: assert 4 == 0
+== B3 the codes inserted inactive [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   1 failed, 56 passed in 4.05s
+   FAILED test_the_four_task_outcome_codes_are_seeded_exactly
+   cause: E   assert False
+   cause: assert False
+== B4 a label other than the approved one [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   1 failed, 56 passed in 3.82s
+   FAILED test_the_four_task_outcome_codes_are_seeded_exactly
+   cause: AssertionError: assert {'TASK_INFORM... be reached')} == {'TASK_INFORM...nger needed')}
+   cause: E   AssertionError: assert {'TASK_INFORM... be reached')} == {'TASK_INFORM...nger needed')}
+== C1 the index not created [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   8 failed, 49 passed in 23.70s
+   FAILED test_a_subject_without_criterion_or_ordinal_is_still_one_key
+   FAILED test_moving_an_open_task_to_in_progress_keeps_its_work_taken
+   FAILED test_the_index_is_the_approved_text
+   FAILED test_the_same_open_work_is_refused[IN_PROGRESS-IN_PROGRESS]
+   FAILED test_the_same_open_work_is_refused[IN_PROGRESS-OPEN]
+   FAILED test_the_same_open_work_is_refused[OPEN-IN_PROGRESS]
+   FAILED test_the_same_open_work_is_refused[OPEN-OPEN]
+   FAILED test_two_concurrent_runs_raise_one_task
+   cause: AssertionError: ('CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks', "CREATE INDEX ux_one_open_task_per_subject ON tura...NY (ARRAY['OPEN'::task_status, 'I
+   cause: AssertionError: {'contender': 'ok', 'blocked_by_holder': False, 'holder': 'ok'}
+   cause: E   AssertionError: ('CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks', "CREATE INDEX ux_one_open_task_per_subject ON tura...NY (ARRAY['OPEN'::task_status
+   cause: E   AssertionError: {'contender': 'ok', 'blocked_by_holder': False, 'holder': 'ok'}
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C2 the index covers OPEN only (T4: IN_PROGRESS lets a second in) [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   5 failed, 52 passed in 4.38s
+   FAILED test_moving_an_open_task_to_in_progress_keeps_its_work_taken
+   FAILED test_the_index_is_the_approved_text
+   FAILED test_the_same_open_work_is_refused[IN_PROGRESS-IN_PROGRESS]
+   FAILED test_the_same_open_work_is_refused[IN_PROGRESS-OPEN]
+   FAILED test_the_same_open_work_is_refused[OPEN-IN_PROGRESS]
+   cause: AssertionError: ("'IN_PROGRESS'", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload...) ->> 'basis'::text))) WHERE ((st
+   cause: E   AssertionError: ("'IN_PROGRESS'", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload...) ->> 'basis'::text))) WHERE 
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C3 the index covers every writer (no source predicate) [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   4 failed, 53 passed in 4.15s
+   FAILED test_a_source_spelled_otherwise_is_outside_the_index
+   FAILED test_tasks_of_the_other_writers_are_outside_the_index[no-source]
+   FAILED test_tasks_of_the_other_writers_are_outside_the_index[other-source]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'source'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payloa...> 'subject'::text) ->> 'basis'::t
+   cause: E   AssertionError: ("'source'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payloa...> 'subject'::text) ->> 'basis
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C4 the key without request_id [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   3 failed, 54 passed in 4.23s
+   FAILED test_a_diagnostic_task_with_no_request_is_not_deduplicated
+   FAILED test_each_component_of_the_key_separates_two_subjects[request]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ('request_id', "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree ((((payload -> 'subject'::...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ('request_id', "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree ((((payload -> 'subject'::...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C5 the key without entity [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 4.39s
+   FAILED test_each_component_of_the_key_separates_two_subjects[entity]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'entity'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payloa...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ("'entity'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payloa...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C6 the key without id [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 4.53s
+   FAILED test_each_component_of_the_key_separates_two_subjects[id]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'id'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload ->...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ("'id'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload ->...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C7 the key without gate [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 3.75s
+   FAILED test_each_component_of_the_key_separates_two_subjects[gate]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'gate'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload ...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ("'gate'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload ...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C8 the key without criterion [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 3.57s
+   FAILED test_each_component_of_the_key_separates_two_subjects[criterion]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'criterion'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((pay...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ("'criterion'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((pay...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C9 the key without ordinal [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   2 failed, 55 passed in 4.09s
+   FAILED test_each_component_of_the_key_separates_two_subjects[ordinal]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'ordinal'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((paylo...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ("'ordinal'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((paylo...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C10 the key without basis [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   3 failed, 54 passed in 4.09s
+   FAILED test_a_diagnostic_subject_without_basis_is_not_deduplicated
+   FAILED test_each_component_of_the_key_separates_two_subjects[basis]
+   FAILED test_the_index_is_the_approved_text
+   cause: AssertionError: ("'basis'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload...NY (ARRAY['OPEN'::task_status, 'I
+   cause: E   AssertionError: ("'basis'::text", "CREATE UNIQUE INDEX ux_one_open_task_per_subject ON turab.tasks USING btree (request_id, (((payload...NY (ARRAY['OPEN'::task_status
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== C11 criterion not coalesced: two criterion-less subjects never conflict [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   1 failed, 56 passed in 3.84s
+   FAILED test_a_subject_without_criterion_or_ordinal_is_still_one_key
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C12 ordinal not coalesced [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   1 failed, 56 passed in 4.31s
+   FAILED test_a_subject_without_criterion_or_ordinal_is_still_one_key
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D1 part D trigger not created [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   12 failed, 45 passed in 4.15s
+   FAILED test_a_cited_observation_cannot_be_deleted
+   FAILED test_a_cited_observation_cannot_be_updated[kind
+   FAILED test_a_cited_observation_cannot_be_updated[observed_at
+   FAILED test_a_cited_observation_cannot_be_updated[payload
+   FAILED test_a_cited_observation_cannot_be_updated[raw_text
+   FAILED test_a_cited_observation_cannot_be_updated[recorded_by_account_id
+   FAILED test_a_cited_observation_cannot_be_updated[source_id
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[party]
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[recording
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[source]
+   FAILED test_part_a_alone_refuses_the_set_null_of_a_deleted_observation
+   FAILED test_part_d_names_the_observation_in_its_message
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event in...sk_completion_events" SET "eviden
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event in...sk_completion_events" SET "ev
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: E   psycopg.errors.UndefinedObject: trigger "trg_cited_observation_unchanged" for table "observations" does not exist
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.UndefinedObject) trigger "trg_cited_observation_unchanged" for table "observations" does not exist
+   cause: Failed: DID NOT RAISE DBAPIError
+== D2 part D on UPDATE only [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   1 failed, 56 passed in 4.43s
+   FAILED test_a_cited_observation_cannot_be_deleted
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event in...sk_completion_events" SET "eviden
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event in...sk_completion_events" SET "ev
+== D3 part D on DELETE only [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   10 failed, 47 passed in 4.23s
+   FAILED test_a_cited_observation_cannot_be_updated[kind
+   FAILED test_a_cited_observation_cannot_be_updated[observed_at
+   FAILED test_a_cited_observation_cannot_be_updated[payload
+   FAILED test_a_cited_observation_cannot_be_updated[raw_text
+   FAILED test_a_cited_observation_cannot_be_updated[recorded_by_account_id
+   FAILED test_a_cited_observation_cannot_be_updated[source_id
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[party]
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[recording
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[source]
+   FAILED test_part_d_names_the_observation_in_its_message
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D4 part D refuses nothing [db/migrations/versions/0007_task_work_and_evidence.py, 1 site(s)]  restored: sha256 6b11a0f88e387834 identical
+   11 failed, 46 passed in 4.15s
+   FAILED test_a_cited_observation_cannot_be_deleted
+   FAILED test_a_cited_observation_cannot_be_updated[kind
+   FAILED test_a_cited_observation_cannot_be_updated[observed_at
+   FAILED test_a_cited_observation_cannot_be_updated[payload
+   FAILED test_a_cited_observation_cannot_be_updated[raw_text
+   FAILED test_a_cited_observation_cannot_be_updated[recorded_by_account_id
+   FAILED test_a_cited_observation_cannot_be_updated[source_id
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[party]
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[recording
+   FAILED test_deleting_what_a_cited_observation_references_is_refused[source]
+   FAILED test_part_d_names_the_observation_in_its_message
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event in...sk_completion_events" SET "eviden
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) Historical TURAB record is immutable; append a new decision/event in...sk_completion_events" SET "ev
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+
+SURVIVING MUTATIONS: none
