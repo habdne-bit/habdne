@@ -15,7 +15,8 @@ how its one-word form («اعتمد») is read (`SLICE_6_PLAN.md`, the review of
   that the implementation is correct. §2–§4 report the runs on the actual
   migration.
 
-**Status:** delivered, for review.
+**Status:** **CLOSED at `b6a08e7`** (review of `b6a08e7`), with the
+addendum of §8, delivered for review.
 
 **Basis:**
 - `docs/gate/SLICE_6_PLAN.md`, revision 4, §5.1 and the decisions it rests
@@ -160,4 +161,103 @@ of Slice 4's. It is not regenerated.
 - **Step 1 closes on review.**
 - **Step 2:** `getTasks`, `postTasksTaskIdComplete` with the lock order of
   G6-8 (iv), CORRECTION-005 and the loader's extension (§5.2).
+- **Standing:** G4-5R open, SALE only; K06 UNPROVEN.
+
+---
+
+## 8. Addendum (review of `b6a08e7`)
+
+The review closed step 1 at `b6a08e7`, accepted finding M-1, and asked for
+this addendum before step 2. It changes no line of `0007` (sha256 still
+`6b11a0f8…`). Commits: `caa9d33` (tests, record, EN-03, README, plan
+revision 6), then the evidence commits `48debb6`, `4a275fe`, `c8cd8ac`,
+`328a12c`.
+
+### 8.1 What part C's index does not deduplicate (M-1)
+
+The index implements §5.1's text. It does not guarantee uniqueness for every
+diagnostic payload. Three cases, each pinned by a test that asserts the
+duplicate is **accepted today**: pinned, not endorsed.
+
+| Case | Why it is outside the key | Pin |
+|---|---|---|
+| `request_id` NULL | NULLs are distinct in a unique index (PostgreSQL 16 documentation, §11.6); the text does not use NULLS NOT DISTINCT | `test_a_diagnostic_task_with_no_request_is_not_deduplicated` (step 1) |
+| `subject` without `basis` | only `criterion` and `ordinal` are coalesced; a missing `basis` is a NULL key component | `test_a_diagnostic_subject_without_basis_is_not_deduplicated` |
+| `source` = `"diagnostic"` | the predicate compares with `'DIAGNOSTIC'` literally; the task is outside the index | `test_a_source_spelled_otherwise_is_outside_the_index` |
+
+- **`entity`, `id`, `gate`.** They are uncoalesced too, so a subject
+  without one of them is expected to behave as without `basis`. That is
+  **derived from the text, not measured**. Our review message said "any of
+  the four" as if measured; only `basis` was.
+- **The measurement before the pins** (`evidence/SLICE6-STEP1-ADDENDUM-INDEX-LIMITS.txt`,
+  at `b6a08e7`, fingerprint `190e31a9…6889`): P1 and P2 accepted both tasks;
+  the control P3 (complete subject, exact `DIAGNOSTIC`) was refused by
+  `ux_one_open_task_per_subject`.
+- **No "before the fix".** The pins assert existing behaviour, so no failure
+  was expected and none is reported. They pass on the same text: 57/57 in
+  the file, at `caa9d33`.
+- **What closes it, and when.** Step 4's tests prove that the diagnostic
+  writer sets `request_id` and the four keys non-NULL, and `source` to
+  `"DIAGNOSTIC"` exactly. A constraint on the payload is open question
+  OQ6-1 (plan §5.3), not an approved change.
+
+### 8.2 TRUNCATE (M-3)
+
+- **What holds.** The triggers of parts A and D are row-level, BEFORE UPDATE
+  OR DELETE. They do not fire on TRUNCATE: PostgreSQL fires TRUNCATE
+  triggers only at statement level, and `0007` declares none (measured, P4:
+  none on `task_completion_events` or `observations`).
+- **What does not follow.** That every TRUNCATE of these tables succeeds.
+  The foreign keys that reference them, and the privileges of the role,
+  still apply. This is the same class of limit as EN-02: the guards hold
+  against the application's ordinary statements, and no application path
+  truncates.
+
+### 8.3 Part D's lookup (M-2)
+
+Part D finds citing events by `evidence_observation_id`, and no index covers
+that column (measured, P5); a foreign key does not create one on its
+referencing side. Open question OQ6-2 (plan §5.3): a later performance
+decision, preceded by a measurement at a representative volume.
+
+### 8.4 Evidence round
+
+Each run on a clean tree, source fingerprint `642d3e59…0019` (from
+`caa9d33`; the later commits are evidence only). Run in a fresh cloud
+container, server PostgreSQL 16.15 (step 1's round: 16.13).
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| `0007` mutations | 23/23 fail; none survives. Changed from step 1: C3 3 → 4 (the `source` pin), C10 2 → 3 (the `basis` pin); every other count equal | `48debb6` (run at `caa9d33`) | `evidence/SLICE6-STEP1A-0007-MUTATIONS.txt` |
+| Authorization matrix | 183 rules; suite 2428/2428; no rule added | `4a275fe` (run at `48debb6`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS; 70 database-level PASS notices; 67 operations equal | `c8cd8ac` (run at `4a275fe`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | 2428 passed, 0 failed, 0 errors, 0 skipped; `run_binding.py`: `bound` | `328a12c` (run at `c8cd8ac`) | `evidence/TEST-RUN-PROVENANCE.txt` |
+
+- **STOP GATE E.** `--check` exits 1 with the same one problem as in §6:
+  the document is stale. It is not regenerated.
+- **The step 1 mutation record** (`SLICE6-STEP1-0007-MUTATIONS.txt`, at
+  `cd5b868`) is kept unchanged; it is the record of the closed tree.
+- **Discarded, and named (EN-01, EN-03).** A first full run in this
+  container was on a 50-commit shallow clone (10 errors in
+  `test_slice4_stop_gate_d.py`); a probe rebuild was interrupted when the
+  container restarted. Neither is reported as a result.
+- **These results are ours.** The reviewer did not re-run them.
+
+### 8.5 Other changes
+
+- `ENVIRONMENT_NOTES.md`: EN-03 (the suite needs the full git history);
+  EN-01 observed again.
+- `README.md`: the status table, which still showed Slice 3 in progress and
+  561 tests, brought to Slice 6. The documented test command was bare
+  `pytest`, which fails at collection (`No module named 'tests'`, measured);
+  it is now `python -m pytest`, as `record_test_run.py` runs it.
+- **The language fix (M-6)** concerned our review message, not a file: the
+  phrase is not in the repository.
+
+### 8.6 What remains
+
+- **Step 2 is authorized** (review of `b6a08e7`), and begins after this
+  addendum. **Its acceptance requires** the proof that the completion
+  command locks the cited observation FOR SHARE (G6-8 (iv)).
+- **OQ6-1, OQ6-2:** open, not approved.
 - **Standing:** G4-5R open, SALE only; K06 UNPROVEN.

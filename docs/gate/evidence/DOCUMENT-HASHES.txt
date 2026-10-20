@@ -799,3 +799,11 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   73496fdb695
 docs/gate/SLICE_6_STEP1_DELIVERY.md                            new   f47846e8fc826b89970c10932a55e89e551230ce7697b8e1dfdc37d6ce69aebf
 docs/gate/SLICE_6_PLAN.md                                      rev5  76f6efa8a13ee4d7c964f41cc6ebb0180dfbcc0cb7c68abe8e812b5064b08186
 SLICE_6_PLAN.md changed revision: 4 -> 5 (step 1 delivered).
+--- Review of b6a08e7: step 1 CLOSED at b6a08e7; M-1 accepted; addendum (step 1a); Slice 6 plan revision 6 ---
+docs/gate/evidence/SLICE6-STEP1-ADDENDUM-INDEX-LIMITS.txt      new   0683df0062c92112a8f2a5f0ca6a63e381ed1c84c572d22f3a763eb03bc5040b
+docs/gate/evidence/SLICE6-STEP1A-0007-MUTATIONS.txt            new   411824de8e337e3cd8d1aa5233ae8f6a2614730ef4c8025efb8b9f25eb15df72
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   12522d24d692d38d247f65a1e102c582721ad1feb91a20d1c37f6e118ae907cf
+docs/gate/ENVIRONMENT_NOTES.md                                 ---   16e2434513ef2143e2c7f5f4e6fab276841875955e93373d5491b84e2e6bdbbf
+docs/gate/SLICE_6_STEP1_DELIVERY.md                            add   901036b929e6074415f02b277ff71c4d57f28c819dd901dc999f3ebbd8e496bc
+docs/gate/SLICE_6_PLAN.md                                      rev6  76c411e5b96ec7a763973a6d7a7d6ecd2aa1b8511bec230019453ebf148d8007
+SLICE_6_PLAN.md changed revision: 5 -> 6 (step 1 closed at b6a08e7; OQ6-1, OQ6-2 opened; obligations on steps 2 and 4; step 2 authorized after the addendum).
