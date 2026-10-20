@@ -104,8 +104,12 @@ MUTATIONS = [
     ("W3 the task is not marked DONE", SVC,
      "UPDATE turab.tasks SET status = 'DONE', completed_at = :at",
      "UPDATE turab.tasks SET completed_at = :at"),
+    # The first run's W4 wrote `now()`. It survived because it is EQUIVALENT:
+    # `now()` is the transaction's start, which is also the event's default
+    # (SLICE6-STEP2-MUTATIONS-FIRST-RUN.txt). `clock_timestamp()` differs.
     ("W4 the task's completed_at is not the event's", SVC,
-     "SET status = 'DONE', completed_at = :at", "SET status = 'DONE', completed_at = now()"),
+     "SET status = 'DONE', completed_at = :at",
+     "SET status = 'DONE', completed_at = clock_timestamp()"),
     # --- A: the audit (§3.7) --------------------------------------------------------------
     ("A1 the event is not audited", SVC, EVENT_AUDIT, "    pass"),
     ("A2 the task change is not audited", SVC, TASK_AUDIT, "    pass"),

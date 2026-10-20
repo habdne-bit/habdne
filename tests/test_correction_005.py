@@ -171,6 +171,10 @@ def test_the_extended_loader_refuses(tmp_path, label, mutate, message):
 @pytest.mark.parametrize("label, mutate, message", [
     ("non_null of a field whose type admits no null", _set_type("outcome_code", "string"),
      "no type list admitting null"),
+    # The first mutation run showed this case missing: a type LIST without null
+    # (K2 survived, SLICE6-STEP2-MUTATIONS-FIRST-RUN.txt).
+    ("non_null of a field whose type list admits no null",
+     _set_type("outcome_code", ["string"]), "no type list admitting null"),
     ("non_null of a field that admits null only", _set_type("outcome_code", ["null"]),
      "admits null only"),
 ])
