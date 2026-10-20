@@ -229,9 +229,10 @@ def build() -> tuple[str, list[str]]:
             }
             applied.append(f"{entry['id']} ({op['operationId']})")
 
-    # Request-body narrowings (CORRECTION-004). Validated by the runtime's
-    # function, so the effective contract cannot apply one it would refuse.
-    from turab.auth.contract import load_request_body_narrowings
+    # Request-body narrowings (CORRECTION-004, CORRECTION-005). Validated AND
+    # transformed by the runtime's functions, so the effective contract cannot
+    # apply one it would refuse, nor apply it differently.
+    from turab.auth.contract import load_request_body_narrowings, narrowed_body_schema
 
     entries = load_request_body_narrowings(CORRECTIONS, doc)
     narrowings = {e["operation_id"]: e for e in entries}
@@ -248,22 +249,34 @@ def build() -> tuple[str, list[str]]:
             if not isinstance(op, dict) or op.get("operationId") not in narrowings:
                 continue
             entry = narrowings[op["operationId"]]
-            schema = op["requestBody"]["content"]["application/json"]["schema"]
-            frozen_required = list(schema.get("required") or [])
-            schema["required"] = frozen_required + list(entry["require"])
-            for field in entry["require"]:
-                schema["properties"][field] = {
-                    k: v for k, v in schema["properties"][field].items() if k != "default"}
-            op["x-turab-correction"] = {
+            holder = op["requestBody"]["content"]["application/json"]
+            # A body given by `$ref` becomes an operation-local copy here; the
+            # frozen component stays as it is (plan §5.2, F6-19).
+            frozen_ref = holder["schema"].get("$ref")
+            # On `doc` itself, so untouched values keep their YAML anchors.
+            # Inlining replaces only this operation's `$ref`, and one
+            # narrowing names one operation, so no other count changes.
+            schema = narrowed_body_schema(entry, doc)
+            frozen_required = schema["required"][:len(schema["required"])
+                                                 - len(entry["require"])]
+            holder["schema"] = schema
+            marker = {
                 "id": entry["id"],
                 "kind": "REQUEST_BODY_NARROWING",
                 "decision": entry["decision"],
                 "approved": str(entry.get("approved", "")),
                 "frozen-required": frozen_required,
                 "frozen-defaults": dict(entry["frozen_defaults"]),
-                "runtime-rule": " ".join(entry["runtime_rule"].split()),
-                "reference": entry.get("reference"),
             }
+            if frozen_ref is not None:
+                marker["frozen-body-ref"] = frozen_ref
+            if entry.get("non_null"):
+                marker["non-null"] = list(entry["non_null"])
+            if entry.get("enum"):
+                marker["enum"] = {f: list(v) for f, v in entry["enum"].items()}
+            marker["runtime-rule"] = " ".join(entry["runtime_rule"].split())
+            marker["reference"] = entry.get("reference")
+            op["x-turab-correction"] = marker
             narrowed.append(f"{entry['id']} ({op['operationId']})")
     applied += narrowed
 

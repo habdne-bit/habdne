@@ -42,6 +42,9 @@ AUDITED_BY_COMMAND = {
     # Slice 5 step 5 (G5-8 (i), decided (a) in the review of 6c6e614): the
     # share's interaction. `interactions` has no audit trigger.
     "interactions": "interaction_id",
+    # Slice 6 step 2 (plan §3.7): the completion event. The table has no
+    # audit trigger; `tasks` is already above.
+    "task_completion_events": "task_completion_event_id",
 }
 
 #: Columns a command-layer audit row leaves out. The review of 6c6e614
@@ -51,6 +54,9 @@ AUDITED_BY_COMMAND = {
 #: trigger would have written, less these columns.
 WITHHELD: dict[str, tuple[str, ...]] = {
     "interactions": ("summary",),
+    # Slice 6 plan §3.7 (R6.3b, "staff notes"): the completion's free-text
+    # note stays in its own row, as the share's summary does.
+    "task_completion_events": ("note",),
 }
 
 

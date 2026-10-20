@@ -23,10 +23,10 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    6f0dbaadebbffc1c52bbeb9f9bc8f8e08b07594c53bb84fe53f539a7a4dca7f1
+#   CONTRACT_CORRECTIONS.yaml    6c8f988b0eabc47bafd83351454ce6daa49778bae258d1e0bcc103b8a87c77d0
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
-# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-002 (postRequestsRequestIdState)
+# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-002 (postRequestsRequestIdState)
 # Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd)
 # =============================================================================
 openapi: 3.1.0
@@ -1612,7 +1612,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskCompletionInput'
+              type: object
+              additionalProperties: false
+              properties:
+                outcome_code:
+                  type: string
+                  enum:
+                  - TASK_INFORMATION_OBTAINED
+                  - TASK_INFORMATION_UNAVAILABLE
+                  - TASK_PARTY_UNREACHABLE
+                  - TASK_NO_LONGER_NEEDED
+                note:
+                  type:
+                  - string
+                  - 'null'
+                evidence_observation_id:
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+              required:
+              - outcome_code
       responses:
         '200':
           description: OK
@@ -1633,6 +1653,26 @@ paths:
       operationId: postTasksTaskIdComplete
       description: Append a task_completion_event and mark task DONE in one transaction. Outcome/evidence
         must not be discarded.
+      x-turab-correction:
+        id: CORRECTION-005
+        kind: REQUEST_BODY_NARROWING
+        decision: G6-8 (ii) (a), Slice 6 plan revision 3 (docs/gate/SLICE_6_PLAN.md), approved in the
+          review of bd54216
+        approved: '2026-10-17'
+        frozen-required: []
+        frozen-defaults: {}
+        frozen-body-ref: '#/components/schemas/TaskCompletionInput'
+        non-null:
+        - outcome_code
+        enum:
+          outcome_code:
+          - TASK_INFORMATION_OBTAINED
+          - TASK_INFORMATION_UNAVAILABLE
+          - TASK_PARTY_UNREACHABLE
+          - TASK_NO_LONGER_NEEDED
+        runtime-rule: outcome_code is required, not null, and one of the four codes. A code changes no
+          fact and raises no verification level.
+        reference: docs/contract/CORRECTION-005-task-outcome-code.md
   /opportunities/{opportunity_id}:
     get:
       summary: Get opportunity with field-level redaction by sharing scope

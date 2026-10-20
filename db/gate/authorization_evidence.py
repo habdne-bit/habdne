@@ -1022,6 +1022,51 @@ RULES: tuple[Rule, ...] = (
           "test_e_a_new_writer_is_a_problem",
           "test_e_a_general_opportunity_create_is_a_problem",
           "test_e_a_proof_of_another_transaction_type_is_a_problem")),
+    # --- Slice 6, step 2: the task list and the completion --------------------------
+    Rule("S6-2 / §6.3 / R6.3a",
+         "The task list and the completion are staff-only: ADMIN, OPERATOR and REVIEWER "
+         "each allowed; a customer refused 403 and recorded, writing nothing; anonymous "
+         "refused 401",
+         ("test_each_staff_role_lists_and_completes",
+          "test_a_customer_is_refused_both_and_the_refusal_is_recorded",
+          "test_an_anonymous_caller_is_refused_both")),
+    Rule("S6-2 / R6.3a",
+         "A completion on an unknown task is 403 OBJECT_NOT_AUTHORIZED, and the denial is "
+         "recorded with its kind and id",
+         ("test_an_unknown_task_is_403_and_the_denial_is_recorded",)),
+    Rule("S6-2 / G6-9 / R6.3c / R9.3",
+         "The list returns every writer's tasks, audited once with its count; no seller "
+         "expectation, claim value or free text reaches it",
+         ("test_the_list_read_is_audited_once_with_its_count",
+          "test_every_writers_task_is_listed_and_no_payload_carries_a_private_value",
+          "test_assigned_to_me_keeps_the_callers_tasks_only")),
+    Rule("S6-2 / G6-8 (iv) / F6-18",
+         "The completion locks the task, then the cited observation FOR SHARE, before its "
+         "event: a change after the lock waits and is refused; one before it is the body "
+         "cited; a delete before it is a typed 422 that writes nothing",
+         ("test_the_task_is_locked_before_the_observation",
+          "test_r2a_r2c_a_change_after_the_lock_waits_and_is_refused",
+          "test_r2b_an_update_before_the_lock_is_the_body_cited",
+          "test_r2d_a_delete_before_the_lock_is_refused_typed_writing_nothing")),
+    Rule("S6-2 / G6-8 (i), (v), (vii) / §3.6 / §3.7 / I02 / K05",
+         "One transaction appends the event and marks the task DONE, or neither; a closed "
+         "task is 409 and stays as it is; a second concurrent completion is refused; no "
+         "fact changes; both rows audited, the note withheld; a replay writes nothing",
+         ("test_a_completion_appends_its_event_and_marks_the_task_done",
+          "test_i02_a_failure_between_the_two_writes_leaves_neither",
+          "test_a_closed_task_is_409_and_nothing_is_written",
+          "test_a_second_concurrent_completion_waits_and_is_refused",
+          "test_information_obtained_changes_no_fact",
+          "test_both_rows_are_audited_and_the_note_is_withheld",
+          "test_k05_a_replay_returns_the_first_response_and_writes_nothing")),
+    Rule("S6-2 / CORRECTION-005 / F6-19",
+         "The completion's body is the effective contract's: the route refuses exactly "
+         "what the effective schema refuses; the enum is the active TASK_OUTCOME codes; "
+         "the extended loader narrows only",
+         ("test_the_route_refuses_exactly_what_the_effective_schema_refuses",
+          "test_the_enum_is_the_active_task_outcome_codes_of_the_database",
+          "test_the_extended_loader_refuses",
+          "test_a_component_another_operation_also_uses_is_refused")),
 )
 
 

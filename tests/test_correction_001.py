@@ -465,10 +465,22 @@ def test_the_effective_contract_changes_nothing_else():
             # transformation of the frozen one, and nothing else may differ.
             entry = narrowings[op["operationId"]]
             expected = copy.deepcopy(op)
-            schema = expected["requestBody"]["content"]["application/json"]["schema"]
+            holder = expected["requestBody"]["content"]["application/json"]
+            ref = holder["schema"].get("$ref")
+            if ref is not None:
+                # CORRECTION-005 kind: the body becomes an operation-local copy
+                # of the component; the component itself is compared above.
+                holder["schema"] = copy.deepcopy(
+                    frozen["components"]["schemas"][ref.rsplit("/", 1)[1]])
+            schema = holder["schema"]
             schema["required"] = list(schema.get("required") or []) + list(entry["require"])
             for field in entry["require"]:
                 schema["properties"][field].pop("default", None)
+            for field in entry.get("non_null") or ():
+                kept = [t for t in schema["properties"][field]["type"] if t != "null"]
+                schema["properties"][field]["type"] = kept[0] if len(kept) == 1 else kept
+            for field, values in (entry.get("enum") or {}).items():
+                schema["properties"][field]["enum"] = list(values)
             assert other == expected, f"{op['operationId']} changed beyond its narrowing"
         elif op["operationId"] in role_corrected:
             # Only x-roles may differ, and it is asserted exactly elsewhere.

@@ -34,6 +34,8 @@ MATCH_KIND = "MATCH_CANDIDATE"
 #: Slice 5 §3.6: the access kind of a staff read of one opportunity.
 OPPORTUNITY_KIND = "OPPORTUNITY"
 DIAGNOSTIC_KIND = "MATCH_DIAGNOSTIC_RUN"
+#: Slice 6 step 2: a task, staff-only by role; it has no customer loader.
+TASK_KIND = "TASK"
 
 
 @dataclass(frozen=True, slots=True)
@@ -374,6 +376,24 @@ class AccessService:
         from . import opportunity_views
 
         return opportunity_views.customer_view(self._session, opportunity_id)
+
+    def list_tasks(self, *, status: str | None, priority: str | None,
+                   assigned_to_me: bool, page: int, page_size: int, operation_id: str):
+        """Slice 6 step 2 (G6-9), on the READ session, audited once for the
+        page with its count (R6.3c). Staff-only by role: a task is not a
+        customer resource and has no loader."""
+        from . import tasks as task_service
+
+        items, total = task_service.list_tasks(
+            self._session, status=status, priority=priority,
+            assigned_to=self._subject.account_id if assigned_to_me else None,
+            page=page, page_size=page_size)
+        self.record_list_access(
+            operation_id=operation_id, resource_kind=TASK_KIND, result_count=len(items),
+            query_shape={"status": status, "priority": priority,
+                         "assigned_to_me": assigned_to_me, "page": page,
+                         "page_size": page_size})
+        return items, total
 
     def match_queue(self, *, operation_id: str):
         """Slice 5 step 4: the match queue (G5-11), on the READ session,

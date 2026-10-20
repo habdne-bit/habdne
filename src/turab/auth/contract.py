@@ -8,6 +8,7 @@ policy silently drifts from the contract it is supposed to enforce.
 """
 from __future__ import annotations
 
+import copy
 import functools
 import pathlib
 from typing import Any
@@ -178,15 +179,150 @@ def _corrected_roles(
 #: The keys a request-body narrowing may carry. Anything else is refused, so
 #: no other kind of change can travel under this heading.
 _BODY_NARROWING_KEYS = frozenset({
-    "id", "decision", "approved", "operation_id", "require", "frozen_defaults",
-    "rationale", "runtime_rule", "reference",
+    "id", "decision", "approved", "operation_id", "require", "non_null", "enum",
+    "frozen_defaults", "rationale", "runtime_rule", "reference",
 })
+
+#: JSON Schema types a narrowing `enum` value may have, as Python types. A
+#: bool is not an integer or a number here, as in JSON.
+_JSON_TYPES: dict[str, tuple[type, ...]] = {
+    "string": (str,), "integer": (int,), "number": (int, float), "boolean": (bool,),
+}
+_SCHEMA_REF = "#/components/schemas/"
+
+
+def _refs(node: Any, out: dict[str, int]) -> dict[str, int]:
+    """Every `$ref` value in a parsed document, with its count."""
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str):
+            out[ref] = out.get(ref, 0) + 1
+        for value in node.values():
+            _refs(value, out)
+    elif isinstance(node, list):
+        for value in node:
+            _refs(value, out)
+    return out
+
+
+def _frozen_body(cid: str, op: dict[str, Any], contract: dict[str, Any]
+                 ) -> tuple[dict[str, Any], str | None]:
+    """The operation's JSON object body, and the `$ref` it was given by, if any.
+
+    A body given by `$ref` (CORRECTION-005, F6-19) is accepted only when the
+    component is referenced by this operation alone, counted in the frozen
+    document: narrowing a shared component would narrow another operation
+    too. The component itself is never changed; the effective contract gets
+    an operation-local copy (`narrowed_body_schema`)."""
+    try:
+        schema = op["requestBody"]["content"]["application/json"]["schema"]
+    except (KeyError, TypeError):
+        raise ContractError(f"{cid}: {op.get('operationId')} has no JSON body") from None
+    ref = None
+    if isinstance(schema, dict) and "$ref" in schema:
+        ref = schema["$ref"]
+        if set(schema) != {"$ref"} or not str(ref).startswith(_SCHEMA_REF):
+            raise ContractError(f"{cid}: the body is not a plain reference to a schema "
+                                "component")
+        uses = _refs(contract, {}).get(ref, 0)
+        if uses != 1:
+            raise ContractError(f"{cid}: {ref} is referenced {uses} times in the frozen "
+                                "contract; a narrowing may only change a component this "
+                                "operation alone uses")
+        schema = (contract.get("components", {}).get("schemas", {})
+                  .get(ref[len(_SCHEMA_REF):]))
+    if not isinstance(schema, dict) or not isinstance(schema.get("properties"), dict):
+        raise ContractError(f"{cid}: {op.get('operationId')} has no JSON object body")
+    return schema, ref
+
+
+def _non_null_types(field_schema: dict[str, Any]) -> list[str]:
+    declared = field_schema.get("type")
+    types = declared if isinstance(declared, list) else [declared]
+    return [t for t in types if t != "null"]
+
+
+def narrowed_body_schema(entry: dict[str, Any], contract: dict[str, Any]) -> dict[str, Any]:
+    """The effective body schema of a VALIDATED narrowing, as a new object.
+
+    The one implementation of the transformation: the generator writes it into
+    the effective contract, and the runtime reads its enum (CORRECTION-005).
+    - `require`: appended to `required`; each field's `default` removed;
+    - `non_null`: `null` removed from the field's type list;
+    - `enum`: the field's values.
+    A body given by `$ref` is copied, so the frozen component is unchanged.
+
+    Only the levels that change are new objects: the schema, its `required`,
+    its `properties` and each narrowed field. Every other value is the frozen
+    object itself, so a YAML dump keeps its anchors, and the effective text of
+    CORRECTION-004 is unchanged byte for byte. A body given by `$ref` is
+    copied whole instead: the copy then shares nothing with the component,
+    which a YAML dump would otherwise write with aliases into the operation."""
+    op = next(o for _, _, o in _operations(contract)
+              if o.get("operationId") == entry["operation_id"])
+    frozen, ref = _frozen_body(entry["id"], op, contract)
+    if ref is not None:
+        frozen = copy.deepcopy(frozen)
+    schema = dict(frozen)
+    schema["required"] = list(frozen.get("required") or []) + list(entry["require"])
+    properties = schema["properties"] = dict(frozen["properties"])
+    for field in entry["require"]:
+        properties[field] = {k: v for k, v in properties[field].items() if k != "default"}
+    for field in entry.get("non_null") or ():
+        remaining = _non_null_types(properties[field])
+        properties[field] = {**properties[field],
+                             "type": remaining[0] if len(remaining) == 1 else remaining}
+    for field, values in (entry.get("enum") or {}).items():
+        properties[field] = {**properties[field], "enum": list(values)}
+    return schema
+
+
+def _check_non_null(cid: str, fields: Any, properties: dict[str, Any]) -> None:
+    if not isinstance(fields, list) or not fields:
+        raise ContractError(f"{cid}: non_null must be a non-empty list of fields")
+    repeated = sorted({f for f in fields if fields.count(f) > 1})
+    if repeated:
+        raise ContractError(f"{cid}: {repeated} listed more than once in non_null")
+    for field in fields:
+        if field not in properties:
+            raise ContractError(f"{cid}: {field!r} is not a property of the body")
+        declared = properties[field].get("type")
+        if not isinstance(declared, list) or "null" not in declared:
+            raise ContractError(f"{cid}: {field!r} has no type list admitting null; "
+                                "nothing to narrow by non_null")
+        if not _non_null_types(properties[field]):
+            raise ContractError(f"{cid}: {field!r} admits null only; non_null would "
+                                "refuse every value")
+
+
+def _check_enum(cid: str, enums: Any, properties: dict[str, Any]) -> None:
+    if not isinstance(enums, dict) or not enums:
+        raise ContractError(f"{cid}: enum must map fields to their values")
+    for field, values in enums.items():
+        if field not in properties:
+            raise ContractError(f"{cid}: {field!r} is not a property of the body")
+        if not isinstance(values, list) or not values:
+            raise ContractError(f"{cid}: the enum of {field!r} is empty")
+        if any(values.count(v) > 1 for v in values):
+            raise ContractError(f"{cid}: the enum of {field!r} repeats a value")
+        types = _non_null_types(properties[field])
+        allowed = tuple(c for t in types for c in _JSON_TYPES.get(t, ()))
+        for value in values:
+            if (not allowed or not isinstance(value, allowed)
+                    or (isinstance(value, bool) and bool not in allowed)):
+                raise ContractError(f"{cid}: an enum value of {field!r} is not of its "
+                                    f"type {types}")
+        frozen = properties[field].get("enum")
+        if frozen is not None and not set(values) <= set(frozen):
+            raise ContractError(f"{cid}: the enum of {field!r} admits a value the frozen "
+                                "enum does not; a narrowing may only remove values")
 
 
 def load_request_body_narrowings(
     path: pathlib.Path | None = None, contract: dict[str, Any] | None = None,
 ) -> tuple[dict, ...]:
-    """Read and validate the approved request-body narrowings (CORRECTION-004).
+    """Read and validate the approved request-body narrowings (CORRECTION-004,
+    CORRECTION-005).
 
     A narrowing makes fields of an operation's JSON request body REQUIRED.
     That accepts strictly fewer requests than the frozen contract, so it
@@ -195,6 +331,14 @@ def load_request_body_narrowings(
     it changes no request that is still accepted. The removed defaults are
     recorded in `frozen_defaults`, and must equal what the frozen package
     declares today (the staleness invariant of the role corrections).
+
+    Slice 6 step 2 (F6-19; plan §5.2) adds, each a narrowing check:
+    - a body given by `$ref`, only when that component is referenced by this
+      operation alone (`_frozen_body`); the frozen component is unchanged;
+    - `non_null`: each field's frozen type must be a list that admits null;
+      the effective type removes it;
+    - `enum`: each field's frozen schema must have no enum, or a superset of
+      the values, and every value must be of the field's type.
 
     Refused:
     - an unknown key;
@@ -225,7 +369,8 @@ def load_request_body_narrowings(
         unknown = set(entry) - _BODY_NARROWING_KEYS
         if unknown:
             raise ContractError(f"{cid}: unknown key(s) {sorted(unknown)}; a request-body "
-                                "narrowing may only require fields")
+                                "narrowing may only require fields, remove null or "
+                                "restrict values")
         if not cid or cid in seen or cid in taken:
             raise ContractError(f"narrowing {cid!r}: missing or duplicated id")
         seen.add(cid)
@@ -248,12 +393,8 @@ def load_request_body_narrowings(
         op = by_operation.get(operation_id)
         if op is None:
             raise ContractError(f"{cid}: {operation_id!r} is not in the frozen contract")
-        try:
-            schema = op["requestBody"]["content"]["application/json"]["schema"]
-            properties = schema["properties"]
-        except (KeyError, TypeError):
-            raise ContractError(f"{cid}: {operation_id} has no inline JSON object body") \
-                from None
+        schema, _ = _frozen_body(cid, op, frozen)
+        properties = schema["properties"]
         require = list(entry.get("require") or ())
         if not require:
             raise ContractError(f"{cid}: requires nothing")
@@ -275,7 +416,23 @@ def load_request_body_narrowings(
                 f"{cid}: frozen_defaults {entry.get('frozen_defaults')!r} but the "
                 f"package declares {declared!r}. The correction is stale and must "
                 "be re-approved against the current package.")
+        if "non_null" in entry:
+            _check_non_null(cid, entry["non_null"], properties)
+        if "enum" in entry:
+            _check_enum(cid, entry["enum"], properties)
     return entries
+
+
+@functools.cache
+def effective_request_body(operation_id: str) -> dict[str, Any] | None:
+    """The effective body schema of a narrowed operation, or None. The runtime
+    reads its rules from here, so they are the effective contract's (one
+    loader, as CORRECTION-004)."""
+    frozen = load_contract()
+    for entry in load_request_body_narrowings(contract=frozen):
+        if entry["operation_id"] == operation_id:
+            return narrowed_body_schema(entry, frozen)
+    return None
 
 
 def _operations(doc: dict[str, Any]):

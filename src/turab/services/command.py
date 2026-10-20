@@ -312,6 +312,25 @@ class CommandService:
             return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not an available opportunity")
         return ALLOW_DECISION
 
+    def authorize_task_exists(self, task_id: uuid.UUID, operation_id: str) -> Decision:
+        """Slice 6 step 2: a staff command on a task. An unknown id is refused
+        as `OBJECT_NOT_AUTHORIZED` and RECORDED, the staff convention of
+        `authorize_match_exists`. No path deletes a task (the completion
+        event's foreign key is RESTRICT), so the answer cannot go stale."""
+        from .access import TASK_KIND
+
+        exists = self._read_session.execute(
+            text("SELECT 1 FROM turab.tasks WHERE task_id = :t"),
+            {"t": task_id}).scalar_one_or_none()
+        if exists is None:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind=TASK_KIND, resource_id=task_id)
+            return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not an available task")
+        return ALLOW_DECISION
+
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:
         """For commands whose object does not exist yet.
 

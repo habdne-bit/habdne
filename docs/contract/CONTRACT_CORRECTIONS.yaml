@@ -96,3 +96,22 @@ request_body_narrowings:
       the value, and nothing is written. Enforced by the matching run route,
       Slice 4 step 7; that route does not exist yet.
     reference: docs/contract/CORRECTION-004-matching-policy-version.md
+  - id: CORRECTION-005
+    decision: "G6-8 (ii) (a), Slice 6 plan revision 3 (docs/gate/SLICE_6_PLAN.md), approved in the review of bd54216"
+    approved: "2026-10-17"
+    operation_id: postTasksTaskIdComplete
+    require: [outcome_code]
+    non_null: [outcome_code]
+    enum:
+      outcome_code: [TASK_INFORMATION_OBTAINED, TASK_INFORMATION_UNAVAILABLE,
+                     TASK_PARTY_UNREACHABLE, TASK_NO_LONGER_NEEDED]
+    frozen_defaults: {}
+    rationale: >-
+      A completion states its outcome, from the codes of category
+      TASK_OUTCOME (migration 0007, part B). The general seeded codes are
+      accepted by the FK but describe no task outcome (measured,
+      SLICE6-PLAN-MEASUREMENTS.txt §E3).
+    runtime_rule: >-
+      outcome_code is required, not null, and one of the four codes. A code
+      changes no fact and raises no verification level.
+    reference: docs/contract/CORRECTION-005-task-outcome-code.md

@@ -135,6 +135,12 @@ class ProblemCode(StrEnum):
     SHARING_SCOPE_NARROWED = "SHARING_SCOPE_NARROWED"
     CONTACT_BEFORE_SHARING_REQUIRED = "CONTACT_BEFORE_SHARING_REQUIRED"
     CLOSE_REASON_NOT_ALLOWED = "CLOSE_REASON_NOT_ALLOWED"
+    #: Slice 6 step 2, the task completion (G6-8). A task that is DONE or
+    #: CANCELLED is not completed again: 409, state (G6-8 (i)). The evidence
+    #: observation named does not exist, or was deleted while the completion
+    #: waited for it: 422, input (G6-8 (iv), R2d). Neither echoes an id.
+    TASK_NOT_OPEN = "TASK_NOT_OPEN"
+    EVIDENCE_OBSERVATION_NOT_FOUND = "EVIDENCE_OBSERVATION_NOT_FOUND"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -186,6 +192,8 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.SHARING_SCOPE_NARROWED: (409, "Sharing scope narrowed"),
     ProblemCode.CONTACT_BEFORE_SHARING_REQUIRED: (409, "Contact before sharing required"),
     ProblemCode.CLOSE_REASON_NOT_ALLOWED: (422, "Close reason not allowed"),
+    ProblemCode.TASK_NOT_OPEN: (409, "Task not open"),
+    ProblemCode.EVIDENCE_OBSERVATION_NOT_FOUND: (422, "Evidence observation not found"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),

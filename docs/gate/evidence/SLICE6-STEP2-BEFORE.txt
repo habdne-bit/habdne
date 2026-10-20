@@ -1,0 +1,34 @@
+TURAB — Slice 6 step 2: the shipped tests and the operations at the base
+=========================================================================
+Base commit  : 4e9748eb7a71e3eceaa030f272715eea0649a941 (the addendum's last commit)
+Where        : an isolated worktree at the base (git worktree add --detach), into
+               which ONLY tests/test_slice6_step2.py and tests/test_correction_005.py
+               were copied, unchanged; database turab_authz_test, PostgreSQL 16.15
+Recorded     : 2026-10-20 17:11:46 UTC
+
+WHAT THIS SHOWS, AND WHAT IT DOES NOT
+  * Both files fail at the base before any test body runs: each imports a
+    name this step adds (effective_request_body; services.tasks). So no test
+    can be read as "failing for the right reason" from this run alone; the
+    mutation record (SLICE6-STEP2-MUTATIONS.txt) is what ties each rule to
+    the tests that refuse its weakening.
+  * The HTTP probe shows what the base serves: neither operation is routed,
+    and a completion writes nothing.
+
+1. pytest at the base (-q --tb=line -rfE), verbatim tail
+---------------------------------------------------------
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+1 warning, 2 errors in 1.45s
+E   ImportError: cannot import name 'effective_request_body' from 'turab.auth.contract' (/tmp/claude-0/-home-user-habdne/7750e406-8524-5585-b134-ff496c284628/scratchpad/base-wt/src/turab/auth/contract.py)
+ERROR tests/test_correction_005.py
+ERROR tests/test_slice6_step2.py
+ImportError while importing test module '/tmp/claude-0/-home-user-habdne/7750e406-8524-5585-b134-ff496c284628/scratchpad/base-wt/tests/test_correction_005.py'.
+ImportError while importing test module '/tmp/claude-0/-home-user-habdne/7750e406-8524-5585-b134-ff496c284628/scratchpad/base-wt/tests/test_slice6_step2.py'.
+
+2. HTTP probe at the base (an OPERATOR; a fixture task of type OTHER, OPEN,
+   deleted again afterwards), verbatim
+---------------------------------------------------------------------------
+GET /tasks -> 404 NOT_FOUND
+POST /tasks/{id}/complete -> 404 NOT_FOUND
+task status after: OPEN
+events: 0
