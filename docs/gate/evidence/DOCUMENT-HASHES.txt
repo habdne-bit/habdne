@@ -807,3 +807,13 @@ docs/gate/ENVIRONMENT_NOTES.md                                 ---   16e2434513e
 docs/gate/SLICE_6_STEP1_DELIVERY.md                            add   901036b929e6074415f02b277ff71c4d57f28c819dd901dc999f3ebbd8e496bc
 docs/gate/SLICE_6_PLAN.md                                      rev6  76c411e5b96ec7a763973a6d7a7d6ecd2aa1b8511bec230019453ebf148d8007
 SLICE_6_PLAN.md changed revision: 5 -> 6 (step 1 closed at b6a08e7; OQ6-1, OQ6-2 opened; obligations on steps 2 and 4; step 2 authorized after the addendum).
+--- Slice 6 step 2: getTasks, postTasksTaskIdComplete, CORRECTION-005; delivered for review ---
+docs/contract/CORRECTION-005-task-outcome-code.md              new   322015daac9f0b1a06243114b00655a1036b5153f4ade82cbddf92839f7ecba7
+docs/gate/evidence/SLICE6-STEP2-BEFORE.txt                     new   37223318d10f0cd61150f512cb98bec0b9647ba83b03dd3b64619b14edae0722
+docs/gate/evidence/SLICE6-STEP2-MUTATIONS-FIRST-RUN.txt        new   4a6b9913b153956ae954803172ab35c9eec4d1ff8ea479416f3a843002902562
+docs/gate/evidence/SLICE6-STEP2-R2D-WITNESS.txt                new   3a6bf316c4b2f2e70c8154f262b9e3a12e65958e8778a0f4e973bb02fa99dac8
+docs/gate/evidence/SLICE6-STEP2-MUTATIONS.txt                  new   d589970de8306eea9019344ee23a6ee424dbd9b63c16d09520ee29e8df165515
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   b7c23158c483853274d4b43c0ab29c67bed517cbdc5633456242f41b91cd0d23
+docs/gate/SLICE_6_STEP2_DELIVERY.md                            new   be9e611d3b7419420980c315eab44724ed0042c5b532b1780f8957707bfbb5ae
+docs/gate/SLICE_6_PLAN.md                                      rev7  8411fb45c4883e10d72be92b64c3c761cad34af8aaa08307199b028e6d19e3ca
+SLICE_6_PLAN.md changed revision: 6 -> 7 (step 2 delivered; §7 condition 10 put to the reviewer).
