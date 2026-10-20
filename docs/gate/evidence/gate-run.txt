@@ -1,11 +1,11 @@
 TURAB — PostgreSQL execution gate, recorded AT RUN TIME
 =======================================================
-Recorded    : 2026-10-17 12:38:19 UTC
-Commit      : a48d01d66d2dbc43147d43257e8ed0119f835109
+Recorded    : 2026-10-20 15:35:03 UTC
+Commit      : 4a275fe967cefb6be29be2a7ceb3e9ff372b2870
 Working tree: clean when this run started
 Source fingerprint (db/dev/source_fingerprint.py):
-              190e31a9c6defee0a734c5a5b2b86dcf4cadb0ec8d7c467091a6778b62ec6889
-Server      : 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+              642d3e5908c87625cd033c43d99be86521ebc1f85d8d77385f3c56fcd88f0019
+Server      : 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
 
 The gate output below is deterministic, but not of the frozen package
 alone: it is a function of every file the gate reads — the frozen
@@ -56,7 +56,8 @@ PASS: verified 36 handoff files
 }
 
 [1m==> 2/8  Rebuild a clean database from zero[0m
-16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+NOTICE:  database "turab_contract_test" does not exist, skipping
+16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
 
 [1m==> 3/8  Apply schema_v0.2.3.sql[0m
 
