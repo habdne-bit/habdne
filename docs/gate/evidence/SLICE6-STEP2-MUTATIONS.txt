@@ -1,15 +1,15 @@
 TURAB — Slice 6 step 2: the task list and the completion
 ============================================================
-Base commit       : 93c4b3c9a3476458e729d11c50a3ab2804f81f37
-Source fingerprint: 0822373e6e5423ad90c1b9264209763cd6f27780e6da5104a8ef788b8ff31e94
+Base commit       : d09abbc59eaa41d2bdbde6ea4e4278cfbb70f580
+Source fingerprint: be9900a0b4555d090efb9e0967d1d175186f53921c189b99f397d583323fa92e
 Working tree      : CLEAN
-Recorded          : 2026-10-20 17:23:31 UTC
+Recorded          : 2026-10-20 17:58:23 UTC
 Test file         : tests/test_slice6_step2.py
 
 === baseline (no mutation) ===
-   50 passed, 1 warning in 16.20s
+   50 passed, 1 warning in 14.17s
 == L1 task not locked [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   2 failed, 48 passed, 1 warning in 18.09s
+   2 failed, 48 passed, 1 warning in 14.90s
    FAILED test_a_second_concurrent_completion_waits_and_is_refused
    FAILED test_the_task_is_locked_before_the_observation
    cause: AssertionError: assert {'waited_on_t...-AT-CITATION'} == {'waited_on_t...-AT-CITATION'}
@@ -17,7 +17,7 @@ Test file         : tests/test_slice6_step2.py
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == L2 observation not locked [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   4 failed, 46 passed, 3 warnings in 17.14s
+   4 failed, 46 passed, 3 warnings in 13.45s
    FAILED test_r2a_r2c_a_change_after_the_lock_waits_and_is_refused[DELETE
    FAILED test_r2a_r2c_a_change_after_the_lock_waits_and_is_refused[UPDATE
    FAILED test_r2b_an_update_before_the_lock_is_the_body_cited
@@ -29,7 +29,7 @@ Test file         : tests/test_slice6_step2.py
    cause: E   KeyError: 'c'
    cause: KeyError: 'c'
 == L3 observation locked FOR KEY SHARE, the FK's mode [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   2 failed, 48 passed, 1 warning in 17.00s
+   2 failed, 48 passed, 1 warning in 13.64s
    FAILED test_r2a_r2c_a_change_after_the_lock_waits_and_is_refused[UPDATE
    FAILED test_r2b_an_update_before_the_lock_is_the_body_cited
    cause: AssertionError: ('R2a', {'u_waited_on_c': False, 'u_ended_while_c_held': True, 'c': 200, 'u_refused_by_part_d': False, ...})
@@ -37,29 +37,29 @@ Test file         : tests/test_slice6_step2.py
    cause: E   AssertionError: ('R2a', {'u_waited_on_c': False, 'u_ended_while_c_held': True, 'c': 200, 'u_refused_by_part_d': False, ...})
    cause: E   AssertionError: {'c_waited_on_u': False, 'c_ended_while_u_held': True, 'c': 200, 'cited': True, ...}
 == L4 observation locked before the task [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 19.21s
+   1 failed, 49 passed, 1 warning in 15.49s
    FAILED test_the_task_is_locked_before_the_observation
    cause: AssertionError: assert {'waited_on_t...-AT-CITATION'} == {'waited_on_t...-AT-CITATION'}
    cause: E   AssertionError: assert {'waited_on_t...-AT-CITATION'} == {'waited_on_t...-AT-CITATION'}
 == C1 a DONE task is completed again [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   3 failed, 47 passed, 1 warning in 16.39s
+   3 failed, 47 passed, 1 warning in 14.40s
    FAILED test_a_closed_task_is_409_and_nothing_is_written[DONE]
    FAILED test_a_done_task_stays_done
    FAILED test_a_second_concurrent_completion_waits_and_is_refused
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == C2 a CANCELLED task is completed [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 18.48s
+   1 failed, 49 passed, 1 warning in 14.62s
    FAILED test_a_closed_task_is_409_and_nothing_is_written[CANCELLED]
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == C3 IN_PROGRESS is not completed [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 17.38s
+   1 failed, 49 passed, 1 warning in 14.22s
    FAILED test_open_and_in_progress_are_completed[IN_PROGRESS]
    cause: AssertionError: assert 409 == 200
    cause: E   AssertionError: assert 409 == 200
 == E1 a missing observation is not refused [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   2 failed, 48 passed, 2 warnings in 17.57s
+   2 failed, 48 passed, 2 warnings in 14.63s
    FAILED test_an_unknown_evidence_observation_is_422_and_nothing_is_written
    FAILED test_r2d_a_delete_before_the_lock_is_refused_typed_writing_nothing
    cause: E   KeyError: 'c'
@@ -68,7 +68,7 @@ Test file         : tests/test_slice6_step2.py
    cause: KeyError: 'c'
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) insert or update on table "task_completion_events" violates foreign key constraint "task_completion_ev
 == W1 the note is not kept [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   2 failed, 48 passed, 1 warning in 15.89s
+   2 failed, 48 passed, 1 warning in 14.62s
    FAILED test_a_completion_appends_its_event_and_marks_the_task_done
    FAILED test_both_rows_are_audited_and_the_note_is_withheld
    cause: AssertionError: assert ('TASK_INFORM...00000000002')) == ('TASK_INFORM...00000000002'))
@@ -76,7 +76,7 @@ Test file         : tests/test_slice6_step2.py
    cause: E   AssertionError: assert ('TASK_INFORM...00000000002')) == ('TASK_INFORM...00000000002'))
    cause: E   AssertionError: the note is kept in the event
 == W2 the evidence is not kept [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   5 failed, 45 passed, 1 warning in 16.19s
+   5 failed, 45 passed, 1 warning in 14.00s
    FAILED test_a_completion_appends_its_event_and_marks_the_task_done
    FAILED test_a_guard_message_never_reaches_the_response
    FAILED test_r2a_r2c_a_change_after_the_lock_waits_and_is_refused[DELETE
@@ -89,24 +89,24 @@ Test file         : tests/test_slice6_step2.py
    cause: E   AssertionError: ('R2a', {'u_waited_on_c': True, 'u_ended_while_c_held': False, 'c': 200, 'u_refused_by_part_d': False, ...})
    cause: E   AssertionError: ('R2c', {'u_waited_on_c': True, 'u_ended_while_c_held': False, 'c': 200, 'u_refused_by_part_d': False, ...})
 == W3 the task is not marked DONE [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   4 failed, 46 passed, 1 warning in 15.76s
+   4 failed, 46 passed, 1 warning in 14.71s
    FAILED test_a_completion_appends_its_event_and_marks_the_task_done
    FAILED test_a_done_task_stays_done
    FAILED test_a_second_concurrent_completion_waits_and_is_refused
    FAILED test_both_rows_are_audited_and_the_note_is_withheld
-   cause: AssertionError: assert ('8963a32a-ca...68be', 'OPEN') == ('8963a32a-ca...68be', 'DONE')
    cause: AssertionError: assert ('OPEN', 'OPEN') == ('OPEN', 'DONE')
-   cause: E   AssertionError: assert ('8963a32a-ca...68be', 'OPEN') == ('8963a32a-ca...68be', 'DONE')
+   cause: AssertionError: assert ('d936129b-c8...c88f', 'OPEN') == ('d936129b-c8...c88f', 'DONE')
    cause: E   AssertionError: assert ('OPEN', 'OPEN') == ('OPEN', 'DONE')
+   cause: E   AssertionError: assert ('d936129b-c8...c88f', 'OPEN') == ('d936129b-c8...c88f', 'DONE')
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == W4 the task's completed_at is not the event's [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 15.49s
+   1 failed, 49 passed, 1 warning in 15.70s
    FAILED test_a_completion_appends_its_event_and_marks_the_task_done
-   cause: AssertionError: assert datetime.datetime(2026, 10, 20, 17, 27, 52, 941847, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 20, 17, 27, 52, 923916,
-   cause: E   AssertionError: assert datetime.datetime(2026, 10, 20, 17, 27, 52, 941847, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 20, 17, 27, 52, 923
+   cause: AssertionError: assert datetime.datetime(2026, 10, 20, 18, 2, 6, 66186, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 20, 18, 2, 6, 49021, tzinf
+   cause: E   AssertionError: assert datetime.datetime(2026, 10, 20, 18, 2, 6, 66186, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) == datetime.datetime(2026, 10, 20, 18, 2, 6, 49021, t
 == A1 the event is not audited [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   2 failed, 48 passed, 1 warning in 16.12s
+   2 failed, 48 passed, 1 warning in 14.06s
    FAILED test_both_rows_are_audited_and_the_note_is_withheld
    FAILED test_i02_a_failure_between_the_two_writes_leaves_neither
    cause: AssertionError: assert [('tasks', 'UPDATE')] == [('task_compl...s', 'UPDATE')]
@@ -114,67 +114,67 @@ Test file         : tests/test_slice6_step2.py
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
 == A2 the task change is not audited [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 16.54s
+   1 failed, 49 passed, 1 warning in 14.82s
    FAILED test_both_rows_are_audited_and_the_note_is_withheld
    cause: AssertionError: assert [('task_compl...s', 'INSERT')] == [('task_compl...s', 'UPDATE')]
    cause: E   AssertionError: assert [('task_compl...s', 'INSERT')] == [('task_compl...s', 'UPDATE')]
 == A3 the note is not withheld [src/turab/services/audit_rows.py, 1 site(s)]  restored: sha256 42f4d87c65767fe0 identical
-   1 failed, 49 passed, 1 warning in 15.36s
+   1 failed, 49 passed, 1 warning in 15.19s
    FAILED test_both_rows_are_audited_and_the_note_is_withheld
-   cause: AssertionError: assert ('note' not in {'note': 'NOTE-48eff58e24114e3f99a9d819e4067e8c', 'task_id': 'e7cde16a-2bf2-4c75-8c70-2f90b44e82cd', 'completed_at': '2026-10-20T17:
-   cause: E   AssertionError: assert ('note' not in {'note': 'NOTE-48eff58e24114e3f99a9d819e4067e8c', 'task_id': 'e7cde16a-2bf2-4c75-8c70-2f90b44e82cd', 'completed_at': '2026-10-20
+   cause: AssertionError: assert ('note' not in {'note': 'NOTE-a78d865ecee048749e74a3d3d75a59ab', 'task_id': 'aceb818f-00c5-4d6a-95b5-a415dadf755e', 'completed_at': '2026-10-20T18:
+   cause: E   AssertionError: assert ('note' not in {'note': 'NOTE-a78d865ecee048749e74a3d3d75a59ab', 'task_id': 'aceb818f-00c5-4d6a-95b5-a415dadf755e', 'completed_at': '2026-10-20
 == G1 status not filtered [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 15.53s
+   1 failed, 49 passed, 1 warning in 14.12s
    FAILED test_status_and_priority_are_compared_as_text
    cause: AssertionError: {'status': 'NOT_A_STATUS'}
    cause: E   AssertionError: {'status': 'NOT_A_STATUS'}
 == G2 priority not filtered [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 14.78s
+   1 failed, 49 passed, 1 warning in 15.61s
    FAILED test_status_and_priority_are_compared_as_text
    cause: AssertionError: {'priority': 'nope'}
    cause: E   AssertionError: {'priority': 'nope'}
 == G3 assigned_to_me ignored [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 14.59s
+   1 failed, 49 passed, 1 warning in 15.45s
    FAILED test_assigned_to_me_keeps_the_callers_tasks_only
    cause: AssertionError: assert {None, UUID('...00000000003')} == {UUID('f30000...00000000002')}
    cause: E   AssertionError: assert {None, UUID('...00000000003')} == {UUID('f30000...00000000002')}
 == G4 priority ordered as text [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 15.98s
+   1 failed, 49 passed, 1 warning in 14.29s
    FAILED test_the_list_is_ordered_by_priority_then_creation_then_id
-   cause: AssertionError: assert [(1, datetime...0e0f73'), ...] == [(0, datetime...c0c693'), ...]
-   cause: E   AssertionError: assert [(1, datetime...0e0f73'), ...] == [(0, datetime...c0c693'), ...]
+   cause: AssertionError: assert [(1, datetime...81bbfd'), ...] == [(0, datetime...005034'), ...]
+   cause: E   AssertionError: assert [(1, datetime...81bbfd'), ...] == [(0, datetime...005034'), ...]
 == G5 creation not ordered [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 49 passed, 1 warning in 15.80s
+   1 failed, 49 passed, 1 warning in 15.09s
    FAILED test_the_list_is_ordered_by_priority_then_creation_then_id
-   cause: AssertionError: assert [(0, datetime...2165d8'), ...] == [(0, datetime...3ca62d'), ...]
-   cause: E   AssertionError: assert [(0, datetime...2165d8'), ...] == [(0, datetime...3ca62d'), ...]
+   cause: AssertionError: assert [(0, datetime...8f27e5'), ...] == [(0, datetime...41e092'), ...]
+   cause: E   AssertionError: assert [(0, datetime...8f27e5'), ...] == [(0, datetime...41e092'), ...]
 == G6 the list is not audited [src/turab/services/access.py, 1 site(s)]  restored: sha256 761ad39e7496358d identical
-   1 failed, 49 passed, 1 warning in 14.40s
+   1 failed, 49 passed, 1 warning in 14.91s
    FAILED test_the_list_read_is_audited_once_with_its_count
    cause: E   ValueError: not enough values to unpack (expected 1, got 0)
    cause: ValueError: not enough values to unpack (expected 1, got 0)
 == R1 any string is an outcome code [src/turab/api/routes/tasks.py, 1 site(s)]  restored: sha256 2d8803641171aa2a identical
-   4 failed, 46 passed, 1 warning in 14.38s
+   4 failed, 46 passed, 1 warning in 15.08s
    FAILED test_the_route_refuses_exactly_what_the_effective_schema_refuses[a
    FAILED test_the_route_refuses_exactly_what_the_effective_schema_refuses[an
-   cause: AssertionError: ('a seeded general code', 200, '{"task_id":"fab5d8b5-94e3-410b-bee6-9733f615bbd5","task_type":"VERIFY_DOCUMENT","prior...","reason_code":null,"party_id":n
-   cause: AssertionError: ('an opportunity code', 200, '{"task_id":"bea3aef8-5d1a-4ce0-9891-5619cf05c2af","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_id":n
-   cause: E   AssertionError: ('a seeded general code', 200, '{"task_id":"fab5d8b5-94e3-410b-bee6-9733f615bbd5","task_type":"VERIFY_DOCUMENT","prior...","reason_code":null,"party_i
-   cause: E   AssertionError: ('an opportunity code', 200, '{"task_id":"bea3aef8-5d1a-4ce0-9891-5619cf05c2af","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_i
+   cause: AssertionError: ('a seeded general code', 200, '{"task_id":"d06aca9d-9d0d-47dd-bc89-296c94a7c3b2","task_type":"VERIFY_DOCUMENT","prior...","reason_code":null,"party_id":n
+   cause: AssertionError: ('an opportunity code', 200, '{"task_id":"e3ea03af-e9b7-4afa-9d0c-4831fd1a2a45","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_id":n
+   cause: E   AssertionError: ('a seeded general code', 200, '{"task_id":"d06aca9d-9d0d-47dd-bc89-296c94a7c3b2","task_type":"VERIFY_DOCUMENT","prior...","reason_code":null,"party_i
+   cause: E   AssertionError: ('an opportunity code', 200, '{"task_id":"e3ea03af-e9b7-4afa-9d0c-4831fd1a2a45","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_i
    cause: E   psycopg.errors.ForeignKeyViolation: insert or update on table "task_completion_events" violates foreign key constraint "task_completion_events_outcome_code_fkey"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) insert or update on table "task_completion_events" violates foreign key constraint "task_completio
 == R2 null is an outcome code [src/turab/api/routes/tasks.py, 1 site(s)]  restored: sha256 2d8803641171aa2a identical
-   1 failed, 49 passed, 1 warning in 15.23s
+   1 failed, 49 passed, 1 warning in 15.06s
    FAILED test_the_route_refuses_exactly_what_the_effective_schema_refuses[null]
-   cause: AssertionError: ('null', 200, '{"task_id":"0860053e-5fd2-41dc-a969-0d4c48b4fb64","task_type":"VERIFY_DOCUMENT","priority":"NORMAL","st...","reason_code":null,"party_id":n
-   cause: E   AssertionError: ('null', 200, '{"task_id":"0860053e-5fd2-41dc-a969-0d4c48b4fb64","task_type":"VERIFY_DOCUMENT","priority":"NORMAL","st...","reason_code":null,"party_i
+   cause: AssertionError: ('null', 200, '{"task_id":"4dc20f29-f3ea-40ef-8859-a209e47189e4","task_type":"VERIFY_DOCUMENT","priority":"NORMAL","st...","reason_code":null,"party_id":n
+   cause: E   AssertionError: ('null', 200, '{"task_id":"4dc20f29-f3ea-40ef-8859-a209e47189e4","task_type":"VERIFY_DOCUMENT","priority":"NORMAL","st...","reason_code":null,"party_i
 == R3 the body is open [src/turab/api/routes/tasks.py, 1 site(s)]  restored: sha256 2d8803641171aa2a identical
-   1 failed, 49 passed, 1 warning in 14.69s
+   1 failed, 49 passed, 1 warning in 15.72s
    FAILED test_the_route_refuses_exactly_what_the_effective_schema_refuses[an
-   cause: AssertionError: ('an undeclared field', 200, '{"task_id":"041ac3f2-1591-4f98-ab13-13998b362a81","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_id":n
-   cause: E   AssertionError: ('an undeclared field', 200, '{"task_id":"041ac3f2-1591-4f98-ab13-13998b362a81","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_i
+   cause: AssertionError: ('an undeclared field', 200, '{"task_id":"c17202a1-791b-42d2-bdd7-ab97e41f45b4","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_id":n
+   cause: E   AssertionError: ('an undeclared field', 200, '{"task_id":"c17202a1-791b-42d2-bdd7-ab97e41f45b4","task_type":"VERIFY_DOCUMENT","priorit...","reason_code":null,"party_i
 == R4 an unknown task's denial is not recorded [src/turab/services/command.py, 1 site(s)]  restored: sha256 d9a4e86f5181d6f6 identical
-   1 failed, 49 passed, 1 warning in 15.70s
+   1 failed, 49 passed, 1 warning in 15.76s
    FAILED test_an_unknown_task_is_403_and_the_denial_is_recorded
    cause: E   ValueError: not enough values to unpack (expected 1, got 0)
    cause: ValueError: not enough values to unpack (expected 1, got 0)
@@ -183,37 +183,37 @@ SURVIVING MUTATIONS: none
 
 TURAB — Slice 6 step 2: the loader's extension (CORRECTION-005)
 ============================================================
-Base commit       : 93c4b3c9a3476458e729d11c50a3ab2804f81f37
-Source fingerprint: 0822373e6e5423ad90c1b9264209763cd6f27780e6da5104a8ef788b8ff31e94
+Base commit       : d09abbc59eaa41d2bdbde6ea4e4278cfbb70f580
+Source fingerprint: be9900a0b4555d090efb9e0967d1d175186f53921c189b99f397d583323fa92e
 Working tree      : CLEAN
-Recorded          : 2026-10-20 17:32:18 UTC
+Recorded          : 2026-10-20 18:06:27 UTC
 Test file         : tests/test_correction_005.py
 
 === baseline (no mutation) ===
-   29 passed in 5.91s
+   29 passed in 8.02s
 == K1 a shared component is accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   1 failed, 28 passed in 5.72s
+   1 failed, 28 passed in 8.25s
    FAILED test_a_component_another_operation_also_uses_is_refused
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K2 non_null accepted on a type without null [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   1 failed, 28 passed in 5.73s
+   1 failed, 28 passed in 8.73s
    FAILED test_non_null_is_refused_where_there_is_nothing_to_narrow[non_null
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K3 an enum value of another type is accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   3 failed, 26 passed in 5.44s
+   3 failed, 26 passed in 5.61s
    FAILED test_the_application_refuses_to_start_on_a_bad_narrowing
    FAILED test_the_extended_loader_refuses[an
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K4 an enum wider than the frozen one is accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   1 failed, 28 passed in 6.00s
+   1 failed, 28 passed in 5.89s
    FAILED test_an_enum_wider_than_a_frozen_enum_is_refused
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K5 non_null not checked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   8 failed, 21 passed in 5.70s
+   8 failed, 21 passed in 5.91s
    FAILED test_non_null_is_refused_where_there_is_nothing_to_narrow[non_null
    FAILED test_the_effective_contract_is_not_generated_from_a_bad_narrowing
    FAILED test_the_extended_loader_refuses[non_null
@@ -224,19 +224,19 @@ Test file         : tests/test_correction_005.py
    cause: Failed: DID NOT RAISE ContractError
    cause: KeyError: 'no_such_field'
 == K6 enum not checked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   8 failed, 21 passed in 5.39s
+   8 failed, 21 passed in 5.37s
    FAILED test_an_enum_wider_than_a_frozen_enum_is_refused
    FAILED test_the_application_refuses_to_start_on_a_bad_narrowing
    FAILED test_the_extended_loader_refuses[an
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K7 a reference with siblings is accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   1 failed, 28 passed in 5.55s
+   1 failed, 28 passed in 5.23s
    FAILED test_a_reference_with_siblings_is_refused
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K8 non_null keeps null in the effective type [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 72d39f4d60384179 identical
-   1 failed, 28 passed in 6.02s
+   1 failed, 28 passed in 5.57s
    FAILED test_the_runtime_body_is_the_committed_effective_body
    cause: AssertionError: assert {'type': 'obj...utcome_code']} == {'type': 'obj...utcome_code']}
    cause: E   AssertionError: assert {'type': 'obj...utcome_code']} == {'type': 'obj...utcome_code']}
