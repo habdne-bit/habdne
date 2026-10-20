@@ -1,0 +1,108 @@
+TURAB — Slice 6 step 1, addendum: what part C's index does not deduplicate
+==========================================================================
+Review of b6a08e7, finding M-1 (accepted). Step 1 stays closed at b6a08e7;
+this record measures a limit of the approved text. It is not a defect of the
+migration, and 0007 is not changed.
+
+Measured at   : 2026-10-20, on commit b6a08e7 (clean tree)
+Source fingerprint (db/dev/source_fingerprint.py):
+                190e31a9c6defee0a734c5a5b2b86dcf4cadb0ec8d7c467091a6778b62ec6889
+Database      : turab_probe, built by `db/dev/reset_db.sh --fixtures`, then
+                `alembic upgrade head` (head = 0007_task_work_and_evidence)
+Run as        : turab, superuser (EN-02); psql -X -e -f probe.sql
+Transaction   : every write is inside one BEGIN ... ROLLBACK; nothing persists
+Environment   : a fresh cloud container, not the one of the step 1 round.
+                Ours, like every result here; nobody else has run it.
+
+WHY THIS IS A PIN, NOT A BEFORE-FIX RECORD
+  The two tests this record supports pin CURRENT behaviour: they assert that
+  the duplicate is accepted. There is no fix, so there is no "before" in
+  which they fail. This record is what was measured before they were
+  written; the tests then pass on the same text (see the delivery note,
+  addendum).
+
+WHAT WAS MEASURED, AND WHAT WAS NOT
+  P1  subject without `basis`             -> both OPEN tasks accepted (2)
+  P2  source spelled 'diagnostic'         -> both OPEN tasks accepted (2)
+  P3  control, complete subject, exact
+      'DIAGNOSTIC'                        -> refused by ux_one_open_task_per_subject
+  P4  TRUNCATE triggers on the two guarded tables -> 0 on each
+  P5  indexes naming evidence_observation_id      -> 0
+  Not measured: a subject without `entity`, `id` or `gate`. By the index text
+  they are uncoalesced like `basis`, and NULLs are distinct in a unique index
+  (PostgreSQL 16 documentation, §11.6), so the same acceptance is expected;
+  it is derived, not measured. An earlier review message said "any of the
+  four" as if measured; only `basis` was.
+
+VERBATIM OUTPUT (psql -e echoes each statement before its result)
+-----------------------------------------------------------------
+SET search_path TO turab, public;
+SET
+SELECT version();
+                                                                 version                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+(1 row)
+
+SELECT version_num FROM public.alembic_version;
+         version_num         
+-----------------------------
+ 0007_task_work_and_evidence
+(1 row)
+
+BEGIN;
+BEGIN
+SELECT request_id AS rid FROM requests ORDER BY request_id LIMIT 1 
+INSERT INTO tasks (task_type, title, request_id, payload)
+SELECT 'CONFIRM_PRICE', 'p1', 'f7000000-0000-4000-8000-000000000001',
+       '{"source":"DIAGNOSTIC","subject":{"entity":"PROPERTY_OFFER","id":"x","gate":"INFORMATION"}}'::jsonb
+FROM generate_series(1,2);
+INSERT 0 2
+SELECT count(*) AS p1_open_duplicates_without_basis FROM tasks WHERE title = 'p1';
+ p1_open_duplicates_without_basis 
+----------------------------------
+                                2
+(1 row)
+
+INSERT INTO tasks (task_type, title, request_id, payload)
+SELECT 'CONFIRM_PRICE', 'p2', 'f7000000-0000-4000-8000-000000000001',
+       '{"source":"diagnostic","subject":{"entity":"PROPERTY_OFFER","id":"x","gate":"INFORMATION","basis":"B"}}'::jsonb
+FROM generate_series(1,2);
+INSERT 0 2
+SELECT count(*) AS p2_open_duplicates_other_spelling FROM tasks WHERE title = 'p2';
+ p2_open_duplicates_other_spelling 
+-----------------------------------
+                                 2
+(1 row)
+
+SAVEPOINT p3;
+SAVEPOINT
+INSERT INTO tasks (task_type, title, request_id, payload)
+SELECT 'CONFIRM_PRICE', 'p3', 'f7000000-0000-4000-8000-000000000001',
+       '{"source":"DIAGNOSTIC","subject":{"entity":"PROPERTY_OFFER","id":"x","gate":"INFORMATION","basis":"B"}}'::jsonb
+FROM generate_series(1,2);
+psql:/tmp/claude-0/-home-user-habdne/7750e406-8524-5585-b134-ff496c284628/scratchpad/probe.sql:23: ERROR:  duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+DETAIL:  Key (request_id, ((payload -> 'subject'::text) ->> 'entity'::text), ((payload -> 'subject'::text) ->> 'id'::text), ((payload -> 'subject'::text) ->> 'gate'::text), COALESCE((payload -> 'subject'::text) ->> 'criterion'::text, ''::text), COALESCE((payload -> 'subject'::text) ->> 'ordinal'::text, ''::text), ((payload -> 'subject'::text) ->> 'basis'::text))=(f7000000-0000-4000-8000-000000000001, PROPERTY_OFFER, x, INFORMATION, , , B) already exists.
+ROLLBACK TO SAVEPOINT p3;
+ROLLBACK
+SELECT c.relname, count(t.*) FILTER (WHERE (t.tgtype & 32) <> 0) AS truncate_triggers
+  FROM pg_class c LEFT JOIN pg_trigger t ON t.tgrelid = c.oid AND NOT t.tgisinternal
+ WHERE c.relnamespace = 'turab'::regnamespace
+   AND c.relname IN ('task_completion_events', 'observations')
+ GROUP BY c.relname ORDER BY c.relname;
+        relname         | truncate_triggers 
+------------------------+-------------------
+ observations           |                 0
+ task_completion_events |                 0
+(2 rows)
+
+SELECT count(*) AS indexes_on_evidence_observation_id FROM pg_indexes
+ WHERE schemaname = 'turab' AND tablename = 'task_completion_events'
+   AND indexdef ILIKE '%evidence_observation_id%';
+ indexes_on_evidence_observation_id 
+------------------------------------
+                                  0
+(1 row)
+
+ROLLBACK;
+ROLLBACK

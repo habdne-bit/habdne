@@ -14,9 +14,16 @@
 | Slice 0 — Application Skeleton + Security Boundaries | **Complete** |
 | Slice 1 — PARTY / Contact / Account / Consent | **Feature-complete; D7 closed**, submitted for closure review — all 11 contract operations wired |
 | Slice 2 — REQUEST / Criteria / Freshness | **CLOSED within its agreed scope** (acceptance review of `73be3a7`) — see [`docs/gate/SLICE_2_PROGRESS.md`](docs/gate/SLICE_2_PROGRESS.md) |
-| Slice 3 — PROPERTY / OFFER / SOURCE / Truth / Identity | **In progress**, steps 1–8 authorised. Step 1 (PROPERTY) done. Blocked deliverables: G3-6, G3-7 — see [`docs/gate/SLICE_3_PLAN.md`](docs/gate/SLICE_3_PLAN.md) |
+| Slice 3 — PROPERTY / OFFER / SOURCE / Truth / Identity | **CLOSED at `96e36e6`**, within the approved exceptions — see [`docs/gate/SLICE_3_CLOSURE.md`](docs/gate/SLICE_3_CLOSURE.md) |
+| Slice 4 — Deterministic Matching Core | **CLOSED at `58368d1`**, within the approved scope — see [`docs/gate/SLICE_4_CLOSURE.md`](docs/gate/SLICE_4_CLOSURE.md) |
+| Slice 5 — Human Review → OPPORTUNITY | **CLOSED at `339dbc4`**, SALE only — see [`docs/gate/SLICE_5_CLOSURE.md`](docs/gate/SLICE_5_CLOSURE.md) |
+| Slice 6 — Match Diagnostic / Information Work | **In progress.** Step 1 (migration `0007`) closed at `b6a08e7`, with an addendum; step 2 authorized after it — see [`docs/gate/SLICE_6_PLAN.md`](docs/gate/SLICE_6_PLAN.md) |
 
-Across all three: **561 tests, 145 rules evidenced**, 26 of 64 contract operations wired.
+Standing: K06 **UNPROVEN** (EN-02); G4-5R open, SALE only. The current
+suite count and its binding to the tree are in
+[`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`](docs/gate/evidence/TEST-RUN-PROVENANCE.txt);
+the rules evidenced, in the authorization matrix below. The effective
+contract holds 67 operations ([`docs/api/API_INVENTORY_GENERATED.md`](docs/api/API_INVENTORY_GENERATED.md)).
 
 Handoff package: **v1.0.3** (official), vendored byte-for-byte.
 
@@ -81,7 +88,7 @@ release blocker.
 ```bash
 python3.12 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 db/dev/reset_db.sh --fixtures          # a database to work against
-./.venv/bin/pytest -q                  # 561 tests
+./.venv/bin/python -m pytest -q        # needs a full git clone (EN-03)
 ./.venv/bin/python db/gate/authorization_evidence.py   # regenerate the matrix
 ```
 

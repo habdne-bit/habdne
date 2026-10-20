@@ -41,6 +41,13 @@ way that would support one. Equally it is not filed as "just the environment"
 and forgotten — if a restart is ever observed to follow a particular operation
 reproducibly, that is a new observation and this note is wrong.
 
+**Observed again:** 2026-10-20, in a fresh cloud container, during the
+addendum to Slice 6 step 1. The server refused connections; `/proc/uptime`
+read 408 s, and the last lines of `postgresql-16-main.log` record no
+shutdown request. The affected command (a probe database rebuild) was
+re-run after `service postgresql start`; no result is reported from the
+interrupted attempt.
+
 ### Handling
 
 - `service postgresql start` and re-run; the affected run is discarded, not
@@ -118,3 +125,40 @@ the Slice 5 plan, G5-13 (b). They are not decided here.
 is a separate, cross-cutting step, mandatory before any release gate. Until
 a test under a non-superuser, non-owner application role passes, K06 stays
 UNPROVEN, and STOP GATE E's document states it so.
+
+---
+
+## EN-03 · The suite needs the full git history
+
+**Observed:** 2026-10-20, in a fresh cloud container whose clone was
+shallow (50 commits; `git rev-parse --is-shallow-repository` → `true`),
+during the review of `b6a08e7`.
+
+### Evidence
+
+| Observation | Value |
+|---|---|
+| Full suite on the shallow clone | 2416 passed, **10 errors**, all in `tests/test_slice4_stop_gate_d.py` |
+| Where they fail | the `tree` fixture: `git archive <commit>` on the commit `SLICE_4_STOP_GATE_D.md` is bound to, which a 50-commit clone does not contain |
+| After `git fetch --unshallow` | the same 10 tests pass; the suite is 2426/2426 |
+
+### What the evidence supports
+
+The fixture rebuilds the tree STOP GATE D records from the commit it is
+bound to (review of `f5a9d88`, decision 2), so it needs that commit's
+objects. A shallow clone lacks them. The 10 errors are an environment
+condition, not results: they say nothing about the code under test.
+
+### What is deliberately NOT concluded
+
+That only these 10 tests depend on history. Only this file failed on a
+50-commit clone; a shallower clone could reach other history-dependent
+code (for example `git diff` against a recorded commit) not exercised
+here.
+
+### Handling
+
+- Run the suite on a full clone (`git fetch --unshallow`) before reporting
+  a result. A run on a shallow clone is discarded, not reported.
+- A run discarded for this reason is named as such, as EN-01 asks for a
+  run interrupted by a stopped server.

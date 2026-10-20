@@ -307,6 +307,31 @@ def test_a_diagnostic_task_with_no_request_is_not_deduplicated(session):
                   p=json.dumps(_diagnostic(subject)))
 
 
+def test_a_diagnostic_subject_without_basis_is_not_deduplicated(session, ids):
+    """Pinned, not endorsed (review of b6a08e7, M-1): only `criterion` and
+    `ordinal` are coalesced, so a subject without `basis` has a NULL key
+    component and never conflicts (PostgreSQL 16 documentation, §11.6).
+    `entity`, `id` and `gate` are uncoalesced too; only `basis` is measured
+    (`SLICE6-STEP1-ADDENDUM-INDEX-LIMITS.txt`). Step 4's tests assert that
+    the run writes all four."""
+    subject = _subject(basis=None)
+    for _ in range(2):
+        _accepted(session, """INSERT INTO turab.tasks (task_type, title, request_id, payload)
+                               VALUES ('CONFIRM_PRICE', 't', :r, CAST(:p AS jsonb))""",
+                  r=ids.REQ_AMINA, p=json.dumps(_diagnostic(subject)))
+
+
+def test_a_source_spelled_otherwise_is_outside_the_index(session, ids):
+    """Pinned, not endorsed (review of b6a08e7, M-1): the predicate compares
+    `source` with 'DIAGNOSTIC' exactly, so 'diagnostic' puts the task outside
+    the index. Step 4's tests assert that the run writes 'DIAGNOSTIC'."""
+    subject = _subject()
+    for _ in range(2):
+        _accepted(session, """INSERT INTO turab.tasks (task_type, title, request_id, payload)
+                               VALUES ('CONFIRM_PRICE', 't', :r, CAST(:p AS jsonb))""",
+                  r=ids.REQ_AMINA, p=json.dumps({"source": "diagnostic", "subject": subject}))
+
+
 @pytest.fixture
 def two_engines(database_url):
     a = create_engine(database_url, future=True)

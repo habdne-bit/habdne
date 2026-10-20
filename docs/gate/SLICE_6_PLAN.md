@@ -1,10 +1,13 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 5**
+## Implementation plan — **revision 6**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
 Code is written one approved step at a time, never ahead of its approval
-(§8). Step 1 (`0007`) is authorized and **delivered** (`SLICE_6_STEP1_DELIVERY.md`), for review. Step 0 (measurements only)
+(§8). Step 1 (`0007`) is **CLOSED at `b6a08e7`** (review of `b6a08e7`, recorded
+below), with an addendum that pins two limits of part C's index (M-1) and
+states two more (M-2, M-3); the addendum changes no line of `0007`. Step 2
+is **authorized**, to begin once the addendum is delivered. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -22,7 +25,46 @@ recommendation. A recommendation is not a decision.
 | 2 | `1fd7bdf` | the review of `f7469e8` recorded; step 0 measured (`SLICE6-PLAN-MEASUREMENTS.txt`); G6-4 (iii)–(iv), G6-6, G6-8 and G6-11 rewritten on the measurements; F6-10 to F6-17 added; the text of migration `0007` proposed (§5.1) |
 | 3 | `bd54216` | the review of `1fd7bdf` recorded; the completion/observation race measured (`SLICE6-PLAN-MEASUREMENTS-R3.txt`) and the completion's lock order specified (G6-8 (iv)); the suggestions kept pure, the task outcome read from the task rows (G6-4 (iii)); `stored` treated as a recorded fact (G6-11); the F6-12 staff-view test (G6-4 (v)); CORRECTION-005 proposed for `outcome_code` (§5.2); F6-18 to F6-20 |
 | 4 | `62d3589` | the review of `bd54216` recorded: every recommendation of the decision table approved; each decision marked DECIDED; step 1 authorized |
-| 5 | the commit that adds this revision | step 1 delivered (`SLICE_6_STEP1_DELIVERY.md`): `0007` at `cd5b868`, 55 tests, 23/23 mutations; no other change |
+| 5 | `b6a08e7` | step 1 delivered (`SLICE_6_STEP1_DELIVERY.md`): `0007` at `cd5b868`, 55 tests, 23/23 mutations; no other change |
+| 6 | the commit that adds this revision | the review of `b6a08e7` recorded: step 1 closed at `b6a08e7`; M-1 accepted and pinned by an addendum; OQ6-1 and OQ6-2 opened (§5.3), neither approved; obligations added to steps 2 and 4 (§8); step 2 authorized after the addendum |
+
+**The review of `b6a08e7`. Step 1 is CLOSED at `b6a08e7`.**
+- **The reading of «اعتمد» is confirmed.** The decisions G6-1 to G6-12, the
+  text of `0007` and CORRECTION-005 are approved as revision 4 records
+  them, and that approval extends to no other change of the schema.
+- **M-1, accepted.** Part C's index implements the approved text, but it
+  does not guarantee uniqueness for an incomplete diagnostic payload, nor
+  for a `source` spelled otherwise. This is a substantive limit to be pinned
+  before step 2 begins, not a reason to rewrite the migration.
+  - **What the reviewer checked.** The text of the index in `0007`: `entity`,
+    `id`, `gate` and `basis` are not coalesced, and the predicate compares
+    `source` with `DIAGNOSTIC` literally; and that PostgreSQL treats NULLs
+    as distinct in a unique index by default.
+  - **What the reviewer did not do.** Re-run the two cases on PostgreSQL.
+    They are our stated measurement
+    (`evidence/SLICE6-STEP1-ADDENDUM-INDEX-LIMITS.txt`).
+- **The addendum, required before step 2.** Two tests that pin the
+  acceptance of the duplicate (`basis` absent; `source` = `"diagnostic"`),
+  beside the NULL `request_id` pin; the limits of the index and TRUNCATE
+  stated in the delivery note; EN-03 for the suite's dependence on a full
+  git history; the README's status table. `0007` is not changed.
+  - The two tests pin existing behaviour, so no failure "before the fix" is
+    expected. The SQL measurement taken before they were written is kept,
+    and they are shown to pass on the same text.
+  - The suite's run is bound again to the new tree.
+- **OQ6-1 and OQ6-2 are open questions, not approved changes** (§5.3).
+- **Step 2 is authorized** once the addendum is delivered, without waiting
+  for OQ6-1 or OQ6-2. **Its acceptance requires** the proof that the
+  completion command locks the cited observation FOR SHARE (G6-8 (iv)).
+- **M-3, stated precisely.** The UPDATE OR DELETE triggers of parts A and D
+  do not fire on TRUNCATE. That does not mean every TRUNCATE succeeds: the
+  foreign keys and the privileges still apply. A TRUNCATE trigger is itself
+  statement-level.
+- **Evidence status.** The reviewer does not attribute to themselves the
+  2426/2426 and 102/102 we re-ran in a fresh container: they are additional
+  evidence, described with their environment. Nor can the package's digest
+  be confirmed by that re-run: `reports/` was not in our copy.
+- **Carried, unchanged:** K06 UNPROVEN; G4-5R open; SALE only.
 
 **The review of `f7469e8`. Step 0 is AUTHORIZED, for measurements only, with
 no code. The decisions G6-1 to G6-12 and the implementation plan are NOT
@@ -1296,6 +1338,26 @@ reason, the effective text, and why it only narrows.
 
 ---
 
+### 5.3 Open questions (review of `b6a08e7`; NOT decisions, NOT approved)
+
+**OQ6-1 · A constraint on the diagnostic payload.** A CHECK on `tasks`
+that would make part C's key complete for every diagnostic task (M-1).
+- **Not decided before** its effect on every writer of `tasks` is
+  established: `identity.py`, `match_review.py`, and the run's writer of
+  step 4.
+- **Meanwhile, step 4 must prove** that the diagnostic writer sets
+  `request_id` and the four keys `entity`, `id`, `gate` and `basis` to
+  non-NULL values, and `source` to `"DIAGNOSTIC"` exactly.
+
+**OQ6-2 · An index on `task_completion_events.evidence_observation_id`.**
+Part D's guard looks events up by this column, on every UPDATE or DELETE of
+an observation; no index covers it (measured, P5 of the addendum record).
+A foreign key creates no index on its referencing columns.
+- **A later performance decision,** preceded by a measurement at a
+  representative volume. Nothing is built for it now.
+
+---
+
 ## 6. Tests and closure evidence
 
 ### 6.1 The three mandatory tests
@@ -1384,10 +1446,11 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements of §6.5, folded into revision 2; no code | **done** (authorized in the review of `f7469e8`); `SLICE6-PLAN-MEASUREMENTS.txt` |
-| 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216`; **delivered** at `cd5b868` (`SLICE_6_STEP1_DELIVERY.md`), for review |
-| 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2), if G6-8 (ii) is decided | G6-8, G6-9 |
+| 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216`; delivered at `cd5b868`; **CLOSED at `b6a08e7`** (review of `b6a08e7`) |
+| 1a | addendum: the two pins of M-1, the limits of the index and TRUNCATE stated, EN-03, the README; the suite bound again. `0007` unchanged | review of `b6a08e7`; **required before step 2** |
+| 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`) |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11 |
-| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10 | G6-4, G6-10 |
+| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4) | all |
 
 Each step is delivered with its tests and mutation record, and reviewed
