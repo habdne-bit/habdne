@@ -1,0 +1,66 @@
+TURAB — Slice 6 step 2: a failed witness in R2d, measured before the fix
+==========================================================================
+Tree      : 0a77a3d (code at 93c4b3c), clean; PostgreSQL 16.15; a fresh cloud
+            container, 4 CPUs. Ours; nobody else has run it.
+
+1. THE FAILURE (the run of db/gate/authorization_evidence.py, full suite)
+-------------------------------------------------------------------------
+reports/junit.xml sha256: 920dfcda4ff1a5b57f33541913f41a0e210c10858e69e2c9d008c2597f6f3d17
+totals: {'tests': '2511', 'failures': '1', 'errors': '0', 'skipped': '0', 'timestamp': '2026-10-20T17:33:36.815950+00:00'}
+FAILED: tests.test_slice6_step2 test_r2d_a_delete_before_the_lock_is_refused_typed_writing_nothing
+AssertionError: {'c_waited_on_u': False, 'c_ended_while_u_held': False, 'c': (422, 'EVIDENCE_OBSERVATION_NOT_FOUND'), 'state_unchanged': True, ...}
+
+  Read: the completion C ended with the right answer (422, nothing written,
+  the observation gone, the id not echoed). What failed is the witness:
+  `_watch` gave C 8 s to be seen waiting on U, and C was neither seen
+  waiting nor finished when the window closed (c_ended_while_u_held False).
+
+2. HYPOTHESES TESTED
+--------------------
+  H1 app start-up is slow in C's thread: REFUTED. create_app + TestClient,
+     5 times on an idle machine (s): 0.3, 0.01, 0.01, 0.01, 0.01.
+  H2 the shared engine's pool is exhausted, so C waits for a connection,
+     not for U: REFUTED. A pytest plugin outside the tree
+     logged engine.pool.status() as each test of the file started, in a full
+     run: "Checked out connections: 0" for all 50. That run passed
+     (2511/2511); the failure did not recur.
+  H3 a database wait: REFUTED. A sampler of pg_stat_activity (period 0.5 s)
+     ran through a second full run and logged every backend of the test
+     database waiting > 1 s on anything but the client. It logged NO lock
+     wait. Its whole output:
+     17:51:39|20001|turab_authz_test|Client|ClientRead|idle in transaction|1.4|{}|SELECT party_id FROM turab.requests WHERE request_id = $1
+     17:51:39|20021|turab_authz_test|Client|ClientRead|idle in transaction|1.4|{}|SELECT set_config('app.account_id', $1, true)
+
+3. WHAT THE SECOND FULL RUN SHOWS INSTEAD (pytest --durations=12, verbatim)
+---------------------------------------------------------------------------
+  7.74s call     tests/test_slice6_step2.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[absent]
+  6.61s call     tests/test_slice5_step4.py::test_a_changed_property_type_withholds_property_type_at_every_scope[PROPERTY_DETAILS_ALLOWED]
+  5.36s call     tests/test_slice5_step2.py::test_rejected_refuses_a_reason_outside_its_categories[NO_SUCH_REASON]
+  4.72s setup    tests/test_slice4_step7.py::test_correction_004_refuses_any_version_but_the_active_one[not a string-body4]
+  3.62s setup    tests/test_slice3_step4.py::test_a_never_confirmed_availability_is_not_stale
+  3.52s setup    tests/test_audit.py::test_staff_read_of_an_individual_resource_is_audited
+  3.08s call     tests/test_slice3_public.py::test_each_availability_the_public_schema_declares_is_listed_as_is[AVAILABLE]
+  3.08s call     tests/test_migrations.py::test_building_from_0001_then_upgrading_head_matches_a_direct_upgrade
+  2.90s call     tests/test_migrations.py::test_stamping_the_real_baseline_succeeds
+  2.81s call     tests/test_slice5_step2.py::test_a3_twenty_sequences_end_with_the_last_decision
+  2.67s call     tests/test_slice3_offers.py::test_an_offer_activates_without_a_price
+  2.56s call     tests/test_slice3_offers.py::test_the_response_carries_no_undeclared_key
+
+  Stalls of several seconds occur in tests of Slices 3, 4, 5 and 6 alike;
+  this file's "[absent]" case took 7.74 s there and about 0.1 s in four
+  isolated runs of the file (17 s for all 50 tests each time). An earlier
+  full run showed the same in "[TASK_PARTY_UNREACHABLE]" (about 9 s,
+  from the pool log's timestamps). The stalls are outside the database;
+  their cause is NOT identified here (the Python process or the
+  environment), and none is asserted.
+
+4. THE DEFECT, AND THE FIX
+--------------------------
+  The witness claimed "C waits on U" but allowed C a FIXED 8 s to reach the
+  lock. A stall unrelated to the lock can use the window up while the
+  behaviour is right. The fix gives the witness the semantics it states:
+  until a backend waits on the holder, or the waiting thread ENDS, with a
+  60 s safety cap. It still discriminates: without the lock (mutations L1,
+  L2, L3) the thread ends at once and the witness is False at once.
+  The Slice 5 tests that share this 8 s pattern are not changed by this
+  step; the same fragility is stated for them in the delivery note.

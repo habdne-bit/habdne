@@ -347,8 +347,14 @@ def _blocked_by(engine, pid):
            AND :w = ANY(pg_blocking_pids(pid))""", w=pid)]
 
 
-def _watch(engine, pid, thread, seconds=8.0):
-    """Until a backend waits on `pid`, or `thread` ends: True if one waited."""
+def _watch(engine, pid, thread, seconds=60.0):
+    """Until a backend waits on `pid`, or `thread` ends: True if one waited.
+
+    The cap is a safety net, not the measure. An 8 s window once closed
+    while the thread, delayed by a stall outside the database, had not yet
+    reached its lock: the behaviour was right and the witness failed
+    (`evidence/SLICE6-STEP2-R2D-WITNESS.txt`). A thread that takes no lock
+    ends at once, so the witness is False at once (mutations L1-L3)."""
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         if _blocked_by(engine, pid):
