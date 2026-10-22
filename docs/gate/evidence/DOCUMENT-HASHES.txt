@@ -821,3 +821,16 @@ SLICE_6_PLAN.md changed revision: 6 -> 7 (step 2 delivered; §7 condition 10 put
 docs/gate/SLICE_6_STEP2_DELIVERY.md                            ---   6c9dbea02fc91b5af3815dc917d0daf13ad3dfd3cad2fe7e54b10fd062dc6dcd
 docs/gate/SLICE_6_PLAN.md                                      rev8  7b8e12125780e2af5b832771c0f1c91ef497d412faba29bd3e289645124cc161
 SLICE_6_PLAN.md changed revision: 7 -> 8 (step 2 closed at 315804b; §7(10) tells creators from the completion; step 3 authorized).
+--- Slice 6 step 3: the diagnostic's pure functions and replay; delivered for review ---
+docs/gate/evidence/SLICE6-STEP3-REGISTRY-DIGEST.txt            new   719c229b064b908241a56cdc392b70a780d6074d72cbfb7946c84bbb70e0601a
+docs/gate/evidence/SLICE6-STEP3-S4-REPLAY-BEFORE-FIX.txt       new   a42469fe53aa692cf40dcf89b8fbb9b5e86e64822f5c223e379841927ffc0e48
+docs/gate/evidence/SLICE6-STEP3-BEFORE.txt                     new   3bd92e02ffe36799a1f5152e2876615e9a8923bdf6b0826d03a085ec80db46cb
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS-FIRST-RUN.txt        new   6845247dcca73aeed33714ad551451d8802e6750ae5e79deadd59b0c03b06979
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS-SECOND-RUN.txt       new   ee7d7061da03b272eeeec985783d93bb04e20e9e5227713b4173e8f17ef7fe6c
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS-THIRD-RUN.txt        new   78e6445f3725f746ac73e74b3b2168c4f0daa0b9e70eb21edbdcfe805a065ae4
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS.txt                  new   2330b9ece2ae76bf4259a24d0b30e7e8d18621aa7ba38c18d3c072f41c740c3a
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS-REPEAT.txt           new   85089be4e7b4b62260569f982551f7e2cedfdd7ea349c2c18f0b3e73c2267fc1
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   c17e08854a9a96a593c6ed3a68019148ab0153e6ad0884b3d814cc36584ffd6b
+docs/gate/SLICE_6_STEP3_DELIVERY.md                            new   8df76868fb14da42691ec8ad288656bcf30657d68b78dbc9b12337b12a3de71d
+docs/gate/SLICE_6_PLAN.md                                      rev9  a6a915476bd5f63dd511fb73940efb467449ac5e4c19d9dcf0f5d51cfcf3baa0
+SLICE_6_PLAN.md changed revision: 8 -> 9 (step 3 delivered).
