@@ -75,7 +75,10 @@ def _record(eligibility, criteria, *, hard=None, fresh="PASS", perm="PASS", reas
             "location_ancestry": [], "precedence": "eligibility.precedence@1"}
 
 
-REQ = str(uuid.uuid4())
+#: Fixed, and the largest id below: the order test needs ids whose order
+#: CONTRADICTS the class order, so a mutant that drops the class is caught
+#: every time, not by chance (A8, second mutation run).
+REQ = "ffffffff-ffff-4fff-8fff-ffffffffffff"
 DOC_UNKNOWN = _c("DOCUMENT_TYPE", "UNKNOWN", basis="ATTRIBUTE_NOT_RECORDED",
                  reason="DOCUMENT_NOT_KNOWN")
 ROOMS_UNKNOWN = _c("ROOMS_MIN", "UNKNOWN", basis="ATTRIBUTE_NOT_RECORDED")
@@ -190,7 +193,9 @@ def test_the_order_is_priority_class_count_then_ids():
     stale = [{"gate": "FRESHNESS", "subject": s, "reason_code": None,
               "basis": "NEVER_CONFIRMED"} for s in ("OFFER", "PROPERTY", "REQUEST")]
     confirm = _record("NEEDS_CONFIRMATION", [PASSING], fresh="UNKNOWN", perm="UNKNOWN",
-                      reasons=[*stale, NO_BINDING])
+                      reasons=[*stale, NO_BINDING],
+                      prop="80000000-0000-4000-8000-000000000000",
+                      offer="00000000-0000-4000-8000-000000000001")
     two = [_record("NEED_MORE_INFORMATION", [DOC_UNKNOWN, ROOMS_UNKNOWN])
            for _ in range(2)]
     actions = _actions([confirm, *two, high])
