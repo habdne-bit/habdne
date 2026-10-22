@@ -319,6 +319,22 @@ def test_g6_6_the_property_side_decides_before_the_widening():
         "X", "A", 3)
 
 
+def test_widenings_are_ordered_by_the_widening_whatever_their_ids():
+    """G6-5 (v): the fewest levels widened first. The ids are fixed so that
+    their order CONTRADICTS that order (L12 was killed by chance in one run:
+    the seeded locations' ids are generated at each database build)."""
+    chain = lambda *ids: [{"location_id": i, "location_type": "AREA"} for i in ids]
+    chains = {"R": chain("R", "zz-near", "aa-far")}
+    criterion = _c("LOCATION", "FAIL", request_value={"operator": "EQ", "value": "R"})
+    near = _record("REJECTED", [criterion, PASSING])
+    near["location_ancestry"] = ["P1", "zz-near", "aa-far"]
+    far = _record("REJECTED", [criterion, PASSING])
+    far["location_ancestry"] = ["P2", "aa-far"]
+    out = _relax([far, near], chains)
+    assert [(s["widen_to"], s["near_match_count"]) for s in out] == [
+        ("zz-near", 1), ("aa-far", 2)]
+
+
 def test_would_reach_is_the_precedence_without_the_failure():
     """G6-5 (v): ELIGIBLE, NEEDS_CONFIRMATION with its reasons, or
     NEED_MORE_INFORMATION when a blocking soft unknown stays."""
