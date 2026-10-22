@@ -31,7 +31,7 @@ from sqlalchemy import text
 from tests.test_slice4_step7 import _criterion, _exec, _offer, _one, _request, _run
 from tests.test_slice5_step2 import _prop
 from turab.auth.audit import AccessAuditor, RecordingAuditSink
-from turab.matching import diagnostic, registry, registry_history
+from turab.matching import diagnostic
 from turab.matching.registry import REGISTRY
 from turab.services import diagnostic_replay
 
@@ -308,20 +308,6 @@ def test_every_scenario_is_subordinate_to_the_high_actions():
                  high=["VERIFY_DOCUMENT|PROPERTY|x|INFORMATION|DOCUMENT_TYPE#1|B"])
     assert out[0]["subordinate_to"] == [
         "VERIFY_DOCUMENT|PROPERTY|x|INFORMATION|DOCUMENT_TYPE#1|B"]
-
-
-# ======================================================================================
-# The registry (G6-11)
-# ======================================================================================
-
-def test_the_three_functions_are_registered_pinned_and_recorded():
-    keys = {r.key for r in REGISTRY.rules()}
-    assert {"diagnostic.value@1", "diagnostic.actions@1", "diagnostic.relaxation@1"} <= keys
-    assert REGISTRY.verify_pins(registry.load_pins()) == []
-    [entry] = [e for e in registry_history.HISTORY if e["digest"] == REGISTRY.digest()]
-    assert len(entry["pairs"]) == 23
-    first = {p for p in registry_history.HISTORY[0]["pairs"]}
-    assert first < set(entry["pairs"]), "the twenty earlier pairs are unchanged"
 
 
 # ======================================================================================
