@@ -180,3 +180,5 @@ REGISTRY = RuleRegistry()
 # a5ea6f5: freshness, permission, eligibility, soft score) register into it.
 from turab.matching import gates as _gates  # noqa: E402,F401
 from turab.matching import rules as _rules  # noqa: E402,F401
+# Slice 6 step 3 (G6-11): the diagnostic's three pinned functions.
+from turab.matching import diagnostic_rules as _diagnostic_rules  # noqa: E402,F401

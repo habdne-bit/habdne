@@ -923,14 +923,42 @@ def _as_format_1(match):
     return old
 
 
+def _registry_of(entry):
+    """The registry a `registry_history.HISTORY` entry records: exactly its
+    pairs, each the production implementation, checked against the recorded
+    digest."""
+    from turab.matching import registry
+
+    recorded = registry.RuleRegistry()
+    for rule_id, version, source in entry["pairs"]:
+        rule = registry.REGISTRY.resolve(rule_id, version)
+        assert rule.source_sha256() == source
+        recorded.register(rule_id, version)(rule.evaluate)
+    assert recorded.digest() == entry["digest"]
+    return recorded
+
+
 def test_an_old_match_without_the_digest_and_a_new_one_replay_after_a_version_is_added(
         client, ids, engine, monkeypatch):
     """The review's two cases, after one new version is registered: a
     format-1 match (no digest) replays by the digest the history attributes
     to format 1; a format-2 match replays by the digest it records. Neither
-    uses the current digest."""
+    uses the current digest.
+
+    The format-1 match is written under the registry format 1 IS attributed
+    to (`HISTORY[0]`), as the code from 7a223d7 wrote it. Until Slice 6 step 3
+    that was the current registry, so a match written now stood in for it.
+    Once the registry grew (step 3 registered the diagnostic's functions), a
+    match written now carries another digest in its hash, and could no longer
+    stand in for a format-1 row (`SLICE6-STEP3-S4-REPLAY-BEFORE-FIX.txt`)."""
+    from turab.matching import registry_history
+    from turab.services import matching_run
+
     req, prop, _ = _world(engine, ids)
-    [m] = _matched(client, ids, req, [prop])["matches"]
+    with monkeypatch.context() as historical:
+        historical.setattr(matching_run, "REGISTRY",
+                           _registry_of(registry_history.HISTORY[0]))
+        [m] = _matched(client, ids, req, [prop])["matches"]
     new, rows = _rows(engine, m["match_id"])
     old = _as_format_1(new)
     monkeypatch.setattr(reconstruct, "REGISTRY", _grown_registry())

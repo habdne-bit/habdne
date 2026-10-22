@@ -1,0 +1,36 @@
+TURAB — Slice 6 step 3: what registering the diagnostic's functions changes
+for the matching run (measured)
+=============================================================================
+Database : turab_probe, built by `db/dev/reset_db.sh --fixtures` then
+           `alembic upgrade head`; PostgreSQL 16.15. Ours.
+World    : one ACTIVE BUY request (max 30,000,000 DZD), one LAND property, one
+           SALE offer at 20,000,000 DZD; the same request and property in
+           all three runs, and NO fact changed between them.
+Runs     : 1 with the code of a1d52d9 (an isolated worktree), 2 and 3 with
+           step 3's code; the script prints the registry digest the code
+           computes, the match the run returns, the digest recorded in it,
+           and whether it was REUSED (evaluated before this run).
+
+OUTPUT (verbatim; hashes and digests cut to 16 characters)
+  1. base a1d52d9:
+  {"code_registry_digest": "7ddf47478a44a14a", "match_id": "30d122de-3409-4547-83bf-b659a4dee2f2", "input_hash": "b3ecb1db59208bab", "recorded_digest": "7ddf47478a44a14a", "reused": false}
+  2. step 3 code:
+  {"code_registry_digest": "47188d011aa85bb4", "match_id": "146dc8a8-15a9-4aa8-b2a8-4a13130e0ee5", "input_hash": "8d5bd9b96af54db4", "recorded_digest": "47188d011aa85bb4", "reused": false}
+  3. step 3 code, again:
+  {"code_registry_digest": "47188d011aa85bb4", "match_id": "146dc8a8-15a9-4aa8-b2a8-4a13130e0ee5", "input_hash": "8d5bd9b96af54db4", "recorded_digest": "47188d011aa85bb4", "reused": true}
+
+READING
+  * G4-13 puts REGISTRY.digest() in every match's input hash; G6-11 registers
+    the three functions in REGISTRY. So the digest changes (7ddf4747… ->
+    47188d01…), and the first run after step 3, on UNCHANGED facts, does not
+    find an identical input: it stores a NEW match (run 2). From then on the
+    new match is reused as before (run 3).
+  * The old match is not changed and stays verifiable: it records 7ddf4747…,
+    which registry_history.HISTORY[0] holds.
+  * Consequence for the queues (Slice 5, G5-2, derived, not measured here):
+    the new match is a later match of the same request, property, policy and
+    offer, so it supersedes the old one for an approval and in the match queue.
+    This is G4-2's designed behaviour for any new registered version; step 3
+    is the first time it happens in this repository.
+  * Step 3's run calls none of the three functions; this change comes from
+    their registration alone.

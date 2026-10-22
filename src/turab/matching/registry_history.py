@@ -71,6 +71,35 @@ HISTORY = (
         ("score.soft", "1", "321c97ab9c290614539ae4a0524808065ba45835e30f791a0b8389a4eaf002c5"),
         ("score.soft", "2", "199e8a7e867d512774a1c27deea3ba823379c9770d741d0b8fb71931323dffb1"),
      )},
+    # Slice 6 step 3 (G6-11): the diagnostic's three pinned functions are
+    # registered beside the 20 above, which are unchanged.
+    {"digest": "47188d011aa85bb4e273d594c9ef18103f23d0ebd7d540d6951d6cb053e2934b",
+     "since": "SLICE6-STEP3",
+     "pairs": (
+        ("action.next", "1", "76cb97622d5c3ba5808e42c074914e97a7efd9d33d8114fc8ad2526dee542d2a"),
+        ("criterion.area_min", "1", "db0d9ebfe402214130b14e7f2488d976f01bc67919399bd1e79b3757b239bda9"),
+        ("criterion.area_min", "2", "ee6876e0500ef4572a7501da31a397d9102135d55b1b49279e7831c457edc627"),
+        ("criterion.attribute_option", "1", "e306194ca6f522c12913badde67f57720254222a848a4cd5db284d37dccec5e9"),
+        ("criterion.attribute_option", "2", "a167db3d8ba5e80ac7bb506c17bf17def1cfbff99bb6e6205285b752e48513a8"),
+        ("criterion.budget_max_sale", "1", "c9432c321827dde580bb149fda34aae607d563221a6bc64ca6f36e3e7e66a089"),
+        ("criterion.count_min", "1", "e5d482d7d5378c3854d7f76eca0f66e8c2cc89a0e084a42140c9b90ff94a68d6"),
+        ("criterion.count_min", "2", "a92c8d34ef56e19e6e5fd361c6ec94ad4f3f5628de611201bdc926a0492a2a46"),
+        ("criterion.location", "1", "12508fa37b0f43d12e63b539413856f14a40acd37b277f1e01e0b817bb8f0d6e"),
+        ("criterion.location", "2", "d2533698c8e86802f28fc1c38041681deb5149e5c5039331acb1eb9c2c91257a"),
+        ("criterion.no_deterministic_rule", "1", "9a1ccd3eb39c8c1c6eeecb9cc45fd9cb1fbc4e29b7dfda66f3629c7a4c451be2"),
+        ("criterion.property_type", "1", "a6f0b7c1ba2af9eadf4d5be065bb0a4e00afdf43d01389a1dc0b6b46dd698a7a"),
+        ("criterion.transaction_intent", "1", "5c3cff88be4d0f447f018d4571cec571dbbe1c36294f4a31af870dcc1ec4c4f0"),
+        ("diagnostic.actions", "1", "891287042ed15249344ca0e4c3da9ce7ba993c23afbb282a9437c78a88f9e4fd"),
+        ("diagnostic.relaxation", "1", "4c777ad73140f3a7326aa8c29f902cd77b8d364a515cd6b09c828ccd911ddfa7"),
+        ("diagnostic.value", "1", "24a51e78892eca50e1ebc7fba980e2f82f3b02e097da97a19b90b4d51fa00467"),
+        ("eligibility.precedence", "1", "8ee5d2a7ff056988702dada7a0b3c6cb0e37ac629ac124826ca10d3b7f67f320"),
+        ("freshness.gate", "1", "5a919b0976924dac98833eebce283acce4a532e1b915b2409e135a8445437d69"),
+        ("freshness.state", "1", "4a9c5d0f8923f61c355b9aae1023661a6f816b578fd01bd887b2df5155066a72"),
+        ("permission.binding_state", "1", "ce73e9484e4206c14d3eec82c1e02d7ea9cdaedd60692facd935dc02705ce415"),
+        ("permission.gate", "1", "a15387909c35b23cbb165a8b438352024ff001b5ffce0e60714c65f7903ef61e"),
+        ("score.soft", "1", "321c97ab9c290614539ae4a0524808065ba45835e30f791a0b8389a4eaf002c5"),
+        ("score.soft", "2", "199e8a7e867d512774a1c27deea3ba823379c9770d741d0b8fb71931323dffb1"),
+     )},
 )
 
 #: Rows of these explanation formats carry no digest; each was written under

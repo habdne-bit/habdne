@@ -1,0 +1,31 @@
+TURAB — Slice 6 step 3: a delivered Slice 4 test, failing before its fix
+==========================================================================
+Test   : tests/test_slice4_step8.py::
+         test_an_old_match_without_the_digest_and_a_new_one_replay_after_a_version_is_added
+Tree   : a1d52d9 plus step 3's uncommitted code (three functions registered;
+         REGISTRY.digest() 47188d01…934b instead of HISTORY[0]'s 7ddf4747…7298)
+Run    : the full suite, 2551 cases: 1 failed, 2550 passed. Ours.
+
+THE FAILURE (pytest output, verbatim lines)
+  >       assert reconstruct.replay(old, rows) == []
+  E       AssertionError: assert ['input_hash:...ed snapshots'] == []
+  E         
+  E         Left contains one more item: 'input_hash: not recomputed from the stored snapshots'
+  E         Use -v to get more diff
+  tests/test_slice4_step8.py:937: AssertionError
+
+WHY (read from the test, then confirmed by the fix)
+  The test stands a match written NOW in for a row the code of 7a223d7
+  wrote (`_as_format_1` deletes its digest). Format 1 is attributed to
+  HISTORY[0]'s digest, and `reconstruct` recomputes the hash with it, as it
+  must. That stand-in held only while the current registry WAS HISTORY[0]:
+  from step 3 a match written now carries 47188d01… in its hash, so the
+  recomputation with 7ddf4747… differs. The product's attribution is right;
+  the test's construction stopped matching what it simulates the first time
+  a version was really registered (G4-2's case).
+
+THE FIX (test only)
+  The format-1 match is written under HISTORY[0]'s registry itself: a
+  registry built from its 20 recorded pairs, each the production function,
+  its source sha256 and the digest checked against the record. Every
+  assertion of the test is unchanged. After the fix: the file 56/56.
