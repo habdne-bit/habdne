@@ -203,6 +203,17 @@ def test_the_order_is_priority_class_count_then_ids():
     assert ids == sorted(ids)
 
 
+def test_more_candidates_first_within_one_priority_and_class():
+    """G6-3's third key (A9 survived the first mutation run): two NORMAL
+    information entries; the one three candidates share comes first."""
+    no_rule = _c("CUSTOM", "UNKNOWN", importance="PREFERRED", blocking=True,
+                 basis="NO_DETERMINISTIC_RULE")
+    shared = [_record("NEED_MORE_INFORMATION", [no_rule, DOC_UNKNOWN]) for _ in range(3)]
+    actions = _actions(shared)
+    assert [a["candidate_count"] for a in actions] == [3, 1, 1, 1]
+    assert actions[0]["subject"]["entity"] == "REQUEST"
+
+
 def test_an_entry_carries_no_value():
     """§3.4: ids, codes, the basis and counts only."""
     price = _c("BUDGET_MAX", "UNKNOWN", basis="PRICE_ABOVE_MAX_NEGOTIATION_UNCONFIRMED",
@@ -285,6 +296,22 @@ def test_a_type_and_a_document_are_named_and_the_document_only_if_chosen():
     assert (by_code["DOCUMENT_TYPE"]["scenario"], by_code["DOCUMENT_TYPE"]["named"],
             by_code["DOCUMENT_TYPE"]["only_if_user_chooses"]) == (
         "ACCEPT_DOCUMENT", "CUSTOMARY_DEED", True)
+
+
+def test_g6_6_the_property_side_decides_before_the_widening():
+    """G6-6's order (L6 survived the first mutation run; L1-L4 give the same
+    choice in either order). Property chain P, X, Y, Z. Requested A reaches X
+    (one level above the property) by widening 3 levels; requested B reaches
+    Y (two above) by widening 1. The smallest `property_below` comes first:
+    A, to X, however far A is widened."""
+    chain = lambda *ids: [{"location_id": i, "location_type": "AREA"} for i in ids]
+    chains = {"A": chain("A", "A1", "A2", "X", "Y", "Z"), "B": chain("B", "Y", "Z")}
+    record = _record("REJECTED", [_c("LOCATION", "FAIL", request_value={
+        "operator": "IN", "value": ["B", "A"]}), PASSING])
+    record["location_ancestry"] = ["P", "X", "Y", "Z"]
+    [s] = _relax([record], chains)
+    assert (s["widen_to"], s["choices"][0]["from"], s["choices"][0]["levels_widened"]) == (
+        "X", "A", 3)
 
 
 def test_would_reach_is_the_precedence_without_the_failure():
@@ -525,13 +552,16 @@ def test_g6_11_two_runs_one_reused_match_both_replay(client, engine, ids):
     with engine.connect() as conn:
         assert [diagnostic_replay.replay(conn, r) for r in rows] == [{"R": [], "D": []}] * 2
 
-        bad = copy.deepcopy(rows[1])
-        bad["blocker_summary"]["evaluated"][0]["stored"] = (
-            "NEW" if bad["blocker_summary"]["evaluated"][0]["stored"] == "EXISTING"
-            else "EXISTING")
-        bad["blocker_summary"]["evaluated"][1]["input_hash"] = "0" * 64
-        result = diagnostic_replay.replay(conn, bad)
-        assert result["R"] and result["D"] == [], result
+        # Each alteration alone (R2 survived the first mutation run, when both
+        # were made in one document and the hash alone failed it).
+        p1_at = [i for i, e in enumerate(rows[1]["blocker_summary"]["evaluated"])
+                 if e["property_id"] == str(p1)][0]
+        for alter in (lambda e: e[p1_at].update(stored="NEW"),
+                      lambda e: e[1 - p1_at].update(input_hash="0" * 64)):
+            bad = copy.deepcopy(rows[1])
+            alter(bad["blocker_summary"]["evaluated"])
+            result = diagnostic_replay.replay(conn, bad)
+            assert len(result["R"]) == 1 and result["D"] == [], result
 
         assert rows[1]["suggested_actions"] and rows[1]["relaxation_scenarios"], \
             "both parts exist, so altering each is a test"

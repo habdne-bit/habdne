@@ -17,6 +17,20 @@ The test file is `tests/test_slice6_step3.py` only. The pins, which fail on
 ANY edit of a pinned function, are in `test_slice6_step3_registry.py` and
 Slice 4's files, so they cannot hide whether a behavioural test catches a
 mutation (Slice 4 step 4's convention). See `mutation_runner.py`.
+
+**Removed after the first run, as EQUIVALENT** (no test can tell them from
+the code; `SLICE6-STEP3-MUTATIONS-FIRST-RUN.txt` keeps their run):
+- V4, dropping the NEED_MORE_INFORMATION condition of `diagnostic.value@1`:
+  with the hard gate not FAIL, freshness and permission PASS and one
+  blocking unknown, `eligibility.precedence@1` gives NEED_MORE_INFORMATION;
+- A10, dropping the gate from the key: INFORMATION alone carries a
+  criterion, and FRESHNESS and PERMISSION differ by type;
+- L4, reversing the inner sort of magnitudes: the final sort orders by
+  `abs(magnitude)`;
+- L10, `property_value is not None` for the COUNT_MINIMUM basis: in
+  `count_min@2`'s FAIL results they are the same condition.
+Three others survived because a test was missing (A9, L6, R2); the tests
+were added.
 """
 import sys
 
@@ -37,9 +51,6 @@ MUTATIONS = [
     ("V3 several actionable unknowns are high value", RULES,
      "    if len(actionable) != 1:\n        return []",
      "    if not actionable:\n        return []"),
-    ("V4 any eligibility", RULES,
-     '    if (candidate["eligibility"] != "NEED_MORE_INFORMATION"\n            or',
-     "    if (False\n            or"),
     # --- A: suggested_actions (G6-3, §3.4) ---------------------------------------------
     ("A1 a REJECTED candidate gets work", RULES,
      'if candidate["eligibility"] not in ("NEED_MORE_INFORMATION", "NEEDS_CONFIRMATION"):',
@@ -68,9 +79,6 @@ MUTATIONS = [
     ("A9 the count ascending", RULES,
      '                -len(entry["candidates"]), str(s["id"]),',
      '                len(entry["candidates"]), str(s["id"]),'),
-    ("A10 the gate leaves the key (F6-13 merged)", RULES,
-     'key = (kind, subject["entity"], subject["id"], subject["gate"],',
-     'key = (kind, subject["entity"], subject["id"], None,'),
     ("A11 a shared subject is not merged", RULES,
      'key = (kind, subject["entity"], subject["id"], subject["gate"],',
      'key = (kind, candidate["property_id"], subject["entity"], subject["id"], subject["gate"],'),
@@ -88,9 +96,6 @@ MUTATIONS = [
     ("L3 not cumulative", RULES,
      "turned = [n for v, n in members if abs(v) <= abs(magnitude)]",
      "turned = [n for v, n in members if abs(v) == abs(magnitude)]"),
-    ("L4 largest change first", RULES,
-     "for magnitude in sorted({v for v, _ in members}, key=abs):",
-     "for magnitude in sorted({v for v, _ in members}, key=abs, reverse=True):"),
     ("L5 not stated at the asking price", RULES,
      '                    body["stated_at"] = "ASKING_PRICE"\n', "                    pass\n"),
     ("L6 G6-6: the widening before the property's ancestor", RULES,
@@ -103,9 +108,6 @@ MUTATIONS = [
      "n for _, n in members]"),
     ("L9 a document scenario without the user's choice", RULES,
      '                entry["only_if_user_chooses"] = True\n', "                pass\n"),
-    ("L10 a count that cannot apply is lowered", RULES,
-     'elif code in ("ROOMS_MIN", "BEDROOMS_MIN") and c["basis"] == "COUNT_MINIMUM":',
-     'elif code in ("ROOMS_MIN", "BEDROOMS_MIN") and c["property_value"] is not None:'),
     ("L11 not subordinate to the high actions", RULES,
      '        scenario["subordinate_to"] = list(subordinate_to)',
      '        scenario["subordinate_to"] = []'),
