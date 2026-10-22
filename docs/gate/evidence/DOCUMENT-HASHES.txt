@@ -817,3 +817,7 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   b7c23158c48
 docs/gate/SLICE_6_STEP2_DELIVERY.md                            new   be9e611d3b7419420980c315eab44724ed0042c5b532b1780f8957707bfbb5ae
 docs/gate/SLICE_6_PLAN.md                                      rev7  8411fb45c4883e10d72be92b64c3c761cad34af8aaa08307199b028e6d19e3ca
 SLICE_6_PLAN.md changed revision: 6 -> 7 (step 2 delivered; §7 condition 10 put to the reviewer).
+--- Review of 315804b: step 2 CLOSED; §7 condition 10 rewritten; step 3 authorized; Slice 6 plan revision 8 ---
+docs/gate/SLICE_6_STEP2_DELIVERY.md                            ---   6c9dbea02fc91b5af3815dc917d0daf13ad3dfd3cad2fe7e54b10fd062dc6dcd
+docs/gate/SLICE_6_PLAN.md                                      rev8  7b8e12125780e2af5b832771c0f1c91ef497d412faba29bd3e289645124cc161
+SLICE_6_PLAN.md changed revision: 7 -> 8 (step 2 closed at 315804b; §7(10) tells creators from the completion; step 3 authorized).

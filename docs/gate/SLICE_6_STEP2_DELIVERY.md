@@ -13,7 +13,7 @@ licence to change the schema.
   diagnostic function (step 3), no write by the run (step 4). `0007` is
   unchanged.
 
-**Status:** delivered, for review.
+**Status:** **CLOSED at `315804b`** (review of `315804b`). Choice 8 of §6 decided there: §7 condition 10 rewritten in plan revision 8.
 
 **Basis:** `docs/gate/SLICE_6_PLAN.md` revision 6: G6-8 (i)–(vii), G6-9,
 §3.6, §3.7, §5.2, §6.2 (I02, K05), §6.3; F6-16 to F6-19; the measurements of

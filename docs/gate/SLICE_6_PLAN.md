@@ -1,5 +1,5 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 7**
+## Implementation plan — **revision 8**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
@@ -7,8 +7,9 @@ Code is written one approved step at a time, never ahead of its approval
 (§8). Step 1 (`0007`) is **CLOSED at `b6a08e7`** (review of `b6a08e7`, recorded
 below), with an addendum that pins two limits of part C's index (M-1) and
 states two more (M-2, M-3); the addendum changes no line of `0007`. Step 2
-was authorized once the addendum was delivered, and is **delivered**
-(`SLICE_6_STEP2_DELIVERY.md`), for review. Step 0 (measurements only)
+was authorized once the addendum was delivered, and is **CLOSED at
+`315804b`** (review of `315804b`, recorded below). Step 3 is **authorized**,
+as §8 describes it. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -28,7 +29,36 @@ recommendation. A recommendation is not a decision.
 | 4 | `62d3589` | the review of `bd54216` recorded: every recommendation of the decision table approved; each decision marked DECIDED; step 1 authorized |
 | 5 | `b6a08e7` | step 1 delivered (`SLICE_6_STEP1_DELIVERY.md`): `0007` at `cd5b868`, 55 tests, 23/23 mutations; no other change |
 | 6 | `caa9d33` | the review of `b6a08e7` recorded: step 1 closed at `b6a08e7`; M-1 accepted and pinned by an addendum; OQ6-1 and OQ6-2 opened (§5.3), neither approved; obligations added to steps 2 and 4 (§8); step 2 authorized after the addendum |
-| 7 | the commit that adds this revision | step 2 delivered (`SLICE_6_STEP2_DELIVERY.md`): code at `038b6e8`, corrected at `93c4b3c` and `d09abbc`; mutations 34/34; suite 2511/2511. One reading put to the reviewer: §7 condition 10 and the completion's UPDATE of `tasks` (delivery note §6, choice 8); no other change |
+| 7 | `315804b` | step 2 delivered (`SLICE_6_STEP2_DELIVERY.md`): code at `038b6e8`, corrected at `93c4b3c` and `d09abbc`; mutations 34/34; suite 2511/2511. One reading put to the reviewer: §7 condition 10 and the completion's UPDATE of `tasks` (delivery note §6, choice 8); no other change |
+| 8 | the commit that adds this revision | the review of `315804b` recorded: step 2 closed; its seven choices accepted for step 2 only; §7 condition 10 rewritten to tell task creators from the completion's update, and §6.4 to inventory both; step 3 authorized |
+
+**The review of `315804b`. Step 2 is CLOSED at `315804b`, within its
+approved scope. Step 3 is AUTHORIZED, as §8 describes it.**
+- **What the reviewer checked.** The code and tests at that commit: the
+  completion locks the task `FOR UPDATE`, then the observation `FOR SHARE`,
+  before it inserts the event and updates the task; the race tests check the
+  order of the waits and the refusal that writes nothing. This is consistent
+  with the row-lock conflicts PostgreSQL 16 documents (§13.3.2).
+- **What the reviewer did not do.** Re-run PostgreSQL, the suite or the
+  mutations: 2511/2511, 34/34 and the gate's result remain the implementing
+  team's results.
+- **§7 condition 10, decided.** The reading of the delivery note (§6,
+  choice 8) is accepted in its intent, but the words "the writers of
+  `tasks`" were not exact: `tasks.py` IS a writer, by UPDATE. Condition 10
+  is rewritten to tell task creators (INSERT) from the completion command
+  (UPDATE of `status` and `completed_at`), and §6.4's closure evidence
+  inventories both kinds. `tasks.py` may never be dropped from the
+  inventory of writes. This corrects the closure evidence; it asks for no
+  change to step 2's implementation.
+- **The seven other choices of §6 are accepted for step 2 only:** the
+  recorded 403 for an unknown id; the existing order of body and role
+  checks; `assigned_to_me` false when absent; the task's completion instant
+  equal to the event's; `TASK_NOT_OPEN`'s detail without an id; the exact
+  response of the list; CORRECTION-005's recorded date. **Accepting the
+  order of the body and role checks here makes it no rule for later
+  routes.**
+- **Carried, unchanged:** OQ6-1 and OQ6-2 give no licence to change the
+  schema; K06 UNPROVEN; G4-5R open; SALE only.
 
 **The review of `b6a08e7`. Step 1 is CLOSED at `b6a08e7`.**
 - **The reading of «اعتمد» is confirmed.** The decisions G6-1 to G6-12, the
@@ -1406,6 +1436,17 @@ A foreign key creates no index on its referencing columns.
 - **Proposed:** a generated evidence document, `SLICE_6_EVIDENCE.md`, by a
   generator with `--check`, as STOP GATE E's, mapping each mandatory test
   and red-team case to its bound test. It is not called a STOP GATE.
+- **The inventory of writes to `tasks` (review of `315804b`).** The closure
+  evidence lists every statement of `src/` that writes `tasks`, by kind, and
+  refuses one that is not decided (condition 10):
+  - **INSERT (task creators):** `identity.py`, `match_review.py`, and
+    `matching_run.py` from step 4 under G6-4 (a);
+  - **UPDATE:** `tasks.py`, the completion, setting `status` and
+    `completed_at` only;
+  - **DELETE:** none.
+
+  Measured at `315804b`: exactly these three statements, the two INSERTs
+  and the one UPDATE, and no DELETE.
 
 ### 6.5 Measurements (step 0, delivered)
 
@@ -1437,9 +1478,16 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 7. **Relations are never an authorization source, nor a matching input.**
 8. **SALE only** (G4-5R open). **K06 UNPROVEN** (G6-12).
 9. **No AI** in any path.
-10. **The writers of `tasks`** are exactly those decided: `identity.py`,
-    `match_review.py`, and `matching_run.py` only if G6-4 (a). The closure
-    evidence checks this as STOP GATE E checked its writers.
+10. **The writes to `tasks` are exactly those decided** (rewritten in the
+    review of `315804b`):
+    - **task creators, by INSERT:** `identity.py`, `match_review.py`, and
+      `matching_run.py` only if G6-4 (a);
+    - **the completion command, by UPDATE:** `tasks.py`, which sets
+      `status` and `completed_at` and nothing else;
+    - **no DELETE.**
+
+    The closure evidence checks both kinds, as STOP GATE E checked its
+    writers (§6.4); `tasks.py` is never left out of it.
 
 ---
 
@@ -1450,8 +1498,8 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | 0 | the measurements of §6.5, folded into revision 2; no code | **done** (authorized in the review of `f7469e8`); `SLICE6-PLAN-MEASUREMENTS.txt` |
 | 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216`; delivered at `cd5b868`; **CLOSED at `b6a08e7`** (review of `b6a08e7`) |
 | 1a | addendum: the two pins of M-1, the limits of the index and TRUNCATE stated, EN-03, the README; the suite bound again. `0007` unchanged | review of `b6a08e7`; **required before step 2** |
-| 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`); **delivered** (`SLICE_6_STEP2_DELIVERY.md`), for review |
-| 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11 |
+| 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`); delivered (`SLICE_6_STEP2_DELIVERY.md`); **CLOSED at `315804b`** (review of `315804b`) |
+| 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`) |
 | 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4) | all |
 
