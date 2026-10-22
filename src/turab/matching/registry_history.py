@@ -74,7 +74,7 @@ HISTORY = (
     # Slice 6 step 3 (G6-11): the diagnostic's three pinned functions are
     # registered beside the 20 above, which are unchanged.
     {"digest": "47188d011aa85bb4e273d594c9ef18103f23d0ebd7d540d6951d6cb053e2934b",
-     "since": "SLICE6-STEP3",
+     "since": "55dbee6",
      "pairs": (
         ("action.next", "1", "76cb97622d5c3ba5808e42c074914e97a7efd9d33d8114fc8ad2526dee542d2a"),
         ("criterion.area_min", "1", "db0d9ebfe402214130b14e7f2488d976f01bc67919399bd1e79b3757b239bda9"),
