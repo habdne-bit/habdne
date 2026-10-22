@@ -1,0 +1,20 @@
+TURAB — Slice 6 step 3: the shipped tests at the base
+======================================================
+Base   : a1d52d9 (plan revision 8; no step 3 code), an isolated worktree into
+         which ONLY tests/test_slice6_step3.py and
+         tests/test_slice6_step3_registry.py were copied, unchanged.
+Run    : pytest -q --tb=line -rfE on both files. Ours.
+
+RESULT (verbatim lines)
+  !!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+  1 warning, 1 error in 1.05s
+  E   ImportError: cannot import name 'diagnostic' from 'turab.matching' (/tmp/claude-0/-home-user-habdne/7750e406-8524-5585-b134-ff496c284628/scratchpad/wt3/src/turab/matching/__init__.py)
+  ERROR tests/test_slice6_step3.py
+  ImportError while importing test module '/tmp/claude-0/-home-user-habdne/7750e406-8524-5585-b134-ff496c284628/scratchpad/wt3/tests/test_slice6_step3.py'.
+
+READING
+  The main file fails at collection: it imports `turab.matching.diagnostic`,
+  which this step adds; the collection error interrupts the run, so the
+  registry file is not run either. No test can be read as "failing for the
+  right reason" from this; the mutation records (SLICE6-STEP3-MUTATIONS*.txt)
+  tie each rule to the tests that refuse its weakening.

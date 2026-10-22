@@ -1,0 +1,232 @@
+TURAB — Slice 6 step 3: the diagnostic's functions and replay
+============================================================
+Base commit       : ef9c9ae62781a846acf8f1bb67628da1dc7bcfff
+Source fingerprint: 76bf18adfcdf509a70882ec1cba542e72a62a96ee69ecf31836f988ac2a8f7c1
+Working tree      : CLEAN
+Recorded          : 2026-10-22 16:07:04 UTC
+Test file         : tests/test_slice6_step3.py
+
+=== baseline (no mutation) ===
+   42 passed, 1 warning in 7.67s
+== V1 freshness ignored [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 8.01s
+   FAILED test_nothing_else_is_high_value[freshness
+   cause: AssertionError: freshness not PASS
+   cause: E   AssertionError: freshness not PASS
+== V2 permission ignored [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.13s
+   FAILED test_nothing_else_is_high_value[permission
+   cause: AssertionError: permission not PASS
+   cause: E   AssertionError: permission not PASS
+== V3 several actionable unknowns are high value [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   3 failed, 39 passed, 1 warning in 7.88s
+   FAILED test_g6_7_unknowns_are_split_and_the_versions_named
+   FAILED test_nothing_else_is_high_value[two
+   FAILED test_only_the_high_value_unknown_is_high
+   cause: AssertionError: assert {'4814bfff-9b...564f': 'HIGH'} == {'4814bfff-9b...4f': 'NORMAL'}
+   cause: AssertionError: assert {'DOCUMENT_TY...Decimal('1')}} == {'DOCUMENT_TY...gh_value': 0}}
+   cause: AssertionError: two actionable unknowns
+   cause: E   AssertionError: assert {'4814bfff-9b...564f': 'HIGH'} == {'4814bfff-9b...4f': 'NORMAL'}
+   cause: E   AssertionError: assert {'DOCUMENT_TY...Decimal('1')}} == {'DOCUMENT_TY...gh_value': 0}}
+   cause: E   AssertionError: two actionable unknowns
+== A1 a REJECTED candidate gets work [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.73s
+   FAILED test_mandatory_2_a_candidate_failing_three_hard_criteria_gets_no_action
+   cause: AssertionError: assert [{'key': 'CON...MATION', ...}] == []
+   cause: E   AssertionError: assert [{'key': 'CON...MATION', ...}] == []
+== A2 only the first unknown [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   2 failed, 40 passed, 1 warning in 7.99s
+   FAILED test_every_reason_of_a_candidate_is_an_entry_not_only_the_first
+   FAILED test_more_candidates_first_within_one_priority_and_class
+   cause: AssertionError: assert ['CONFIRM_PER...IFY_DOCUMENT'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: E   AssertionError: assert ['CONFIRM_PER...IFY_DOCUMENT'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: E   assert [3] == [3, 1, 1, 1]
+   cause: assert [3] == [3, 1, 1, 1]
+== A3 every information entry HIGH [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.88s
+   FAILED test_only_the_high_value_unknown_is_high
+   cause: AssertionError: assert {'20dbb8dd-e5...7be8': 'HIGH'} == {'20dbb8dd-e5...e8': 'NORMAL'}
+   cause: E   AssertionError: assert {'20dbb8dd-e5...7be8': 'HIGH'} == {'20dbb8dd-e5...e8': 'NORMAL'}
+== A4 the price entity is the property [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.49s
+   FAILED test_f6_13_two_offers_and_two_gates_are_four_subjects
+   cause: AssertionError: assert [('59c2e074-c... 'FRESHNESS')] == [('5930c036-b...INFORMATION')]
+   cause: E   AssertionError: assert [('59c2e074-c... 'FRESHNESS')] == [('5930c036-b...INFORMATION')]
+== A5 a document is OTHER work [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   4 failed, 38 passed, 1 warning in 7.28s
+   FAILED test_every_reason_of_a_candidate_is_an_entry_not_only_the_first
+   FAILED test_mandatory_1_the_document_unknown_ranks_above_the_location_scenario
+   FAILED test_only_the_high_value_unknown_is_high
+   FAILED test_the_order_is_priority_class_count_then_ids
+   cause: AssertionError: assert ('HIGH', 'OTHER', 1) == ('HIGH', 'VERIFY_DOCUMENT', 1)
+   cause: AssertionError: assert ('OTHER', 'HI...bd26bcf4194c') == ('VERIFY_DOCU...bd26bcf4194c')
+   cause: AssertionError: assert ['CONFIRM_PER...HER', 'OTHER'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: AssertionError: assert {} == {'fb947613-df...ab': 'NORMAL'}
+   cause: E   AssertionError: assert ('HIGH', 'OTHER', 1) == ('HIGH', 'VERIFY_DOCUMENT', 1)
+   cause: E   AssertionError: assert ('OTHER', 'HI...bd26bcf4194c') == ('VERIFY_DOCU...bd26bcf4194c')
+== A6 freshness reasons ignored [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   4 failed, 38 passed, 1 warning in 8.55s
+   FAILED test_every_reason_of_a_candidate_is_an_entry_not_only_the_first
+   FAILED test_f6_13_two_offers_and_two_gates_are_four_subjects
+   FAILED test_needs_confirmation_gets_its_reconfirmation_and_permission_work
+   FAILED test_the_order_is_priority_class_count_then_ids
+   cause: AssertionError: assert ['CONFIRM_PER...IFY_DOCUMENT'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: AssertionError: assert ['OTHER', 'VE...M_PERMISSION'] == ['RECONFIRM_R...M_PERMISSION']
+   cause: AssertionError: assert [('0bf08b73-a...INFORMATION')] == [('0bf08b73-a...INFORMATION')]
+   cause: AssertionError: assert [('CONFIRM_PE...N', 'NORMAL')] == [('CONFIRM_PR...N', 'NORMAL')]
+   cause: E   AssertionError: assert ['CONFIRM_PER...IFY_DOCUMENT'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: E   AssertionError: assert ['OTHER', 'VE...M_PERMISSION'] == ['RECONFIRM_R...M_PERMISSION']
+== A7 permission reasons ignored [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   3 failed, 39 passed, 1 warning in 7.98s
+   FAILED test_every_reason_of_a_candidate_is_an_entry_not_only_the_first
+   FAILED test_needs_confirmation_gets_its_reconfirmation_and_permission_work
+   FAILED test_the_order_is_priority_class_count_then_ids
+   cause: AssertionError: assert ['CONFIRM_PRI...IFY_DOCUMENT'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: AssertionError: assert ['OTHER', 'RE...ONFIRM_PRICE'] == ['RECONFIRM_R...M_PERMISSION']
+   cause: AssertionError: assert [('CONFIRM_PR...N', 'NORMAL')] == [('CONFIRM_PR...N', 'NORMAL')]
+   cause: E   AssertionError: assert ['CONFIRM_PRI...IFY_DOCUMENT'] == ['CONFIRM_PER...IFY_DOCUMENT']
+   cause: E   AssertionError: assert ['OTHER', 'RE...ONFIRM_PRICE'] == ['RECONFIRM_R...M_PERMISSION']
+   cause: E   AssertionError: assert [('CONFIRM_PR...N', 'NORMAL')] == [('CONFIRM_PR...N', 'NORMAL')]
+== A8 the class order ignored [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.27s
+   FAILED test_the_order_is_priority_class_count_then_ids
+   cause: AssertionError: assert ['OTHER', 'VE...FIRM_REQUEST'] == ['RECONFIRM_R...M_PERMISSION']
+   cause: E   AssertionError: assert ['OTHER', 'VE...FIRM_REQUEST'] == ['RECONFIRM_R...M_PERMISSION']
+== A9 the count ascending [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.44s
+   FAILED test_more_candidates_first_within_one_priority_and_class
+   cause: E   assert [1, 1, 1, 3] == [3, 1, 1, 1]
+   cause: assert [1, 1, 1, 3] == [3, 1, 1, 1]
+== A11 a shared subject is not merged [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   2 failed, 40 passed, 1 warning in 7.39s
+   FAILED test_a_subject_shared_by_candidates_is_one_entry_with_their_count
+   FAILED test_more_candidates_first_within_one_priority_and_class
+   cause: E   ValueError: too many values to unpack (expected 1)
+   cause: E   assert [1, 1, 1, 1, 1, 1] == [3, 1, 1, 1]
+   cause: ValueError: too many values to unpack (expected 1)
+   cause: assert [1, 1, 1, 1, 1, 1] == [3, 1, 1, 1]
+== A12 an entry carries the property's value [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.54s
+   FAILED test_an_entry_carries_no_value
+   cause: E   assert ('26000000' not in '[{"key": "C..._count": 1}]'
+   cause: assert ('26000000' not in '[{"key": "C..._count": 1}]'
+== L1 two failures make a near match [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.33s
+   FAILED test_two_required_failures_are_not_a_near_match
+   cause: E   RuntimeError: a near match was given no eligibility to reach
+   cause: RuntimeError: a near match was given no eligibility to reach
+== L2 the budget delta reversed [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   3 failed, 39 passed, 1 warning in 7.88s
+   FAILED test_budget_scenarios_are_cumulative_and_smallest_first
+   FAILED test_mandatory_3_the_budget_magnitude_is_1_500_000_dzd
+   FAILED test_the_seller_expectation_is_never_stated_nor_used
+   cause: AssertionError: assert ('BUDGET_MAX'...SKING_PRICE'}) == ('BUDGET_MAX'...SKING_PRICE'})
+   cause: AssertionError: assert Decimal('-2000000') == Decimal('2000000')
+   cause: AssertionError: assert [(Decimal('-1...3000000'), 2)] == [(Decimal('15...3000000'), 2)]
+   cause: E   AssertionError: assert ('BUDGET_MAX'...SKING_PRICE'}) == ('BUDGET_MAX'...SKING_PRICE'})
+   cause: E   AssertionError: assert Decimal('-2000000') == Decimal('2000000')
+   cause: E   AssertionError: assert [(Decimal('-1...3000000'), 2)] == [(Decimal('15...3000000'), 2)]
+== L3 not cumulative [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 8.03s
+   FAILED test_budget_scenarios_are_cumulative_and_smallest_first
+   cause: AssertionError: assert [(Decimal('15...3000000'), 1)] == [(Decimal('15...3000000'), 2)]
+   cause: E   AssertionError: assert [(Decimal('15...3000000'), 1)] == [(Decimal('15...3000000'), 2)]
+== L5 not stated at the asking price [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   2 failed, 40 passed, 1 warning in 7.78s
+   FAILED test_budget_scenarios_are_cumulative_and_smallest_first
+   FAILED test_mandatory_3_the_budget_magnitude_is_1_500_000_dzd
+   cause: AssertionError: assert ('BUDGET_MAX'...l('1500000')}) == ('BUDGET_MAX'...SKING_PRICE'})
+   cause: E   AssertionError: assert ('BUDGET_MAX'...l('1500000')}) == ('BUDGET_MAX'...SKING_PRICE'})
+   cause: E   KeyError: 'stated_at'
+   cause: KeyError: 'stated_at'
+== L6 G6-6: the widening before the property's ancestor [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.38s
+   FAILED test_g6_6_the_property_side_decides_before_the_widening
+   cause: AssertionError: assert ('Y', 'B', 1) == ('X', 'A', 3)
+   cause: E   AssertionError: assert ('Y', 'B', 1) == ('X', 'A', 3)
+== L7 G6-6: the last requested location wins a tie [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.82s
+   FAILED test_g6_6_the_location_measured_in_step_0[L2
+   cause: AssertionError: L2 a full tie on one ancestor
+   cause: E   AssertionError: L2 a full tie on one ancestor
+== L8 a widening turns only its own choosers [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   2 failed, 40 passed, 1 warning in 7.85s
+   FAILED test_widening_turns_every_near_match_under_the_location
+   FAILED test_widenings_are_ordered_by_the_widening_whatever_their_ids
+   cause: AssertionError: assert [('zz-near', ...('aa-far', 1)] == [('zz-near', ...('aa-far', 2)]
+   cause: AssertionError: assert {'4607f22d-da...08414be3180'}} == {'4607f22d-da...82086eaed15'}}
+   cause: E   AssertionError: assert [('zz-near', ...('aa-far', 1)] == [('zz-near', ...('aa-far', 2)]
+   cause: E   AssertionError: assert {'4607f22d-da...08414be3180'}} == {'4607f22d-da...82086eaed15'}}
+== L9 a document scenario without the user's choice [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 8.25s
+   FAILED test_a_type_and_a_document_are_named_and_the_document_only_if_chosen
+   cause: E   KeyError: 'only_if_user_chooses'
+   cause: KeyError: 'only_if_user_chooses'
+== L11 not subordinate to the high actions [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   2 failed, 40 passed, 1 warning in 7.85s
+   FAILED test_every_scenario_is_subordinate_to_the_high_actions
+   FAILED test_mandatory_1_the_document_unknown_ranks_above_the_location_scenario
+   cause: AssertionError: assert [] == ['VERIFY_DOCU...ENT_TYPE#1|B']
+   cause: AssertionError: assert [] == ['VERIFY_DOCU...NOT_RECORDED']
+   cause: E   AssertionError: assert [] == ['VERIFY_DOCU...ENT_TYPE#1|B']
+   cause: E   AssertionError: assert [] == ['VERIFY_DOCU...NOT_RECORDED']
+== L12 widenings ordered by id only [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
+   1 failed, 41 passed, 1 warning in 7.97s
+   FAILED test_widenings_are_ordered_by_the_widening_whatever_their_ids
+   cause: AssertionError: assert [('aa-far', 2...'zz-near', 1)] == [('zz-near', ...('aa-far', 2)]
+   cause: E   AssertionError: assert [('aa-far', 2...'zz-near', 1)] == [('zz-near', ...('aa-far', 2)]
+== W1 a blocking soft unknown is dropped [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 40d0c9d6f01a1aaf identical
+   1 failed, 41 passed, 1 warning in 7.62s
+   FAILED test_would_reach_is_the_precedence_without_the_failure
+   cause: AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
+   cause: E   AssertionError: assert 'ELIGIBLE' == 'NEED_MORE_INFORMATION'
+== W2 the freshness reasons are dropped [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 40d0c9d6f01a1aaf identical
+   1 failed, 41 passed, 1 warning in 7.48s
+   FAILED test_would_reach_is_the_precedence_without_the_failure
+   cause: AssertionError: assert {'eligibility...'reasons': []} == {'eligibility...s': 'STALE'}]}
+   cause: E   AssertionError: assert {'eligibility...'reasons': []} == {'eligibility...s': 'STALE'}]}
+== U1 a non-blocking unknown counted as blocking [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 40d0c9d6f01a1aaf identical
+   1 failed, 41 passed, 1 warning in 7.52s
+   FAILED test_g6_7_unknowns_are_split_and_the_versions_named
+   cause: AssertionError: assert {'DOCUMENT_TY...Decimal('0')}} == {'DOCUMENT_TY...gh_value': 0}}
+   cause: E   AssertionError: assert {'DOCUMENT_TY...Decimal('0')}} == {'DOCUMENT_TY...gh_value': 0}}
+== U2 a rejected candidate's unknown is actionable [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 40d0c9d6f01a1aaf identical
+   2 failed, 40 passed, 1 warning in 8.14s
+   FAILED test_g6_7_unknowns_are_split_and_the_versions_named
+   FAILED test_mandatory_2_over_a_real_run
+   cause: AssertionError: assert {'DOCUMENT_TY...Decimal('1')}} == {'DOCUMENT_TY...gh_value': 0}}
+   cause: AssertionError: assert {'actionable'... Decimal('0')} == {'blocking': ...igh_value': 0}
+   cause: E   AssertionError: assert {'DOCUMENT_TY...Decimal('1')}} == {'DOCUMENT_TY...gh_value': 0}}
+   cause: E   AssertionError: assert {'actionable'... Decimal('0')} == {'blocking': ...igh_value': 0}
+== U3 high value never counted [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 40d0c9d6f01a1aaf identical
+   1 failed, 41 passed, 1 warning in 7.83s
+   FAILED test_g6_7_unknowns_are_split_and_the_versions_named
+   cause: AssertionError: assert {'DOCUMENT_TY...Decimal('1')}} == {'DOCUMENT_TY...gh_value': 0}}
+   cause: E   AssertionError: assert {'DOCUMENT_TY...Decimal('1')}} == {'DOCUMENT_TY...gh_value': 0}}
+== R1 (R) no hash check [src/turab/services/diagnostic_replay.py, 1 site(s)]  restored: sha256 653054d1c3abcc49 identical
+   1 failed, 41 passed, 1 warning in 7.26s
+   FAILED test_g6_11_two_runs_one_reused_match_both_replay
+   cause: AssertionError: {'R': [], 'D': []}
+   cause: E   AssertionError: {'R': [], 'D': []}
+== R2 (R) no instant check [src/turab/services/diagnostic_replay.py, 1 site(s)]  restored: sha256 653054d1c3abcc49 identical
+   1 failed, 41 passed, 1 warning in 7.91s
+   FAILED test_g6_11_two_runs_one_reused_match_both_replay
+   cause: AssertionError: {'R': [], 'D': []}
+   cause: E   AssertionError: {'R': [], 'D': []}
+== R3 (D) the suggestions not compared [src/turab/services/diagnostic_replay.py, 1 site(s)]  restored: sha256 653054d1c3abcc49 identical
+   1 failed, 41 passed, 1 warning in 8.02s
+   FAILED test_g6_11_two_runs_one_reused_match_both_replay
+   cause: AssertionError: {'R': [], 'D': []}
+   cause: E   AssertionError: {'R': [], 'D': []}
+== R4 (D) the scenarios not compared [src/turab/services/diagnostic_replay.py, 1 site(s)]  restored: sha256 653054d1c3abcc49 identical
+   1 failed, 41 passed, 1 warning in 7.15s
+   FAILED test_g6_11_two_runs_one_reused_match_both_replay
+   cause: AssertionError: {'R': [], 'D': []}
+   cause: E   AssertionError: {'R': [], 'D': []}
+== R5 (D) reads the chains again instead of the stored ones [src/turab/services/diagnostic_replay.py, 1 site(s)]  restored: sha256 653054d1c3abcc49 identical
+   1 failed, 41 passed, 1 warning in 7.71s
+   FAILED test_g6_11_two_runs_one_reused_match_both_replay
+   cause: AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+   cause: E   AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+
+SURVIVING MUTATIONS: none
