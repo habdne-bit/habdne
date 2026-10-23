@@ -4,8 +4,8 @@
 
 > Slice 6, Match Diagnostic / Information Work (plan §6.4). **Not a STOP GATE.** **Its stated limits: SALE only (G4-5R open); K06 UNPROVEN; the two limits of §5 below.**
 
-- The JUnit run is recorded at commit `a2c101852cdf92cb56a49a25dda97373932792f3`, source fingerprint `7a06d51840425a53f5c0c540734d4d7ba081932c44b65d30eb555ed37c578597`, report sha256 `8abccc6237577da672770e0444061d74b9a5f78b17809a5dbd5a9166afb8b6d1` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
-- Counted in the report: 2609 test cases, 0 failures, 0 errors, 0 skipped.
+- The JUnit run is recorded at commit `c6275517da24cd43ce9f8f02660bb4a7831571db`, source fingerprint `2858511a5bfc1798b3eeb6f3d11977701df9065967b29e55ccd8de5bfa0fcbde`, report sha256 `98a7b7c9b2f32f6bb6f3ca97191799c524dfb28e7bf5d85d2d79080f539064bc` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
+- Counted in the report: 2614 test cases, 0 failures, 0 errors, 0 skipped.
 - Binding (`db/gate/run_binding.py`): the report's digest and counts are the recorded ones, and the current tree's source fingerprint is the run's and the gate run's.
 - Tests are named `module::name`.
 - These are our runs; nobody else has re-run them.
@@ -33,9 +33,9 @@ The end-to-end test (`test_slice6_step5`, every business row made over HTTP) is 
 | I02 | a completion stores its outcome, note and evidence in one event and marks the task DONE, in one transaction; a failure between the two writes leaves neither | `test_slice6_step2::test_a_completion_appends_its_event_and_marks_the_task_done` | PASS |
 | I02 | a completion stores its outcome, note and evidence in one event and marks the task DONE, in one transaction; a failure between the two writes leaves neither | `test_slice6_step2::test_i02_a_failure_between_the_two_writes_leaves_neither` | PASS |
 | I03 | a run producing +1,500,000 DZD leaves the request, its version and its criteria unchanged; an explicit criterion changes it and the next run sees it | `test_slice6_step5::test_i03_a_scenario_changes_no_request_and_an_explicit_criterion_does` | PASS |
-| D02 / R9.3 | an expectation between the maximum and the asking price: the magnitude is ask − max; the expectation reaches no diagnostic, task, task list or Slice 6 audit row (see F6-21 for the staff match) | `test_slice6_step5::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit` | PASS |
-| D02 / R9.3 | an expectation between the maximum and the asking price: the magnitude is ask − max; the expectation reaches no diagnostic, task, task list or Slice 6 audit row (see F6-21 for the staff match) | `test_slice6_step3::test_the_seller_expectation_is_never_stated_nor_used` | PASS |
-| D02 / R9.3 | an expectation between the maximum and the asking price: the magnitude is ask − max; the expectation reaches no diagnostic, task, task list or Slice 6 audit row (see F6-21 for the staff match) | `test_slice6_step2::test_every_writers_task_is_listed_and_no_payload_carries_a_private_value` | PASS |
+| D02 / R9.3 | an expectation between the maximum and the asking price: the magnitude is ask − max; the expectation reaches no diagnostic, task, task list or Slice 6 audit row; the staff match keeps it (F6-21, §6) | `test_slice6_step5::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit` | PASS |
+| D02 / R9.3 | an expectation between the maximum and the asking price: the magnitude is ask − max; the expectation reaches no diagnostic, task, task list or Slice 6 audit row; the staff match keeps it (F6-21, §6) | `test_slice6_step3::test_the_seller_expectation_is_never_stated_nor_used` | PASS |
+| D02 / R9.3 | an expectation between the maximum and the asking price: the magnitude is ask − max; the expectation reaches no diagnostic, task, task list or Slice 6 audit row; the staff match keeps it (F6-21, §6) | `test_slice6_step2::test_every_writers_task_is_listed_and_no_payload_carries_a_private_value` | PASS |
 | K05 | a completion replayed with its key returns the first response and writes nothing | `test_slice6_step2::test_k05_a_replay_returns_the_first_response_and_writes_nothing` | PASS |
 | G04 / G06 | replay (G6-11); a run with no candidate writes an empty, valid format 2 | `test_slice6_step5::test_g06_a_run_with_no_candidate_writes_an_empty_valid_format_2_that_replays` | PASS |
 | G04 / G06 | replay (G6-11); a run with no candidate writes an empty, valid format 2 | `test_slice6_step4::test_a_row_the_run_wrote_is_format_2_and_replays` | PASS |
@@ -80,12 +80,19 @@ The end-to-end test (`test_slice6_step5`, every business row made over HTTP) is 
 
 **5.2 `explain.blocker_summary` is not pinned** (review of `922a100`; plan §5.4). `by_reason`, `candidates_evaluated` and the summary's base come from Slice 4's format-1 builder. Computed from `src/turab/matching/rule_pins.py`: the pins of step 3 (`diagnostic.value@1`, `diagnostic.actions@1`, `diagnostic.relaxation@1`) are present; a pin naming `blocker_summary`: none. The three pins do not cover it. A change of its output makes an old row fail (D), loudly; that failure is **not** a proof that the old row can be replayed. Before any later change of it that affects the summary: keep the historical computation (or a version of it), and test the replay of an old row and of a new row.
 
-## 6. Findings measured, put to the reviewer (never decided here)
+## 6. Findings decided in the review of `3657973`
 
-| Finding | What is measured | Test | State recorded |
-|---|---|---|---|
-| F6-21 | the staff match of the run's 201 body, and the match's audit row, carry `seller_expectation_dzd` (Slice 4 §3.5, decided); §6.2's D02, as worded, does not hold of them | `test_slice6_step5::test_f6_21_measured_the_staff_match_carries_the_expectation_as_slice_4_decided` | measured |
-| F6-22 | the REQUEST's own work (its maximum not stated) is typed CONFIRM_PRICE, whose fixed title names an offer; only the subject states the work | `test_slice6_step5::test_f6_22_measured_the_request_tasks_title_names_an_offer` | measured |
+| Finding | Decision | Held by | Test | Status |
+|---|---|---|---|---|
+| F6-21 | documentary correction: §3.4 and §6.2's D02 bind what Slice 6 generates (the diagnostic, its tasks, their audit), not every output of the run; Slice 4 §3.5 keeps the expectation in the staff match's snapshot, and `API_CONTRACTS_v0.2.md` §8 forbids its serialization to public and customer DTOs | the boundary's witness | `test_slice6_step5::test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness` | PASS |
+| F6-21 | documentary correction: §3.4 and §6.2's D02 bind what Slice 6 generates (the diagnostic, its tasks, their audit), not every output of the run; Slice 4 §3.5 keeps the expectation in the staff match's snapshot, and `API_CONTRACTS_v0.2.md` §8 forbids its serialization to public and customer DTOs | the boundary's witness | `test_slice6_step5::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit` | PASS |
+| F6-22 | the title by type and subject entity: CONFIRM_PRICE on the REQUEST is "Confirm the request's maximum budget"; on a PROPERTY_OFFER the offer's title stays; a row stored before keeps its title (no path updates one) | fixed (`matching_run.py`) | `test_slice6_step5::test_f6_22_the_request_tasks_title_names_the_request` | PASS |
+| F6-22 | the title by type and subject entity: CONFIRM_PRICE on the REQUEST is "Confirm the request's maximum budget"; on a PROPERTY_OFFER the offer's title stays; a row stored before keeps its title (no path updates one) | fixed (`matching_run.py`) | `test_slice6_step5::test_f6_22_an_offer_subject_keeps_the_offers_title` | PASS |
+| F6-22 | the title by type and subject entity: CONFIRM_PRICE on the REQUEST is "Confirm the request's maximum budget"; on a PROPERTY_OFFER the offer's title stays; a row stored before keeps its title (no path updates one) | fixed (`matching_run.py`) | `test_slice6_step5::test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done` | PASS |
+| F6-22 | the title by type and subject entity: CONFIRM_PRICE on the REQUEST is "Confirm the request's maximum budget"; on a PROPERTY_OFFER the offer's title stays; a row stored before keeps its title (no path updates one) | fixed (`matching_run.py`) | `test_slice6_step5::test_a_high_task_shared_by_two_properties_names_only_the_request` | PASS |
+
+- **F6-22, computed from the tree:** `matching_run.py` fixes `("CONFIRM_PRICE", "REQUEST")` → "Confirm the request's maximum budget".
+- **F6-22, the tasks stored with the old title before the fix** (`docs/gate/evidence/SLICE6-STEP5-F6-22-STORED-TITLES.txt`): `CONFIRM_PRICE | REQUEST | Confirm the offer's price terms | OPEN | 2`. Test data of the suite's database, dropped at its next session; no path updates a title, so such a row keeps it until DONE (`test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`).
 
 ## 7. The writes, computed from the tree (plan §7)
 
