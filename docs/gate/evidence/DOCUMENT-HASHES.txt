@@ -854,3 +854,7 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   a476a6edc18
 docs/gate/SLICE_6_STEP4_DELIVERY.md                            new   b68dcd8cebc0b1a5570327ed8a6dfacf454bfaf6e2bd2d3103c2642bee64fd0e
 docs/gate/SLICE_6_PLAN.md                                      rev12 c325513f3eb58763b2a9688803a84a873f1647c64644b99082dee62469296993
 SLICE_6_PLAN.md changed revision: 11 -> 12 (step 4 delivered for review; not closed).
+--- Review of 0fae42c: step 4 CLOSED; two limits for the closure evidence; step 5 authorized; Slice 6 plan revision 13 ---
+docs/gate/SLICE_6_STEP4_DELIVERY.md                            ---   62d9b1e7777c34f2e13f1149274275e5107ef7cdb85910dd75d268519188d9d2
+docs/gate/SLICE_6_PLAN.md                                      rev13 beba0ba1e3e1fd97b7b4661608ec9b0921228e48a8beb85de9bda81fd0c86c08
+SLICE_6_PLAN.md changed revision: 12 -> 13 (step 4 closed at 0fae42c; the diagnostic input_hash limit stated; step 5 authorized).

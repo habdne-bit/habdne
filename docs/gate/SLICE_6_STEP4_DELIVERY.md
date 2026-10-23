@@ -12,7 +12,10 @@ It added two required experiments:
 
 The step's evidence also restates the limit of §5.4 (§6 below).
 
-**Status:** delivered for review. Not closed.
+**Status:** **CLOSED at `0fae42c`** (review of `0fae42c`), within the approved
+scope of G6-4 and G6-11. Its five choices (§10) are accepted. The review
+adds a limit to carry into step 5's closure evidence: the replay does not
+recompute the diagnostic row's `input_hash` (plan §5.4).
 
 **Basis:** `docs/gate/SLICE_6_PLAN.md` revision 11:
 - G6-4 (a) with (i)–(iii), (iv) (a), (v) and (vi);

@@ -1,5 +1,5 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 12**
+## Implementation plan — **revision 13**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
@@ -10,8 +10,8 @@ states two more (M-2, M-3); the addendum changes no line of `0007`. Step 2
 was authorized once the addendum was delivered, and is **CLOSED at
 `315804b`** (review of `315804b`, recorded below). Step 3 is **CLOSED at
 `922a100`** (review of `922a100`, recorded below), after its three replay gaps
-were closed. Step 4 is **authorized** and delivered for review
-(`SLICE_6_STEP4_DELIVERY.md`); it is not closed. Step 0 (measurements only)
+were closed. Step 4 is **CLOSED at `0fae42c`** (review of `0fae42c`,
+recorded below). Step 5 is **authorized**. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -36,7 +36,39 @@ recommendation. A recommendation is not a decision.
 | 9 | `220573a` | step 3 delivered (`SLICE_6_STEP3_DELIVERY.md`): code at `55dbee6`, its tests corrected at `83dd19a`, `0943e64`, `ef9c9ae`; mutations 34/34 twice; suite 2556/2556. Nine readings and the measured effect of the registration on match reuse put to the reviewer; no other change |
 | 10 | `922a100` | the review of `220573a` recorded: step 3 not closed; the three replay gaps pinned by tests on `220573a`'s code (`e9d3a03`), then closed (`144ba96`); §3's readings and the digest's effect accepted; the measured supersession moved to step 4 |
 | 11 | `c67e42d` | the review of `922a100` recorded: step 3 closed; the limit on `explain.blocker_summary` stated (§5.4); step 4 authorized with its two required experiments |
-| 12 | the commit that adds this revision | step 4 delivered (`SLICE_6_STEP4_DELIVERY.md`): code at `820bec7`; the two required experiments; mutations 19/19 twice; suite 2576/2576; the limit of §5.4 restated. Five choices put to the reviewer; no other change |
+| 12 | `0fae42c` | step 4 delivered (`SLICE_6_STEP4_DELIVERY.md`): code at `820bec7`; the two required experiments; mutations 19/19 twice; suite 2576/2576; the limit of §5.4 restated. Five choices put to the reviewer; no other change |
+| 13 | the commit that adds this revision | the review of `0fae42c` recorded: step 4 closed; its five choices accepted; step 5 authorized with two stated limits for its closure evidence (the replay does not recompute the diagnostic's `input_hash`; §5.4) and an end-to-end test of a HIGH task shared by two candidates |
+
+**The review of `0fae42c`. Step 4 is CLOSED at `0fae42c`, within the
+approved scope of G6-4 and G6-11. Step 5 is AUTHORIZED, as §8 describes it.**
+- **What the reviewer checked:** the write path (`matching_run.py`), the
+  step's tests and its delivery note. The real format-2 row test and the
+  supersession test required by the review of `922a100` are present.
+- **Accepted, the five choices** of the delivery note (§10):
+  - when several candidates share one work, no `match_id` is chosen
+    arbitrarily: the work's identity stays in `request_id` and
+    `payload.subject`, and `property_id` is kept when the subject is a
+    property;
+  - the fixed title of `OTHER`; the three-key payload; open work told by
+    the unique index's name; the order of writes inside the transaction.
+  The concurrency test proves the state of a task naming an older
+  diagnostic than the one shown for the request.
+- **A limit to carry into step 5's closure evidence (§6.4):** the replay
+  (R)/(D) checks the matches' binding and recomputes the decisions, but it
+  **does not recompute the diagnostic row's `input_hash`, nor compare it
+  with the stored one**. A replay of `{"R": [], "D": []}` is therefore
+  **not** presented as a proof that every input of that hash is sound.
+- **Also carried:** the limit of §5.4 (`explain.blocker_summary`, not
+  pinned), as the step 4 note states it.
+- **Required of step 5:**
+  - the closure evidence states both limits explicitly;
+  - the end-to-end tests cover a HIGH task shared by two candidates, whose
+    `match_id` is null, and which stays understandable in `GET /tasks`.
+- **Not attributed to the reviewer:** 2576/2576 and 19/19 twice remain the
+  implementing team's runs. The reviewer did not re-run PostgreSQL, the
+  tests or the mutations.
+- **Carried, unchanged:** OQ6-1 and OQ6-2 open; K06 UNPROVEN; G4-5R open;
+  the proof's scope is SALE only.
 
 **The review of `922a100`. Step 3 is CLOSED at `922a100`, within its
 approved scope. Step 4 is AUTHORIZED.**
@@ -1450,6 +1482,13 @@ and the three pins of step 3 (`diagnostic.value@1`, `diagnostic.actions@1`,
   the replay of an old row and of a new row.
 - Recorded with step 4's evidence; restated in the closure evidence (§6.4).
 
+**A second stated limit (review of `0fae42c`): the diagnostic's own
+`input_hash`.** The replay of G6-11 verifies the matches it names (R) and
+recomputes the decisions (D). It does not recompute the diagnostic row's
+`input_hash` (`turab.diagnostic-input/2`) nor compare it with the stored
+value. A replay with no problem is not a proof that every input of that
+hash is sound. Restated in the closure evidence (§6.4).
+
 ---
 
 ## 6. Tests and closure evidence
@@ -1562,8 +1601,8 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | 1a | addendum: the two pins of M-1, the limits of the index and TRUNCATE stated, EN-03, the README; the suite bound again. `0007` unchanged | review of `b6a08e7`; **required before step 2** |
 | 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`); delivered (`SLICE_6_STEP2_DELIVERY.md`); **CLOSED at `315804b`** (review of `315804b`) |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`); not closed in the review of `220573a`; **CLOSED at `922a100`** (review of `922a100`) |
-| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests measure** the supersession of an older match by the new one, in the match queue and at approval (review of `220573a`), and **replay a real format-2 row the run wrote** (review of `922a100`); its evidence restates the limit of §5.4. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10; **authorized** (review of `922a100`); delivered (`SLICE_6_STEP4_DELIVERY.md`) |
-| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4) | all |
+| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests measure** the supersession of an older match by the new one, in the match queue and at approval (review of `220573a`), and **replay a real format-2 row the run wrote** (review of `922a100`); its evidence restates the limit of §5.4. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10; **authorized** (review of `922a100`); delivered (`SLICE_6_STEP4_DELIVERY.md`); **CLOSED at `0fae42c`** (review of `0fae42c`) |
+| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4). **Its end-to-end tests cover** a HIGH task shared by two candidates, `match_id` null, understandable in `GET /tasks`; **its closure evidence states** that the replay does not recompute the diagnostic's `input_hash`, and the limit of §5.4 (review of `0fae42c`) | all; **authorized** (review of `0fae42c`) |
 
 Each step is delivered with its tests and mutation record, and reviewed
 before the next begins. A defect found in a step is measured before it is
