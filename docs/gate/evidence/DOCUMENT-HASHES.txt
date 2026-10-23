@@ -912,3 +912,6 @@ docs/gate/evidence/SLICE7-PLAN-MEASUREMENTS.py                 new   c420fdb8ef3
 docs/gate/evidence/SLICE7-PLAN-MEASUREMENTS.txt                new   01b8b02550ae41c01de7e293c5f12f456813795cd20747f9d18e0cbf25621bec
 docs/gate/SLICE_7_PLAN.md                                      rev2  539b74c3e499cfcbff899168df0327e13392c32238bc368115dd83709775f077
 SLICE_7_PLAN.md changed revision: 1 -> 2 (review of dcebe46; its commit named in place).
+--- Review of 58a0067: Slice 7 step 0 accepted; Slice 7 plan revision 3 (dcc1c74); planning only; 0008 text proposed, not executed ---
+docs/gate/SLICE_7_PLAN.md                                      rev3  409968d5aa604d893c93899b85497d2850e71aadcec1c200af2b4858a535751e
+SLICE_7_PLAN.md changed revision: 2 -> 3 (review of 58a0067; its commit named in place).
