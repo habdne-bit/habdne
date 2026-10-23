@@ -1,5 +1,5 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 10**
+## Implementation plan — **revision 11**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
@@ -8,10 +8,9 @@ Code is written one approved step at a time, never ahead of its approval
 below), with an addendum that pins two limits of part C's index (M-1) and
 states two more (M-2, M-3); the addendum changes no line of `0007`. Step 2
 was authorized once the addendum was delivered, and is **CLOSED at
-`315804b`** (review of `315804b`, recorded below). Step 3 was authorized; it
-was **not closed** in the review of `220573a` (three replay gaps), which are
-closed and **delivered again** (`SLICE_6_STEP3_DELIVERY.md` §8), for review.
-Step 4 does not start before step 3 closes. Step 0 (measurements only)
+`315804b`** (review of `315804b`, recorded below). Step 3 is **CLOSED at
+`922a100`** (review of `922a100`, recorded below), after its three replay gaps
+were closed. Step 4 is **authorized**. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -34,7 +33,27 @@ recommendation. A recommendation is not a decision.
 | 7 | `315804b` | step 2 delivered (`SLICE_6_STEP2_DELIVERY.md`): code at `038b6e8`, corrected at `93c4b3c` and `d09abbc`; mutations 34/34; suite 2511/2511. One reading put to the reviewer: §7 condition 10 and the completion's UPDATE of `tasks` (delivery note §6, choice 8); no other change |
 | 8 | `a1d52d9` | the review of `315804b` recorded: step 2 closed; its seven choices accepted for step 2 only; §7 condition 10 rewritten to tell task creators from the completion's update, and §6.4 to inventory both; step 3 authorized |
 | 9 | `220573a` | step 3 delivered (`SLICE_6_STEP3_DELIVERY.md`): code at `55dbee6`, its tests corrected at `83dd19a`, `0943e64`, `ef9c9ae`; mutations 34/34 twice; suite 2556/2556. Nine readings and the measured effect of the registration on match reuse put to the reviewer; no other change |
-| 10 | the commit that adds this revision | the review of `220573a` recorded: step 3 not closed; the three replay gaps pinned by tests on `220573a`'s code (`e9d3a03`), then closed (`144ba96`); §3's readings and the digest's effect accepted; the measured supersession moved to step 4 |
+| 10 | `922a100` | the review of `220573a` recorded: step 3 not closed; the three replay gaps pinned by tests on `220573a`'s code (`e9d3a03`), then closed (`144ba96`); §3's readings and the digest's effect accepted; the measured supersession moved to step 4 |
+| 11 | the commit that adds this revision | the review of `922a100` recorded: step 3 closed; the limit on `explain.blocker_summary` stated (§5.4); step 4 authorized with its two required experiments |
+
+**The review of `922a100`. Step 3 is CLOSED at `922a100`, within its
+approved scope. Step 4 is AUTHORIZED.**
+- **What the reviewer checked:** the commits. `e9d3a03` added the tests
+  and recorded the failures without touching `src/`. In the corrected
+  code, (R) compares the property, offer and request; (D) compares
+  `excluded_counts`; and the recomputation uses the versions the row
+  records. The reviewer also read the single-change tests and the
+  `@1`/`@2` test.
+- **`explain.blocker_summary`, decided (§5.4):** left without a further
+  pin in step 3.
+- **Required of step 4:**
+  - a run that writes a real format-2 row, which is then replayed;
+  - the measured supersession of an older match, in the match queue and at
+    approval, after the registry digest changed.
+- **Not attributed to the reviewer:** 2562/2562 and 39/39 twice remain the
+  implementing team's runs.
+- **Carried, unchanged:** OQ6-1 and OQ6-2 open; K06 UNPROVEN; G4-5R open,
+  SALE only.
 
 **The review of `220573a`. Step 3 is NOT closed; step 4 does not start.**
 - **What the reviewer found,** by reading the code and the tests (not by a
@@ -1415,6 +1434,20 @@ A foreign key creates no index on its referencing columns.
 - **A later performance decision,** preceded by a measurement at a
   representative volume. Nothing is built for it now.
 
+### 5.4 A stated limit: `explain.blocker_summary` (review of `922a100`)
+
+`by_reason`, `candidates_evaluated` and the summary's base come from
+`explain.blocker_summary`, Slice 4's format-1 builder. It is **not pinned**,
+and the three pins of step 3 (`diagnostic.value@1`, `diagnostic.actions@1`,
+`diagnostic.relaxation@1`) **do not cover it**.
+- **What protects an old row today:** a change of its output makes the
+  replay of an old row fail (D), loudly. That failure is **not** a proof
+  that the old row can be replayed.
+- **Required before any later change** of this function that affects the
+  summary: keep the historical computation (or a version of it), and test
+  the replay of an old row and of a new row.
+- Recorded with step 4's evidence; restated in the closure evidence (§6.4).
+
 ---
 
 ## 6. Tests and closure evidence
@@ -1526,8 +1559,8 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216`; delivered at `cd5b868`; **CLOSED at `b6a08e7`** (review of `b6a08e7`) |
 | 1a | addendum: the two pins of M-1, the limits of the index and TRUNCATE stated, EN-03, the README; the suite bound again. `0007` unchanged | review of `b6a08e7`; **required before step 2** |
 | 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`); delivered (`SLICE_6_STEP2_DELIVERY.md`); **CLOSED at `315804b`** (review of `315804b`) |
-| 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`); not closed in the review of `220573a`; **delivered again** (`SLICE_6_STEP3_DELIVERY.md` §8), for review |
-| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests measure** the supersession of an older match by the new one, in the match queue and at approval (review of `220573a`). **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10 |
+| 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`); not closed in the review of `220573a`; **CLOSED at `922a100`** (review of `922a100`) |
+| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests measure** the supersession of an older match by the new one, in the match queue and at approval (review of `220573a`), and **replay a real format-2 row the run wrote** (review of `922a100`); its evidence restates the limit of §5.4. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10; **authorized** (review of `922a100`) |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4) | all |
 
 Each step is delivered with its tests and mutation record, and reviewed

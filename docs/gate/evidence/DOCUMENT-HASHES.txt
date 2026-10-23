@@ -842,3 +842,7 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   bf976b8b6c6
 docs/gate/SLICE_6_STEP3_DELIVERY.md                            ---   e2f3f8a3bc3085bb3971159ab9793cfb6a3e8221a713ffe04e7139658958f54a
 docs/gate/SLICE_6_PLAN.md                                      rev10 4a0d542a41ff7d7b4710962fa185b873e3781efba1bf31112f4259d1ab73551e
 SLICE_6_PLAN.md changed revision: 9 -> 10 (review of 220573a: step 3 not closed; gaps closed; supersession test moved to step 4).
+--- Review of 922a100: step 3 CLOSED; §5.4 the limit on explain.blocker_summary; step 4 authorized; Slice 6 plan revision 11 ---
+docs/gate/SLICE_6_STEP3_DELIVERY.md                            ---   fc7795fa5c9ae00099678c9b959e7bba0f21daf6dcec3f7f33bbd671a6e7aa30
+docs/gate/SLICE_6_PLAN.md                                      rev11 c93b46933b1d2f3447bf8370d3aa1fdc6e5586a9739f3ea87b06424d6dc31781
+SLICE_6_PLAN.md changed revision: 10 -> 11 (step 3 closed at 922a100; §5.4; step 4 authorized).

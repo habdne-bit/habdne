@@ -14,7 +14,7 @@ their registry entries and replay (G6-11), **with no write yet**.
   three functions changes the registry digest, which enters every match's
   input hash (G4-13).
 
-**Status:** NOT closed in the review of `220573a` (three replay gaps); the gaps are closed in §8, and the step is delivered again, for review.
+**Status:** **CLOSED at `922a100`** (review of `922a100`), after the three replay gaps of the review of `220573a` were closed (§8). The limit on `explain.blocker_summary` is plan §5.4.
 
 **Basis:** `docs/gate/SLICE_6_PLAN.md` revision 8: G6-2 (a), G6-3, G6-5 (i)
 (a), (ii) (a), (iii)–(vi), G6-6, G6-7, G6-11; §3.2–§3.5; F6-1, F6-2, F6-6,
