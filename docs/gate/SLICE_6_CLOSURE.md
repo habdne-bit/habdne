@@ -193,3 +193,25 @@ PostgreSQL 16.15.
 | Closure evidence | regenerated from that run; `--check` exits 0; "until DONE" no longer appears | `8a7e6fa` | `SLICE_6_EVIDENCE.md` |
 
 **These results are ours.** The reviewer did not re-run them.
+
+## 7. The review of `8de5f7f`: the correction accepted
+
+- **Accepted:**
+  - the test's name and the generated evidence now state that an old row
+    keeps its title after `DONE`, and that work raised later creates a new
+    row with the corrected title;
+  - the test's assertions check both;
+  - this record separates the historical evidence of `ce8cfa0`'s tree from
+    the later tree's;
+  - the diff does not touch `src/`.
+- **What the reviewer checked:** the new round's records, and their binding
+  to the source fingerprint `2d11e774…3c5563`.
+- **What the reviewer did not re-run:** the tests, the mutations,
+  PostgreSQL or `--check`. Their stated results remain the implementing
+  team's.
+- **Slice 6 stays CLOSED at `ce8cfa0`,** for SALE only. This is not a
+  release authorization.
+- **Each tree's evidence stays attributed to that tree:**
+  - `ce8cfa0`'s, as §4 lists it;
+  - the later tree's (`8de5f7f`), as §6 lists it.
+- **K06's remedy** stays an independent condition before any release gate.

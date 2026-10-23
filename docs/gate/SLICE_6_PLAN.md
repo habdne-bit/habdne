@@ -1,5 +1,5 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 18**
+## Implementation plan — **revision 19**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
@@ -46,6 +46,7 @@ recommendation. A recommendation is not a decision.
 | 16 | `ce8cfa0` | the correction of the review of `3657973` delivered (`SLICE_6_STEP5_DELIVERY.md` §13): F6-22 pinned on the unfixed code (`a813b06`), fixed (`fd648e8`); the docstrings corrected; the generator records both decisions; 2 stored tasks with the old title counted (test data); mutations 16/16 twice; suite 2614/2614 bound; no other change |
 | 17 | `3583b6a` | the review of `ce8cfa0` recorded: step 5 and Slice 6 closed at `ce8cfa0`, SALE only, not a release authorization; the closure record `SLICE_6_CLOSURE.md`; the limits carried as given, the stored-titles measurement bounded to the test database, K06's remedy an independent condition before any release gate | *Corrected in place in the review of `3583b6a` (documentary, not a new revision): this row's commit named; the closure record's wording on an old title after DONE.*
 | 18 | `223ea6e` | the review of `1c27241` recorded: after the closure, the F6-22 fate test renamed and the generator's text corrected (an old title stays after DONE; new work gets the corrected title), at `c25ec48`; the evidence of that later tree run again (mutations 16/16 twice, gate, suite 2614/2614 bound, `SLICE_6_EVIDENCE.md` regenerated). Slice 6 stays CLOSED at `ce8cfa0`; not a reopening, not a release authorization (`SLICE_6_CLOSURE.md` §6) |
+| 19 | the commit that adds this revision | the review of `8de5f7f` recorded: the correction of the later tree's evidence accepted. Slice 6 stays CLOSED at `ce8cfa0`, SALE only, not a release authorization; `ce8cfa0`'s evidence and the later tree's stay attributed each to its tree (`SLICE_6_CLOSURE.md` §7) |
 
 **The review of `ce8cfa0`. Step 5 and Slice 6 are CLOSED at `ce8cfa0`,
 within the SALE scope only. This is a decision to close the slice, not a
