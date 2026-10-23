@@ -904,3 +904,6 @@ SLICE_6_PLAN.md revision 18: its commit named (223ea6e) in place; no new revisio
 docs/gate/SLICE_6_CLOSURE.md                                   ---   782ffa6bbb51a13383d5d5aa6d64835459640106bb5558c2f876b68b004fea14
 docs/gate/SLICE_6_PLAN.md                                      rev19 0384ee5017a0f78db68db6ba2cfda437f0dbd8b9f2e69ac055949b6ff89253b7
 SLICE_6_PLAN.md changed revision: 18 -> 19 (the review of 8de5f7f recorded; its commit named in place).
+--- Slice 7 plan revision 1 (91762f6), planning only (review of 8de5f7f) ---
+docs/gate/SLICE_7_PLAN.md                                      rev1  c9b87acf5ab51faa8d1f0a87fc019cb161767db03fca6c17be3e15fddd21ed36
+SLICE_7_PLAN.md new: revision 1, submitted for review; no decision approved; no code.

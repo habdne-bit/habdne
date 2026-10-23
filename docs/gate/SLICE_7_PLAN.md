@@ -28,7 +28,7 @@ a recommendation. A recommendation is not a decision.
 
 | rev | commit | what changed |
 |---|---|---|
-| 1 | the commit that adds this revision | first plan (authorized as planning only in the review of `8de5f7f`) |
+| 1 | `91762f6` | first plan (authorized as planning only in the review of `8de5f7f`) |
 
 ---
 
