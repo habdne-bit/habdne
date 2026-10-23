@@ -32,7 +32,7 @@ a recommendation. A recommendation is not a decision.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `91762f6` | first plan (authorized as planning only in the review of `8de5f7f`) |
-| 2 | the commit that adds this revision | the review of `dcebe46` recorded; step 0 measured (M1–M8); the five gaps settled in the text: content and consent (G7-9), the stuck event and its recovery (G7-2 (v)), Meta and the relay (G7-2 (ii), §3.9), what staff can read (G7-8), the SALE boundary (§0.2, G7-6 rule 0); new: F7-12, G7-15; G7-12 (D) rewritten on M8 |
+| 2 | `7200b3c` | the review of `dcebe46` recorded; step 0 measured (M1–M8); the five gaps settled in the text: content and consent (G7-9), the stuck event and its recovery (G7-2 (v)), Meta and the relay (G7-2 (ii), §3.9), what staff can read (G7-8), the SALE boundary (§0.2, G7-6 rule 0); new: F7-12, G7-15; G7-12 (D) rewritten on M8 |
 
 **The review of `dcebe46`. The plan is accepted as a basis for review and
 measurement; G7-1 to G7-14 and the text of `0008` are not yet approved.**
