@@ -678,7 +678,7 @@ def test_an_empty_run_gives_an_empty_valid_format_2():
 # Review of 220573a: three gaps of the replay (G6-11)
 # ======================================================================================
 
-def _replayable_world(client, engine, ids):
+def _replayable_world(client, engine, ids, *, every_part=True):
     """One run with something in every part: a NEED_MORE_INFORMATION
     candidate (an action), a near match (a scenario) and a property with no
     offer (an exclusion, so `excluded_counts` is not empty)."""
@@ -692,7 +692,8 @@ def _replayable_world(client, engine, ids):
     _offer(engine, ids, p2)
     body = _ran(client, ids, req, [p1, p2, lonely])
     row = _row(body, _computed(engine, body))
-    assert row["suggested_actions"] and row["relaxation_scenarios"]
+    if every_part:
+        assert row["suggested_actions"] and row["relaxation_scenarios"]
     assert row["blocker_summary"]["excluded_counts"], "the world has an exclusion"
     return req, row
 
@@ -757,8 +758,21 @@ def test_review_an_old_row_replays_by_its_recorded_versions(client, engine, ids,
     monkeypatch.setattr(diagnostic, "ACTIONS", ("diagnostic.actions", "2"))
     with engine.connect() as conn:
         assert diagnostic_replay.replay(conn, old) == {"R": [], "D": []}
-    _, new = _replayable_world(client, engine, ids)
+    # Under @2 the world has no suggestion, by @2's design.
+    _, new = _replayable_world(client, engine, ids, every_part=False)
     assert new["blocker_summary"]["versions"]["actions"] == "diagnostic.actions@2"
     assert new["suggested_actions"] == []
     with engine.connect() as conn:
         assert diagnostic_replay.replay(conn, new) == {"R": [], "D": []}
+
+
+def test_review_a_recorded_version_not_implemented_is_reported_not_raised(client, engine,
+                                                                          ids):
+    """A row naming a version no code implements cannot be recomputed: (D)
+    says so; the replay does not fail with an exception."""
+    _, row = _replayable_world(client, engine, ids)
+    bad = copy.deepcopy(row)
+    bad["blocker_summary"]["versions"]["relaxation"] = "diagnostic.relaxation@9"
+    with engine.connect() as conn:
+        result = diagnostic_replay.replay(conn, bad)
+    assert result["R"] == [] and len(result["D"]) == 1 and "not implemented" in result["D"][0]

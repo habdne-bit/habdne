@@ -11,7 +11,7 @@ or `services/diagnostic_replay.py`:
 - L: the relaxation scenarios (G6-5) and the location choice (G6-6);
 - W: the eligibility a near match would reach (G6-5 (v));
 - U: the format-2 summary's unknowns (G6-7);
-- R: the replay's two checks (G6-11).
+- R: the replay's two checks (G6-11); R6-R10 since the review of 220573a.
 
 The test file is `tests/test_slice6_step3.py` only. The pins, which fail on
 ANY edit of a pinned function, are in `test_slice6_step3_registry.py` and
@@ -147,6 +147,19 @@ MUTATIONS = [
      '                    location_chains=summary["requested_location_chains"],',
      '                    location_chains=__import__("turab.matching.diagnostic", '
      'fromlist=["x"]).read_location_chains(conn, list(summary["requested_location_chains"])),'),
+    # --- review of 220573a: the three gaps, now closed -------------------------------
+    ("R6 (R) the request not compared", REPLAY,
+     '        if row["request_id"] != str(stored["request_id"]):', "        if False:"),
+    ("R7 (R) the property not compared", REPLAY,
+     '        for field in ("property_id", "offer_id"):',
+     '        for field in ("offer_id",):'),
+    ("R8 (R) the offer not compared", REPLAY,
+     '        for field in ("property_id", "offer_id"):',
+     '        for field in ("property_id",):'),
+    ("R9 (D) the excluded counts not compared", WIRING,
+     '"by_reason", "excluded_counts",', '"by_reason",'),
+    ("R10 (D) the current versions, not the recorded ones", REPLAY,
+     "                        versions=versions)", "                        versions=None)"),
 ]
 
 if __name__ == "__main__":

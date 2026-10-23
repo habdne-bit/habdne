@@ -39,7 +39,8 @@ RELAXATION = ("diagnostic.relaxation", "1")
 #: The parts of a format-2 summary that `compute` derives. The others are
 #: what the run recorded (`evaluated`, `requested_location_chains`,
 #: `excluded`, `excluded_counts`), verified by (R) or taken as input.
-COMPUTED_SUMMARY_KEYS = ("format", "candidates_evaluated", "by_reason", "unknowns", "versions")
+COMPUTED_SUMMARY_KEYS = ("format", "candidates_evaluated", "by_reason", "excluded_counts",
+                         "unknowns", "versions")
 
 _CHAINS = """
     WITH RECURSIVE up(location_id, location_type, parent_id, depth, path) AS (
@@ -169,20 +170,35 @@ class _Verdict:
         self.reasons = reasons
 
 
+def current_versions() -> dict[str, str]:
+    """The versions a NEW computation runs, `name -> "id@version"`."""
+    return {"value": "@".join(VALUE), "actions": "@".join(ACTIONS),
+            "relaxation": "@".join(RELAXATION)}
+
+
 def compute(request_id: Any, records: list[Mapping[str, Any]], *,
             location_chains: Mapping[str, Any], evaluated: list[Mapping[str, Any]],
-            excluded: list[Mapping[str, Any]]) -> dict:
+            excluded: list[Mapping[str, Any]],
+            versions: Mapping[str, str] | None = None) -> dict:
     """`suggested_actions`, `relaxation_scenarios` and the format-2
     `blocker_summary`, from the records in the run's evaluation order.
 
+    `versions` names the pinned functions to run (`current_versions()` when
+    omitted). A replay passes the versions the row RECORDS, so an old row is
+    recomputed by its own versions after a new one is registered (G6-11;
+    review of 220573a). The summary records the versions run. An unknown
+    version raises `UnknownRuleVersion`.
+
     `evaluated` and `excluded` are what the run records (G6-11); they enter
     the summary unchanged. Pure: `location_chains` is given, never read."""
+    versions = dict(versions if versions is not None else current_versions())
     request_id = snapshots.stored_form(request_id)
-    value = REGISTRY.resolve(*VALUE)
+    value = REGISTRY.resolve(*versions["value"].split("@"))
     high_value = [value.evaluate(r) for r in records]
-    actions = REGISTRY.resolve(*ACTIONS).evaluate(request_id, records, high_value)
+    actions = REGISTRY.resolve(*versions["actions"].split("@")).evaluate(
+        request_id, records, high_value)
     reach = [would_reach(r) if _near_match(r) else None for r in records]
-    scenarios = REGISTRY.resolve(*RELAXATION).evaluate(
+    scenarios = REGISTRY.resolve(*versions["relaxation"].split("@")).evaluate(
         records, reach, location_chains,
         [a["key"] for a in actions if a["priority"] == "HIGH"])
     summary = dict(explain.blocker_summary([_Verdict(r["reasons"]) for r in records], ()))
@@ -191,8 +207,7 @@ def compute(request_id: Any, records: list[Mapping[str, Any]], *,
         "excluded": list(excluded),
         "excluded_counts": _excluded_counts(excluded),
         "unknowns": unknowns(records, high_value),
-        "versions": {"value": "@".join(VALUE), "actions": "@".join(ACTIONS),
-                     "relaxation": "@".join(RELAXATION)},
+        "versions": {name: versions[name] for name in ("value", "actions", "relaxation")},
         "evaluated": list(evaluated),
         "requested_location_chains": dict(location_chains)})
     return snapshots.stored_form({"suggested_actions": actions,
