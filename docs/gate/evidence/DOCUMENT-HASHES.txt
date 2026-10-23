@@ -858,3 +858,13 @@ SLICE_6_PLAN.md changed revision: 11 -> 12 (step 4 delivered for review; not clo
 docs/gate/SLICE_6_STEP4_DELIVERY.md                            ---   62d9b1e7777c34f2e13f1149274275e5107ef7cdb85910dd75d268519188d9d2
 docs/gate/SLICE_6_PLAN.md                                      rev13 beba0ba1e3e1fd97b7b4661608ec9b0921228e48a8beb85de9bda81fd0c86c08
 SLICE_6_PLAN.md changed revision: 12 -> 13 (step 4 closed at 0fae42c; the diagnostic input_hash limit stated; step 5 authorized).
+--- Slice 6 step 5 delivered: end-to-end tests, the closure evidence, F6-21 and F6-22 measured; Slice 6 plan revision 14 ---
+docs/gate/evidence/SLICE6-STEP5-BEFORE.txt                     new   fe73515419180765f11845d4c37e192dd44bad611341a17597d531a77c8ab2aa
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS-FIRST-RUN.txt        new   357f6dfc86b261418238c0ff0720751595649ad84de4c6eb4ec313726ae32e76
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS.txt                  new   2ab0a635e0b925ed0cd82491aa98f40a67f0fd2cef62c57eff4ae9de529fbe1a
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS-REPEAT.txt           new   d8059b8c97b2c0a9b8f48f6149ff3abb0898a016cd6310ff8d7f652213005535
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   9407d82dc780b075c98271af9bce180f7385131b4f66e780b27325ebda7b1056
+docs/gate/SLICE_6_EVIDENCE.md                                  new   a3b6c95d52ee9a2f08b0fe787e6e195aff0e100d70ceaf4acc1c1de1fc54af60
+docs/gate/SLICE_6_STEP5_DELIVERY.md                            new   b4a628b946977d82f524fac1d219e132f54bc3f4efa6e8c31e463483a51bc253
+docs/gate/SLICE_6_PLAN.md                                      rev14 7a5a42d9ead9c76d58d0b961bdb07bf61653df290a41532e0d8249b805f00641
+SLICE_6_PLAN.md changed revision: 13 -> 14 (step 5 delivered for review; F6-21, F6-22 measured, not decided; Slice 6 not declared closed).
