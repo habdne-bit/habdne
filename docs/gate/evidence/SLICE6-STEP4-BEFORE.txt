@@ -1,0 +1,48 @@
+TURAB — Slice 6 step 4: the shipped tests at the base
+======================================================
+Base   : c67e42d (plan revision 11; step 3 closed; no step 4 code), an
+         isolated worktree into which ONLY tests/test_slice6_step4.py was
+         copied, unchanged. PATH includes the venv (the database fixture
+         runs `alembic`). PostgreSQL 16.15. Ours.
+Discarded, and named: a first attempt without the venv on PATH, in which 12
+         tests ERRORED at the fixture (`FileNotFoundError: 'alembic'`) before
+         any test body ran. Not a result.
+
+RESULT (verbatim, worktree path cut)
+  tests/test_slice6_step4.py:116: AssertionError: assert 'turab.blocker-summary/1' == 'turab.blocker-summary/2'
+  tests/test_slice6_step4.py:154: AssertionError: assert '26bafbece37529dfc84b630884c3d7f387d35d6e66fa5c32c5024dfd31e29a9e' != '26bafbece37529dfc84b630884c3d7f387d35d6e66fa5c32c5024dfd31e29a9e'
+  tests/test_slice6_step4.py:171: ValueError: not enough values to unpack (expected 1, got 0)
+  tests/test_slice6_step4.py:200: assert []
+  tests/test_slice6_step4.py:216: AssertionError: assert set() == {'NORMAL'}
+  tests/test_slice6_step4.py:229: ValueError: not enough values to unpack (expected 1, got 0)
+  tests/test_slice6_step4.py:241: ValueError: not enough values to unpack (expected 1, got 0)
+  tests/test_slice6_step4.py:266: ValueError: not enough values to unpack (expected 1, got 0)
+  tests/test_slice6_step4.py:288: KeyError: 'code'
+  tests/test_slice6_step4.py:307: AssertionError: assert 1 == 2
+  tests/test_slice6_step4.py:328: ValueError: not enough values to unpack (expected 1, got 0)
+  tests/test_slice6_step4.py:452: AssertionError: assert ['src/turab/s...ch_review.py'] == ['src/turab/s...ching_run.py']
+  FAILED tests/test_slice6_step4.py::test_a_row_the_run_wrote_is_format_2_and_replays
+  FAILED tests/test_slice6_step4.py::test_the_input_hash_covers_the_requested_chains
+  FAILED tests/test_slice6_step4.py::test_a_high_suggestion_raises_one_task_with_its_subject
+  FAILED tests/test_slice6_step4.py::test_every_diagnostic_task_carries_a_complete_key
+  FAILED tests/test_slice6_step4.py::test_normal_suggestions_raise_no_task - As...
+  FAILED tests/test_slice6_step4.py::test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+  FAILED tests/test_slice6_step4.py::test_work_taken_up_is_not_raised_again_and_done_work_is
+  FAILED tests/test_slice6_step4.py::test_g6_10_a_task_whose_cause_has_gone_stays_open
+  FAILED tests/test_slice6_step4.py::test_a_task_failure_other_than_open_work_fails_the_run_writing_nothing
+  FAILED tests/test_slice6_step4.py::test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+  FAILED tests/test_slice6_step4.py::test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+  FAILED tests/test_slice6_step4.py::test_the_writes_to_tasks_are_exactly_those_decided
+  12 failed, 1 passed, 1 warning in 7.11s
+
+READING
+  * 12 of 13 fail, each for the absence of step 4: the row is format 1; the
+    diagnostic's input hash ignores the chains; the run raises no task (so
+    `[task] = ...` finds none, the NMI and run tasks are not two, the
+    injected task failure is never reached and the run answers 201); the
+    run is not a writer of `tasks`.
+  * 1 passes at the base, as it must:
+    test_an_older_match_is_superseded_in_the_queue_and_at_approval. The
+    supersession is Slice 5's (G5-2), and the digest it follows changed in
+    step 3; step 4's code takes no part. The test MEASURES what the step 3
+    note had only derived (review of 220573a), and holds on both trees.
