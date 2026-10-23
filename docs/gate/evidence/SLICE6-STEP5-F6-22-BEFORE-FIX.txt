@@ -1,0 +1,40 @@
+TURAB — Slice 6, review of 3657973: the F6-22 tests on the UNFIXED code
+Tree: ce40208 + the tests below (src identical to 3657973)
+Recorded: 2026-10-23 17:19:51 UTC
+
+E       assert ('CONFIRM_PRI... price terms") == ('CONFIRM_PRI...ximum budget')
+tests/test_slice6_step5.py:378: AssertionError
+E       assert "Confirm the ...s price terms" == 'Confirm the ...aximum budget'
+tests/test_slice6_step5.py:401: AssertionError
+E       assert ('OPEN', "Con... price terms") == ('OPEN', 'Con...ximum budget')
+tests/test_slice6_step5.py:451: AssertionError
+PASSED tests/test_slice6_step5.py::test_mandatory_1_over_http_the_document_task_outranks_the_new_location
+PASSED tests/test_slice6_step5.py::test_mandatory_2_over_http_three_hard_failures_raise_no_task
+PASSED tests/test_slice6_step5.py::test_mandatory_3_over_http_the_magnitudes_after_the_document_fails
+PASSED tests/test_slice6_step5.py::test_a_high_task_shared_by_two_offers_names_no_match_and_is_understood
+PASSED tests/test_slice6_step5.py::test_f6_22_an_offer_subject_keeps_the_offers_title
+PASSED tests/test_slice6_step5.py::test_i03_a_scenario_changes_no_request_and_an_explicit_criterion_does
+PASSED tests/test_slice6_step5.py::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit
+PASSED tests/test_slice6_step5.py::test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness
+PASSED tests/test_slice6_step5.py::test_g06_a_run_with_no_candidate_writes_an_empty_valid_format_2_that_replays
+PASSED tests/test_slice6_step5.py::test_limit_the_replay_does_not_read_the_diagnostics_own_input_hash
+FAILED tests/test_slice6_step5.py::test_a_high_task_shared_by_two_properties_names_only_the_request
+FAILED tests/test_slice6_step5.py::test_f6_22_the_request_tasks_title_names_the_request
+FAILED tests/test_slice6_step5.py::test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done
+3 failed, 10 passed, 1 warning in 12.26s
+
+READING
+  * 3 fail, each at its title assertion only, as the review of 3657973
+    requires before the fix:
+    - test_a_high_task_shared_by_two_properties_names_only_the_request: the
+      REQUEST's task is titled "Confirm the offer's price terms";
+    - test_f6_22_the_request_tasks_title_names_the_request: the inverted
+      measurement;
+    - test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done: every
+      step holds (a later run changes nothing; the completed row keeps its
+      title) except the last: the work raised again still gets the old title.
+  * test_f6_22_an_offer_subject_keeps_the_offers_title passes on both trees,
+    as it must: the offer's title is unchanged by the decision.
+  * test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness is
+    the former F6-21 measurement, renamed as the boundary's witness; its
+    assertions are unchanged.

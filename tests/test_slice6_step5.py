@@ -28,6 +28,7 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from tests.test_slice4_step7 import VERSION, _all, _one
 from tests.test_slice6_step2 import _all_pages
@@ -358,8 +359,8 @@ def test_a_high_task_shared_by_two_properties_names_only_the_request(client, eng
     candidates, one task with `property_id` AND `match_id` null. What states the
     work in `GET /tasks` is the request and the subject: entity REQUEST, the
     BUDGET_MAX criterion, the basis BUDGET_MAX_NOT_STATED (its `reason_code` is
-    null: the basis has none). The title is measured in
-    `test_f6_22_measured_the_request_tasks_title_names_an_offer`."""
+    null: the basis has none), and its title names the request (F6-22, review
+    of 3657973)."""
     req = _request(client, ids, budget_max=None)
     props = [_property(client, engine, ids, "ADR-NEW-TIL") for _ in range(2)]
     for p in props:
@@ -374,7 +375,8 @@ def test_a_high_task_shared_by_two_properties_names_only_the_request(client, eng
     [task] = _tasks(client, ids, req)
     assert (task["request_id"], task["property_id"], task["match_id"], task["reason_code"]) == (
         req, None, None, None)
-    assert (task["task_type"], task["priority"]) == ("CONFIRM_PRICE", "HIGH")
+    assert (task["task_type"], task["priority"], task["title"]) == (
+        "CONFIRM_PRICE", "HIGH", "Confirm the request's maximum budget")
     assert task["payload"]["subject"] == {
         "entity": "REQUEST", "id": req, "gate": "INFORMATION", "criterion": "BUDGET_MAX",
         "ordinal": 1, "basis": "BUDGET_MAX_NOT_STATED"}
@@ -382,21 +384,71 @@ def test_a_high_task_shared_by_two_properties_names_only_the_request(client, eng
     assert _replay(engine, d["diagnostic_run_id"]) == {"R": [], "D": []}
 
 
-def test_f6_22_measured_the_request_tasks_title_names_an_offer(client, engine, ids):
-    """MEASURED, not a decision (F6-22, put to the reviewer). The fixed title
-    of CONFIRM_PRICE (step 4, accepted in the review of 0fae42c) is "Confirm
-    the offer's price terms". On the REQUEST's own work (its maximum not
-    stated) that title names an offer the work is not about; only the subject
-    says otherwise. This test records the present state; it is to change with
-    the reviewer's decision, not before."""
+def test_f6_22_the_request_tasks_title_names_the_request(client, engine, ids):
+    """F6-22, DECIDED in the review of 3657973 (inverted from the measurement
+    delivered at 3657973, which accepted the offer's title). The title is
+    fixed by the task's type AND its subject's entity: a CONFIRM_PRICE task
+    whose subject is the REQUEST (its maximum not stated) is "Confirm the
+    request's maximum budget"; it names no offer."""
     req = _request(client, ids, budget_max=None)
     prop = _property(client, engine, ids, "ADR-NEW-TIL")
     _offer(client, ids, prop)
     _run(client, ids, req, [prop])
     [task] = _tasks(client, ids, req)
-    assert (task["title"], task["payload"]["subject"]["entity"],
+    assert (task["task_type"], task["payload"]["subject"]["entity"],
             task["payload"]["subject"]["basis"]) == (
-        "Confirm the offer's price terms", "REQUEST", "BUDGET_MAX_NOT_STATED")
+        "CONFIRM_PRICE", "REQUEST", "BUDGET_MAX_NOT_STATED")
+    assert task["title"] == "Confirm the request's maximum budget"
+    assert "offer" not in task["title"]
+
+
+def test_f6_22_an_offer_subject_keeps_the_offers_title(client, engine, ids):
+    """F6-22, the other half of the decision: a CONFIRM_PRICE task whose
+    subject is the OFFER (its price above the maximum, negotiation not
+    confirmed) keeps "Confirm the offer's price terms", and names its
+    match."""
+    req = _request(client, ids)
+    prop = _property(client, engine, ids, "ADR-NEW-TIL")
+    offer = _offer(client, ids, prop, price=26_000_000, negotiable="YES")
+    [m] = _run(client, ids, req, [prop])["matches"]
+    [task] = _tasks(client, ids, req)
+    assert (task["task_type"], task["priority"], task["payload"]["subject"]["entity"],
+            task["payload"]["subject"]["id"], task["match_id"]) == (
+        "CONFIRM_PRICE", "HIGH", "PROPERTY_OFFER", offer, m["match_id"])
+    assert task["title"] == "Confirm the offer's price terms"
+
+
+def test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done(client, engine, ids):
+    """The fate of a row stored before the fix (review of 3657973: a code
+    change is not assumed to correct an existing row). The row is the run's
+    own task, its title then set by SQL to the old one: the only way to hold,
+    in this database, a row as the code before the fix wrote it (labelled so).
+    - A later run changes nothing of it and raises nothing: the work is open,
+      and no path updates a title.
+    - Completed over HTTP, it is DONE and keeps its old title.
+    - The next run raises the work again, under the new title.
+    The count of such rows actually stored is in
+    `evidence/SLICE6-STEP5-F6-22-STORED-TITLES.txt`."""
+    old = "Confirm the offer's price terms"
+    req = _request(client, ids, budget_max=None)
+    prop = _property(client, engine, ids, "ADR-NEW-TIL")
+    _offer(client, ids, prop)
+    _run(client, ids, req, [prop])
+    [task] = _tasks(client, ids, req)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE turab.tasks SET title = :t WHERE task_id = :i"),
+                     {"t": old, "i": task["task_id"]})
+    stored = _tasks(client, ids, req)
+    _run(client, ids, req, [prop])
+    assert _tasks(client, ids, req) == stored
+    assert stored[0]["title"] == old
+    done = _post(client, f"/tasks/{task['task_id']}/complete", ids.ACC_OPERATOR,
+                 {"outcome_code": "TASK_INFORMATION_UNAVAILABLE"})
+    assert done["status"] == "DONE"
+    _run(client, ids, req, [prop])
+    first, second = _tasks(client, ids, req)
+    assert (first["task_id"], first["status"], first["title"]) == (task["task_id"], "DONE", old)
+    assert (second["status"], second["title"]) == ("OPEN", "Confirm the request's maximum budget")
 
 
 # ======================================================================================
@@ -441,8 +493,8 @@ def test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit(client,
       `diagnostic`, the request's tasks (`GET /tasks`), and the audit rows of
       the diagnostic and of the tasks.
     A second property, its document UNKNOWN, raises a task, so the task list
-    is not empty. What the staff match carries is Slice 4's, measured in
-    `test_f6_21_measured_the_staff_match_carries_the_expectation_as_slice_4_decided`."""
+    is not empty. What the staff match carries is Slice 4's, witnessed by
+    `test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness`."""
     expectation = 25_000_000
     req = _request(client, ids, criteria=[LAND_BOOK])
     near = _property(client, engine, ids, "ADR-NEW-TIL", document="LAND_BOOK")
@@ -467,16 +519,16 @@ def test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit(client,
         assert "seller_expectation_dzd" not in _keys(document), name
 
 
-def test_f6_21_measured_the_staff_match_carries_the_expectation_as_slice_4_decided(
+def test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness(
         client, engine, ids):
-    """MEASURED, not a decision (F6-21, put to the reviewer). Slice 4 §3.5
-    (decided): the staff `MatchCandidate`'s commercial snapshot contains
-    `seller_expectation_dzd`, and the match row's audit holds that snapshot.
-    So §6.2's D02, as worded ("no output of the run ... or the audit"), does
-    not hold of the run's `matches` nor of the match's audit row; it holds of
-    what Slice 6 adds (the D02 test above). No customer or public operation
-    returns a match (Slice 4, R9.2). This test records the present state; it
-    is to change with the reviewer's decision, not before."""
+    """The witness of a boundary (F6-21, DECIDED in the review of 3657973):
+    the rule of §3.4 and §6.2's D02 binds what Slice 6 generates (the D02
+    test above), not every output of the run. Slice 4 §3.5 (decided) keeps
+    `seller_expectation_dzd` in the staff `MatchCandidate`'s commercial
+    snapshot, so in the run's `matches` and in the match row's audit;
+    `API_CONTRACTS_v0.2.md` §8 forbids its serialization to public and
+    customer DTOs, and no customer or public operation returns a match
+    (Slice 4, R9.2). The diagnostic of the same run does not carry it."""
     expectation = 25_000_000
     req = _request(client, ids)
     prop = _property(client, engine, ids, "ADR-NEW-TIL")
