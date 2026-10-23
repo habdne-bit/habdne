@@ -846,3 +846,11 @@ SLICE_6_PLAN.md changed revision: 9 -> 10 (review of 220573a: step 3 not closed;
 docs/gate/SLICE_6_STEP3_DELIVERY.md                            ---   fc7795fa5c9ae00099678c9b959e7bba0f21daf6dcec3f7f33bbd671a6e7aa30
 docs/gate/SLICE_6_PLAN.md                                      rev11 c93b46933b1d2f3447bf8370d3aa1fdc6e5586a9739f3ea87b06424d6dc31781
 SLICE_6_PLAN.md changed revision: 10 -> 11 (step 3 closed at 922a100; §5.4; step 4 authorized).
+--- Slice 6 step 4 delivered: the run writes the format-2 diagnostic and raises its tasks; Slice 6 plan revision 12 ---
+docs/gate/evidence/SLICE6-STEP4-BEFORE.txt                     new   0be2a64135d081b2997293f318ac3f776a4373f510583be309d0d07e0bb2c7e0
+docs/gate/evidence/SLICE6-STEP4-MUTATIONS.txt                  new   62757e1d364d60642752831e51d1e1e77b89375996f28e2896d62519e9316499
+docs/gate/evidence/SLICE6-STEP4-MUTATIONS-REPEAT.txt           new   9de93e0a895d58be0ddeeafc3b84f1ece476c74f91bec74b78c69d01d0d48c47
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   a476a6edc1872e7f8cb3de958bae2582d0da99d9c1a3c846e4b5ca138beb8ff6
+docs/gate/SLICE_6_STEP4_DELIVERY.md                            new   b68dcd8cebc0b1a5570327ed8a6dfacf454bfaf6e2bd2d3103c2642bee64fd0e
+docs/gate/SLICE_6_PLAN.md                                      rev12 c325513f3eb58763b2a9688803a84a873f1647c64644b99082dee62469296993
+SLICE_6_PLAN.md changed revision: 11 -> 12 (step 4 delivered for review; not closed).
