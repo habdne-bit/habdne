@@ -14,7 +14,7 @@ their registry entries and replay (G6-11), **with no write yet**.
   three functions changes the registry digest, which enters every match's
   input hash (G4-13).
 
-**Status:** delivered, for review.
+**Status:** NOT closed in the review of `220573a` (three replay gaps); the gaps are closed in §8, and the step is delivered again, for review.
 
 **Basis:** `docs/gate/SLICE_6_PLAN.md` revision 8: G6-2 (a), G6-3, G6-5 (i)
 (a), (ii) (a), (iii)–(vi), G6-6, G6-7, G6-11; §3.2–§3.5; F6-1, F6-2, F6-6,
@@ -208,14 +208,101 @@ Each row was run on a clean tree, source fingerprint `76bf18ad…f7c1` (from
 
 ## 7. What remains
 
-- **Step 3 closes on review.** §3's nine readings and §5's consequence
-  are put to the reviewer.
+- **Step 3 closes on review** of §8. §3's readings and §5's consequence were
+  accepted in the review of `220573a`; §8.4's observation is put to the
+  reviewer.
 - **Step 4:**
   - the run writes `compute`'s output and `turab.diagnostic-input/2`;
   - it raises the HIGH entries as tasks (G6-4 (a), with the index of
     `0007`), proving the writer's complete payload (OQ6-1's obligation);
+  - the measured supersession of an older match by the new one, in the
+    match queue and at approval (review of `220573a`);
   - G6-10.
 - **Standing:**
   - OQ6-1 and OQ6-2 are open;
   - G4-5R is open, SALE only;
   - K06 is UNPROVEN.
+
+---
+
+## 8. The review of `220573a`: three gaps of the replay, closed
+
+The review did not close step 3. It found three gaps in the replay G6-11
+requires, by reading the code and tests (not by a PostgreSQL run), and asked
+for each to be pinned by a test on `220573a`'s code before the fix.
+
+### 8.1 Pinned before the fix (`evidence/SLICE6-STEP3-REPLAY-GAPS-BEFORE-FIX.txt`)
+
+Five cases were added to `tests/test_slice6_step3.py` and run on `220573a`'s
+unchanged code. They were committed in that state at `e9d3a03`. All five
+failed, each for the reason the review gave:
+
+| Case | At `220573a` |
+|---|---|
+| (R) an entry's `property_id` changed alone | `{'R': [], 'D': []}`: passes unseen |
+| (R) an entry's `offer_id` changed alone | `{'R': [], 'D': []}`: passes unseen |
+| (R) an entry naming another request's match, with that match's own hash, property and offer | (R) fails only on the NEW instant (another run); the request is not compared, so an EXISTING entry would pass |
+| (D) one `excluded_counts` value changed alone | `{'R': [], 'D': []}`: passes unseen |
+| an old row (`diagnostic.actions@1`) after a later `@2`, which suggests nothing, becomes the version new computations use | (D) fails: recomputed with `@2`, not with the `@1` it records |
+
+### 8.2 The fix (`144ba96`)
+
+- **(R)** compares, for every entry, the match's `property_id` and
+  `evaluated_offer_id` with the entry's, and the match's `request_id`
+  with the diagnostic's.
+- **(D)** compares `excluded_counts` with what the stored exclusions
+  give.
+- **`compute` takes the versions it runs.** By default these are the
+  current ones, and the summary records whichever were run. The replay
+  passes the versions the row RECORDS. A row whose versions are missing,
+  or name a version no code implements, is a (D) problem, not an
+  exception (a sixth test).
+- **After the fix:** the six cases pass, and the step's 42 earlier cases
+  are unchanged. In the version test, the old row replays by `@1`, and a
+  new row records `@2` and replays by `@2`.
+
+### 8.3 What the review accepted, and what moves to step 4
+
+- **Accepted:** the nine readings of §3, as the implementation's stated
+  interpretations, including NEED_MORE_INFORMATION as a possible
+  `would_reach`, NOT_PROPOSED as a diagnosis rather than a proposed change,
+  and `turab.diagnostic-input/2` left to step 4.
+- **Accepted:** the registry digest's effect (§5), as G4-13's consequence.
+- **To step 4:** the test of the ACTUAL supersession of an older match,
+  in the match queue and at approval. This note presents it as derived,
+  not measured.
+
+### 8.4 One observation, not fixed
+
+- **The source.** `by_reason`, `candidates_evaluated` and the format
+  field come from `explain.blocker_summary`, Slice 4's format-1 builder,
+  which is not pinned.
+- **The consequence.** A later change to it would make an old row fail
+  (D), loudly. It would not pass silently.
+- **Not changed here.** That is the safe direction, and pinning it is
+  outside what the review asked. It is put to the reviewer.
+
+### 8.5 The evidence round, again
+
+Each row was run on a clean tree, source fingerprint `2b497bba…48ee` (from
+`144ba96`; the later commits are evidence only). PostgreSQL 16.15, in a
+container that had restarted (EN-01).
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Mutations, twice | 39/39 and 39/39, identical counts; none survives. R6–R10 are new: the request, the property, the offer, `excluded_counts`, the recorded versions | `8f044e5` (runs at `144ba96`) | `evidence/SLICE6-STEP3-MUTATIONS.txt`, `…-REPEAT.txt`. These replace the records at `ef9c9ae`, which stay in git history |
+| Authorization matrix | 189 rules; suite 2562/2562 | `2d82025` (run at `8f044e5`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS; 70 PASS notices; 67 operations equal | `ebce6ee` (run at `2d82025`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | 2562 passed, 0 failed, 0 errors, 0 skipped; `bound` | `2a546f1` (run at `ebce6ee`) | `evidence/TEST-RUN-PROVENANCE.txt` |
+
+- **The suite count:** 2556 → 2562, the six cases of §8.
+- **`e9d3a03`'s suite fails five cases.** That commit holds the tests on
+  the unfixed code, as the review asked. No run of it is reported as a
+  result.
+- **During the runs,** the stop hook reported an uncommitted change. It
+  was the runner's temporary mutation of `diagnostic_replay.py`, with its
+  `.orig` backup. It was NOT committed; the runner restored the file and
+  checked its digest.
+- **STOP GATE E:** `--check` exits 1, with the one known problem: the
+  document is stale.
+- **These results are ours.** The reviewer did not re-run them.

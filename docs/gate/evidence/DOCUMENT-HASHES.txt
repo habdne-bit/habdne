@@ -834,3 +834,11 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   c17e08854a9
 docs/gate/SLICE_6_STEP3_DELIVERY.md                            new   8df76868fb14da42691ec8ad288656bcf30657d68b78dbc9b12337b12a3de71d
 docs/gate/SLICE_6_PLAN.md                                      rev9  a6a915476bd5f63dd511fb73940efb467449ac5e4c19d9dcf0f5d51cfcf3baa0
 SLICE_6_PLAN.md changed revision: 8 -> 9 (step 3 delivered).
+--- Review of 220573a: step 3 not closed; three replay gaps pinned then closed; Slice 6 plan revision 10 ---
+docs/gate/evidence/SLICE6-STEP3-REPLAY-GAPS-BEFORE-FIX.txt     new   bf1a4ff1982d7548391460ed89d17a6a7f7133065f4bae891259e062974cfb3b
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS.txt                  ---   44bf1db337c9ac6a2a07a51c65c1db156bff7c8a1d3c97003d65101ea7e9a303
+docs/gate/evidence/SLICE6-STEP3-MUTATIONS-REPEAT.txt           ---   7ec6c2a9cae703b2a35d26f3cba28549b4021d6a539cc2754eef39e695e5ae38
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   bf976b8b6c685e2bd99d8fc45fc3362d8338dc2ff074b8e2599bcd513a3f6791
+docs/gate/SLICE_6_STEP3_DELIVERY.md                            ---   e2f3f8a3bc3085bb3971159ab9793cfb6a3e8221a713ffe04e7139658958f54a
+docs/gate/SLICE_6_PLAN.md                                      rev10 4a0d542a41ff7d7b4710962fa185b873e3781efba1bf31112f4259d1ab73551e
+SLICE_6_PLAN.md changed revision: 9 -> 10 (review of 220573a: step 3 not closed; gaps closed; supersession test moved to step 4).

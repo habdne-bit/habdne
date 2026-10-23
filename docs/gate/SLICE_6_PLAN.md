@@ -1,5 +1,5 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 9**
+## Implementation plan — **revision 10**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
@@ -8,8 +8,10 @@ Code is written one approved step at a time, never ahead of its approval
 below), with an addendum that pins two limits of part C's index (M-1) and
 states two more (M-2, M-3); the addendum changes no line of `0007`. Step 2
 was authorized once the addendum was delivered, and is **CLOSED at
-`315804b`** (review of `315804b`, recorded below). Step 3 was authorized,
-and is **delivered** (`SLICE_6_STEP3_DELIVERY.md`), for review. Step 0 (measurements only)
+`315804b`** (review of `315804b`, recorded below). Step 3 was authorized; it
+was **not closed** in the review of `220573a` (three replay gaps), which are
+closed and **delivered again** (`SLICE_6_STEP3_DELIVERY.md` §8), for review.
+Step 4 does not start before step 3 closes. Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -31,7 +33,31 @@ recommendation. A recommendation is not a decision.
 | 6 | `caa9d33` | the review of `b6a08e7` recorded: step 1 closed at `b6a08e7`; M-1 accepted and pinned by an addendum; OQ6-1 and OQ6-2 opened (§5.3), neither approved; obligations added to steps 2 and 4 (§8); step 2 authorized after the addendum |
 | 7 | `315804b` | step 2 delivered (`SLICE_6_STEP2_DELIVERY.md`): code at `038b6e8`, corrected at `93c4b3c` and `d09abbc`; mutations 34/34; suite 2511/2511. One reading put to the reviewer: §7 condition 10 and the completion's UPDATE of `tasks` (delivery note §6, choice 8); no other change |
 | 8 | `a1d52d9` | the review of `315804b` recorded: step 2 closed; its seven choices accepted for step 2 only; §7 condition 10 rewritten to tell task creators from the completion's update, and §6.4 to inventory both; step 3 authorized |
-| 9 | the commit that adds this revision | step 3 delivered (`SLICE_6_STEP3_DELIVERY.md`): code at `55dbee6`, its tests corrected at `83dd19a`, `0943e64`, `ef9c9ae`; mutations 34/34 twice; suite 2556/2556. Nine readings and the measured effect of the registration on match reuse put to the reviewer; no other change |
+| 9 | `220573a` | step 3 delivered (`SLICE_6_STEP3_DELIVERY.md`): code at `55dbee6`, its tests corrected at `83dd19a`, `0943e64`, `ef9c9ae`; mutations 34/34 twice; suite 2556/2556. Nine readings and the measured effect of the registration on match reuse put to the reviewer; no other change |
+| 10 | the commit that adds this revision | the review of `220573a` recorded: step 3 not closed; the three replay gaps pinned by tests on `220573a`'s code (`e9d3a03`), then closed (`144ba96`); §3's readings and the digest's effect accepted; the measured supersession moved to step 4 |
+
+**The review of `220573a`. Step 3 is NOT closed; step 4 does not start.**
+- **What the reviewer found,** by reading the code and the tests (not by a
+  PostgreSQL run): the replay G6-11 requires had three gaps.
+  1. (R) did not compare an entry's `property_id` and `offer_id` with the
+     match's row, nor check that the match is of the diagnostic's request;
+  2. (D) did not compare `excluded_counts`, which `compute` derives;
+  3. `compute` chose the three versions from its `@1` constants, and the
+     replay did not pass the versions the row records: after a `@2` became
+     the default, an old row would not be recomputed by its own versions.
+- **Asked:** pin each case by a test on `220573a`'s code first, then fix
+  the replay and present step 3 again.
+- **Accepted:** the nine readings of the step 3 note (§3), as stated
+  interpretations, including NEED_MORE_INFORMATION as a possible
+  `would_reach`, NOT_PROPOSED as a diagnosis rather than a proposed change,
+  and `turab.diagnostic-input/2` left to step 4; and the registry digest's
+  effect, as G4-13's consequence.
+- **Moved to step 4:** the test of the ACTUAL supersession of an older
+  match, in the match queue and at approval; the note presented it as
+  derived, not measured.
+- **Not attributed to the reviewer:** 2556/2556 and 34/34 remain the
+  implementing team's runs.
+- **Carried, unchanged:** OQ6-1 and OQ6-2 open; K06 UNPROVEN; G4-5R open.
 
 **The review of `315804b`. Step 2 is CLOSED at `315804b`, within its
 approved scope. Step 3 is AUTHORIZED, as §8 describes it.**
@@ -1500,8 +1526,8 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | 1 | migration `0007`, parts A–D of §5.1, exactly as approved; tests, mutations | G6-4 (iii), G6-8 (ii), G6-8 (iv); **authorized** in the review of `bd54216`; delivered at `cd5b868`; **CLOSED at `b6a08e7`** (review of `b6a08e7`) |
 | 1a | addendum: the two pins of M-1, the limits of the index and TRUNCATE stated, EN-03, the README; the suite bound again. `0007` unchanged | review of `b6a08e7`; **required before step 2** |
 | 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`); delivered (`SLICE_6_STEP2_DELIVERY.md`); **CLOSED at `315804b`** (review of `315804b`) |
-| 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`); **delivered** (`SLICE_6_STEP3_DELIVERY.md`), for review |
-| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10 |
+| 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`); not closed in the review of `220573a`; **delivered again** (`SLICE_6_STEP3_DELIVERY.md` §8), for review |
+| 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests measure** the supersession of an older match by the new one, in the match queue and at approval (review of `220573a`). **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4) | all |
 
 Each step is delivered with its tests and mutation record, and reviewed
