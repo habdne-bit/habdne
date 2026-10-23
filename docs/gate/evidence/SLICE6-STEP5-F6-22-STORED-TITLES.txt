@@ -1,0 +1,55 @@
+TURAB — F6-22: stored diagnostic tasks by subject entity and title, BEFORE the fix
+Measured: 2026-10-23 17:11:11 UTC on 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+Tree    : 365797339bdf77c68aa18784d88567b813f8be32 (src identical to 3657973)
+
+== database turab_authz_test
+   all diagnostic tasks: 24
+   OTHER | PROPERTY | Obtain the missing information | OPEN | 1
+   VERIFY_DOCUMENT | PROPERTY | Verify the property's document | DONE | 2
+   VERIFY_DOCUMENT | PROPERTY | Verify the property's document | OPEN | 20
+   VERIFY_DOCUMENT | PROPERTY_OFFER | fixture | OPEN | 1
+== database turab_contract_test
+   all diagnostic tasks: 0
+== database turab_probe
+   all diagnostic tasks: 0
+
+== AFTER a full suite run on the unfixed code (3657973, src identical to 3657973): 2609 passed, 1 warning in 378.27s (0:06:18)
+Measured: 2026-10-23 17:18:35 UTC
+== database turab_authz_test
+   all diagnostic tasks: 56
+   CONFIRM_PRICE | PROPERTY_OFFER | Confirm the offer's price terms | OPEN | 3
+   CONFIRM_PRICE | REQUEST | Confirm the offer's price terms | OPEN | 2
+   OTHER | PROPERTY | Obtain the missing information | OPEN | 4
+   VERIFY_DOCUMENT | PROPERTY | Verify the property's document | DONE | 3
+   VERIFY_DOCUMENT | PROPERTY | Verify the property's document | OPEN | 43
+   VERIFY_DOCUMENT | PROPERTY_OFFER | fixture | OPEN | 1
+== database turab_contract_test
+   all diagnostic tasks: 0
+== database turab_probe
+   all diagnostic tasks: 0
+
+READING
+  * Databases on this server: turab_authz_test (the suite's; dropped and
+    rebuilt by tests/conftest.py at the start of EVERY pytest session),
+    turab_contract_test (the gate's; rebuilt from zero by run_gate.sh, seed
+    only) and turab_probe (no tasks table). No other database exists here;
+    no deployed or persistent TURAB database is reachable from this
+    environment, and none is claimed.
+  * The first measurement found no REQUEST-subject task: the suite database
+    then held only the last pytest session, which ran no step 5 test.
+  * After a full run of the unfixed code: 2 tasks typed CONFIRM_PRICE whose
+    subject is the REQUEST carry the old title "Confirm the offer's price
+    terms", both OPEN. They are written by the two step 5 tests whose request
+    states no maximum. The 3 CONFIRM_PRICE tasks on a PROPERTY_OFFER subject
+    carry the offer's title, which stays (review of 3657973).
+  * Their fate: test data. They are dropped with the database at the next
+    pytest session. No path updates a task's title (the completion's UPDATE
+    sets status and completed_at only: plan §7 condition 10), so a code
+    change does not rewrite them, and nothing here rewrites them. In a
+    database that kept such a row, it would keep its old title; while it is
+    OPEN or IN_PROGRESS the index refuses a new task for the same subject, so
+    the new title appears only when the work is raised again after it is
+    DONE. That is tested after the fix
+    (test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done).
+  * The row "VERIFY_DOCUMENT | PROPERTY_OFFER | fixture" is step 2's fixture
+    (tests/test_slice6_step2.py::_task), not a task the run wrote.

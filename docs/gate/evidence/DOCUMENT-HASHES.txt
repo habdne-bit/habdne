@@ -868,3 +868,7 @@ docs/gate/SLICE_6_EVIDENCE.md                                  new   a3b6c95d52e
 docs/gate/SLICE_6_STEP5_DELIVERY.md                            new   b4a628b946977d82f524fac1d219e132f54bc3f4efa6e8c31e463483a51bc253
 docs/gate/SLICE_6_PLAN.md                                      rev14 7a5a42d9ead9c76d58d0b961bdb07bf61653df290a41532e0d8249b805f00641
 SLICE_6_PLAN.md changed revision: 13 -> 14 (step 5 delivered for review; F6-21, F6-22 measured, not decided; Slice 6 not declared closed).
+--- Review of 3657973: step 5 NOT closed; F6-21 and F6-22 decided; Slice 6 plan revision 15 ---
+docs/gate/evidence/SLICE6-STEP5-F6-22-STORED-TITLES.txt        new   fed520d3c1bdea51249e9cf54c337f00cd1352374d5664b52850349def471809
+docs/gate/SLICE_6_PLAN.md                                      rev15 a5d28560e297150a15020769e35a081fe2921ab83bd85d380a454dffee44930f
+SLICE_6_PLAN.md changed revision: 14 -> 15 (review of 3657973: step 5 not closed; F6-21 documentary correction; F6-22 title by type and entity).
