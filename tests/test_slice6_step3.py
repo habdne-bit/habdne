@@ -672,3 +672,93 @@ def test_an_empty_run_gives_an_empty_valid_format_2():
     assert (out["suggested_actions"], out["relaxation_scenarios"]) == ([], [])
     assert out["blocker_summary"]["format"] == "turab.blocker-summary/2"
     assert out["blocker_summary"]["unknowns"] == {}
+
+
+# ======================================================================================
+# Review of 220573a: three gaps of the replay (G6-11)
+# ======================================================================================
+
+def _replayable_world(client, engine, ids):
+    """One run with something in every part: a NEED_MORE_INFORMATION
+    candidate (an action), a near match (a scenario) and a property with no
+    offer (an exclusion, so `excluded_counts` is not empty)."""
+    req = _request(engine, ids, budget_max=24_000_000)
+    _criterion(engine, req, "LOCATION", "IN", [_loc(engine, "ADR-NEW-TIL")], "REQUIRED")
+    _criterion(engine, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED", sort_order=1)
+    p1 = _at(engine, _prop(engine, document=None), "ADR-NEW-TIL")
+    p2 = _at(engine, _prop(engine), "ADR-AIRPORT")
+    lonely = _at(engine, _prop(engine), "ADR-NEW-TIL")
+    _offer(engine, ids, p1)
+    _offer(engine, ids, p2)
+    body = _ran(client, ids, req, [p1, p2, lonely])
+    row = _row(body, _computed(engine, body))
+    assert row["suggested_actions"] and row["relaxation_scenarios"]
+    assert row["blocker_summary"]["excluded_counts"], "the world has an exclusion"
+    return req, row
+
+
+@pytest.mark.parametrize("field", ["property_id", "offer_id"])
+def test_review_r_checks_the_evaluated_ids_against_the_match(client, engine, ids, field):
+    """(R): an entry's `property_id` or `offer_id` that is not its match's is
+    refused, each changed alone."""
+    _, row = _replayable_world(client, engine, ids)
+    bad = copy.deepcopy(row)
+    bad["blocker_summary"]["evaluated"][0][field] = str(uuid.uuid4())
+    with engine.connect() as conn:
+        result = diagnostic_replay.replay(conn, bad)
+    assert len(result["R"]) == 1 and field in result["R"][0] and result["D"] == [], result
+
+
+def test_review_r_checks_that_the_match_is_of_the_diagnostics_request(client, engine, ids):
+    """(R): an entry naming another request's match, its own hash, property
+    and offer copied faithfully, is refused."""
+    _, row = _replayable_world(client, engine, ids)
+    _, other = _replayable_world(client, engine, ids)
+    bad = copy.deepcopy(row)
+    bad["blocker_summary"]["evaluated"][0] = copy.deepcopy(
+        other["blocker_summary"]["evaluated"][0])
+    with engine.connect() as conn:
+        result = diagnostic_replay.replay(conn, bad)
+    assert any("request" in p for p in result["R"]) and result["D"] == [], result
+
+
+def test_review_d_compares_the_excluded_counts(client, engine, ids):
+    """(D): one exclusion count changed alone is refused."""
+    _, row = _replayable_world(client, engine, ids)
+    bad = copy.deepcopy(row)
+    reason = next(iter(bad["blocker_summary"]["excluded_counts"]))
+    bad["blocker_summary"]["excluded_counts"][reason] += 1
+    with engine.connect() as conn:
+        result = diagnostic_replay.replay(conn, bad)
+    assert result["R"] == [] and result["D"] == [
+        "blocker_summary.excluded_counts differs from what the stored inputs give"], result
+
+
+def test_review_an_old_row_replays_by_its_recorded_versions(client, engine, ids,
+                                                            monkeypatch):
+    """G6-11: a row is recomputed with the versions it RECORDS. A later slice
+    registers `diagnostic.actions@2`, whose behaviour differs (it suggests
+    nothing), and makes it the version a new computation uses. The old row,
+    recorded under @1, still replays; a new row records @2 and replays too."""
+    from turab.matching import registry as registry_module
+
+    _, old = _replayable_world(client, engine, ids)
+    assert old["blocker_summary"]["versions"]["actions"] == "diagnostic.actions@1"
+
+    grown = registry_module.RuleRegistry()
+    for r in REGISTRY.rules():
+        grown.register(r.rule_id, r.rule_version)(r.evaluate)
+
+    @grown.register("diagnostic.actions", "2")
+    def actions_v2(request_id, candidates, high_value):
+        return []
+
+    monkeypatch.setattr(diagnostic, "REGISTRY", grown)
+    monkeypatch.setattr(diagnostic, "ACTIONS", ("diagnostic.actions", "2"))
+    with engine.connect() as conn:
+        assert diagnostic_replay.replay(conn, old) == {"R": [], "D": []}
+    _, new = _replayable_world(client, engine, ids)
+    assert new["blocker_summary"]["versions"]["actions"] == "diagnostic.actions@2"
+    assert new["suggested_actions"] == []
+    with engine.connect() as conn:
+        assert diagnostic_replay.replay(conn, new) == {"R": [], "D": []}

@@ -1,0 +1,31 @@
+TURAB — Slice 6 step 3, review of 220573a: the three gaps of the replay,
+pinned by tests BEFORE the fix
+=========================================================================
+Code     : 220573a, unchanged (src/ identical to the commit)
+Tests    : the five cases added to tests/test_slice6_step3.py for the review
+           (`-k review`), run against that code. PostgreSQL 16.15. Ours.
+
+VERBATIM (pytest -q --tb=line -rf)
+  /home/user/habdne/tests/test_slice6_step3.py:709: AssertionError: {'R': [], 'D': []}
+  /home/user/habdne/tests/test_slice6_step3.py:709: AssertionError: {'R': [], 'D': []}
+  /home/user/habdne/tests/test_slice6_step3.py:722: AssertionError: {'R': ['evaluated[0]: NEW, but evaluated at another instant than the run'], 'D': []}
+  /home/user/habdne/tests/test_slice6_step3.py:733: AssertionError: {'R': [], 'D': []}
+  /home/user/habdne/tests/test_slice6_step3.py:759: AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+  FAILED tests/test_slice6_step3.py::test_review_r_checks_the_evaluated_ids_against_the_match[property_id]
+  FAILED tests/test_slice6_step3.py::test_review_r_checks_the_evaluated_ids_against_the_match[offer_id]
+  FAILED tests/test_slice6_step3.py::test_review_r_checks_that_the_match_is_of_the_diagnostics_request
+  FAILED tests/test_slice6_step3.py::test_review_d_compares_the_excluded_counts
+  FAILED tests/test_slice6_step3.py::test_review_an_old_row_replays_by_its_recorded_versions
+  5 failed, 42 deselected, 1 warning in 4.68s
+
+READING, case by case
+  property_id alone, offer_id alone : {'R': [], 'D': []}: the altered entry
+      passes. (R) compares neither id with the match's row.
+  another request's match           : (R) fails, but ONLY on the NEW instant
+      (the entry comes from another run). The request is not compared: an
+      entry marked EXISTING would have passed.
+  one excluded count changed alone  : {'R': [], 'D': []}: `excluded_counts`
+      is not among the compared summary keys.
+  an old row after @2 is the default: (D) fails: compute() resolves its
+      versions from the module's @1 constants (here patched to @2), and the
+      replay does not pass the versions the row records.
