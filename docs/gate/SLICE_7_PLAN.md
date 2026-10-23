@@ -1,16 +1,25 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 2**
+## Implementation plan — **revision 3**
 
 **Status: submitted for review.**
 - **No code for this slice exists, and none is written before this plan is
   approved.** Slice 7 is in **planning only**.
+- **What the review of `58a0067` did** (recorded below):
+  - accepted step 0 as measurement documented by the implementing team;
+  - accepted the directions of G7-8 (a) and G7-9 (a), their limits to be
+    proven by the implementation's tests;
+  - asked for four points to be settled, and for the proposed text of
+    `0008`. Both are this revision (§5.1, §5.2).
 - **What the review of `dcebe46` did:**
   - accepted revision 1 as a basis for review and measurement;
   - authorized step 0's measurements (M1–M8), which are delivered here;
   - asked for five gaps to be settled in the plan's text before it is put
     up for approval (recorded below).
-- **Approved by no one yet:** the decisions G7-1 to G7-15, and the text of
-  migration `0008`.
+- **Approved by no one yet:**
+  - the decisions G7-1 to G7-15;
+  - the text of migration `0008` (§5.1). **That text has not been executed:**
+    it is first run in step 1, with its tests, once approved;
+  - CORRECTION-007 (§5.2).
 
 **What this revision does not decide.** Every choice that is not already
 fixed by a source is put to the reviewer as a decision (§5), with options and
@@ -33,6 +42,53 @@ a recommendation. A recommendation is not a decision.
 |---|---|---|
 | 1 | `91762f6` | first plan (authorized as planning only in the review of `8de5f7f`) |
 | 2 | `7200b3c` | the review of `dcebe46` recorded; step 0 measured (M1–M8); the five gaps settled in the text: content and consent (G7-9), the stuck event and its recovery (G7-2 (v)), Meta and the relay (G7-2 (ii), §3.9), what staff can read (G7-8), the SALE boundary (§0.2, G7-6 rule 0); new: F7-12, G7-15; G7-12 (D) rewritten on M8 |
+| 3 | the commit that adds this revision | the review of `58a0067` recorded; the four points settled: (D) put as an explicit choice between D2 (strict, six foreign keys made RESTRICT, its consequences) and D3 (a narrower guarantee stated exactly), D1's "FK-only" name withdrawn; the failure inside the processing transaction (a savepoint, the FAILED record, the stop after RECEIVED, their tests), and the 500 settled by a proposed CORRECTION-007; the relay made condition R-1 before any real event; the provider rule for every channel. The proposed text of `0008` (§5.1) and of CORRECTION-007 (§5.2), neither executed nor approved |
+
+**The review of `58a0067`. Step 0 is accepted as measurement documented by
+the implementing team. The decisions and `0008` stay unapproved, for four
+reasons.**
+- **Not re-run by the reviewer:** step 0's measurements.
+- **The five gaps of the review of `dcebe46`** are addressed by the text.
+- **Directions accepted, limits to be proven by the implementation's
+  tests:**
+  - G7-8 (a): reading a message through the timeline;
+  - G7-9 (a): the content-free event payload, and content stored only under
+    consent.
+
+  "Recovering an event from the content-free payload, without its content,
+  is a correct and stated limit, so it is not counted as a full recovery of
+  the archive."
+- **The four points:**
+  1. **G7-12 (D1).** `pg_trigger_depth() > 1` shows that triggers are
+     nested, not that the update comes from a foreign key. The plan says so,
+     yet names the option "FK-only" and calls the links frozen. A nested
+     update may come from a trigger on any table that updates the thread.
+     **D1 is not approved as described.** Revision 3 offers an explicit
+     choice between D2, with the consequences of refusing the deletion of
+     referenced rows, and a narrower guarantee worded with its exact limits.
+     The reviewer cites PostgreSQL 16, §9.26 System Information Functions.
+  2. **G7-2: a failure between the two transactions.** A failed SQL
+     statement aborts the processing transaction, which then cannot commit
+     a status update as it stands.
+     - State where the rollback or savepoint is, and which transaction
+       records the failure.
+     - Test the stop after RECEIVED is committed.
+     - The typed 500 is not among the operation's responses in the effective
+       contract. Offer an explicit contractual settlement, rather than
+       inferring its permission from the general error rule.
+  3. **G7-2 (a2).** A relay outside the slice may be accepted as a defined
+     integration boundary, but Meta's verification is not counted as done in
+     the slice's evidence. If (a2) is chosen, building the relay and testing
+     the GET verification, Meta's signature and the redelivery of failures
+     become an independent condition before any real event is received.
+  4. **G7-4.** State the fate of `external_message_ref` in a thread that is
+     not WHATSAPP. The text sets `provider = whatsapp` for one channel,
+     while the staff command accepts others. Either a known provider for
+     each defined channel, or the reference refused in channels with no
+     defined provider, before `0008` (A) is approved.
+- **Then:** revision 3, with the proposed text of `0008` and the four points
+  settled, without implementation code.
+- **K06** stays UNPROVEN, an independent condition before any release gate.
 
 **The review of `dcebe46`. The plan is accepted as a basis for review and
 measurement; G7-1 to G7-14 and the text of `0008` are not yet approved.**
@@ -353,8 +409,23 @@ here:**
   It widens the slice.
 - **(a2) Recommended within (a).** The relay is specified here as an
   interface (its four duties above, the envelope mapping, the header), and
-  is built outside the slice. Meta's verification is stated as an UNPROVEN
-  boundary, as K06 is.
+  is built outside the slice. **(Revision 3, review of `58a0067`, point 3.)**
+  Choosing (a2) creates **condition R-1**, independent of the slice, as K06
+  is.
+  - **What must happen before TURAB receives any real event:** the relay is
+    built, and its own tests prove, on synthetic notifications:
+    1. Meta's GET verification (`hub.mode`, `hub.verify_token`,
+       `hub.challenge`), answered only for the right token;
+    2. Meta's `X-Hub-Signature-256` over Meta's raw body, a wrong or missing
+       signature dropped before any transformation;
+    3. the transformation to envelopes, one per message and per status;
+    4. its own signature;
+    5. the **redelivery** of an event TURAB did not complete, on its 500 or
+       on a timeout.
+  - **Slice 7's closure evidence** lists R-1 as **UNMET**. It never counts
+    Meta's verification as done. Its tests prove TURAB's side only.
+  - **The route is not exposed** to Meta's or the relay's traffic before R-1
+    is met. That is an operational condition, stated, not a code switch.
 
 **The header is not declared by the contract** (`parameters: []`). It is a
 security mechanism outside the OpenAPI, as R10.5's verification is.
@@ -370,60 +441,99 @@ directly.**
 #### (iii) The provider
 - The constant `whatsapp` for this route.
 
-#### (iv) The two transactions, and what the first stores
-1. **The event row,** inserted and committed alone, with the
-   **content-free payload** of G7-9 (a). A conflict on `(provider,
-   provider_event_id)` goes to (v).
-2. **Resolution and its writes** (G7-3, G7-9) in a second transaction:
-   - it begins by claiming the event row `FOR UPDATE NOWAIT` (M4b);
-   - it ends by setting `processing_status` (PROCESSED, IGNORED, or FAILED
-     with a fixed `error_text` code, never the exception's text) and
-     `processed_at`.
+#### (iv) The transactions, and where a failure is recorded (revision 3, review of `58a0067`, point 2)
 
-#### (v) The fate of RECEIVED and FAILED, and their recovery (review of `dcebe46`, point 2)
+**T1, the event.**
+- The event row is inserted alone, with the **content-free payload** of
+  G7-9 (a), and committed.
+- A conflict on `(provider, provider_event_id)` goes to (v).
 
-M4b shows that a replay's `ON CONFLICT DO NOTHING` returns nothing whatever
-the stored status. It also shows that a processor's row lock is visible to a
-NOWAIT claim (55P03) and gone once the processor ends. So:
+**T2, the processing.** READ COMMITTED, on one connection:
+1. **The claim:** `SELECT … FROM webhook_events WHERE webhook_event_id = :e
+   AND processing_status IN ('RECEIVED','FAILED') FOR UPDATE NOWAIT`.
+   - 55P03 means another processor holds the event (M4b). T2 rolls back, and
+     the answer is 200, nothing written.
+   - No row means the event is already final. T2 rolls back, and the answer
+     is 200.
+2. **`SAVEPOINT processing`.**
+3. **Resolution and its writes** (G7-3, G7-9): the message, the
+   interaction, the thread's `last_message_at`, the audit rows.
+4. **Success:** `UPDATE webhook_events SET processing_status = 'PROCESSED'`
+   (or IGNORED, with its fixed reason), `processed_at = now()`; COMMIT.
+5. **Failure inside step 3** (an SQL error aborts only what follows the
+   savepoint; a Python exception likewise):
+   - `ROLLBACK TO SAVEPOINT processing`. It undoes every write of step 3 and
+     **keeps the claim's row lock**, because a lock taken before a savepoint
+     is kept when the savepoint is rolled back to (PostgreSQL 16, §13.3,
+     "Explicit Locking": only a lock acquired after the savepoint is
+     released);
+   - then **in the same T2:** `UPDATE webhook_events SET processing_status =
+     'FAILED', error_text = <a fixed code, never the exception's text>,
+     processed_at = now()`; COMMIT;
+   - the cause is logged under the trace id, without the body.
+6. **What the savepoint cannot cover:** a failure of step 4's UPDATE, of the
+   COMMIT, of the connection, or of the process itself.
+   - T2 is then lost whole, and the event keeps its previous status
+     (RECEIVED, or FAILED from an earlier attempt).
+   - No message is half-written: everything was in T2.
+   - It is recovered by (v).
 
-- **A replay reads the stored status:**
+**The tests (step 3):**
+1. **A failure injected in step 3,** by SQL: the event is FAILED with its
+   code; no message, no interaction, no audit row; the answer as §5.2
+   decides.
+2. **A stop after T1 is committed,** with T2 never run: the event stays
+   RECEIVED. A redelivery then completes it, PROCESSED, one message. The
+   recovery command completes another one, PROCESSED, without content.
+3. **A failure of step 4's UPDATE** (injected): the event keeps its status,
+   and nothing of step 3 remains.
+4. **A replay while T2 holds the claim** (held by a barrier): the replay's
+   claim is refused 55P03; it answers 200 and writes nothing; the holder
+   completes the event.
 
-  | Stored status | The replay's effect |
-  |---|---|
-  | **PROCESSED** or **IGNORED** | a true replay: 200, nothing written (S42) |
-  | **RECEIVED** or **FAILED** | the replay **processes the event again**, with the replayed envelope (which carries the content again: G7-9) |
-  | **in flight** (the claim fails 55P03) | 200, nothing written; the holder finishes it |
+#### (v) The fate of RECEIVED and FAILED, and their recovery
 
-- **The answer to a first delivery:**
-  - **200** when processing ended PROCESSED or IGNORED;
-  - **500**, typed `WEBHOOK_PROCESSING_FAILED`, when it ended FAILED. A 500
-    makes the relay (or the provider) deliver the event again, and the
-    redelivery is the recovery.
+M4b: a replay's `ON CONFLICT DO NOTHING` returns nothing whatever the stored
+status, and a processor's lock is visible to NOWAIT.
 
-  **This answer needs a decision.** The contract lists 200, 400 and 401 for
-  this operation. `API_CONTRACTS` §2.5 governs errors generally and does
-  not exclude a 500. The alternative is 200 with the event left FAILED:
-  then only the recovery command below recovers it, **without** its
-  content.
-- **An operator recovery command** for an event that no redelivery reaches:
-  - a script under `db/ops/`, not an HTTP operation, so the contract is not
-    widened. It lists and re-processes:
-    - events RECEIVED for longer than a stated delay (e.g. 5 minutes);
-    - FAILED events;
-  - it skips any row it cannot claim (`FOR UPDATE SKIP LOCKED`, M4b);
-  - **its stated limit:** the stored payload is content-free (G7-9), so it
-    recovers identifiers, threads and statuses, and stores a message
-    **without** content (`metadata.content_archived = false`, reason
-    `RECOVERED_WITHOUT_CONTENT`).
-- **The transitions** (G7-12 (C)):
-  - RECEIVED → PROCESSED, IGNORED or FAILED;
-  - FAILED → PROCESSED, IGNORED or FAILED (a retry);
-  - **nothing leaves PROCESSED or IGNORED.**
-- **The closure evidence** counts the events in RECEIVED and FAILED at the
-  end of the run. A test proves that no event stays RECEIVED after a
-  redelivery or after the recovery command.
+**A replay reads the stored status:**
 
-**Blocks:** step 3.
+| Stored status | The replay's effect |
+|---|---|
+| PROCESSED or IGNORED | a true replay: 200, nothing written (S42) |
+| RECEIVED or FAILED | T2 again, with the replayed envelope, which carries the content again (G7-9) |
+| in flight (55P03) | 200, nothing written |
+
+**The answer when T2 ends FAILED** is settled contractually (§5.2), not
+inferred from `API_CONTRACTS` §2.5:
+- **(a) Recommended. CORRECTION-007** adds a `500` response to
+  `postWebhooksWhatsapp` in the effective contract, typed
+  `WEBHOOK_PROCESSING_FAILED`. Its meaning: "stored, not processed; deliver
+  the same `provider_event_id` again". The relay's redelivery (R-1) is then
+  the recovery that keeps the content.
+- **(b) No contract change.** The answer is always 200 once T1 is committed.
+  A FAILED event is then recovered only by the command below, **without its
+  content**: the relay has no signal to redeliver.
+
+**The operator recovery command:**
+- a script under `db/ops/`, not an HTTP operation;
+- it re-runs T2 on events RECEIVED for longer than a stated delay
+  (5 minutes) and on FAILED events, skipping rows it cannot claim (`FOR
+  UPDATE SKIP LOCKED`, M4b);
+- **its limit, accepted in the review of `58a0067`:** it recovers from the
+  content-free payload, so a message is stored **without** content
+  (`RECOVERED_WITHOUT_CONTENT`). **It is not counted as a full recovery of
+  the archive.**
+
+**The transitions** (`0008` (C), §5.1):
+- RECEIVED → PROCESSED, IGNORED or FAILED;
+- FAILED → PROCESSED, IGNORED or FAILED;
+- nothing leaves PROCESSED or IGNORED.
+
+**The closure evidence** counts the RECEIVED and FAILED events at the end of
+the run.
+
+**Blocks:** step 3; §5.2.
 
 ### G7-3 · Event types and thread resolution
 - **(a) Recommended.** The envelope's `payload` has a documented internal
@@ -443,18 +553,30 @@ NOWAIT claim (55P03) and gone once the processor ends. So:
 - **Blocks:** step 3.
 
 ### G7-4 · The global message identity (mandatory test 2, J02, F7-1)
-- **(a) Recommended.**
-  - The service sets `provider` whenever `external_message_ref` is given:
-    `whatsapp` for a WHATSAPP thread.
-  - It refuses an `external_message_ref` on an INTERNAL message (422).
-  - `0008` (A): `CHECK (external_message_ref IS NULL OR provider IS NOT
-    NULL)`.
-  - A 23505 whose constraint is
-    `communication_messages_provider_external_message_ref_key` (M2) maps to
-    a typed 409 for staff, and to IGNORED for a webhook.
-- **(b)** `NULLS NOT DISTINCT`. Not recommended: two messages with neither a
-  provider nor a reference would collide.
-- **Blocks:** steps 1–3.
+
+**(a) Recommended. Revision 3, review of `58a0067`, point 4: a provider is
+known for exactly one channel; every other channel refuses a reference.**
+
+| Thread channel | Provider | `external_message_ref` |
+|---|---|---|
+| WHATSAPP | `whatsapp` (set by the service) | accepted |
+| PHONE, SMS, EMAIL, WEB, IN_PERSON, OTHER | **none defined** by any source | **refused**: typed 422 `EXTERNAL_REF_WITHOUT_PROVIDER`, writing nothing |
+
+- **An INTERNAL message never carries a reference** (422).
+- **The database backs all three rules** (`0008` (A), §5.1):
+  - `CHECK (external_message_ref IS NULL OR provider IS NOT NULL)`;
+  - `CHECK (provider IS NULL OR provider = 'whatsapp')`;
+  - `CHECK (direction <> 'INTERNAL' OR external_message_ref IS NULL)`;
+  - a BEFORE INSERT trigger: a message with a provider belongs to a
+    WHATSAPP thread.
+- **A provider for another channel** would be a later decision: a new
+  provider value, its own constraint change, and its own source.
+- **A 23505 on `communication_messages_provider_external_message_ref_key`**
+  (M2) maps to a typed 409 for staff, and to IGNORED for a webhook.
+
+**(b) `NULLS NOT DISTINCT`.** Not recommended.
+
+**Blocks:** steps 1–3.
 
 ### G7-5 · Delivery and read status
 - **(a) Recommended.**
@@ -501,6 +623,9 @@ NOWAIT claim (55P03) and gone once the processor ends. So:
 - **Blocks:** step 2.
 
 ### G7-8 · What a staff member can read, and the timeline (review of `dcebe46`, point 4; F7-3, F7-7)
+
+*Direction (a) accepted in the review of `58a0067`; its limits are to be
+proven by the implementation's tests. Not yet a decision of the slice.*
 
 **What "retrievable" means within Slice 7, stated.** Under the frozen
 contract the only Communication read is `getPartiesPartyIdTimeline`, for
@@ -555,6 +680,9 @@ message, they read there, or nowhere.**
 - **Blocks:** step 4.
 
 ### G7-9 · Content and consent (review of `dcebe46`, point 1; J03; F7-6; F7-13)
+
+*Direction (a) accepted in the review of `58a0067`; its limits are to be
+proven by the implementation's tests.*
 
 **The rule: no content is stored anywhere unless the thread's party has
 consented, at the moment of writing.** M7 shows that storing the event as
@@ -652,47 +780,75 @@ recommended:
   - a refused webhook is logged without its body.
 - **Blocks:** steps 2–4.
 
-### G7-12 · Migration `0008` (parts proposed; the text in revision 3, once these are decided)
-- **(A)** `CHECK (external_message_ref IS NULL OR provider IS NOT NULL)`
-  (G7-4).
-- **(B) Messages are append-only.** The one exception is `delivery_status`,
-  forward only, by G7-5's order. DELETE is refused.
-- **(C) A `webhook_events` row is immutable,** except its processing fields:
-  - `processing_status` may move from RECEIVED or FAILED only (G7-2 (v));
-  - `payload` and the identity never change;
-  - DELETE is refused.
-- **(D) A thread's links are frozen** (revision 2, rewritten on M8,
-  F7-14).
+### G7-12 · Migration `0008` (the text proposed in §5.1; not executed; not approved)
 
-  M8 measured three candidates. **The first two are refused:**
-  - **strict** (no change of a link): it **also refuses the FK's `ON DELETE
-    SET NULL`**. Deleting a thread's party then fails, so revision 1's two
-    statements could not both hold;
-  - **permissive** (a link may become NULL): it lets the FK act, but **also
-    accepts a direct UPDATE of a link to NULL**.
+- **(A)** The message identity (G7-4).
+- **(B)** Messages are append-only; `delivery_status` forward only (G7-5).
+- **(C)** A `webhook_events` row is immutable except its processing fields,
+  by the transitions of G7-2 (v).
+- **(D) A thread's links. Revision 3, review of `58a0067`, point 1: an
+  explicit choice.**
 
-  **Two remain, and one is to be chosen:**
-  - **(D1) Recommended: FK-only.**
-    - A link may become NULL only **below a referential action**
-      (`pg_trigger_depth() > 1`; M8: depth 1 for a direct UPDATE, 2 under
-      the FK).
-    - Every direct change is refused; `channel` never changes;
-      `last_message_at` may move forward.
-    - The frozen FKs stay as they are.
-    - **Its stated limit:** depth > 1 is also true for an UPDATE issued from
-      inside another trigger. The threads table has none today (M3). A
-      future trigger on it would have to be reviewed against this guard,
-      and the closure evidence lists the table's triggers.
-  - **(D2) Strict, with the four link FKs altered** from `ON DELETE SET
-    NULL` to `ON DELETE RESTRICT`.
-    - Deleting a party, request, property or opportunity that a thread
-      names is then refused. Three of the four parents (`requests`,
-      `properties`, `opportunities`) already have delete guards;
-      `parties` has none (M8).
-    - It changes four frozen constraints, the price of a simpler guard.
-- **Labelled as trigger level:** each guard is proven at trigger level, not
-  as K06 (G7-13).
-- **Blocks:** step 1.
+  **What M8 measured, and why D1 is withdrawn:**
+  - M8 measured three candidates: strict, permissive and depth-based.
+  - The depth-based one was called "FK-only" in revision 2. **That name is
+    withdrawn.** `pg_trigger_depth()` returns the current nesting level of
+    triggers (PostgreSQL 16, §9.26). Depth > 1 shows that the UPDATE runs
+    inside a trigger. It does not show that the trigger is a foreign key's
+    referential action. A trigger on **any** table that updates a thread
+    would pass the same test.
+
+  **The scope of the conflict is wider than revision 2 said.** It is not the
+  four links alone: every `ON DELETE SET NULL` key on a guarded table meets
+  the guard the same way. There are six:
+  - on `communication_threads`: `party_id`, `request_id`, `property_id`,
+    `opportunity_id`, `created_by_account_id`;
+  - on `communication_messages`: `sent_by_account_id`.
+
+  **D2 or D3 is to be chosen:**
+
+  - **(D2) Recommended. Strict, with the six foreign keys made `ON DELETE
+    RESTRICT`.**
+    - **The guarantee:** a thread's links and attribution, and a message's
+      attribution, **never change** after INSERT, by any statement at any
+      depth. `last_message_at` moves forward only.
+    - **Its consequences:**
+      - a party, request, property, opportunity or account that a thread or
+        message names **cannot be deleted**. The deletion is refused, and
+        the deleting transaction fails;
+      - **requests, properties and opportunities** already have delete
+        guards (`prevent_core_delete`), so nothing changes for them;
+      - **parties** have no delete guard. Their deletion becomes impossible
+        while a thread names them;
+      - **accounts** are disabled, not deleted (`account_status` has
+        DISABLED). No application path deletes either a party or an account
+        (`src/` searched: no `DELETE FROM` either table);
+      - **an erasure request** (a party's data removed) would then need a
+        procedure of its own: the threads' fate first. That is a retention
+        question (OQ7-1), not answered here;
+      - **six frozen constraints change.** The migration drops and re-adds
+        each by its name. The names follow PostgreSQL's default
+        `<table>_<column>_fkey`, as M3's
+        `communication_messages_thread_id_fkey` shows, and the migration
+        fails if a name differs.
+  - **(D3) The frozen keys kept, and a narrower guarantee, stated exactly.**
+    - **The guarantee:**
+      - **no top-level statement** (`pg_trigger_depth() = 1`) changes a
+        thread's links or attribution, or a message's attribution;
+      - **a statement run inside a trigger** (`pg_trigger_depth() > 1`, on
+        **any** table: a foreign key's referential action, or any other
+        trigger that updates these rows) may set them **to NULL**. It can
+        never set them to another value.
+      - The links are therefore **not frozen**. They are "never re-pointed,
+        possibly erased by a nested statement".
+    - **What bounds it:** the closure evidence lists every trigger function
+      in the database whose body updates `communication_threads` or
+      `communication_messages`. Today there is none (M3). A new one would
+      have to be reviewed against this guarantee.
+    - **Its advantage:** no frozen constraint changes, and the deletion of a
+      party keeps working as frozen.
+- **Each guard is proven at trigger level,** not as K06 (G7-13).
+- **Blocks:** step 1; the choice of D2 or D3 selects §5.1's part D.
 
 ### G7-13 · K06 (not blocking this plan)
 - **Carried unchanged.** The application role is a superuser (M3). K06 is
@@ -723,10 +879,212 @@ recommended:
   (J03, F7-6). The sources leave it to "pilot/legal review".
 - **OQ7-2 · The contract's owner:**
   - whether to declare the relay's signature header;
-  - whether ever to accept Meta's native shape (G7-2 (b)).
+  - whether ever to accept Meta's native shape (G7-2 (b));
+  - CORRECTION-007 (§5.2).
 - **OQ7-3 · A read operation for a thread's messages,** if G7-8 (b) is
   decided.
 - **OQ7-4 · An app-wide request-body limit** (F7-12).
+
+### 5.1 The text of migration `0008` (proposed; NOT executed; NOT approved)
+
+**Not executed.** This text has not been run against any database. It is run
+for the first time in step 1, with its tests, once approved. Part D is shown
+in both of G7-12's variants; one is kept.
+
+```sql
+-- 0008 — communication records: identity, append-only rows, frozen threads
+-- Plan: docs/gate/SLICE_7_PLAN.md revision 3, G7-4, G7-5, G7-2 (v), G7-12.
+
+-- Part A: a provider message identity is whole, and known (G7-4) ----------------
+ALTER TABLE turab.communication_messages
+  ADD CONSTRAINT ck_message_ref_needs_provider
+      CHECK (external_message_ref IS NULL OR provider IS NOT NULL),
+  ADD CONSTRAINT ck_message_provider_known
+      CHECK (provider IS NULL OR provider = 'whatsapp'),
+  ADD CONSTRAINT ck_internal_message_has_no_ref
+      CHECK (direction <> 'INTERNAL' OR external_message_ref IS NULL);
+
+CREATE FUNCTION turab.enforce_message_provider_channel() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.provider IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM turab.communication_threads
+        WHERE thread_id = NEW.thread_id AND channel = 'WHATSAPP') THEN
+    RAISE EXCEPTION 'communication_messages: provider % outside a WHATSAPP thread',
+      NEW.provider;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_message_provider_channel
+  BEFORE INSERT ON turab.communication_messages
+  FOR EACH ROW EXECUTE FUNCTION turab.enforce_message_provider_channel();
+
+-- Part B: messages are append-only; delivery_status moves forward (G7-5) --------
+CREATE FUNCTION turab.guard_communication_message() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  rank_old integer;
+  rank_new integer;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'communication_messages: DELETE refused (append-only)';
+  END IF;
+  rank_old := array_position(ARRAY['QUEUED','SENT','DELIVERED','READ']::text[],
+                             OLD.delivery_status::text);
+  rank_new := array_position(ARRAY['QUEUED','SENT','DELIVERED','READ']::text[],
+                             NEW.delivery_status::text);
+  IF (NEW.message_id, NEW.thread_id, NEW.provider, NEW.external_message_ref,
+      NEW.direction, NEW.message_type, NEW.body_text, NEW.media_ref,
+      NEW.occurred_at, NEW.sent_by_account_id, NEW.metadata, NEW.created_at)
+     IS DISTINCT FROM
+     (OLD.message_id, OLD.thread_id, OLD.provider, OLD.external_message_ref,
+      OLD.direction, OLD.message_type, OLD.body_text, OLD.media_ref,
+      OLD.occurred_at, OLD.sent_by_account_id, OLD.metadata, OLD.created_at) THEN
+    RAISE EXCEPTION 'communication_messages: only delivery_status may change';
+  END IF;
+  IF NEW.delivery_status IS DISTINCT FROM OLD.delivery_status AND NOT (
+       OLD.delivery_status = 'UNKNOWN'
+    OR (NEW.delivery_status = 'FAILED' AND OLD.delivery_status IN ('QUEUED', 'SENT'))
+    OR (rank_old IS NOT NULL AND rank_new IS NOT NULL AND rank_new > rank_old)) THEN
+    RAISE EXCEPTION 'communication_messages: delivery_status % -> % refused',
+      OLD.delivery_status, NEW.delivery_status;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_guard_communication_message
+  BEFORE UPDATE OR DELETE ON turab.communication_messages
+  FOR EACH ROW EXECUTE FUNCTION turab.guard_communication_message();
+
+-- Part C: a webhook event is immutable but for its processing (G7-2 (v)) --------
+CREATE FUNCTION turab.guard_webhook_event() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'webhook_events: DELETE refused';
+  END IF;
+  IF (NEW.webhook_event_id, NEW.provider, NEW.provider_event_id, NEW.event_type,
+      NEW.payload, NEW.received_at)
+     IS DISTINCT FROM
+     (OLD.webhook_event_id, OLD.provider, OLD.provider_event_id, OLD.event_type,
+      OLD.payload, OLD.received_at) THEN
+    RAISE EXCEPTION 'webhook_events: only the processing fields may change';
+  END IF;
+  IF OLD.processing_status NOT IN ('RECEIVED', 'FAILED') THEN
+    RAISE EXCEPTION 'webhook_events: a % event is final', OLD.processing_status;
+  END IF;
+  IF NEW.processing_status NOT IN ('PROCESSED', 'IGNORED', 'FAILED') THEN
+    RAISE EXCEPTION 'webhook_events: % -> % refused',
+      OLD.processing_status, NEW.processing_status;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_guard_webhook_event
+  BEFORE UPDATE OR DELETE ON turab.webhook_events
+  FOR EACH ROW EXECUTE FUNCTION turab.guard_webhook_event();
+
+-- Part D, variant D2 (recommended): six keys RESTRICT; links never change -------
+ALTER TABLE turab.communication_threads
+  DROP CONSTRAINT communication_threads_party_id_fkey,
+  ADD CONSTRAINT communication_threads_party_id_fkey FOREIGN KEY (party_id)
+      REFERENCES turab.parties(party_id) ON DELETE RESTRICT,
+  DROP CONSTRAINT communication_threads_request_id_fkey,
+  ADD CONSTRAINT communication_threads_request_id_fkey FOREIGN KEY (request_id)
+      REFERENCES turab.requests(request_id) ON DELETE RESTRICT,
+  DROP CONSTRAINT communication_threads_property_id_fkey,
+  ADD CONSTRAINT communication_threads_property_id_fkey FOREIGN KEY (property_id)
+      REFERENCES turab.properties(property_id) ON DELETE RESTRICT,
+  DROP CONSTRAINT communication_threads_opportunity_id_fkey,
+  ADD CONSTRAINT communication_threads_opportunity_id_fkey FOREIGN KEY (opportunity_id)
+      REFERENCES turab.opportunities(opportunity_id) ON DELETE RESTRICT,
+  DROP CONSTRAINT communication_threads_created_by_account_id_fkey,
+  ADD CONSTRAINT communication_threads_created_by_account_id_fkey
+      FOREIGN KEY (created_by_account_id)
+      REFERENCES turab.user_accounts(account_id) ON DELETE RESTRICT;
+ALTER TABLE turab.communication_messages
+  DROP CONSTRAINT communication_messages_sent_by_account_id_fkey,
+  ADD CONSTRAINT communication_messages_sent_by_account_id_fkey
+      FOREIGN KEY (sent_by_account_id)
+      REFERENCES turab.user_accounts(account_id) ON DELETE RESTRICT;
+
+CREATE FUNCTION turab.guard_communication_thread() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'communication_threads: DELETE refused';
+  END IF;
+  IF (NEW.thread_id, NEW.channel, NEW.party_id, NEW.request_id, NEW.property_id,
+      NEW.opportunity_id, NEW.external_thread_ref, NEW.opened_at, NEW.archived_at,
+      NEW.created_by_account_id)
+     IS DISTINCT FROM
+     (OLD.thread_id, OLD.channel, OLD.party_id, OLD.request_id, OLD.property_id,
+      OLD.opportunity_id, OLD.external_thread_ref, OLD.opened_at, OLD.archived_at,
+      OLD.created_by_account_id) THEN
+    RAISE EXCEPTION 'communication_threads: a thread''s links never change';
+  END IF;
+  IF OLD.last_message_at IS NOT NULL
+     AND (NEW.last_message_at IS NULL OR NEW.last_message_at < OLD.last_message_at) THEN
+    RAISE EXCEPTION 'communication_threads: last_message_at moves forward only';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_guard_communication_thread
+  BEFORE UPDATE OR DELETE ON turab.communication_threads
+  FOR EACH ROW EXECUTE FUNCTION turab.guard_communication_thread();
+
+-- Part D, variant D3 (instead of D2): the keys kept; a narrower guarantee -------
+-- Replaces D2's two ALTER TABLE statements and its thread guard. Under D3,
+-- Part B's message guard lets sent_by_account_id become NULL under the same
+-- rule. The thread guard:
+--   * a link or created_by_account_id may differ from OLD only when
+--     NEW.<column> IS NULL AND pg_trigger_depth() > 1;
+--   * every other change of those columns, and any change of channel,
+--     external_thread_ref, opened_at or archived_at, is refused;
+--   * last_message_at moves forward only;
+--   * DELETE is refused.
+```
+
+**The downgrade** drops the four triggers and their functions, and the three
+CHECKs. Under D2 it also restores the six keys to `ON DELETE SET NULL`.
+
+**The step 1 tests,** each refusal named by its message:
+- **Part A:** the four refusals.
+- **Part B:** every column change; DELETE; every backward status, and FAILED
+  from DELIVERED or READ; and the forward moves accepted.
+- **Part C:** every immutable field; DELETE; leaving PROCESSED and IGNORED;
+  RECEIVED → FAILED → PROCESSED accepted.
+- **Part D under D2:** the deletion of each of the six parents refused when
+  named; every link change refused, at depth 1 and from inside a test
+  trigger (depth 2); `last_message_at` backwards refused.
+- **Part D under D3:** a direct change refused; a nested change to another
+  value refused; a nested change to NULL accepted (the FK's, and a test
+  trigger's: the stated limit, shown).
+- **Every guard is labelled trigger-level** (K06).
+
+### 5.2 CORRECTION-007 (proposed; NOT approved): a 500 for the webhook
+
+Written as CORRECTION-005 was: an entry of
+`docs/contract/CONTRACT_CORRECTIONS.yaml`, from which the effective contract
+is regenerated, and checked by the gate ("the effective contract is
+current"). Today the effective contract states a `500` for **no** operation
+(searched: no `'500'` in `openapi_effective_v0.2.3.yaml`).
+
+- **The operation:** `postWebhooksWhatsapp`.
+- **The change:** a `500` response, `application/problem+json`, with the code
+  `WEBHOOK_PROCESSING_FAILED`.
+- **Its description:** "The event is stored (its `provider_event_id` is
+  recorded) and was not processed. Deliver the same `provider_event_id`
+  again; a later delivery completes it once."
+- **Its nature:** an **addition** to the frozen contract's responses, not a
+  narrowing, so it is put to the contract's owner as such.
+- **A precedent, and why it does not settle this:** Slice 4's typed 500
+  for its two policy faults was set by a review decision, without a
+  contract entry (`SLICE_4_PLAN.md` G4-15, revisions 15–16). Here the 500 is
+  a signal the relay must act on, part of the protocol between the two, so
+  it belongs in the contract.
+- **Unchanged:** 200, 400 and 401.
+- **If not approved:** G7-2 (v) (b) applies. The answer is 200 once T1 is
+  committed, and a FAILED event is recovered only by the command, without
+  its content.
 
 ---
 
@@ -738,7 +1096,7 @@ recommended:
 |---|---|---|
 | 1 | "repeated provider webhook creates one message" | the same signed envelope posted twice, and concurrently: one event row, one message, one interaction. A PROCESSED replay writes nothing; a FAILED or RECEIVED event is completed by the replay, still one message (G7-2 (v)) |
 | 2 | "same provider message id cannot be inserted into another thread" | the same `(whatsapp, ref)`, by staff and by webhook, into a second thread: a typed 409, or IGNORED, and no row. The NULL-provider path is refused by the service and by `0008` (A) |
-| 3 | "thread/opportunity links are checked by service invariant" | each rule of G7-6, rule 0 (SALE) included, with an inconsistent link refused, writing nothing; the seller's thread about the buyer's opportunity accepted; the links frozen afterwards, and the FK's SET NULL still working (M8, D1) |
+| 3 | "thread/opportunity links are checked by service invariant" | each rule of G7-6, rule 0 (SALE) included, with an inconsistent link refused, writing nothing; the seller's thread about the buyer's opportunity accepted; the links protected afterwards as G7-12 (D) decides: under D2, never changed and the named parents' deletion refused; under D3, the narrower guarantee shown with its limit |
 | 4 | "phone decision can be linked to later written confirmation observation" | G7-10 end to end over HTTP |
 
 ### 6.2 Red-team and RFC-001 cases
@@ -750,6 +1108,7 @@ recommended:
 | **J03** | as claimed in G7-9 (6): **no content stored without a consent valid at write time**, in messages, in the event store and in logs. Retention is not claimed |
 | **S41** | a wrong or missing relay signature is 401 before any write. The test's own wording: it proves the relay's origin, not Meta's |
 | **S42** | a replay of a completed event is 200, with no duplicate |
+| **G7-2 (iv)** | the four failure tests: a failure in processing, a stop after RECEIVED, a failure of the status update, a replay during the claim |
 | **K05** | each staff POST replays with its key; another body on the key is 409 |
 | **K06** | not claimed; trigger-level guards listed as trigger level |
 
@@ -768,8 +1127,10 @@ As Slice 6's:
   run;
 - the writes to the four tables inventoried **by kind**;
 - **the event store's RECEIVED and FAILED counts** at the end of the run;
-- **the triggers on `communication_threads`** (D1's limit);
 - **the trust boundary of G7-2 (ii), as worded there;**
+- **condition R-1 listed as UNMET** if (a2) is chosen;
+- **the trigger functions that update `communication_threads` or
+  `communication_messages`,** if D3 is chosen;
 - Slice 6's carried limits, none as proven.
 
 ### 6.5 Step 0: done
@@ -790,8 +1151,9 @@ identical results, and are ours.
 3. **A provider message identity is global** (J02), the NULL case included.
 4. **An unverified webhook writes nothing** (S41). Its check is described
    as the relay's origin, never as Meta's signature.
-5. **Thread links are consistent at creation, SALE checked, and frozen,**
-   with the FK's SET NULL working (G7-6, G7-12 (D)).
+5. **Thread links are consistent at creation, SALE checked, and protected
+   as G7-12 (D) decides** (D2: never changed; D3: never re-pointed, with its
+   stated limit).
 6. **A phone decision's confirmation link is append-only,** and claims no
    legal value.
 7. **No content is stored without a consent valid at write time,** in any
@@ -800,6 +1162,10 @@ identical results, and are ours.
    test.
 9. **The writes to the four tables are exactly those decided,** by kind.
 10. **SALE only,** checked (G4-5R open). **K06 UNPROVEN.** **No AI.**
+11. **A processing failure is recorded,** or the event keeps its previous
+    status, and no half-written message remains (G7-2 (iv)).
+12. **Condition R-1** (if (a2) is chosen) is listed as UNMET. Meta's
+    verification is never counted as done in this slice.
 
 ---
 
@@ -808,9 +1174,9 @@ identical results, and are ours.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
-| 1 | migration `0008`, as G7-12 decides; tests, mutations | G7-4, G7-5, G7-6, G7-12; the text approved in revision 3 |
+| 1 | migration `0008`, as G7-12 decides; tests, mutations | G7-4, G7-5, G7-12 with D2 or D3 chosen; the text of §5.1 approved |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11 |
-| 3 | the webhook: body limit, verification, the content-free event store, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15 |
+| 3 | the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 or G7-2 (v) (b) |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 
