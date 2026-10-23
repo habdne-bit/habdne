@@ -5,7 +5,7 @@
 
 - Rules and invariants covered: **189**
 - Distinct tests cited: **608**
-- Suite total: **2576/2576** test cases passing (1467 distinct test functions)
+- Suite total: **2609/2609** test cases passing (1488 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
