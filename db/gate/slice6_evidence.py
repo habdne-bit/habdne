@@ -159,11 +159,12 @@ DECISIONS = (
       f"{S5}::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit")),
     ("F6-22", "the title by type and subject entity: CONFIRM_PRICE on the REQUEST is "
               "\"Confirm the request's maximum budget\"; on a PROPERTY_OFFER the offer's title "
-              "stays; a row stored before keeps its title (no path updates one)",
+              "stays; a row stored before keeps its old title, also after DONE (no path updates "
+              "one); work raised again later is a new task, with the corrected title",
      "fixed (`matching_run.py`)",
      (f"{S5}::test_f6_22_the_request_tasks_title_names_the_request",
       f"{S5}::test_f6_22_an_offer_subject_keeps_the_offers_title",
-      f"{S5}::test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done",
+      f"{S5}::test_f6_22_an_old_title_stays_after_done_and_new_work_gets_the_corrected_title",
       f"{S5}::test_a_high_task_shared_by_two_properties_names_only_the_request")),
 )
 #: F6-22's decided title, as `matching_run.py` must fix it.
@@ -377,8 +378,10 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
                 f"(`{STORED_TITLES.relative_to(ROOT)}`): "
                 + ("; ".join(f"`{line}`" for line in stored) or "none")
                 + ". Test data of the suite's database, dropped at its next session; no "
-                "path updates a title, so such a row keeps it until DONE "
-                "(`test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`)."]
+                "path updates a title, so such a row keeps its old title, also after "
+                "it is DONE; a later run that raises the work again creates a new row "
+                "with the corrected title "
+                "(`test_f6_22_an_old_title_stays_after_done_and_new_work_gets_the_corrected_title`)."]
     else:
         problems.append(f"F6-22: the record {STORED_TITLES.relative_to(ROOT)} is absent")
 

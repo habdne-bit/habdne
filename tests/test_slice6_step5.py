@@ -418,15 +418,21 @@ def test_f6_22_an_offer_subject_keeps_the_offers_title(client, engine, ids):
     assert task["title"] == "Confirm the offer's price terms"
 
 
-def test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done(client, engine, ids):
+def test_f6_22_an_old_title_stays_after_done_and_new_work_gets_the_corrected_title(client, engine, ids):
     """The fate of a row stored before the fix (review of 3657973: a code
     change is not assumed to correct an existing row). The row is the run's
     own task, its title then set by SQL to the old one: the only way to hold,
     in this database, a row as the code before the fix wrote it (labelled so).
     - A later run changes nothing of it and raises nothing: the work is open,
       and no path updates a title.
-    - Completed over HTTP, it is DONE and keeps its old title.
-    - The next run raises the work again, under the new title.
+    - Completed over HTTP, it is DONE and KEEPS its old title: completing a
+      task does not change its title, and no path ever does.
+    - The next run raises the work again as a NEW task, which carries the
+      corrected title; the old row stays as it was.
+    Named `test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`
+    at ce8cfa0; renamed in the review of 1c27241, whose reading the old name
+    invited ("until DONE" suggested the title changes on completion). The
+    assertions are unchanged.
     The count of such rows actually stored is in
     `evidence/SLICE6-STEP5-F6-22-STORED-TITLES.txt`."""
     old = "Confirm the offer's price terms"

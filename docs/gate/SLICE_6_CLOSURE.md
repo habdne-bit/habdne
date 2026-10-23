@@ -87,11 +87,11 @@ reviewer did not re-run them independently.
      was, with its old title.
 
    Both are shown by
-   `test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`. *(The
-   documentary correction of the review of `3583b6a`: the earlier wording,
-   "keeps its title until it is DONE", suggested that the title changes on
-   completion. The test's name carries the same ambiguity; its assertions
-   do not, since they check the DONE row's old title.)*
+   `test_f6_22_an_old_title_stays_after_done_and_new_work_gets_the_corrected_title`. It was named
+   `test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done` at `ce8cfa0`, and renamed
+   after the closure (§6). *(The documentary correction of the review of
+   `3583b6a`: the earlier wording, "keeps its title until it is DONE",
+   suggested that the title changes on completion.)*
 
 ## 2. The steps, and the reviews that closed them
 
