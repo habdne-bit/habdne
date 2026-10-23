@@ -1,0 +1,32 @@
+TURAB — Slice 6 step 5: the end-to-end tests on 0fae42c's code
+================================================================
+Base   : 0fae42c (step 4 closed; src/ identical to the step 5 tree)
+How    : tests/test_slice6_step5.py copied into a worktree of 0fae42c and run
+         there, against PostgreSQL 16, the venv on PATH.
+
+RESULT
+PASSED tests/test_slice6_step5.py::test_mandatory_1_over_http_the_document_task_outranks_the_new_location
+PASSED tests/test_slice6_step5.py::test_mandatory_2_over_http_three_hard_failures_raise_no_task
+PASSED tests/test_slice6_step5.py::test_mandatory_3_over_http_the_magnitudes_after_the_document_fails
+PASSED tests/test_slice6_step5.py::test_a_high_task_shared_by_two_offers_names_no_match_and_is_understood
+PASSED tests/test_slice6_step5.py::test_a_high_task_shared_by_two_properties_names_only_the_request
+PASSED tests/test_slice6_step5.py::test_f6_22_measured_the_request_tasks_title_names_an_offer
+PASSED tests/test_slice6_step5.py::test_i03_a_scenario_changes_no_request_and_an_explicit_criterion_does
+PASSED tests/test_slice6_step5.py::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit
+PASSED tests/test_slice6_step5.py::test_f6_21_measured_the_staff_match_carries_the_expectation_as_slice_4_decided
+PASSED tests/test_slice6_step5.py::test_g06_a_run_with_no_candidate_writes_an_empty_valid_format_2_that_replays
+PASSED tests/test_slice6_step5.py::test_limit_the_replay_does_not_read_the_diagnostics_own_input_hash
+11 passed, 1 warning in 11.57s
+
+READING
+  * 11 of 11 pass on 0fae42c, as they must: step 5 adds no code. Its tests
+    prove, end to end over HTTP, behaviour steps 1-4 delivered; a defect
+    they found would be measured here before any fix. None was fixed.
+  * Two tests are MEASUREMENTS, not decisions, put to the reviewer:
+    - test_f6_21_...: the staff match of the run's 201 body, and its audit
+      row, carry seller_expectation_dzd (Slice 4 §3.5, decided). §6.2's D02,
+      as worded, does not hold of them; it holds of what Slice 6 adds.
+    - test_f6_22_...: the REQUEST's own work (maximum not stated) is typed
+      CONFIRM_PRICE, whose fixed title names an offer.
+  * One test states a LIMIT (review of 0fae42c):
+    test_limit_the_replay_does_not_read_the_diagnostics_own_input_hash.
