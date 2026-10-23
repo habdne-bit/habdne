@@ -1,0 +1,192 @@
+TURAB — Slice 6 step 4: the run's format-2 diagnostic and its tasks
+============================================================
+Base commit       : fd648e86b67275ffe35413b46ebdcb9d9f06f623
+Source fingerprint: 2858511a5bfc1798b3eeb6f3d11977701df9065967b29e55ccd8de5bfa0fcbde
+Working tree      : CLEAN
+Recorded          : 2026-10-23 17:30:05 UTC
+Test file         : tests/test_slice6_step4.py
+
+=== baseline (no mutation) ===
+   13 passed, 1 warning in 6.79s
+== W1 no suggestion written [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   5 failed, 8 passed, 1 warning in 6.27s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_normal_suggestions_raise_no_task
+   cause: AssertionError: assert set() == {'NORMAL'}
+   cause: AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+   cause: E   AssertionError: assert set() == {'NORMAL'}
+   cause: E   AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: E   assert ([])
+== W2 no scenario written [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 6.58s
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   cause: AssertionError: assert ([{'key': 'VERIFY_DOCUMENT|PROPERTY|bf7abe5c-6056-44b3-9e78-28f8822fb64a|INFORMATION|DOCUMENT_TYPE#1|ATTRIBUTE_NOT_RECO...56-44b3-9e78-28f8822fb64a
+   cause: E   AssertionError: assert ([{'key': 'VERIFY_DOCUMENT|PROPERTY|bf7abe5c-6056-44b3-9e78-28f8822fb64a|INFORMATION|DOCUMENT_TYPE#1|ATTRIBUTE_NOT_RECO...56-44b3-9e78-28f8822f
+== W3 the evaluated matches not recorded [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   3 failed, 10 passed, 1 warning in 6.66s
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   cause: AssertionError: assert [] == ['NEW', 'NEW']
+   cause: AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+   cause: E   AssertionError: assert [] == ['NEW', 'NEW']
+   cause: E   AssertionError: assert {'R': [], 'D'...inputs give']} == {'R': [], 'D': []}
+== W4 every match recorded NEW [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   3 failed, 10 passed, 1 warning in 6.55s
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   cause: AssertionError: assert ['NEW', 'NEW'] == ['EXISTING', 'EXISTING']
+   cause: AssertionError: assert {'R': ['evalu...un'], 'D': []} == {'R': [], 'D': []}
+   cause: E   AssertionError: assert ['NEW', 'NEW'] == ['EXISTING', 'EXISTING']
+   cause: E   AssertionError: assert {'R': ['evalu...un'], 'D': []} == {'R': [], 'D': []}
+== W5 the chains not in the input hash [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 6.78s
+   FAILED test_the_input_hash_covers_the_requested_chains
+   cause: AssertionError: assert '2db870bc4d04fe7838d98e8664c58afdfe7d403a81b4f457856a44c15ab54cfa' != '2db870bc4d04fe7838d98e8664c58afdfe7d403a81b4f457856a44c15ab54cfa'
+   cause: E   AssertionError: assert '2db870bc4d04fe7838d98e8664c58afdfe7d403a81b4f457856a44c15ab54cfa' != '2db870bc4d04fe7838d98e8664c58afdfe7d403a81b4f457856a44c15ab54cfa'
+== W6 the chains not read [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   2 failed, 11 passed, 1 warning in 7.09s
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   FAILED test_the_input_hash_covers_the_requested_chains
+   cause: AssertionError: assert '3643fbe4677b4653ae5b65d7763c64ab1a30702bde9c11069cfde003118f23a7' != '3643fbe4677b4653ae5b65d7763c64ab1a30702bde9c11069cfde003118f23a7'
+   cause: E   AssertionError: assert '3643fbe4677b4653ae5b65d7763c64ab1a30702bde9c11069cfde003118f23a7' != '3643fbe4677b4653ae5b65d7763c64ab1a30702bde9c11069cfde003118f23a7'
+   cause: E   RuntimeError: a requested location has no stored chain; the scenario cannot be stated (F6-10)
+   cause: RuntimeError: a requested location has no stored chain; the scenario cannot be stated (F6-10)
+== T1 no task raised [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   8 failed, 5 passed, 1 warning in 6.07s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_a_task_failure_other_than_open_work_fails_the_run_writing_nothing
+   FAILED test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+   FAILED test_every_diagnostic_task_carries_a_complete_key
+   FAILED test_g6_10_a_task_whose_cause_has_gone_stays_open
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_work_taken_up_is_not_raised_again_and_done_work_is
+   cause: AssertionError: assert 1 == 2
+   cause: E   AssertionError: assert 1 == 2
+   cause: E   KeyError: 'code'
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: E   assert []
+   cause: KeyError: 'code'
+== T2 NORMAL suggestions raise tasks [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 6.98s
+   FAILED test_normal_suggestions_raise_no_task
+   cause: AssertionError: assert [{'task_id': ... 'OPEN', ...}] == []
+   cause: E   AssertionError: assert [{'task_id': ... 'OPEN', ...}] == []
+== T3 every task error swallowed [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 6.77s
+   FAILED test_a_task_failure_other_than_open_work_fails_the_run_writing_nothing
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== T4 open work not skipped [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   6 failed, 7 passed, 2 warnings in 6.39s
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   FAILED test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_the_input_hash_covers_the_requested_chains
+   FAILED test_work_taken_up_is_not_raised_again_and_done_work_is
+   cause: E   KeyError: 'b'
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+   cause: KeyError: 'b'
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_one_open_task_per_subject"
+== T5 no savepoint around the insert [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   6 failed, 7 passed, 2 warnings in 6.46s
+   FAILED test_a_row_the_run_wrote_is_format_2_and_replays
+   FAILED test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_the_input_hash_covers_the_requested_chains
+   FAILED test_work_taken_up_is_not_raised_again_and_done_work_is
+   cause: E   KeyError: 'b'
+   cause: E   psycopg.errors.InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block
+   cause: E   sqlalchemy.exc.InternalError: (psycopg.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+   cause: KeyError: 'b'
+   cause: sqlalchemy.exc.InternalError: (psycopg.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+== T6 the source not stated [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   7 failed, 6 passed, 1 warning in 6.07s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+   FAILED test_every_diagnostic_task_carries_a_complete_key
+   FAILED test_g6_10_a_task_whose_cause_has_gone_stays_open
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_work_taken_up_is_not_raised_again_and_done_work_is
+   cause: AssertionError: assert 3 == 2
+   cause: E   AssertionError: assert 3 == 2
+   cause: E   KeyError: 'source'
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: KeyError: 'source'
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== T7 the basis left out of the subject [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   6 failed, 7 passed, 1 warning in 6.70s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+   FAILED test_every_diagnostic_task_carries_a_complete_key
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_work_taken_up_is_not_raised_again_and_done_work_is
+   cause: AssertionError: assert 2 == 1
+   cause: AssertionError: assert 3 == 2
+   cause: AssertionError: assert {'criterion',...d', 'ordinal'} == {'basis', 'cr...d', 'ordinal'}
+   cause: AssertionError: {'request_id': UUID('20bb908c-0912-44ce-afbe-496f043c2b37'), 'payload': {'source': 'DIAGNOSTIC', 'subject': {'id': '34... 'INFORMATION', 'entity': 'PROPER
+   cause: E   AssertionError: assert 2 == 1
+   cause: E   AssertionError: assert 3 == 2
+== T8 the diagnostic not named [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   4 failed, 9 passed, 1 warning in 6.99s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   FAILED test_g6_4_re_run_writes_a_second_diagnostic_and_no_new_task
+   FAILED test_work_taken_up_is_not_raised_again_and_done_work_is
+   cause: AssertionError: assert None == '30e7d943-b4d5-467c-ba4c-d4e6c1c99aa3'
+   cause: AssertionError: assert None == '42e986e0-1d59-461c-bdb9-7603ec30140a'
+   cause: AssertionError: assert None == 'ce32bffd-3c1b-41c1-bd7e-d52a7b6b2319'
+   cause: AssertionError: assert [None] == ['260b95df-e1...a5e22e1bc4c6']
+   cause: E   AssertionError: assert None == '30e7d943-b4d5-467c-ba4c-d4e6c1c99aa3'
+   cause: E   AssertionError: assert None == '42e986e0-1d59-461c-bdb9-7603ec30140a'
+== T9 the property not named [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 6.96s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   cause: AssertionError: assert (UUID('e22ac2...ab0ab68cf39b') == (UUID('e22ac2...ab0ab68cf39b')
+   cause: E   AssertionError: assert (UUID('e22ac2...ab0ab68cf39b') == (UUID('e22ac2...ab0ab68cf39b')
+== T10 the match not named [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   3 failed, 10 passed, 1 warning in 7.11s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_an_nmi_task_and_a_diagnostic_task_are_independent_records
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   cause: AssertionError: assert (UUID('bcac13...176'), 'None') == (UUID('bcac13...d4f43439899e')
+   cause: AssertionError: assert 1 == 2
+   cause: AssertionError: assert 422 == 200
+   cause: E   AssertionError: assert (UUID('bcac13...176'), 'None') == (UUID('bcac13...d4f43439899e')
+   cause: E   AssertionError: assert 1 == 2
+   cause: E   AssertionError: assert 422 == 200
+== T11 the task stored NORMAL [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   2 failed, 11 passed, 1 warning in 6.74s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   cause: AssertionError: assert ('VERIFY_DOCU...NT_NOT_KNOWN') == ('VERIFY_DOCU...NT_NOT_KNOWN')
+   cause: E   AssertionError: assert ('VERIFY_DOCU...NT_NOT_KNOWN') == ('VERIFY_DOCU...NT_NOT_KNOWN')
+== T12 the task not audited [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   2 failed, 11 passed, 1 warning in 6.98s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_a_task_failure_other_than_open_work_fails_the_run_writing_nothing
+   cause: E   KeyError: 'code'
+   cause: E   assert 0 == 1
+   cause: KeyError: 'code'
+   cause: assert 0 == 1
+== T13 the reason not kept [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   2 failed, 11 passed, 1 warning in 7.01s
+   FAILED test_a_high_suggestion_raises_one_task_with_its_subject
+   FAILED test_g6_4_concurrent_runs_raise_one_task_and_staff_see_a_self_contained_task
+   cause: AssertionError: assert ('VERIFY_DOCU... 'HIGH', None) == ('VERIFY_DOCU...NT_NOT_KNOWN')
+   cause: E   AssertionError: assert ('VERIFY_DOCU... 'HIGH', None) == ('VERIFY_DOCU...NT_NOT_KNOWN')
+   cause: E   assert ('VERIFY_DOCU...cument", None) == ('VERIFY_DOCU...NT_NOT_KNOWN')
+   cause: assert ('VERIFY_DOCU...cument", None) == ('VERIFY_DOCU...NT_NOT_KNOWN')
+
+SURVIVING MUTATIONS: none

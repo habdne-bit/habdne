@@ -1,35 +1,35 @@
 TURAB — Slice 6 step 5: the mandatory and red-team tests end to end
 ============================================================
-Base commit       : 15032f27b1d4d2614e4590e96d6455db0cfffc0d
-Source fingerprint: 0d163596aeeb4987894daed6b884ce92b6b0071825770a57654c9a3fe378a9e8
+Base commit       : fd648e86b67275ffe35413b46ebdcb9d9f06f623
+Source fingerprint: 2858511a5bfc1798b3eeb6f3d11977701df9065967b29e55ccd8de5bfa0fcbde
 Working tree      : CLEAN
-Recorded          : 2026-10-23 16:34:17 UTC
+Recorded          : 2026-10-23 17:22:43 UTC
 Test file         : tests/test_slice6_step5.py
 
 === baseline (no mutation) ===
-   11 passed, 1 warning in 12.30s
+   13 passed, 1 warning in 11.86s
 == M1 the location is not subordinate to the document's work [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   1 failed, 10 passed, 1 warning in 11.41s
+   1 failed, 12 passed, 1 warning in 11.84s
    FAILED test_mandatory_1_over_http_the_document_task_outranks_the_new_location
    cause: AssertionError: assert ('LOCATION', 'WIDEN_AREA', []) == ('LOCATION', ...OT_RECORDED'])
    cause: E   AssertionError: assert ('LOCATION', 'WIDEN_AREA', []) == ('LOCATION', ...OT_RECORDED'])
 == M2 a REJECTED candidate gets work [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   1 failed, 10 passed, 1 warning in 10.46s
+   1 failed, 12 passed, 1 warning in 11.77s
    FAILED test_mandatory_2_over_http_three_hard_failures_raise_no_task
    cause: AssertionError: assert ([{'key': 'CO....}, ...}], []) == ([], [])
    cause: E   AssertionError: assert ([{'key': 'CO....}, ...}], []) == ([], [])
 == M3 three failures make a near match [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   1 failed, 10 passed, 1 warning in 11.59s
+   1 failed, 12 passed, 1 warning in 11.91s
    FAILED test_mandatory_2_over_http_three_hard_failures_raise_no_task
    cause: E   RuntimeError: a near match was given no eligibility to reach
    cause: RuntimeError: a near match was given no eligibility to reach
-== M4 a rejected candidate's unknown is actionable [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 475ba4f0fb9d6f7d identical
-   1 failed, 10 passed, 1 warning in 11.69s
+== M4 a rejected candidate's unknown is actionable [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 87866e4c2c124254 identical
+   1 failed, 12 passed, 1 warning in 12.55s
    FAILED test_mandatory_2_over_http_three_hard_failures_raise_no_task
    cause: AssertionError: assert {'blocking': ..._blocking': 0} == {'blocking': ...igh_value': 0}
    cause: E   AssertionError: assert {'blocking': ..._blocking': 0} == {'blocking': ...igh_value': 0}
 == M5 the budget delta reversed [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   3 failed, 8 passed, 1 warning in 10.66s
+   3 failed, 10 passed, 1 warning in 12.37s
    FAILED test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit
    FAILED test_i03_a_scenario_changes_no_request_and_an_explicit_criterion_does
    FAILED test_mandatory_3_over_http_the_magnitudes_after_the_document_fails
@@ -40,55 +40,72 @@ Test file         : tests/test_slice6_step5.py
    cause: assert -1500000 == 1500000
    cause: assert -2000000 == 2000000
 == M6 not stated at the asking price [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   1 failed, 10 passed, 1 warning in 11.09s
+   1 failed, 12 passed, 1 warning in 11.64s
    FAILED test_mandatory_3_over_http_the_magnitudes_after_the_document_fails
    cause: AssertionError: assert ('RAISE_MAXIM...zd': 1500000}) == ('RAISE_MAXIM...SKING_PRICE'})
    cause: E   AssertionError: assert ('RAISE_MAXIM...zd': 1500000}) == ('RAISE_MAXIM...SKING_PRICE'})
 == M7 a document scenario without the user's choice [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   1 failed, 10 passed, 1 warning in 11.86s
+   1 failed, 12 passed, 1 warning in 11.61s
    FAILED test_mandatory_3_over_http_the_magnitudes_after_the_document_fails
    cause: E   KeyError: 'only_if_user_chooses'
    cause: KeyError: 'only_if_user_chooses'
-== S1 a shared work's match chosen arbitrarily [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 7425d8f173faa5de identical
-   2 failed, 9 passed, 1 warning in 11.69s
+== S1 a shared work's match chosen arbitrarily [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   2 failed, 11 passed, 1 warning in 11.35s
    FAILED test_a_high_task_shared_by_two_offers_names_no_match_and_is_understood
    FAILED test_a_high_task_shared_by_two_properties_names_only_the_request
-   cause: AssertionError: assert ('4dfd7b29-12...3658deb6ac23') == (None, '77eb5...3658deb6ac23')
-   cause: AssertionError: assert ('cb237e4f-57...699ff5', None) == ('cb237e4f-57...e, None, None)
-   cause: E   AssertionError: assert ('4dfd7b29-12...3658deb6ac23') == (None, '77eb5...3658deb6ac23')
-   cause: E   AssertionError: assert ('cb237e4f-57...699ff5', None) == ('cb237e4f-57...e, None, None)
-== S2 a shared PROPERTY subject loses its property [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 7425d8f173faa5de identical
-   1 failed, 10 passed, 1 warning in 10.60s
+   cause: AssertionError: assert ('05e79202-36...3f48c4614ee9') == (None, 'a5ad6...3f48c4614ee9')
+   cause: AssertionError: assert ('61bd9b5e-0e...010bea', None) == ('61bd9b5e-0e...e, None, None)
+   cause: E   AssertionError: assert ('05e79202-36...3f48c4614ee9') == (None, 'a5ad6...3f48c4614ee9')
+   cause: E   AssertionError: assert ('61bd9b5e-0e...010bea', None) == ('61bd9b5e-0e...e, None, None)
+== S2 a shared PROPERTY subject loses its property [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 11.79s
    FAILED test_a_high_task_shared_by_two_offers_names_no_match_and_is_understood
-   cause: AssertionError: assert (None, None, ...149d44935d17') == (None, 'ca774...149d44935d17')
-   cause: E   AssertionError: assert (None, None, ...149d44935d17') == (None, 'ca774...149d44935d17')
+   cause: AssertionError: assert (None, None, ...e685a3021efa') == (None, 'c7937...e685a3021efa')
+   cause: E   AssertionError: assert (None, None, ...e685a3021efa') == (None, 'c7937...e685a3021efa')
 == S3 a shared subject is not merged [src/turab/matching/diagnostic_rules.py, 1 site(s)]  restored: sha256 7b3187acadb07289 identical
-   1 failed, 10 passed, 1 warning in 10.45s
+   1 failed, 12 passed, 1 warning in 12.82s
    FAILED test_a_high_task_shared_by_two_properties_names_only_the_request
    cause: E   ValueError: too many values to unpack (expected 1)
    cause: ValueError: too many values to unpack (expected 1)
 == S4 the completion does not mark the task DONE [src/turab/services/tasks.py, 1 site(s)]  restored: sha256 65e0e3b4f133ed18 identical
-   1 failed, 10 passed, 1 warning in 10.92s
+   2 failed, 11 passed, 1 warning in 11.60s
    FAILED test_a_high_task_shared_by_two_offers_names_no_match_and_is_understood
+   FAILED test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done
    cause: AssertionError: assert 'OPEN' == 'DONE'
    cause: E   AssertionError: assert 'OPEN' == 'DONE'
-== R1 I03: the run writes the request [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 7425d8f173faa5de identical
-   1 failed, 10 passed, 1 warning in 11.65s
+== R1 I03: the run writes the request [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 11.89s
    FAILED test_i03_a_scenario_changes_no_request_and_an_explicit_criterion_does
    cause: AssertionError: assert {'request_id'...': 'BUY', ...} == {'request_id'...': 'BUY', ...}
    cause: E   AssertionError: assert {'request_id'...': 'BUY', ...} == {'request_id'...': 'BUY', ...}
-== R2 D02: the commercial terms copied into the diagnostic [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 7425d8f173faa5de identical
-   2 failed, 9 passed, 1 warning in 10.50s
+== R2 D02: the commercial terms copied into the diagnostic [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   2 failed, 11 passed, 1 warning in 12.20s
    FAILED test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit
-   FAILED test_f6_21_measured_the_staff_match_carries_the_expectation_as_slice_4_decided
+   FAILED test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness
    cause: AssertionError: GET diagnostic
    cause: AssertionError: assert 25000000 not in [1, 1, 1, 3, 26000000, 25000000, ...]
    cause: E   AssertionError: GET diagnostic
    cause: E   AssertionError: assert 25000000 not in [1, 1, 1, 3, 26000000, 25000000, ...]
-== R3 G06: the exclusions not counted [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 475ba4f0fb9d6f7d identical
-   1 failed, 10 passed, 1 warning in 11.11s
+== R3 G06: the exclusions not counted [src/turab/matching/diagnostic.py, 1 site(s)]  restored: sha256 87866e4c2c124254 identical
+   1 failed, 12 passed, 1 warning in 11.31s
    FAILED test_g06_a_run_with_no_candidate_writes_an_empty_valid_format_2_that_replays
    cause: AssertionError: assert ('turab.block...2', [], 0, {}) == ('turab.block...NG_OFFER': 1})
    cause: E   AssertionError: assert ('turab.block...2', [], 0, {}) == ('turab.block...NG_OFFER': 1})
+== T1 the REQUEST's work under the offer's title [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   3 failed, 10 passed, 1 warning in 12.54s
+   FAILED test_a_high_task_shared_by_two_properties_names_only_the_request
+   FAILED test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done
+   FAILED test_f6_22_the_request_tasks_title_names_the_request
+   cause: E   assert "Confirm the ...s price terms" == 'Confirm the ...aximum budget'
+   cause: E   assert ('CONFIRM_PRI... price terms") == ('CONFIRM_PRI...ximum budget')
+   cause: E   assert ('OPEN', "Con... price terms") == ('OPEN', 'Con...ximum budget')
+   cause: assert "Confirm the ...s price terms" == 'Confirm the ...aximum budget'
+   cause: assert ('CONFIRM_PRI... price terms") == ('CONFIRM_PRI...ximum budget')
+   cause: assert ('OPEN', "Con... price terms") == ('OPEN', 'Con...ximum budget')
+== T2 the request's title on every subject of the type [src/turab/services/matching_run.py, 1 site(s)]  restored: sha256 a0abb37e23c5f422 identical
+   1 failed, 12 passed, 1 warning in 12.06s
+   FAILED test_f6_22_an_offer_subject_keeps_the_offers_title
+   cause: E   assert 'Confirm the ...aximum budget' == "Confirm the ...s price terms"
+   cause: assert 'Confirm the ...aximum budget' == "Confirm the ...s price terms"
 
 SURVIVING MUTATIONS: none
