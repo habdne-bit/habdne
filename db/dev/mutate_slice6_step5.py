@@ -8,7 +8,8 @@ of `tests/test_slice6_step5.py` claims (plan revision 13; §6.1, §6.2, the
 review of 0fae42c). The rule may sit in any module the HTTP path reaches:
 - M: the three mandatory tests (§6.1);
 - S: the HIGH task shared by two candidates (review of 0fae42c);
-- R: the red-team cases I03, D02 / R9.3, G06 (§6.2).
+- R: the red-team cases I03, D02 / R9.3, G06 (§6.2);
+- T: the title of F6-22, decided in the review of 3657973.
 
 Only `tests/test_slice6_step5.py` is run, so a kill is this file's, not an
 earlier step's. See `mutation_runner.py`.
@@ -73,6 +74,12 @@ MUTATIONS = [
     ("R3 G06: the exclusions not counted", WIRING,
      '        "excluded_counts": _excluded_counts(excluded),',
      '        "excluded_counts": {},'),
+    # --- T: F6-22 (review of 3657973) ---------------------------------------------------
+    ("T1 the REQUEST's work under the offer's title", RUN,
+     '    ("CONFIRM_PRICE", "REQUEST"): "Confirm the request\'s maximum budget",\n', ""),
+    ("T2 the request's title on every subject of the type", RUN,
+     "    return DIAGNOSTIC_TASK_TITLES_BY_SUBJECT.get((task_type, entity),",
+     "    return DIAGNOSTIC_TASK_TITLES_BY_SUBJECT.get((task_type, \"REQUEST\"),"),
 ]
 
 if __name__ == "__main__":

@@ -120,6 +120,14 @@ DIAGNOSTIC_TASK_TITLES = {
     "CONFIRM_PRICE": "Confirm the offer's price terms",
     "OTHER": "Obtain the missing information",
 }
+#: F6-22 (review of 3657973): where the type's title would name another entity
+#: than the subject's, the title is fixed by the type AND the subject's entity.
+#: CONFIRM_PRICE on the REQUEST is its own maximum, not stated; on a
+#: PROPERTY_OFFER the type's title stays. Not a registered function: no
+#: registry digest or input hash depends on it.
+DIAGNOSTIC_TASK_TITLES_BY_SUBJECT = {
+    ("CONFIRM_PRICE", "REQUEST"): "Confirm the request's maximum budget",
+}
 #: G6-4 (ii): the subject a task's payload names; G6-4 (iii)'s key.
 SUBJECT_KEYS = ("entity", "id", "gate", "criterion", "ordinal", "basis")
 #: The policy faults of plan §3.1: two codes, both 500, each with a FIXED
@@ -415,6 +423,12 @@ def _requested_locations(plan: criteria.CriteriaPlan) -> list:
     return out
 
 
+def _title(task_type: str, entity: str) -> str:
+    """G6-4 (ii) and F6-22: the fixed title of a diagnostic task."""
+    return DIAGNOSTIC_TASK_TITLES_BY_SUBJECT.get((task_type, entity),
+                                                 DIAGNOSTIC_TASK_TITLES[task_type])
+
+
 def _raise_tasks(session: Session, prepared: Prepared, diagnostic_id: uuid.UUID,
                  actions: list[dict], evaluated: list[dict]) -> list[uuid.UUID]:
     """G6-4 (a): one task per HIGH entry, after the diagnostic row.
@@ -450,7 +464,7 @@ def _raise_tasks(session: Session, prepared: Prepared, diagnostic_id: uuid.UUID,
                     VALUES (CAST(:type AS turab.task_type), 'HIGH', :title, :reason, :r,
                             :p, :m, CAST(:payload AS jsonb))
                     RETURNING task_id"""), {
-                    "type": action["type"], "title": DIAGNOSTIC_TASK_TITLES[action["type"]],
+                    "type": action["type"], "title": _title(action["type"], subject["entity"]),
                     "reason": subject.get("reason_code"), "r": prepared.request_id,
                     "p": property_id, "m": match_id, "payload": _json(payload)}).scalar_one()
                 audit_rows.write(session, "tasks", task_id, "INSERT", None,

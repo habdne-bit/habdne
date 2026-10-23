@@ -20,8 +20,11 @@ Two checks, kept apart, and a failure names which:
   evaluated matches are never inferred from `evaluated_at` (F6-11), and
   `tasks` is never read (G6-4 (iii)).
 
-Reads only. Step 3 writes no format-2 row; the tests replay documents built
-by `compute` from real stored matches.
+Reads only. Since step 4 the run writes format-2 rows, and the tests replay
+those rows as the database holds them. **A stated limit** (review of
+0fae42c; plan §5.4): the diagnostic row's own `input_hash`
+(`turab.diagnostic-input/2`) is neither recomputed nor compared, so a replay
+with no problem is not a proof that every input of that hash is sound.
 """
 from __future__ import annotations
 

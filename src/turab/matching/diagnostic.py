@@ -1,12 +1,13 @@
-"""The diagnostic's computed parts, and their replay (Slice 6 step 3).
+"""The diagnostic's computed parts, and their replay (Slice 6 steps 3 and 4).
 
 Ref: `docs/gate/SLICE_6_PLAN.md` G6-2, G6-3, G6-5, G6-6, G6-7, G6-11,
 decided in the review of bd54216; §3.5 (replayable); F6-2, F6-10, F6-11.
 
-**Step 3 writes nothing.** The run (`services/matching_run.py`) still
-writes `blocker_summary` format 1 and empty suggestions; step 4 makes it
-write what `compute` returns. Until then nothing calls `compute` but the
-tests.
+**Who calls `compute`.** The run (`services/matching_run.py`, since step 4)
+calls it once per run and writes what it returns: `blocker_summary` format
+2, `suggested_actions` and `relaxation_scenarios`, then raises the tasks of
+the HIGH suggestions (G6-4). The replay (`services/diagnostic_replay.py`)
+calls it again on the stored inputs, with the versions the row records.
 
 **One input, for the run and for the replay.** `candidate_record` builds a
 candidate's record from its STORED match (`matching_run.match_view`): the

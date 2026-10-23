@@ -93,8 +93,13 @@ def test_s6_the_baseline_states_the_limits_the_findings_and_k06(tree):
     assert f"`{slice6_evidence.REPLAY_LIMIT}` measured (LIMIT)" in text
     assert "`explain.blocker_summary` is not pinned" in text
     assert "a pin naming `blocker_summary`: none." in text
-    for fid, _, name in slice6_evidence.FINDINGS:
-        assert f"| {fid} |" in text and f"`{name}` | measured |" in text
+    assert "## 6. Findings decided in the review of `3657973`" in text
+    for fid, _, held, tests in slice6_evidence.DECISIONS:
+        for name in tests:
+            assert f"| {fid} |" in text and f"| {held} | `{name}` | PASS |" in text
+    assert "\"Confirm the request's maximum budget\"." in text
+    assert "`CONFIRM_PRICE | REQUEST | Confirm the offer's price terms | OPEN | 2`" in text
+    assert "measured |" not in text.split("## 6.")[1].split("## 7.")[0]
     assert "| UPDATE | `src/turab/services/tasks.py` | `src/turab/services/tasks.py` |" in text
 
 
@@ -104,7 +109,8 @@ def test_s6_the_baseline_states_the_limits_the_findings_and_k06(tree):
     "test_slice6_step4::test_an_older_match_is_superseded_in_the_queue_and_at_approval",
     "test_slice6_step2::test_the_task_is_locked_before_the_observation",
     slice6_evidence.REPLAY_LIMIT,
-    slice6_evidence.FINDINGS[0][2],
+    slice6_evidence.DECISIONS[0][3][0],
+    slice6_evidence.DECISIONS[1][3][2],
 ])
 def test_s6_a_mapped_test_that_is_absent_is_a_problem(tree, victim):
     cases = [_case(n) for n in sorted(slice6_evidence.mapped_names()) if n != victim]
@@ -114,7 +120,7 @@ def test_s6_a_mapped_test_that_is_absent_is_a_problem(tree, victim):
 
 @pytest.mark.parametrize("victim", [
     "test_slice6_step5::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit",
-    slice6_evidence.FINDINGS[1][2],
+    slice6_evidence.DECISIONS[1][3][0],
 ])
 def test_s6_a_mapped_test_that_failed_is_a_problem(tree, victim):
     cases = [_case(n, "fail" if n == victim else "pass")
@@ -177,6 +183,23 @@ def test_s6_a_slice_6_module_writing_a_request_is_a_problem(tree):
     path.write_text(path.read_text() + '\nSQL = "UPDATE turab.requests SET version = 1"\n')
     r = _regenerated_with(tree, _all_passing())
     assert r.returncode == 1 and "a Slice 6 module writes a request" in r.stderr
+
+
+def test_s6_the_old_request_title_back_in_the_code_is_a_problem(tree):
+    """F6-22: the decided title is computed from the tree, not only tested."""
+    path = tree / "src/turab/services/matching_run.py"
+    source = path.read_text()
+    old = '("CONFIRM_PRICE", "REQUEST"): "Confirm the request\'s maximum budget",'
+    assert source.count(old) == 1
+    path.write_text(source.replace(old, '("CONFIRM_PRICE", "REQUEST"): "Confirm the offer\'s price terms",'))
+    r = _regenerated_with(tree, _all_passing())
+    assert r.returncode == 1 and "F6-22: matching_run.py does not fix" in r.stderr
+
+
+def test_s6_the_stored_titles_record_absent_is_a_problem(tree):
+    (tree / "docs/gate/evidence/SLICE6-STEP5-F6-22-STORED-TITLES.txt").unlink()
+    r = _regenerated_with(tree, _all_passing())
+    assert r.returncode == 1 and "F6-22: the record" in r.stderr
 
 
 def test_s6_an_unbound_report_is_not_evidence(tree, tmp_path):

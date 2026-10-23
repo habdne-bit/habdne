@@ -21,9 +21,11 @@ output is written by hand.
 **Tests are named by module and name** (`test_slice6_step5::test_x`).
 
 **It refuses when:**
-- a mapped test is missing or failed, the measurements of F6-21 and F6-22
-  and the limit's test included (they record a state; a change of that state
-  without a decision is a problem);
+- a mapped test is missing or failed, the tests of the decisions on F6-21
+  and F6-22 and the limit's test included;
+- the title F6-22 decided is not the one `matching_run.py` fixes for a
+  CONFIRM_PRICE task on the REQUEST, or the record of the stored titles is
+  absent;
 - the source changed after the run, or the document is stale;
 - a write to `tasks` is not one decided (plan §7 condition 10): INSERT by
   `identity.py`, `match_review.py` and `matching_run.py` only; UPDATE by
@@ -37,8 +39,9 @@ output is written by hand.
 
 **Never PASS here:** K06 (UNPROVEN, G6-12; the refusals are listed as
 trigger-level); the two stated limits (the replay and the diagnostic's own
-`input_hash`; `explain.blocker_summary`, plan §5.4); the two findings F6-21
-and F6-22, which are MEASURED and put to the reviewer, not decided.
+`input_hash`; `explain.blocker_summary`, plan §5.4). The decisions on F6-21
+and F6-22 (review of 3657973) are listed with the tests that hold them: the
+boundary's witness for F6-21, the fix's tests for F6-22.
 
 Usage:
   db/gate/slice6_evidence.py [--junit PATH]           # write the document
@@ -93,7 +96,7 @@ RED_TEAM = (
      (f"{S5}::test_i03_a_scenario_changes_no_request_and_an_explicit_criterion_does",)),
     ("D02 / R9.3", "an expectation between the maximum and the asking price: the magnitude is "
                    "ask − max; the expectation reaches no diagnostic, task, task list or "
-                   "Slice 6 audit row (see F6-21 for the staff match)",
+                   "Slice 6 audit row; the staff match keeps it (F6-21, §6)",
      (f"{S5}::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit",
       f"{S3}::test_the_seller_expectation_is_never_stated_nor_used",
       f"{S2}::test_every_writers_task_is_listed_and_no_payload_carries_a_private_value")),
@@ -145,16 +148,28 @@ CONCURRENCY = (
      (f"{S2}::test_a_second_concurrent_completion_waits_and_is_refused",)),
 )
 
-#: Measured and put to the reviewer, never decided here: (id, what, test).
-FINDINGS = (
-    ("F6-21", "the staff match of the run's 201 body, and the match's audit row, carry "
-              "`seller_expectation_dzd` (Slice 4 §3.5, decided); §6.2's D02, as worded, "
-              "does not hold of them",
-     f"{S5}::test_f6_21_measured_the_staff_match_carries_the_expectation_as_slice_4_decided"),
-    ("F6-22", "the REQUEST's own work (its maximum not stated) is typed CONFIRM_PRICE, whose "
-              "fixed title names an offer; only the subject states the work",
-     f"{S5}::test_f6_22_measured_the_request_tasks_title_names_an_offer"),
+#: Decided in the review of 3657973: (id, decision, what holds it, tests).
+DECISIONS = (
+    ("F6-21", "documentary correction: §3.4 and §6.2's D02 bind what Slice 6 generates (the "
+              "diagnostic, its tasks, their audit), not every output of the run; Slice 4 §3.5 "
+              "keeps the expectation in the staff match's snapshot, and `API_CONTRACTS_v0.2.md` "
+              "§8 forbids its serialization to public and customer DTOs",
+     "the boundary's witness",
+     (f"{S5}::test_f6_21_the_staff_match_keeps_the_expectation_the_boundary_witness",
+      f"{S5}::test_d02_the_expectation_reaches_no_diagnostic_task_or_slice_6_audit")),
+    ("F6-22", "the title by type and subject entity: CONFIRM_PRICE on the REQUEST is "
+              "\"Confirm the request's maximum budget\"; on a PROPERTY_OFFER the offer's title "
+              "stays; a row stored before keeps its title (no path updates one)",
+     "fixed (`matching_run.py`)",
+     (f"{S5}::test_f6_22_the_request_tasks_title_names_the_request",
+      f"{S5}::test_f6_22_an_offer_subject_keeps_the_offers_title",
+      f"{S5}::test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done",
+      f"{S5}::test_a_high_task_shared_by_two_properties_names_only_the_request")),
 )
+#: F6-22's decided title, as `matching_run.py` must fix it.
+F6_22_TITLE = ('("CONFIRM_PRICE", "REQUEST")', "Confirm the request's maximum budget")
+#: The count of the tasks stored with the old title, before the fix.
+STORED_TITLES = ROOT / "docs" / "gate" / "evidence" / "SLICE6-STEP5-F6-22-STORED-TITLES.txt"
 
 #: The limit of the review of 0fae42c, measured.
 REPLAY_LIMIT = f"{S5}::test_limit_the_replay_does_not_read_the_diagnostics_own_input_hash"
@@ -186,8 +201,8 @@ STEP3_PINS = ("diagnostic.value@1", "diagnostic.actions@1", "diagnostic.relaxati
 
 
 def mapped_names() -> set[str]:
-    names = set(K06_TRIGGER_LEVEL) | {REPLAY_LIMIT} | {t for *_, t in FINDINGS}
-    for group in (MANDATORY, RED_TEAM, OBLIGATIONS):
+    names = set(K06_TRIGGER_LEVEL) | {REPLAY_LIMIT}
+    for group in (MANDATORY, RED_TEAM, OBLIGATIONS, DECISIONS):
         for *_, tests in group:
             names.update(tests)
     for _, tests in CONCURRENCY:
@@ -340,11 +355,32 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
             "replayed. Before any later change of it that affects the summary: keep the "
             "historical computation (or a version of it), and test the replay of an old "
             "row and of a new row.", "",
-            "## 6. Findings measured, put to the reviewer (never decided here)", "",
-            "| Finding | What is measured | Test | State recorded |", "|---|---|---|---|"]
-    for fid, what, name in FINDINGS:
-        out.append(f"| {fid} | {what} | `{name}` | "
-                   f"{_status(results, name, problems, fid, 'measured')} |")
+            "## 6. Findings decided in the review of `3657973`", "",
+            "| Finding | Decision | Held by | Test | Status |", "|---|---|---|---|---|"]
+    for fid, decision, held, tests in DECISIONS:
+        for name in tests:
+            out.append(f"| {fid} | {decision} | {held} | `{name}` | "
+                       f"{_status(results, name, problems, fid)} |")
+    run_source = (ROOT / "src/turab/services/matching_run.py").read_text(encoding="utf-8")
+    key, title = F6_22_TITLE
+    fixed = re.search(rf'^\s+{re.escape(key)}: "{re.escape(title)}",$', run_source, re.M)
+    if not fixed:
+        problems.append(f"F6-22: matching_run.py does not fix {title!r} for {key}")
+    out += ["", f"- **F6-22, computed from the tree:** `matching_run.py` fixes `{key}` → "
+            + (f"\"{title}\"." if fixed else "**NOT the decided title**.")]
+    if STORED_TITLES.exists():
+        record = STORED_TITLES.read_text(encoding="utf-8")
+        after = record[record.find("== AFTER"):record.find("READING")]
+        stored = [line.strip() for line in after.splitlines()
+                  if line.strip().startswith("CONFIRM_PRICE | REQUEST |")]
+        out += ["- **F6-22, the tasks stored with the old title before the fix** "
+                f"(`{STORED_TITLES.relative_to(ROOT)}`): "
+                + ("; ".join(f"`{line}`" for line in stored) or "none")
+                + ". Test data of the suite's database, dropped at its next session; no "
+                "path updates a title, so such a row keeps it until DONE "
+                "(`test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`)."]
+    else:
+        problems.append(f"F6-22: the record {STORED_TITLES.relative_to(ROOT)} is absent")
 
     ops = _routed()
     missing_ops = [o for o in OPERATIONS if o not in ops]
