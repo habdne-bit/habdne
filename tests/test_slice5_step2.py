@@ -140,11 +140,16 @@ def _reviews(engine, match_id):
 
 
 def _tasks(engine, match_id):
+    """The match's NMI tasks: those a review raised, named by
+    `payload.match_review_id`. From Slice 6 step 4 the run may also raise a
+    diagnostic task on the same match, an independent record (G6-4 (iv) (a))
+    that says its source (`"source": "DIAGNOSTIC"`)."""
     return _all(engine, """
         SELECT task_id, task_type::text AS task_type, priority::text AS priority,
                status::text AS status, title, reason_code, request_id, property_id,
                match_id, party_id, assigned_account_id, due_at, payload
-          FROM turab.tasks WHERE match_id = :m ORDER BY created_at, task_id""", m=match_id)
+          FROM turab.tasks WHERE match_id = :m AND payload ? 'match_review_id'
+         ORDER BY created_at, task_id""", m=match_id)
 
 
 # ======================================================================================
@@ -854,11 +859,14 @@ def _writers(table: str) -> list[str]:
 
 def test_only_the_review_command_writes_match_reviews_and_opportunities():
     """§7 conditions 3 and 4. Until step 3 nothing wrote `opportunities`;
-    the APPROVED review is now its one writer (H03)."""
+    the APPROVED review is now its one writer (H03). Slice 6 step 4 adds the
+    run as the third creator of `tasks` (G6-4 (a), (vi); Slice 6 plan §7
+    condition 10)."""
     assert _writers("match_reviews") == ["src/turab/services/match_review.py"]
     assert _writers("opportunities") == ["src/turab/services/match_review.py"]
     assert _writers("tasks") == ["src/turab/services/identity.py",
-                                 "src/turab/services/match_review.py"]
+                                 "src/turab/services/match_review.py",
+                                 "src/turab/services/matching_run.py"]
 
 
 def test_nmi_and_rejected_never_write_an_opportunity(client, engine, ids):

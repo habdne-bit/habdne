@@ -5,10 +5,11 @@ Ref: `docs/gate/SLICE_6_PLAN.md` revision 8: G6-2 (a), G6-3, G6-5, G6-6, G6-7,
 G6-11; §3.3-§3.5; F6-1, F6-10, F6-11, F6-13; `matching/diagnostic_rules.py`,
 `matching/diagnostic.py`, `services/diagnostic_replay.py`.
 
-**Step 3 writes nothing.** The run still stores format 1 and empty
-suggestions (asserted below). These tests build the format-2 parts with
-`compute` from REAL stored matches (the delivered run), and replay those
-documents; no format-2 row exists before step 4.
+**Step 3 wrote nothing.** These tests build the format-2 parts with
+`compute` from REAL stored matches and replay those documents. Step 3's
+boundary test ("the run still writes format 1") was removed in step 4,
+whose authorization ended it; step 4's tests replay the rows the run writes
+(`tests/test_slice6_step4.py`).
 
 Two layers:
 - the decision rules, on synthetic records shaped as `candidate_record`
@@ -406,18 +407,6 @@ def _row(body, computed):
     """The format-2 diagnostic row step 4 would write, as a document."""
     return {"request_id": body["diagnostic"]["request_id"],
             "run_at": body["diagnostic"]["run_at"], **computed}
-
-
-def test_the_run_still_writes_format_1_and_no_suggestion(client, engine, ids):
-    """Step 3's boundary: nothing in the run changed."""
-    req = _request(engine, ids)
-    prop = _prop(engine, document=None)
-    _criterion(engine, req, "DOCUMENT_TYPE", "EQ", "LAND_BOOK", "REQUIRED")
-    _offer(engine, ids, prop)
-    body = _ran(client, ids, req, [prop])
-    d = body["diagnostic"]
-    assert d["blocker_summary"]["format"] == "turab.blocker-summary/1"
-    assert (d["suggested_actions"], d["relaxation_scenarios"]) == ([], [])
 
 
 def test_mandatory_1_the_document_unknown_ranks_above_the_location_scenario(

@@ -66,8 +66,28 @@ No `ON CONFLICT`: under Repeatable Read it fails 40001 (measured D2, D4).
 - the audit row of every row written, in the same transaction (§3.6,
   condition 6).
 
-Nothing else is written (D1): no review, no opportunity, no task. No
-request, property, offer, consent or criterion is changed.
+Nothing else is written (D1): no review and no opportunity. No request,
+property, offer, consent or criterion is changed.
+
+## The diagnostic's computed parts and its tasks (Slice 6 step 4)
+
+G6-3, G6-5, G6-7, G6-11 and G6-4 (a), decided in the review of bd54216:
+- **Once, before the diagnostic row,** `diagnostic.compute` derives
+  `suggested_actions`, `relaxation_scenarios` and the format-2
+  `blocker_summary` from the STORED matches (`match_view`), so that the
+  replay (`services/diagnostic_replay.py`) reads what the run read. The row
+  records `evaluated` (each match, NEW or EXISTING) and each requested
+  location's chain, read in the run's snapshot (F6-2, F6-10).
+- **The input hash** is `turab.diagnostic-input/2`: format 1's document
+  with the requested location chains. The match ids are outputs and stay
+  out of it.
+- **The tasks, after the row (G6-4 (a), (i)-(iii)).** One task per HIGH
+  entry, each insert under its own SAVEPOINT. A unique violation on
+  `ux_one_open_task_per_subject` (migration 0007, part C) means the work is
+  already OPEN or IN_PROGRESS: the savepoint is rolled back and the run goes
+  on, writing nothing about it. Any other error fails the run, writing
+  nothing. The suggestions are never changed by what happens to the tasks.
+  This replaces D1's "no task" (G6-4 (vi)).
 """
 from __future__ import annotations
 
@@ -81,16 +101,27 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from turab.matching import (candidates, canonical, criteria, eligibility, explain, hard_gate,
-                            policy, snapshots, soft)
+from turab.matching import (candidates, canonical, criteria, diagnostic, eligibility, explain,
+                            hard_gate, policy, snapshots, soft)
 from turab.matching.registry import REGISTRY
 from turab import exact_json
 from turab.services import audit_rows, freshness
 
-DIAGNOSTIC_FORMAT = "turab.diagnostic-input/1"
+DIAGNOSTIC_FORMAT = "turab.diagnostic-input/2"
 #: The frozen UNIQUE(request_id, property_id, matching_policy_id, input_hash),
 #: by the name PostgreSQL 16 gives it (schema_v0.2.3.sql:684).
 IDENTICAL_INPUT = "match_candidates_request_id_property_id_matching_policy_id__key"
+#: Migration 0007, part C: one OPEN or IN_PROGRESS diagnostic task per subject.
+OPEN_WORK = "ux_one_open_task_per_subject"
+#: G6-4 (ii): a fixed English title per type, never free text (as Slice 5's
+#: `TASK_TITLES`). A HIGH entry is information work, so of these three types.
+DIAGNOSTIC_TASK_TITLES = {
+    "VERIFY_DOCUMENT": "Verify the property's document",
+    "CONFIRM_PRICE": "Confirm the offer's price terms",
+    "OTHER": "Obtain the missing information",
+}
+#: G6-4 (ii): the subject a task's payload names; G6-4 (iii)'s key.
+SUBJECT_KEYS = ("entity", "id", "gate", "criterion", "ordinal", "basis")
 #: The policy faults of plan §3.1: two codes, both 500, each with a FIXED
 #: detail (review of 48588a0, R-S4-7-04).
 POLICY_FAULTS = {
@@ -313,12 +344,14 @@ def _identical_input(exc: IntegrityError) -> bool:
             and getattr(getattr(orig, "diag", None), "constraint_name", None) == IDENTICAL_INPUT)
 
 
-def _store(session: Session, prepared: Prepared, ev: Evaluation) -> tuple[uuid.UUID, bool]:
-    """(match_id, visible in this snapshot). The new match, or the identical
-    one already stored (G4-13)."""
+def _store(session: Session, prepared: Prepared,
+           ev: Evaluation) -> tuple[uuid.UUID, bool, bool]:
+    """(match_id, visible in this snapshot, inserted by this run). The new
+    match, or the identical one already stored (G4-13). The third value is
+    what the diagnostic records as `stored`: NEW or EXISTING (G6-11)."""
     try:
         with session.begin_nested():
-            return _insert(session, prepared, ev), True
+            return _insert(session, prepared, ev), True, True
     except IntegrityError as exc:
         if not _identical_input(exc):
             raise
@@ -326,10 +359,10 @@ def _store(session: Session, prepared: Prepared, ev: Evaluation) -> tuple[uuid.U
            "policy": prepared.policy.matching_policy_id, "h": ev.input_hash}
     existing = session.execute(text(_EXISTING), key).scalar_one_or_none()
     if existing is not None:
-        return existing, True
+        return existing, True, False
     # Committed by a concurrent run after this snapshot was taken (D5).
     with session.get_bind().engine.connect() as fresh:
-        return fresh.execute(text(_EXISTING), key).scalar_one(), False
+        return fresh.execute(text(_EXISTING), key).scalar_one(), False, False
 
 
 def match_view(conn: Any, match_id: uuid.UUID) -> dict:
@@ -350,9 +383,11 @@ def match_view(conn: Any, match_id: uuid.UUID) -> dict:
     return view
 
 
-def diagnostic_input_hash(prepared: Prepared, evaluations: list[Evaluation]) -> str:
+def diagnostic_input_hash(prepared: Prepared, evaluations: list[Evaluation],
+                          location_chains: dict) -> str:
     """The diagnostic row's `input_hash`: what this run evaluated, and what it
-    excluded, under which policy and rules."""
+    excluded, under which policy and rules, and each requested location's
+    chain as the run read it (format 2, G6-11)."""
     document = {
         "format": DIAGNOSTIC_FORMAT,
         "matching_policy_id": prepared.policy.matching_policy_id,
@@ -363,19 +398,99 @@ def diagnostic_input_hash(prepared: Prepared, evaluations: list[Evaluation]) -> 
                        for ev in evaluations],
         "excluded": [[e.property_id, e.reason.value, e.detail]
                      for e in prepared.candidate_set.excluded],
+        "requested_location_chains": location_chains,
     }
     return hashlib.sha256(canonical.canonical_bytes(document)).hexdigest()
 
 
+def _requested_locations(plan: criteria.CriteriaPlan) -> list:
+    """Every location a LOCATION criterion of the request names, in order."""
+    out: list = []
+    for c in plan.criteria:
+        if c["code"] != "LOCATION":
+            continue
+        for w in (c["value"] if c["operator"] == "IN" else [c["value"]]):
+            if w not in out:
+                out.append(w)
+    return out
+
+
+def _raise_tasks(session: Session, prepared: Prepared, diagnostic_id: uuid.UUID,
+                 actions: list[dict], evaluated: list[dict]) -> list[uuid.UUID]:
+    """G6-4 (a): one task per HIGH entry, after the diagnostic row.
+
+    - `task_type`, `priority` and `reason_code` are the entry's;
+    - `request_id` is the run's; `property_id` and `match_id` name the
+      entry's candidate when it has exactly one, else they are null (a
+      shared subject, such as the request's own work); for a PROPERTY
+      subject, `property_id` is the subject itself;
+    - `payload` is `{diagnostic_run_id, source: "DIAGNOSTIC", subject}`,
+      the subject's six keys of G6-4 (iii), which `ux_one_open_task_per_subject`
+      reads.
+    A unique violation on that index means the work is open: the savepoint is
+    rolled back, nothing is written about it, and the next entry is tried."""
+    matches = {(e["property_id"], e["offer_id"]): e["match_id"] for e in evaluated}
+    created = []
+    for action in actions:
+        if action["priority"] != "HIGH":
+            continue
+        subject = action["subject"]
+        [single] = action["candidates"] if len(action["candidates"]) == 1 else [None]
+        property_id = (subject["id"] if subject["entity"] == "PROPERTY"
+                       else None if single is None else single["property_id"])
+        match_id = None if single is None else matches[(single["property_id"],
+                                                        single["offer_id"])]
+        payload = {"diagnostic_run_id": str(diagnostic_id), "source": "DIAGNOSTIC",
+                   "subject": {k: subject.get(k) for k in SUBJECT_KEYS}}
+        try:
+            with session.begin_nested():
+                task_id = session.execute(text("""
+                    INSERT INTO turab.tasks (task_type, priority, title, reason_code,
+                                             request_id, property_id, match_id, payload)
+                    VALUES (CAST(:type AS turab.task_type), 'HIGH', :title, :reason, :r,
+                            :p, :m, CAST(:payload AS jsonb))
+                    RETURNING task_id"""), {
+                    "type": action["type"], "title": DIAGNOSTIC_TASK_TITLES[action["type"]],
+                    "reason": subject.get("reason_code"), "r": prepared.request_id,
+                    "p": property_id, "m": match_id, "payload": _json(payload)}).scalar_one()
+                audit_rows.write(session, "tasks", task_id, "INSERT", None,
+                                 audit_rows.row_json(session, "tasks", task_id))
+        except IntegrityError as exc:
+            if getattr(getattr(exc.orig, "diag", None), "constraint_name", None) != OPEN_WORK:
+                raise
+            continue
+        created.append(task_id)
+    return created
+
+
 def execute(session: Session, prepared: Prepared) -> tuple[int, dict]:
     """Evaluate every candidate, store each match (or find the identical one),
-    then write the run's diagnostic row. Returns the 201 body."""
+    compute the diagnostic from the stored matches, write its row, then raise
+    the tasks of its HIGH suggestions. Returns the 201 body."""
     evaluations = [evaluate(session, prepared, c) for c in prepared.candidate_set.candidates]
     stored = [_store(session, prepared, ev) for ev in evaluations]
 
+    matches = []
+    for match_id, visible, _ in stored:
+        if visible:
+            matches.append(match_view(session, match_id))
+        else:
+            with session.get_bind().engine.connect() as fresh:
+                matches.append(match_view(fresh, match_id))
+    evaluated = [{"property_id": str(ev.candidate.property_id),
+                  "offer_id": None if ev.candidate.offer_id is None
+                  else str(ev.candidate.offer_id),
+                  "match_id": str(match_id), "input_hash": ev.input_hash,
+                  "stored": "NEW" if new else "EXISTING"}
+                 for ev, (match_id, _, new) in zip(evaluations, stored)]
+    chains = diagnostic.read_location_chains(session, _requested_locations(prepared.plan))
+    excluded = [{"property_id": e.property_id, "reason": e.reason.value,
+                 "detail": dict(e.detail)} for e in prepared.candidate_set.excluded]
+    computed = diagnostic.compute(
+        prepared.request_id, [diagnostic.candidate_record(m) for m in matches],
+        location_chains=chains, evaluated=evaluated, excluded=excluded)
+
     tally = explain.counts((ev.hard, ev.verdict) for ev in evaluations)
-    summary = explain.blocker_summary((ev.verdict for ev in evaluations),
-                                      prepared.candidate_set.excluded)
     diagnostic_id = session.execute(text("""
         INSERT INTO turab.match_diagnostic_runs (
             request_id, request_version, matching_policy_id, matching_policy_version,
@@ -383,26 +498,23 @@ def execute(session: Session, prepared: Prepared) -> tuple[int, dict]:
             actionable_unknown_count, near_match_count, blocker_summary,
             suggested_actions, relaxation_scenarios)
         VALUES (:r, :rv, :policy, :version, CAST(:snapshot AS jsonb), :h, :at,
-                :ready, :actionable, :near, CAST(:summary AS jsonb), '[]'::jsonb, '[]'::jsonb)
+                :ready, :actionable, :near, CAST(:summary AS jsonb),
+                CAST(:actions AS jsonb), CAST(:scenarios AS jsonb))
         RETURNING diagnostic_run_id"""), {
         "r": prepared.request_id, "rv": prepared.request_snapshot["version"],
         "policy": prepared.policy.matching_policy_id, "version": prepared.policy.version,
         "snapshot": _json(prepared.request_snapshot),
-        "h": diagnostic_input_hash(prepared, evaluations), "at": prepared.as_of,
+        "h": diagnostic_input_hash(prepared, evaluations, chains), "at": prepared.as_of,
         "ready": tally["ready_opportunity_count"],
         "actionable": tally["actionable_unknown_count"],
-        "near": tally["near_match_count"], "summary": _json(summary)}).scalar_one()
+        "near": tally["near_match_count"], "summary": _json(computed["blocker_summary"]),
+        "actions": _json(computed["suggested_actions"]),
+        "scenarios": _json(computed["relaxation_scenarios"])}).scalar_one()
     audit_rows.write(session, "match_diagnostic_runs", diagnostic_id, "INSERT", None,
                      audit_rows.row_json(session, "match_diagnostic_runs", diagnostic_id))
+    _raise_tasks(session, prepared, diagnostic_id, computed["suggested_actions"], evaluated)
 
-    matches = []
-    for match_id, visible in stored:
-        if visible:
-            matches.append(match_view(session, match_id))
-        else:
-            with session.get_bind().engine.connect() as fresh:
-                matches.append(match_view(fresh, match_id))
-    diagnostic = exact_json.loads(session.execute(text("""
+    diagnostic_row = exact_json.loads(session.execute(text("""
         SELECT jsonb_build_object(
                    'diagnostic_run_id', diagnostic_run_id, 'request_id', request_id,
                    'run_at', run_at,
@@ -413,4 +525,4 @@ def execute(session: Session, prepared: Prepared) -> tuple[int, dict]:
                    'relaxation_scenarios', relaxation_scenarios)::text
           FROM turab.match_diagnostic_runs WHERE diagnostic_run_id = :d"""),
         {"d": diagnostic_id}).scalar_one())
-    return 201, {"matches": matches, "diagnostic": diagnostic}
+    return 201, {"matches": matches, "diagnostic": diagnostic_row}

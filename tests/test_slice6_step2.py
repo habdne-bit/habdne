@@ -259,8 +259,11 @@ def test_information_obtained_changes_no_fact(client, engine, ids):
     assert _review(client, m["match_id"], {"decision": "NEED_MORE_INFORMATION",
                                           "reason_code": "DOCUMENT_NOT_KNOWN"},
                    ids.ACC_REVIEWER).status_code == 200
+    # The review's task; the run's own diagnostic task on the same match is an
+    # independent record (G6-4 (iv) (a), from step 4).
     [task] = _all(engine, "SELECT task_id, task_type::text AS t FROM turab.tasks "
-                          "WHERE match_id = :m", m=m["match_id"])
+                          "WHERE match_id = :m AND payload ? 'match_review_id'",
+                  m=m["match_id"])
     assert task["t"] == "VERIFY_DOCUMENT"
     obs = _observation(engine, ids)
     before = _facts(engine)
@@ -758,8 +761,8 @@ def test_every_writers_task_is_listed_and_no_payload_carries_a_private_value(
                                           "reason_code": "DOCUMENT_NOT_KNOWN",
                                           "reason_text": reason_text},
                    ids.ACC_REVIEWER).status_code == 200
-    [nmi] = _all(engine, "SELECT task_id::text AS t FROM turab.tasks WHERE match_id = :m",
-                 m=m["match_id"])
+    [nmi] = _all(engine, "SELECT task_id::text AS t FROM turab.tasks WHERE match_id = :m "
+                         "AND payload ? 'match_review_id'", m=m["match_id"])
     with Session(bind=engine) as s, s.begin():
         [resolve] = identity.raise_review_work(
             s, alias=uuid.UUID(m["property_id"]), canonical=ids.ASSISTED_APARTMENT,

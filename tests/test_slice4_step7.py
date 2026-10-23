@@ -417,7 +417,10 @@ def test_the_run_changes_no_request_property_offer_consent_or_criterion(client, 
 
 
 def test_no_review_opportunity_or_task_is_written(client, ids, engine):
-    """D1: the run writes only the three match tables and their audit rows."""
+    """D1: the run writes no review and no opportunity. Its "no task" was
+    replaced by Slice 6's G6-4 (a), (vi) (step 4): the run raises a task for a
+    HIGH suggestion only. This world's candidate lacks a permission, so its
+    work is NORMAL: suggested, and no task is written."""
     req, prop, _ = _world(engine, ids, consent=False)
 
     def counts():
@@ -428,8 +431,9 @@ def test_no_review_opportunity_or_task_is_written(client, ids, engine):
     body = _ok(_run(client, ids, req, [prop]))
     assert body["matches"][0]["next_action"] is not None  # a recommendation only
     assert counts() == before
-    assert (body["diagnostic"]["suggested_actions"],
-            body["diagnostic"]["relaxation_scenarios"]) == ([], [])
+    suggested = body["diagnostic"]["suggested_actions"]
+    assert suggested and {a["priority"] for a in suggested} == {"NORMAL"}
+    assert body["diagnostic"]["relaxation_scenarios"] == []
 
 
 def test_no_candidate_is_a_valid_run(client, ids, engine):
@@ -1048,7 +1052,9 @@ def test_two_identical_runs_race_and_store_one_match(engine, ids, monkeypatch):
     assert len(calls) == 1
     # A's own insert, visible to A; then B's, found only on a new connection.
     match_id = calls[0]
-    assert stored == [(match_id, True), (match_id, False)]
+    # (match_id, visible, inserted by this run): Slice 6 step 4 records the
+    # third value as `stored` (NEW, EXISTING) in the diagnostic (G6-11).
+    assert stored == [(match_id, True, True), (match_id, False, False)]
     assert len(_matches(engine, req)) == 1
     assert _one(engine, "SELECT count(*) FROM turab.match_diagnostic_runs WHERE request_id = :r",
                 r=req) == 2
@@ -1148,10 +1154,13 @@ def _writers(table):
                   if pattern.search(p.read_text(encoding="utf-8")))
 
 
-def test_no_path_writes_a_review_or_an_opportunity_and_matching_writes_no_task():
+def test_no_path_writes_a_review_or_an_opportunity_and_the_run_creates_its_tasks_only():
     """Acceptance condition 6 and D1, computed from the tree: neither the run
-    nor the matching package inserts into `match_reviews`, `opportunities`
-    or `tasks`; the three match tables are written by the run alone.
+    nor the matching package inserts into `match_reviews` or `opportunities`;
+    the three match tables are written by the run alone. `tasks`: the
+    matching package writes none; the run creates the tasks of its HIGH
+    suggestions since Slice 6 step 4 (G6-4 (a), (vi), which replaced D1's "no
+    task"; Slice 6 plan §7 condition 10).
 
     Slice 5 step 2 (review of 29a0f30) opened `match_reviews` to the review
     command, and step 3 (review of 60b0152) opened `opportunities` to the
@@ -1160,8 +1169,11 @@ def test_no_path_writes_a_review_or_an_opportunity_and_matching_writes_no_task()
     writers are pinned below so that any further one fails here too."""
     run = "src/turab/services/matching_run.py"
     for table in ("match_reviews", "opportunities", "tasks"):
-        assert not [w for w in _writers(table)
-                    if w == run or w.startswith("src/turab/matching/")], table
+        assert not [w for w in _writers(table) if w.startswith("src/turab/matching/")], table
+    for table in ("match_reviews", "opportunities"):
+        assert run not in _writers(table), table
+    assert _writers("tasks") == ["src/turab/services/identity.py",
+                                 "src/turab/services/match_review.py", run]
     assert _writers("match_reviews") == ["src/turab/services/match_review.py"]
     assert _writers("opportunities") == ["src/turab/services/match_review.py"]
     for table in ("match_candidates", "match_criterion_results", "match_diagnostic_runs"):
