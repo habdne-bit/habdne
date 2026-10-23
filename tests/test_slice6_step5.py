@@ -110,9 +110,11 @@ def _document(client, ids, prop, value):
         "resolved_value": value})
 
 
-def _offer(client, ids, prop, *, price=20_000_000, negotiable="NO", expectation=None):
+def _offer(client, ids, prop, *, price=20_000_000, negotiable="NO", expectation=None,
+           consent=True):
     """An ACTIVE SALE offer of a new seller party, its terms confirmed, its own
-    PRIVATE_MATCHING_ONLY grant bound to it."""
+    PRIVATE_MATCHING_ONLY grant bound to it (unless `consent` is false: then
+    no grant, and the permission gate has a reason)."""
     staff = ids.ACC_OPERATOR
     seller = _post(client, "/parties", staff, {
         "kind": "PERSON", "display_name": f"بائع {uuid.uuid4().hex[:6]}"})["party_id"]
@@ -123,6 +125,8 @@ def _offer(client, ids, prop, *, price=20_000_000, negotiable="NO", expectation=
     offer = _post(client, f"/properties/{prop}/offers", staff, body)["offer_id"]
     _post(client, f"/offers/{offer}/state", staff, {"status": "ACTIVE"})
     _post(client, f"/offers/{offer}/reconfirm", staff, {})
+    if not consent:
+        return offer
     grant = _post(client, f"/parties/{seller}/consents", staff, {
         "scope": "PRIVATE_MATCHING_ONLY", "channel": "PHONE_CONFIRMED",
         "consent_version": "v1", "granted_at": "2026-01-01T00:00:00Z"})["consent_id"]
@@ -211,18 +215,29 @@ def test_mandatory_1_over_http_the_document_task_outranks_the_new_location(
 
 def test_mandatory_2_over_http_three_hard_failures_raise_no_task(client, engine, ids):
     """"candidate failing three hard criteria does not receive high-priority
-    task for an unrelated unknown" (§6.1, §3.3). An APARTMENT outside the
-    location, above the maximum and not negotiable, its document UNKNOWN: no
-    action, no scenario (not a near match), no task; the unknown is counted
-    blocking and not actionable."""
+    task for an unrelated unknown" (§6.1, §3.3). Two APARTMENTs, each outside
+    the location, above the maximum and not negotiable:
+    - one with its document UNKNOWN and no consent bound to its offer (a
+      permission reason as well);
+    - one with its document known (LAND_BOOK), so nothing but the three
+      failures keeps it from being a near match.
+    No action (no information work, no permission work), no scenario (neither
+    is a near match), no task; the unknown is counted blocking and not
+    actionable. The two shapes were added after the first mutation run (M2,
+    M3 survived it: `SLICE6-STEP5-MUTATIONS-FIRST-RUN.txt`)."""
     req = _request(client, ids, criteria=[_location(engine, "ADR-NEW-TIL"), LAND_BOOK])
     bad = _property(client, engine, ids, "ADR-AIRPORT", ptype="APARTMENT")
-    _offer(client, ids, bad, price=30_000_000)
-    [m] = _run(client, ids, req, [bad])["matches"]
-    assert m["eligibility"] == "REJECTED"
-    failed = {key.split("#")[0] for key, c in m["explanation"]["criteria"].items()
-              if c["compatibility"] == "FAIL"}
-    assert {"LOCATION", "BUDGET_MAX", "PROPERTY_TYPE"} <= failed, failed
+    known = _property(client, engine, ids, "ADR-AIRPORT", ptype="APARTMENT",
+                      document="LAND_BOOK")
+    _offer(client, ids, bad, price=30_000_000, consent=False)
+    _offer(client, ids, known, price=30_000_000)
+    run = _by_property(_run(client, ids, req, [bad, known]))
+    for m in run.values():
+        assert m["eligibility"] == "REJECTED"
+        failed = {key.split("#")[0] for key, c in m["explanation"]["criteria"].items()
+                  if c["compatibility"] == "FAIL"}
+        assert {"LOCATION", "BUDGET_MAX", "PROPERTY_TYPE"} <= failed, failed
+    assert [r for r in run[bad]["explanation"]["reasons"] if r["gate"] == "PERMISSION"]
     d = _diagnostic(client, ids, req)
     assert (d["suggested_actions"], d["relaxation_scenarios"]) == ([], [])
     assert d["blocker_summary"]["unknowns"]["DOCUMENT_TYPE#1"] == {
