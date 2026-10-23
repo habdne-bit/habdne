@@ -324,6 +324,18 @@ def m8(conn) -> None:
                OR (NEW.opportunity_id IS DISTINCT FROM OLD.opportunity_id AND NEW.opportunity_id IS NOT NULL)
                OR NEW.channel IS DISTINCT FROM OLD.channel THEN
               RAISE EXCEPTION 'candidate: thread links are frozen';
+            END IF;""",
+        "FK-only (a link may become NULL only below a referential action, depth > 1)": """
+            IF NEW.channel IS DISTINCT FROM OLD.channel
+               OR (NEW.party_id IS DISTINCT FROM OLD.party_id
+                   AND (NEW.party_id IS NOT NULL OR pg_trigger_depth() < 2))
+               OR (NEW.request_id IS DISTINCT FROM OLD.request_id
+                   AND (NEW.request_id IS NOT NULL OR pg_trigger_depth() < 2))
+               OR (NEW.property_id IS DISTINCT FROM OLD.property_id
+                   AND (NEW.property_id IS NOT NULL OR pg_trigger_depth() < 2))
+               OR (NEW.opportunity_id IS DISTINCT FROM OLD.opportunity_id
+                   AND (NEW.opportunity_id IS NOT NULL OR pg_trigger_depth() < 2)) THEN
+              RAISE EXCEPTION 'candidate: thread links are frozen';
             END IF;"""}
     for label, body in variants.items():
         with conn.transaction(force_rollback=True):
