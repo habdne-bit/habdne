@@ -1,0 +1,149 @@
+TURAB — Slice 7 step 0: the plan's facts measured on PostgreSQL, before any code
+================================================================================
+Authorized : the review of dcebe46 (plan revision 1): M1-M7, plus M8; a
+             temporary database, transactions rolled back where possible, no
+             implementation code. M7's envelopes are SYNTHETIC SAMPLES (عينة
+             اصطناعية) until G7-2 decides the envelope's producer.
+Script     : docs/gate/evidence/SLICE7-PLAN-MEASUREMENTS.py (kept beside this
+             record; under docs/, outside the fingerprinted trees).
+Runs       : twice, each on a freshly rebuilt scratch database; the two outputs
+             are IDENTICAL once the commit id and fingerprints are normalised.
+             The output below is the first run.
+These results are ours; nobody else has re-run them.
+
+Tree    : db18c863c2f2283c85be689e7c645ad4ca3defa0; working tree CLEAN at the start
+Database: turab_s7_probe, rebuilt by db/dev/reset_db.sh --fixtures; PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+
+M1  Two messages, provider NULL, the same external_message_ref, two threads
+    thread A: ACCEPTED (rows 1)
+    thread B: ACCEPTED (rows 1)
+    rows with that reference: 2
+    (rolled back)
+
+M2  The same (provider, external_message_ref) in a second thread
+    thread A: ACCEPTED (rows 1)
+    thread B: REFUSED 23505 UniqueViolation constraint=communication_messages_provider_external_message_ref_key: duplicate key value violates unique constraint "communication_messages_provider_external_message_ref_key"
+    thread A again: REFUSED 23505 UniqueViolation constraint=communication_messages_provider_external_message_ref_key: duplicate key value violates unique constraint "communication_messages_provider_external_message_ref_key"
+    (rolled back)
+
+M3  UPDATE and DELETE as the connecting role (turab, superuser=True)
+    message body_text UPDATE: ACCEPTED (rows 1)
+    message delivery_status backwards (READ then SENT): ACCEPTED (rows 1)
+      then: ACCEPTED (rows 1)
+    webhook_events payload UPDATE: ACCEPTED (rows 1)
+    webhook_events status back to RECEIVED: ACCEPTED (rows 1)
+      then: ACCEPTED (rows 1)
+    thread party_id UPDATE: ACCEPTED (rows 1)
+    thread channel UPDATE: ACCEPTED (rows 1)
+    thread DELETE while it has a message: REFUSED 23503 ForeignKeyViolation constraint=communication_messages_thread_id_fkey: update or delete on table "communication_threads" violates foreign key constraint "communication_messages_thread_id_fkey" on table "communication_messages"
+    message DELETE: ACCEPTED (rows 1)
+    webhook_events DELETE: ACCEPTED (rows 1)
+    thread DELETE once empty: ACCEPTED (rows 1)
+    user triggers per table: communication_messages=0, communication_threads=0, interactions=0, webhook_events=0
+    (rolled back)
+
+M4  Two concurrent inserts of one (provider, provider_event_id)
+    first transaction ends by COMMIT: the second waited on the first (pg_blocking_pids holds its pid: True; still waiting before the end: True); the second inserted 0 row(s) ; rows stored: 1, status RECEIVED
+    first transaction ends by ROLLBACK: the second waited on the first (pg_blocking_pids holds its pid: True; still waiting before the end: True); the second inserted 1 row(s) ; rows stored: 1, status RECEIVED
+
+M4b A RECEIVED row: what a replay can see, and whether an in-flight claim is visible
+    a replay with ON CONFLICT DO NOTHING returns 0 row(s); the stored status, read separately, is RECEIVED
+    while a processor holds the row FOR UPDATE, a second claim with NOWAIT: REFUSED 55P03 LockNotAvailable: could not obtain lock on row in relation "webhook_events"
+    the same claim with SKIP LOCKED returns 0 row(s)
+    once the holder ends (no status change): a claim with NOWAIT ACCEPTED (rows 1)
+
+M5  A COMMUNICATION_ARCHIVE binding to a thread
+    thread with party NULL: REFUSED P0001 RaiseException: Communication thread consent party mismatch
+    thread of another party: REFUSED P0001 RaiseException: Communication thread consent party mismatch
+    thread of the grant's party: ACCEPTED (rows 1)
+    (rolled back)
+
+M6  STOP GATE E's generator with a second writer of `interactions`, in a copy of the tree
+    the copy as committed: exit 1
+      PROBLEM: docs/gate/SLICE_5_STOP_GATE_E.md is stale; regenerate it
+    with src/turab/services/probe_writer.py added: exit 1
+      PROBLEM: the current tree's source fingerprint is 1fce5c03185b81e47e30c38687265b8e403a23c1bb67d1c1ae682de31e838426; the run was on 2d11e774856f78ba9217880297422066ea03fb6d5592e315588d7c157c3c5563: the report is not evidence for this tree
+      PROBLEM: gate-run.txt was recorded on source fingerprint 2d11e774856f78ba9217880297422066ea03fb6d5592e315588d7c157c3c5563; the current tree's is 1fce5c03185b81e47e30c38687265b8e403a23c1bb67d1c1ae682de31e838426
+      PROBLEM: interactions written by ['src/turab/services/opportunity_commands.py', 'src/turab/services/probe_writer.py'], not ['src/turab/services/opportunity_commands.py']
+      PROBLEM: docs/gate/SLICE_5_STOP_GATE_E.md is stale; regenerate it
+
+M7  Payload sizes of SYNTHETIC SAMPLES (عينة اصطناعية), and the app's body limit today
+    Both envelopes below are synthetic samples written for this measurement: no
+    provider produced them, and the envelope's producer is undecided (G7-2).
+    TURAB envelope, synthetic: 753 bytes as JSON; stored jsonb column 769 bytes; the message text is inside the stored payload: True
+    Meta-shaped notification, synthetic: 824 bytes as JSON; stored jsonb column 897 bytes; the message text is inside the stored payload: True
+    (rolled back)
+    POST /observations with a 1 MiB raw_text: HTTP 201
+    POST /observations with a 8 MiB raw_text: HTTP 201
+
+M8  ON DELETE SET NULL against a candidate guard that freezes a thread's links
+    Parents with a delete guard (prevent_core_delete): requests, properties,
+    property_offers, opportunities (and claims, resolved_values). parties and
+    user_accounts have none, so a thread's party_id can reach SET NULL.
+    strict (any change of a link refused):
+      a direct UPDATE of party_id to another party: REFUSED P0001 RaiseException: candidate: thread links are frozen
+      a direct UPDATE of party_id to NULL (no delete): REFUSED P0001 RaiseException: candidate: thread links are frozen
+      DELETE of the thread's party (FK ON DELETE SET NULL): REFUSED P0001 RaiseException: candidate: thread links are frozen
+      the thread's party_id is now NULL: False; pg_trigger_depth seen by the guard: ['m8 depth=1', 'm8 depth=2']
+    permissive (a link may only become NULL):
+      a direct UPDATE of party_id to another party: REFUSED P0001 RaiseException: candidate: thread links are frozen
+      a direct UPDATE of party_id to NULL (no delete): ACCEPTED (rows 1)
+      DELETE of the thread's party (FK ON DELETE SET NULL): ACCEPTED (rows 1)
+      the thread's party_id is now NULL: True; pg_trigger_depth seen by the guard: ['m8 depth=1', 'm8 depth=2']
+    FK-only (a link may become NULL only below a referential action, depth > 1):
+      a direct UPDATE of party_id to another party: REFUSED P0001 RaiseException: candidate: thread links are frozen
+      a direct UPDATE of party_id to NULL (no delete): REFUSED P0001 RaiseException: candidate: thread links are frozen
+      DELETE of the thread's party (FK ON DELETE SET NULL): ACCEPTED (rows 1)
+      the thread's party_id is now NULL: True; pg_trigger_depth seen by the guard: ['m8 depth=1', 'm8 depth=2']
+    (rolled back; the candidate triggers existed only inside these transactions)
+
+Database turab_s7_probe dropped at the end.
+
+READING
+  M1  CONFIRMS F7-1. With provider NULL, the same external_message_ref is
+      stored twice, in two threads: UNIQUE(provider, external_message_ref)
+      does not apply (NULLs are distinct).
+  M2  The pair (whatsapp, ref) is global: refused in a second thread AND again
+      in the same one, 23505, constraint
+      communication_messages_provider_external_message_ref_key (the name G7-4
+      maps to a typed answer).
+  M3  CONFIRMS F7-2. As the connecting role (turab, a superuser: EN-02, K06),
+      every UPDATE and DELETE of a message, of a webhook event (its payload,
+      its status back to RECEIVED) and of a thread's links is accepted. The
+      four tables carry NO user trigger. The only refusal is the frozen FK:
+      a thread with a message cannot be deleted (23503, ON DELETE RESTRICT).
+  M4  The event store deduplicates under concurrency: the second insert of one
+      (provider, provider_event_id) WAITS on the first (pg_blocking_pids
+      witness); after a COMMIT it inserts nothing, after a ROLLBACK it
+      inserts the row. One row either way.
+  M4b A replay with ON CONFLICT DO NOTHING returns nothing whatever the stored
+      status: telling a replay of a PROCESSED event from one of a RECEIVED or
+      FAILED event needs a separate read. A processor holding the row FOR
+      UPDATE is visible: a second claim with NOWAIT is refused 55P03, with
+      SKIP LOCKED it gets no row; once the holder ends, the claim succeeds.
+      So "in flight" and "stuck" can be told apart by the row lock.
+  M5  CONFIRMS F7-8, and more: a COMMUNICATION_ARCHIVE binding is refused for
+      a thread with NO party and for a thread of ANOTHER party
+      (trg_consent_binding, "Communication thread consent party mismatch");
+      accepted only for the grant's own party.
+  M6  CONFIRMS F7-7. In a copy of the tree, a second file inserting into
+      interactions makes STOP GATE E's --check report "interactions written by
+      [opportunity_commands.py, probe_writer.py], not [opportunity_commands.py]".
+      (The added file also changes the copy's source fingerprint, so the
+      binding problems are reported too; the committed copy reports only the
+      known stale document.)
+  M7  Both synthetic samples are under 1 KB, and the message TEXT IS INSIDE
+      THE STORED webhook_events.payload: storing the event as received stores
+      the content (the review of dcebe46, point 1). NEW: the app enforces NO
+      request-body limit today: an 8 MiB raw_text is accepted (201) by the
+      delivered POST /observations (F7-12).
+  M8  CONFIRMS the conflict the review of dcebe46 suspected. A STRICT guard
+      freezing a thread's links also refuses the FK's ON DELETE SET NULL:
+      deleting the thread's party is refused (parties have no delete guard,
+      so this path is reachable). A PERMISSIVE guard (a link may become NULL)
+      lets the FK act, but also accepts a DIRECT UPDATE of a link to NULL.
+      The guard sees pg_trigger_depth() = 1 for a direct UPDATE and 2 under
+      the FK's referential action; an FK-ONLY guard (NULL allowed only at
+      depth > 1) refuses both direct changes and lets the FK act. Its stated
+      limit: depth > 1 is also true for an UPDATE issued from inside another
+      trigger; the threads table has none today (M3).
