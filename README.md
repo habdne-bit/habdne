@@ -17,7 +17,7 @@
 | Slice 3 — PROPERTY / OFFER / SOURCE / Truth / Identity | **CLOSED at `96e36e6`**, within the approved exceptions — see [`docs/gate/SLICE_3_CLOSURE.md`](docs/gate/SLICE_3_CLOSURE.md) |
 | Slice 4 — Deterministic Matching Core | **CLOSED at `58368d1`**, within the approved scope — see [`docs/gate/SLICE_4_CLOSURE.md`](docs/gate/SLICE_4_CLOSURE.md) |
 | Slice 5 — Human Review → OPPORTUNITY | **CLOSED at `339dbc4`**, SALE only — see [`docs/gate/SLICE_5_CLOSURE.md`](docs/gate/SLICE_5_CLOSURE.md) |
-| Slice 6 — Match Diagnostic / Information Work | **In progress.** Step 1 (migration `0007`) closed at `b6a08e7`, with an addendum; step 2 (`getTasks`, `postTasksTaskIdComplete`, CORRECTION-005) closed at `315804b`; step 3 (the diagnostic's pure functions and replay) closed at `922a100`; step 4 (the run writes the format-2 diagnostic and raises its tasks) closed at `0fae42c`; step 5 (end-to-end tests and closure evidence) not closed at `3657973`; its correction (F6-21, F6-22) delivered for review — see [`docs/gate/SLICE_6_STEP5_DELIVERY.md`](docs/gate/SLICE_6_STEP5_DELIVERY.md), [`docs/gate/SLICE_6_EVIDENCE.md`](docs/gate/SLICE_6_EVIDENCE.md) and [`docs/gate/SLICE_6_PLAN.md`](docs/gate/SLICE_6_PLAN.md) |
+| Slice 6 — Match Diagnostic / Information Work | **CLOSED at `ce8cfa0`**, SALE only — see [`docs/gate/SLICE_6_CLOSURE.md`](docs/gate/SLICE_6_CLOSURE.md) |
 
 Standing: K06 **UNPROVEN** (EN-02); G4-5R open, SALE only. The current
 suite count and its binding to the tree are in

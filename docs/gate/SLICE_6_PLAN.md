@@ -1,5 +1,5 @@
 # Slice 6 — Match Diagnostic / Information Work
-## Implementation plan — **revision 16**
+## Implementation plan — **revision 17**
 
 **Status: the decisions G6-1 to G6-12, the text of `0007` (§5.1) and
 CORRECTION-005 (§5.2) are APPROVED** (review of `bd54216`, recorded below).
@@ -11,10 +11,10 @@ was authorized once the addendum was delivered, and is **CLOSED at
 `315804b`** (review of `315804b`, recorded below). Step 3 is **CLOSED at
 `922a100`** (review of `922a100`, recorded below), after its three replay gaps
 were closed. Step 4 is **CLOSED at `0fae42c`** (review of `0fae42c`,
-recorded below). Step 5 was delivered at `3657973` and is **NOT closed**
-(review of `3657973`, recorded below): F6-21 and F6-22 are decided; their
-correction is delivered for review (`SLICE_6_STEP5_DELIVERY.md` §13), and the
-slice's closure is decided after it. Step 0 (measurements only)
+recorded below). Step 5 is **CLOSED at `ce8cfa0`**, and **Slice 6 is CLOSED
+at `ce8cfa0`, within the SALE scope only** (review of `ce8cfa0`, recorded
+below; `SLICE_6_CLOSURE.md`). **This is the closure of the slice, not a
+release authorization.** Step 0 (measurements only)
 was authorized in the review of `f7469e8`, delivered at `1fd7bdf`, and accepted
 in the review of `1fd7bdf` as the basis for review:
 `evidence/SLICE6-PLAN-MEASUREMENTS.txt`. Revision 3 adds the race the review
@@ -43,7 +43,36 @@ recommendation. A recommendation is not a decision.
 | 13 | `4dd8cf4` | the review of `0fae42c` recorded: step 4 closed; its five choices accepted; step 5 authorized with two stated limits for its closure evidence (the replay does not recompute the diagnostic's `input_hash`; §5.4) and an end-to-end test of a HIGH task shared by two candidates |
 | 14 | `3657973` | step 5 delivered (`SLICE_6_STEP5_DELIVERY.md`): 11 end-to-end tests, the closure-evidence generator and `SLICE_6_EVIDENCE.md`; mutations 14/14 twice; suite 2609/2609; no line of `src/` changed. F6-21 and F6-22 added (§4), measured and put to the reviewer, not decided; no other change |
 | 15 | `ce40208` | the review of `3657973` recorded: step 5 not closed; F6-21 decided (§3.4 and §6.2's D02 bounded to what Slice 6 generates; the staff match's test kept as the boundary's witness); F6-22 decided (title by type and subject entity); the stale module docstrings to be corrected; the generator to record both; the stored tasks with the old title to be counted |
-| 16 | the commit that adds this revision | the correction of the review of `3657973` delivered (`SLICE_6_STEP5_DELIVERY.md` §13): F6-22 pinned on the unfixed code (`a813b06`), fixed (`fd648e8`); the docstrings corrected; the generator records both decisions; 2 stored tasks with the old title counted (test data); mutations 16/16 twice; suite 2614/2614 bound; no other change |
+| 16 | `ce8cfa0` | the correction of the review of `3657973` delivered (`SLICE_6_STEP5_DELIVERY.md` §13): F6-22 pinned on the unfixed code (`a813b06`), fixed (`fd648e8`); the docstrings corrected; the generator records both decisions; 2 stored tasks with the old title counted (test data); mutations 16/16 twice; suite 2614/2614 bound; no other change |
+| 17 | the commit that adds this revision | the review of `ce8cfa0` recorded: step 5 and Slice 6 closed at `ce8cfa0`, SALE only, not a release authorization; the closure record `SLICE_6_CLOSURE.md`; the limits carried as given, the stored-titles measurement bounded to the test database, K06's remedy an independent condition before any release gate |
+
+**The review of `ce8cfa0`. Step 5 and Slice 6 are CLOSED at `ce8cfa0`,
+within the SALE scope only. This is a decision to close the slice, not a
+release authorization.**
+- **What the reviewer checked:**
+  - the diff since `3657973`: the fix concerns the title of a
+    `CONFIRM_PRICE` task on the `REQUEST`, and keeps the offer subject's;
+  - the tests of both cases, and of a task stored under its old title;
+  - D02 bounded in the plan, and the corrected docstrings;
+  - the closure evidence, which records both decisions and both replay
+    limits without calling them proven;
+  - the record before the fix, which pinned the defect in three places.
+- **Not re-run by the reviewer:** 2614/2614, 16/16 twice, the gate and
+  `--check` are the implementing team's evidence, bound to the tree.
+- **Carried by the closure record, as given:**
+  - R/D does not verify the diagnostic's `input_hash`;
+  - `explain.blocker_summary` is not pinned;
+  - OQ6-1 and OQ6-2 are open;
+  - K06 is UNPROVEN;
+  - G4-5R is open.
+- **The stored-titles measurement:**
+  - **what it found:** two rows, in the test database;
+  - **what it does not prove:** that no such row exists in a persistent
+    database not reachable from that environment;
+  - **when a persistent database is set up or migrated,** it is inspected
+    before the old titles are considered handled
+    (`SLICE_6_CLOSURE.md` §1, limit 6).
+- **K06's remedy** stays an independent condition before any release gate.
 
 **The review of `3657973`. Step 5 is NOT closed, nor is Slice 6.**
 - **What the reviewer checked:** the closure evidence and the end-to-end
@@ -1676,7 +1705,7 @@ S). Its results are F6-10 to F6-17. Revision 3's race is in
 | 2 | `getTasks` and `postTasksTaskIdComplete`, with the completion's lock order (G6-8 (iv)); CORRECTION-005 and the loader's extension (§5.2). **Accepted only with** the proof that the completion locks the cited observation FOR SHARE | G6-8, G6-9; **authorized** after step 1a (review of `b6a08e7`); delivered (`SLICE_6_STEP2_DELIVERY.md`); **CLOSED at `315804b`** (review of `315804b`) |
 | 3 | the pure functions: high-value (G6-2), `suggested_actions` (G6-3), relaxation (G6-5, G6-6), `blocker_summary` format 2 (G6-7), their registry entries and replay (G6-11) — no write yet | G6-2, G6-3, G6-5, G6-6, G6-7, G6-11; **authorized** (review of `315804b`); not closed in the review of `220573a`; **CLOSED at `922a100`** (review of `922a100`) |
 | 4 | the run writes them; tasks from the diagnostic only if G6-4 (a); G6-10. **Its tests measure** the supersession of an older match by the new one, in the match queue and at approval (review of `220573a`), and **replay a real format-2 row the run wrote** (review of `922a100`); its evidence restates the limit of §5.4. **Its tests prove** that each diagnostic task has `request_id` and the four keys `entity`, `id`, `gate`, `basis` non-NULL, and `source` = `"DIAGNOSTIC"` exactly (OQ6-1) | G6-4, G6-10; **authorized** (review of `922a100`); delivered (`SLICE_6_STEP4_DELIVERY.md`); **CLOSED at `0fae42c`** (review of `0fae42c`) |
-| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4). **Its end-to-end tests cover** a HIGH task shared by two candidates, `match_id` null, understandable in `GET /tasks`; **its closure evidence states** that the replay does not recompute the diagnostic's `input_hash`, and the limit of §5.4 (review of `0fae42c`) | all; **authorized** (review of `0fae42c`); delivered (`SLICE_6_STEP5_DELIVERY.md`); **not closed** in the review of `3657973`: F6-21's correction, F6-22's fix, the docstrings, the generator, the stored titles counted, then a bound run; the correction delivered (`SLICE_6_STEP5_DELIVERY.md` §13) |
+| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence (§6.4). **Its end-to-end tests cover** a HIGH task shared by two candidates, `match_id` null, understandable in `GET /tasks`; **its closure evidence states** that the replay does not recompute the diagnostic's `input_hash`, and the limit of §5.4 (review of `0fae42c`) | all; **authorized** (review of `0fae42c`); delivered (`SLICE_6_STEP5_DELIVERY.md`); **not closed** in the review of `3657973`: F6-21's correction, F6-22's fix, the docstrings, the generator, the stored titles counted, then a bound run; the correction delivered (`SLICE_6_STEP5_DELIVERY.md` §13); **CLOSED at `ce8cfa0`** (review of `ce8cfa0`), and with it Slice 6, SALE only |
 
 Each step is delivered with its tests and mutation record, and reviewed
 before the next begins. A defect found in a step is measured before it is

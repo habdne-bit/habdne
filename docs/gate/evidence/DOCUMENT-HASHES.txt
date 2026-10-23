@@ -882,3 +882,8 @@ docs/gate/SLICE_6_EVIDENCE.md                                  ---   7b2ac2a02b5
 docs/gate/SLICE_6_STEP5_DELIVERY.md                            ---   9aabea71779490d946cf6bf05304ac467c5585f63a50f22f068ff5baa007c08f
 docs/gate/SLICE_6_PLAN.md                                      rev16 c4302cda1102e59911724e0325c753457be1c0bba06f26675795be89da110664
 SLICE_6_PLAN.md changed revision: 15 -> 16 (the correction of the review of 3657973 delivered; Slice 6 not declared closed).
+--- Review of ce8cfa0: step 5 and Slice 6 CLOSED at ce8cfa0, SALE only (not a release authorization); Slice 6 plan revision 17 ---
+docs/gate/SLICE_6_CLOSURE.md                                   new   8f4780a49040b59e3992c747348ae5c12c6dda7d71298e606b3817c780e27268
+docs/gate/SLICE_6_STEP5_DELIVERY.md                            ---   40b6179ff8a005202ad4c536dfa823f9416cb56c06a2d33a6ed95228a57e099e
+docs/gate/SLICE_6_PLAN.md                                      rev17 c2be247371cf0c36d89f986df7cacc9ca97545b4b1dcd7ac4700402e5186d37a
+SLICE_6_PLAN.md changed revision: 16 -> 17 (Slice 6 closed at ce8cfa0, SALE only; K06 remedy an independent condition before any release gate).

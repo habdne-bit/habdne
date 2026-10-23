@@ -14,10 +14,11 @@ It added two requirements:
      compare it with the stored one;
    - `explain.blocker_summary` is not pinned (§5.4).
 
-**Status:** delivered at `3657973`; **not closed** in the review of `3657973`,
-which decided F6-21 and F6-22 and asked for a correction. The correction is
-delivered for review (§13). **Slice 6 is not declared closed here;** that is
-the reviewer's decision.
+**Status:** **CLOSED at `ce8cfa0`** (review of `ce8cfa0`), with Slice 6,
+within the SALE scope only: a closure of the slice, not a release
+authorization. It was delivered at `3657973` and not closed in the review of
+`3657973`, which decided F6-21 and F6-22. The correction is §13. The
+closure record is `SLICE_6_CLOSURE.md`.
 
 **Basis:** `docs/gate/SLICE_6_PLAN.md` revision 13: §6.1, §6.2, §6.4, §7,
 §5.4, §8 step 5; the review of `0fae42c`.
