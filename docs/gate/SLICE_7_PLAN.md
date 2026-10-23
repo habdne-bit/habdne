@@ -1,9 +1,17 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 3**
+## Implementation plan — **revision 4**
 
 **Status: submitted for review.**
 - **No code for this slice exists, and none is written before this plan is
   approved.** Slice 7 is in **planning only**.
+- **What the review of `4aed49b` did** (recorded below):
+  - **decided** D2 (G7-12 (D)), CORRECTION-007, (a2) with R-1 a condition
+    before any real event, and G7-4's provider rule;
+  - **approved the directions** of the other recommended options, G7-8 (a),
+    G7-9 (a) and G7-15 among them;
+  - **did not approve the text of `0008`,** nor the start of step 1, because
+    of two gaps in it: the thread reference's identity, and UNKNOWN →
+    FAILED. Both are settled here, and the resulting text is §5.1, in full.
 - **What the review of `58a0067` did** (recorded below):
   - accepted step 0 as measurement documented by the implementing team;
   - accepted the directions of G7-8 (a) and G7-9 (a), their limits to be
@@ -15,11 +23,13 @@
   - authorized step 0's measurements (M1–M8), which are delivered here;
   - asked for five gaps to be settled in the plan's text before it is put
     up for approval (recorded below).
-- **Approved by no one yet:**
-  - the decisions G7-1 to G7-15;
-  - the text of migration `0008` (§5.1). **That text has not been executed:**
-    it is first run in step 1, with its tests, once approved;
-  - CORRECTION-007 (§5.2).
+- **Not yet approved:**
+  - the text of migration `0008` (§5.1), and with it the start of step 1.
+    **That text has not been executed:** it is first run in step 1, with
+    its tests, once approved;
+  - the decisions are approved as directions (§5, the status table). The
+    review of `4aed49b` states: "This is an approval of the directions, not
+    of the defective migration text".
 
 **What this revision does not decide.** Every choice that is not already
 fixed by a source is put to the reviewer as a decision (§5), with options and
@@ -43,6 +53,52 @@ a recommendation. A recommendation is not a decision.
 | 1 | `91762f6` | first plan (authorized as planning only in the review of `8de5f7f`) |
 | 2 | `7200b3c` | the review of `dcebe46` recorded; step 0 measured (M1–M8); the five gaps settled in the text: content and consent (G7-9), the stuck event and its recovery (G7-2 (v)), Meta and the relay (G7-2 (ii), §3.9), what staff can read (G7-8), the SALE boundary (§0.2, G7-6 rule 0); new: F7-12, G7-15; G7-12 (D) rewritten on M8 |
 | 3 | `dcc1c74` | the review of `58a0067` recorded; the four points settled: (D) put as an explicit choice between D2 (strict, six foreign keys made RESTRICT, its consequences) and D3 (a narrower guarantee stated exactly), D1's "FK-only" name withdrawn; the failure inside the processing transaction (a savepoint, the FAILED record, the stop after RECEIVED, their tests), and the 500 settled by a proposed CORRECTION-007; the relay made condition R-1 before any real event; the provider rule for every channel. The proposed text of `0008` (§5.1) and of CORRECTION-007 (§5.2), neither executed nor approved |
+| 4 | the commit that adds this revision | the review of `4aed49b` recorded: D2, CORRECTION-007, (a2) with R-1, and G7-4 decided; the other directions approved. Its two gaps settled: a WHATSAPP thread's reference is scoped and unique (G7-3; `0008` part E; R-1 duty 6), and UNKNOWN → FAILED is refused (G7-5; part B rewritten). R-1 measures the relay's real envelopes against G7-15's limit (duty 7). §7 (1) and OQ7-2 aligned with CORRECTION-007. The full text of `0008` (§5.1), not executed |
+
+**The review of `4aed49b`. The four points are accepted as directions. The
+text of `0008` is not approved, and step 1 does not start, for two gaps in
+that text.**
+- **What the reviewer checked:** the diff `58a0067..4aed49b`, documentary
+  only; revision 3; and `0008`'s text against the frozen schema.
+- **Decided:**
+
+  | Item | Decision |
+  |---|---|
+  | **G7-12 (D)** | **D2**: the strict guard, and the six keys made `RESTRICT`, with the consequences for deleting a party or an account, and the limit on erasure requests, as worded. D3 is not chosen |
+  | **A failure of the webhook's processing** | **CORRECTION-007**: `500 WEBHOOK_PROCESSING_FAILED` once the event is stored and its processing failed, with redelivery under the same identifier. The savepoint path and the FAILED record are accepted. A failure of the COMMIT or of the connection leaves the previous status, as worded. A savepoint keeps the writes made before it, and rolling back to it undoes what followed (PostgreSQL 16, `SAVEPOINT`) |
+  | **Meta's boundary** | **(a2), with R-1 a condition required before any real event.** TURAB's test proves the relay's signature only. The relay's verification of Meta stays unproven in the slice's evidence until the relay is built and its five duties are tested |
+  | **G7-4** | `whatsapp` for the WHATSAPP channel; the external reference refused in every other channel; the three CHECKs and the channel guard as proposed |
+  | **The other directions** | the recommended options are accepted as the plan's basis, G7-8 (a), G7-9 (a) and G7-15's 64 KiB among them, **provided the size of the relay's real envelopes is tested within R-1** before real traffic. "This is an approval of the directions, not of the defective migration text below" |
+- **What stops `0008` now:**
+  1. **The thread reference is not unique.**
+     - G7-3 resolves an inbound message by `external_thread_ref`, but
+       `communication_threads` does not make it unique, and `0008` adds no
+       constraint on it. Two WHATSAPP threads can then share a reference,
+       and the message's party is undetermined.
+     - **Asked for:** an explicit identity rule. The reviewer recommends a
+       partial unique index for WHATSAPP when the reference is not NULL,
+       with existing rows checked and two concurrent inserts tested.
+     - **R-1 must define the reference's scope** if the relay serves more
+       than one WhatsApp account or number: an index on a reference of
+       undefined scope is not enough.
+     - The reviewer cites PostgreSQL 16, §11.6 "Unique Indexes".
+  2. **The delivery-status transition contradicts itself.** G7-5 accepts
+     FAILED from QUEUED or SENT. But part B's SQL accepts UNKNOWN → FAILED,
+     because its `OLD.delivery_status = 'UNKNOWN'` branch comes before any
+     restriction. Restrict UNKNOWN to the non-FAILED statuses, and test that
+     the intended transitions are accepted and this one refused. If allowing
+     it was intended, change G7-5 explicitly, rather than letting the
+     trigger decide it silently.
+- **A documentary alignment with CORRECTION-007:**
+  - §7 (1) still says the contract changes only by CORRECTION-006;
+  - CORRECTION-007's status in the open questions must be updated.
+- **Asked for:** a short revision that fixes the thread reference's identity
+  and removes the UNKNOWN → FAILED contradiction, with the resulting text of
+  `0008` in full. Then the reviewer reviews approving the migration and
+  starting step 1.
+- **Not run by the reviewer:** the migration and the tests. M1–M8 remain
+  the implementing team's results.
+- **K06** stays UNPROVEN, an independent condition before any release gate.
 
 **The review of `58a0067`. Step 0 is accepted as measurement documented by
 the implementing team. The decisions and `0008` stay unapproved, for four
@@ -349,7 +405,19 @@ F7-5). G7-2 decides how TURAB meets them.
 
 ---
 
-## 5. Decisions needed — none is taken by this plan
+## 5. Decisions
+
+**Their status after the review of `4aed49b`:**
+
+| Decision | Status |
+|---|---|
+| G7-12 (D) | **DECIDED: D2** |
+| G7-2, the answer to a FAILED processing | **DECIDED: CORRECTION-007** (§5.2) |
+| G7-2 (ii), Meta's boundary | **DECIDED: (a2), with R-1 required before any real event** |
+| G7-4 | **DECIDED** as proposed (the provider rule, the three CHECKs, the channel guard) |
+| G7-1, G7-2 (other parts), G7-3, G7-5, G7-6, G7-7, G7-8 (a), G7-9 (a), G7-10, G7-11, G7-13, G7-14, G7-15 (64 KiB, R-1 measuring real envelopes) | **directions approved** as the plan's basis; G7-3 and G7-5 completed in revision 4 |
+| The text of `0008` (§5.1) | **not approved**; step 1 does not start |
+
 
 ### G7-1 · Scope
 - **Recommended:**
@@ -407,7 +475,7 @@ here:**
 - **(a1)** The relay is built in this repository as a separate component,
   with its own tests of Meta's GET and signature on synthetic notifications.
   It widens the slice.
-- **(a2) Recommended within (a).** The relay is specified here as an
+- **(a2) DECIDED in the review of `4aed49b`.** The relay is specified here as an
   interface (its four duties above, the envelope mapping, the header), and
   is built outside the slice. **(Revision 3, review of `58a0067`, point 3.)**
   Choosing (a2) creates **condition R-1**, independent of the slice, as K06
@@ -421,7 +489,20 @@ here:**
     3. the transformation to envelopes, one per message and per status;
     4. its own signature;
     5. the **redelivery** of an event TURAB did not complete, on its 500 or
-       on a timeout.
+       on a timeout;
+    6. **(Revision 4, review of `4aed49b`.) The scope of `thread_ref`.**
+       - The relay forms every `thread_ref` as `<business number id>:<customer
+         id>`: the identifier of the WhatsApp business number the
+         notification was addressed to, then the customer's WhatsApp
+         identifier.
+       - So two business numbers served by one relay never share a
+         reference.
+       - Which fields of Meta's notification carry the two identifiers is
+         confirmed by these tests against Meta's documentation. This
+         environment could not fetch it;
+    7. **(Revision 4.) The size of the relay's real envelopes** against
+       G7-15's 64 KiB limit, on the message types the relay forwards,
+       before real traffic.
   - **Slice 7's closure evidence** lists R-1 as **UNMET**. It never counts
     Meta's verification as done. Its tests prove TURAB's side only.
   - **The route is not exposed** to Meta's or the relay's traffic before R-1
@@ -536,21 +617,49 @@ the run.
 **Blocks:** step 3; §5.2.
 
 ### G7-3 · Event types and thread resolution
+
+**Direction approved in the review of `4aed49b`.**
+
 - **(a) Recommended.** The envelope's `payload` has a documented internal
-  shape. **This is the relay's output, (ii).**
+  shape. **This is the relay's output** (G7-2 (ii)).
   - **`message`:** `external_message_ref`, `thread_ref`, `occurred_at`,
     `message_type`, and optional `body_text` and `media_ref`. It is stored as
-    an INBOUND message in the WHATSAPP thread whose `external_thread_ref` is
-    `thread_ref`;
+    an INBOUND message in **the** WHATSAPP thread whose `external_thread_ref`
+    is `thread_ref`;
   - **`status`:** `external_message_ref`, `status` and `occurred_at` (G7-5).
+- **The thread reference's identity (revision 4, review of `4aed49b`,
+  point 1):**
+  - **Its form:** a WHATSAPP thread's `external_thread_ref`, when given, is
+    **scoped**: `<scope>:<id>`, two non-empty parts. The relay forms it as
+    `<business number id>:<customer id>` (R-1, duty 6).
+  - **Who must use it:** a staff-created WHATSAPP thread meant to receive
+    webhook messages carries the same form.
+  - **Uniqueness:** **at most one WHATSAPP thread holds a given
+    reference.** `0008` part E adds:
+    - a CHECK of the form;
+    - the partial unique index `ux_whatsapp_thread_ref` on
+      `(external_thread_ref) WHERE channel = 'WHATSAPP' AND
+      external_thread_ref IS NOT NULL`;
+    - a pre-check that refuses the migration, naming the counts, if
+      existing rows break either rule.
+  - **Concurrency:** two concurrent creations of one reference resolve to
+    one, the second refused, as M4 measured for the event store. Step 1
+    tests it with a witness.
+  - **The staff command:** a second WHATSAPP thread with a taken reference
+    is a typed 409 `THREAD_REF_TAKEN`, writing nothing.
+  - **What resolution then means:** "the thread whose reference is
+    `thread_ref`" names zero or one thread. Zero is IGNORED.
+  - **Other channels:** their references stay unconstrained. No resolution
+    reads them.
+  - **The links are frozen** by part D, so a reference, once set, never
+    moves to another thread.
 - **IGNORED,** with a fixed reason: an unknown type, an unknown thread, or an
   unknown message for a status.
 - **No thread, party or identity is created from a webhook** (identity is
   Slice 3's reviewed process).
 - **(b)** Create a party-less thread for an unknown `thread_ref`. Not
-  recommended: it makes records nobody reviewed, and such a thread can never
-  archive content (M5).
-- **Blocks:** step 3.
+  recommended.
+- **Blocks:** step 3, and `0008` part E.
 
 ### G7-4 · The global message identity (mandatory test 2, J02, F7-1)
 
@@ -579,15 +688,34 @@ known for exactly one channel; every other channel refuses a reference.**
 **Blocks:** steps 1–3.
 
 ### G7-5 · Delivery and read status
+
+**Direction approved; the rule corrected in revision 4 (review of
+`4aed49b`, point 2).**
+
 - **(a) Recommended.**
   - **The order:** QUEUED < SENT < DELIVERED < READ.
-  - **Moves:** forward only; a late, older status is IGNORED. FAILED is
-    accepted from QUEUED or SENT, and is final. UNKNOWN is replaced by any
-    status.
+  - **The accepted changes, and no others:**
+
+    | From | To |
+    |---|---|
+    | UNKNOWN | QUEUED, SENT, DELIVERED or READ: **never FAILED** |
+    | QUEUED, SENT, DELIVERED | any later status in the order (steps may be skipped) |
+    | QUEUED or SENT | FAILED, which is final |
+    | DELIVERED, READ, FAILED | nothing further (except READ after DELIVERED) |
+
+  - **Why UNKNOWN → FAILED is refused:**
+    - UNKNOWN means that TURAB never knew the message's state;
+    - FAILED is accepted only for a message known to be QUEUED or SENT;
+    - a provider's FAILED for an UNKNOWN message is therefore recorded
+      (`webhook_events`) and **IGNORED**, with the reason
+      `STATUS_TRANSITION_NOT_ACCEPTED`, like a late or backward status.
+  - **The service checks the transition before its UPDATE,** so an accepted
+    flow never meets the trigger's refusal. Part B refuses the same set, as
+    the backstop.
   - **The only path** after creation is the webhook (F7-10).
-  - **M3 shows the schema accepts READ, then SENT;** `0008` (B) refuses it.
+  - **M3 shows the schema accepts READ, then SENT;** part B refuses it.
 - **(b)** Last-received wins. Not recommended.
-- **Blocks:** step 3; `0008` (B).
+- **Blocks:** step 3; `0008` part B.
 
 ### G7-6 · The thread/opportunity link invariant (mandatory test 3)
 
@@ -786,8 +914,9 @@ recommended:
 - **(B)** Messages are append-only; `delivery_status` forward only (G7-5).
 - **(C)** A `webhook_events` row is immutable except its processing fields,
   by the transitions of G7-2 (v).
-- **(D) A thread's links. Revision 3, review of `58a0067`, point 1: an
-  explicit choice.**
+- **(D) A thread's links. DECIDED in the review of `4aed49b`: D2.** D3 is
+  not chosen; its description stays below as the alternative that was put.
+  (Revision 3, review of `58a0067`, point 1: an explicit choice.)
 
   **What M8 measured, and why D1 is withdrawn:**
   - M8 measured three candidates: strict, permissive and depth-based.
@@ -805,9 +934,9 @@ recommended:
     `opportunity_id`, `created_by_account_id`;
   - on `communication_messages`: `sent_by_account_id`.
 
-  **D2 or D3 is to be chosen:**
+  **The two variants put in revision 3 (D2 decided):**
 
-  - **(D2) Recommended. Strict, with the six foreign keys made `ON DELETE
+  - **(D2) DECIDED. Strict, with the six foreign keys made `ON DELETE
     RESTRICT`.**
     - **The guarantee:** a thread's links and attribution, and a message's
       attribution, **never change** after INSERT, by any statement at any
@@ -831,7 +960,8 @@ recommended:
         `<table>_<column>_fkey`, as M3's
         `communication_messages_thread_id_fkey` shows, and the migration
         fails if a name differs.
-  - **(D3) The frozen keys kept, and a narrower guarantee, stated exactly.**
+  - **(D3) Not chosen. The frozen keys kept, and a narrower guarantee,
+    stated exactly.**
     - **The guarantee:**
       - **no top-level statement** (`pg_trigger_depth() = 1`) changes a
         thread's links or attribution, or a message's attribution;
@@ -848,7 +978,7 @@ recommended:
     - **Its advantage:** no frozen constraint changes, and the deletion of a
       party keeps working as frozen.
 - **Each guard is proven at trigger level,** not as K06 (G7-13).
-- **Blocks:** step 1; the choice of D2 or D3 selects §5.1's part D.
+- **Blocks:** step 1. §5.1's part D is D2.
 
 ### G7-13 · K06 (not blocking this plan)
 - **Carried unchanged.** The application role is a superuser (M3). K06 is
@@ -879,21 +1009,54 @@ recommended:
   (J03, F7-6). The sources leave it to "pilot/legal review".
 - **OQ7-2 · The contract's owner:**
   - whether to declare the relay's signature header;
-  - whether ever to accept Meta's native shape (G7-2 (b));
-  - CORRECTION-007 (§5.2).
+  - whether ever to accept Meta's native shape (G7-2 (b)).
+  - CORRECTION-007 is no longer open: **decided** in the review of
+    `4aed49b` (§5.2), to be written in step 3.
 - **OQ7-3 · A read operation for a thread's messages,** if G7-8 (b) is
   decided.
 - **OQ7-4 · An app-wide request-body limit** (F7-12).
 
 ### 5.1 The text of migration `0008` (proposed; NOT executed; NOT approved)
 
+**Revision 4.** Part D is D2 (chosen in the review of `4aed49b`). Part B's
+status rule is corrected (UNKNOWN → FAILED refused). Part E is new: a
+WHATSAPP thread's reference is scoped and unique.
+
 **Not executed.** This text has not been run against any database. It is run
-for the first time in step 1, with its tests, once approved. Part D is shown
-in both of G7-12's variants; one is kept.
+for the first time in step 1, with its tests, once approved.
 
 ```sql
 -- 0008 — communication records: identity, append-only rows, frozen threads
--- Plan: docs/gate/SLICE_7_PLAN.md revision 3, G7-4, G7-5, G7-2 (v), G7-12.
+-- Plan: docs/gate/SLICE_7_PLAN.md revision 4: G7-3, G7-4, G7-5, G7-2 (v),
+-- G7-12 (D2, review of 4aed49b).
+
+-- Part E first: a WHATSAPP thread's reference is scoped and unique (G7-3) -------
+-- Existing rows are checked before the index, so a failure names its cause.
+DO $$
+DECLARE
+  malformed integer;
+  duplicated integer;
+BEGIN
+  SELECT count(*) INTO malformed FROM turab.communication_threads
+   WHERE channel = 'WHATSAPP' AND external_thread_ref IS NOT NULL
+     AND external_thread_ref !~ '^[^:]+:[^:]+$';
+  SELECT count(*) INTO duplicated FROM (
+    SELECT external_thread_ref FROM turab.communication_threads
+     WHERE channel = 'WHATSAPP' AND external_thread_ref IS NOT NULL
+     GROUP BY external_thread_ref HAVING count(*) > 1) d;
+  IF malformed > 0 OR duplicated > 0 THEN
+    RAISE EXCEPTION '0008: % WHATSAPP thread reference(s) not scoped, % reference(s) shared; resolve them before this migration',
+      malformed, duplicated;
+  END IF;
+END $$;
+
+ALTER TABLE turab.communication_threads
+  ADD CONSTRAINT ck_whatsapp_thread_ref_scoped
+      CHECK (channel <> 'WHATSAPP' OR external_thread_ref IS NULL
+             OR external_thread_ref ~ '^[^:]+:[^:]+$');
+CREATE UNIQUE INDEX ux_whatsapp_thread_ref
+    ON turab.communication_threads (external_thread_ref)
+ WHERE channel = 'WHATSAPP' AND external_thread_ref IS NOT NULL;
 
 -- Part A: a provider message identity is whole, and known (G7-4) ----------------
 ALTER TABLE turab.communication_messages
@@ -920,6 +1083,10 @@ CREATE TRIGGER trg_message_provider_channel
   FOR EACH ROW EXECUTE FUNCTION turab.enforce_message_provider_channel();
 
 -- Part B: messages are append-only; delivery_status moves forward (G7-5) --------
+-- Accepted changes of delivery_status, and no other:
+--   UNKNOWN -> QUEUED | SENT | DELIVERED | READ        (never UNKNOWN -> FAILED)
+--   QUEUED -> SENT -> DELIVERED -> READ, forward only, steps may be skipped
+--   QUEUED | SENT -> FAILED                            (FAILED is final)
 CREATE FUNCTION turab.guard_communication_message() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -929,10 +1096,6 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'communication_messages: DELETE refused (append-only)';
   END IF;
-  rank_old := array_position(ARRAY['QUEUED','SENT','DELIVERED','READ']::text[],
-                             OLD.delivery_status::text);
-  rank_new := array_position(ARRAY['QUEUED','SENT','DELIVERED','READ']::text[],
-                             NEW.delivery_status::text);
   IF (NEW.message_id, NEW.thread_id, NEW.provider, NEW.external_message_ref,
       NEW.direction, NEW.message_type, NEW.body_text, NEW.media_ref,
       NEW.occurred_at, NEW.sent_by_account_id, NEW.metadata, NEW.created_at)
@@ -942,14 +1105,20 @@ BEGIN
       OLD.occurred_at, OLD.sent_by_account_id, OLD.metadata, OLD.created_at) THEN
     RAISE EXCEPTION 'communication_messages: only delivery_status may change';
   END IF;
-  IF NEW.delivery_status IS DISTINCT FROM OLD.delivery_status AND NOT (
-       OLD.delivery_status = 'UNKNOWN'
-    OR (NEW.delivery_status = 'FAILED' AND OLD.delivery_status IN ('QUEUED', 'SENT'))
-    OR (rank_old IS NOT NULL AND rank_new IS NOT NULL AND rank_new > rank_old)) THEN
-    RAISE EXCEPTION 'communication_messages: delivery_status % -> % refused',
-      OLD.delivery_status, NEW.delivery_status;
+  IF NEW.delivery_status IS NOT DISTINCT FROM OLD.delivery_status THEN
+    RETURN NEW;
   END IF;
-  RETURN NEW;
+  rank_old := array_position(ARRAY['QUEUED','SENT','DELIVERED','READ']::text[],
+                             OLD.delivery_status::text);
+  rank_new := array_position(ARRAY['QUEUED','SENT','DELIVERED','READ']::text[],
+                             NEW.delivery_status::text);
+  IF (OLD.delivery_status = 'UNKNOWN' AND rank_new IS NOT NULL)
+     OR (rank_old IS NOT NULL AND rank_new IS NOT NULL AND rank_new > rank_old)
+     OR (NEW.delivery_status = 'FAILED' AND OLD.delivery_status IN ('QUEUED', 'SENT')) THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'communication_messages: delivery_status % -> % refused',
+    OLD.delivery_status, NEW.delivery_status;
 END $$;
 CREATE TRIGGER trg_guard_communication_message
   BEFORE UPDATE OR DELETE ON turab.communication_messages
@@ -982,7 +1151,8 @@ CREATE TRIGGER trg_guard_webhook_event
   BEFORE UPDATE OR DELETE ON turab.webhook_events
   FOR EACH ROW EXECUTE FUNCTION turab.guard_webhook_event();
 
--- Part D, variant D2 (recommended): six keys RESTRICT; links never change -------
+-- Part D (D2, decided in the review of 4aed49b): six keys RESTRICT; a thread never
+-- changes after INSERT, but for last_message_at moving forward ----------------
 ALTER TABLE turab.communication_threads
   DROP CONSTRAINT communication_threads_party_id_fkey,
   ADD CONSTRAINT communication_threads_party_id_fkey FOREIGN KEY (party_id)
@@ -1030,43 +1200,61 @@ END $$;
 CREATE TRIGGER trg_guard_communication_thread
   BEFORE UPDATE OR DELETE ON turab.communication_threads
   FOR EACH ROW EXECUTE FUNCTION turab.guard_communication_thread();
-
--- Part D, variant D3 (instead of D2): the keys kept; a narrower guarantee -------
--- Replaces D2's two ALTER TABLE statements and its thread guard. Under D3,
--- Part B's message guard lets sent_by_account_id become NULL under the same
--- rule. The thread guard:
---   * a link or created_by_account_id may differ from OLD only when
---     NEW.<column> IS NULL AND pg_trigger_depth() > 1;
---   * every other change of those columns, and any change of channel,
---     external_thread_ref, opened_at or archived_at, is refused;
---   * last_message_at moves forward only;
---   * DELETE is refused.
 ```
 
-**The downgrade** drops the four triggers and their functions, and the three
-CHECKs. Under D2 it also restores the six keys to `ON DELETE SET NULL`.
+**The downgrade, in reverse order:**
+- drops the four triggers and their functions;
+- drops the three CHECKs of part A, and part E's CHECK and index;
+- restores the six keys to `ON DELETE SET NULL`.
 
 **The step 1 tests,** each refusal named by its message:
+- **Part E:**
+  - the pre-check refuses a database holding an unscoped or a shared
+    WHATSAPP reference, naming the counts;
+  - an unscoped reference is refused (CHECK);
+  - a second WHATSAPP thread with the same reference is refused (23505 on
+    `ux_whatsapp_thread_ref`);
+  - **two concurrent inserts of one reference:** the second waits on the
+    first (a `pg_blocking_pids` witness), and is refused after its COMMIT,
+    or accepted after its ROLLBACK (M4's pattern);
+  - the same reference on a PHONE thread, and a NULL reference, are not
+    constrained.
 - **Part A:** the four refusals.
-- **Part B:** every column change; DELETE; every backward status, and FAILED
-  from DELIVERED or READ; and the forward moves accepted.
-- **Part C:** every immutable field; DELETE; leaving PROCESSED and IGNORED;
-  RECEIVED → FAILED → PROCESSED accepted.
-- **Part D under D2:** the deletion of each of the six parents refused when
-  named; every link change refused, at depth 1 and from inside a test
-  trigger (depth 2); `last_message_at` backwards refused.
-- **Part D under D3:** a direct change refused; a nested change to another
-  value refused; a nested change to NULL accepted (the FK's, and a test
-  trigger's: the stated limit, shown).
+- **Part B:**
+  - **accepted:**
+    - UNKNOWN → QUEUED, SENT, DELIVERED and READ;
+    - every forward move between QUEUED and READ, skipped steps included;
+    - QUEUED → FAILED and SENT → FAILED;
+    - an UPDATE that does not change the status;
+  - **refused, each by its message:**
+    - **UNKNOWN → FAILED;**
+    - every backward move; anything → UNKNOWN;
+    - DELIVERED → FAILED and READ → FAILED;
+    - anything from FAILED;
+    - every change of another column; DELETE.
+- **Part C:**
+  - every immutable field; DELETE; leaving PROCESSED and IGNORED refused;
+  - RECEIVED → FAILED → PROCESSED accepted.
+- **Part D:**
+  - the deletion of each of the six named parents refused;
+  - every link and attribution change refused, at depth 1 and from inside a
+    test trigger (depth 2);
+  - `last_message_at` backwards refused, forwards accepted;
+  - a thread's DELETE refused.
 - **Every guard is labelled trigger-level** (K06).
 
-### 5.2 CORRECTION-007 (proposed; NOT approved): a 500 for the webhook
+### 5.2 CORRECTION-007 (DECIDED in the review of `4aed49b`): a 500 for the webhook
 
-Written as CORRECTION-005 was: an entry of
-`docs/contract/CONTRACT_CORRECTIONS.yaml`, from which the effective contract
-is regenerated, and checked by the gate ("the effective contract is
-current"). Today the effective contract states a `500` for **no** operation
-(searched: no `'500'` in `openapi_effective_v0.2.3.yaml`).
+**Decided: the correction is adopted.** It is to be written as CORRECTION-005
+was:
+- an entry of `docs/contract/CONTRACT_CORRECTIONS.yaml`, with its own
+  `CORRECTION-007-*.md`;
+- the effective contract regenerated from it, and checked by the gate ("the
+  effective contract is current");
+- delivered in step 3, before the route.
+
+Today the effective contract states a `500` for **no** operation (searched:
+no `'500'` in `openapi_effective_v0.2.3.yaml`).
 
 - **The operation:** `postWebhooksWhatsapp`.
 - **The change:** a `500` response, `application/problem+json`, with the code
@@ -1075,16 +1263,12 @@ current"). Today the effective contract states a `500` for **no** operation
   recorded) and was not processed. Deliver the same `provider_event_id`
   again; a later delivery completes it once."
 - **Its nature:** an **addition** to the frozen contract's responses, not a
-  narrowing, so it is put to the contract's owner as such.
-- **A precedent, and why it does not settle this:** Slice 4's typed 500
-  for its two policy faults was set by a review decision, without a
-  contract entry (`SLICE_4_PLAN.md` G4-15, revisions 15–16). Here the 500 is
-  a signal the relay must act on, part of the protocol between the two, so
-  it belongs in the contract.
+  narrowing.
 - **Unchanged:** 200, 400 and 401.
-- **If not approved:** G7-2 (v) (b) applies. The answer is 200 once T1 is
-  committed, and a FAILED event is recovered only by the command, without
-  its content.
+- **The precedent, and why it did not settle this:** Slice 4's typed 500
+  for its policy faults was set by a review decision without a contract
+  entry (`SLICE_4_PLAN.md` G4-15). Here the 500 is a signal the relay acts
+  on, so it is in the contract.
 
 ---
 
@@ -1096,7 +1280,7 @@ current"). Today the effective contract states a `500` for **no** operation
 |---|---|---|
 | 1 | "repeated provider webhook creates one message" | the same signed envelope posted twice, and concurrently: one event row, one message, one interaction. A PROCESSED replay writes nothing; a FAILED or RECEIVED event is completed by the replay, still one message (G7-2 (v)) |
 | 2 | "same provider message id cannot be inserted into another thread" | the same `(whatsapp, ref)`, by staff and by webhook, into a second thread: a typed 409, or IGNORED, and no row. The NULL-provider path is refused by the service and by `0008` (A) |
-| 3 | "thread/opportunity links are checked by service invariant" | each rule of G7-6, rule 0 (SALE) included, with an inconsistent link refused, writing nothing; the seller's thread about the buyer's opportunity accepted; the links protected afterwards as G7-12 (D) decides: under D2, never changed and the named parents' deletion refused; under D3, the narrower guarantee shown with its limit |
+| 3 | "thread/opportunity links are checked by service invariant" | each rule of G7-6, rule 0 (SALE) included, with an inconsistent link refused, writing nothing; the seller's thread about the buyer's opportunity accepted; the links never changed afterwards, and the named parents' deletion refused (D2) |
 | 4 | "phone decision can be linked to later written confirmation observation" | G7-10 end to end over HTTP |
 
 ### 6.2 Red-team and RFC-001 cases
@@ -1128,9 +1312,8 @@ As Slice 6's:
 - the writes to the four tables inventoried **by kind**;
 - **the event store's RECEIVED and FAILED counts** at the end of the run;
 - **the trust boundary of G7-2 (ii), as worded there;**
-- **condition R-1 listed as UNMET** if (a2) is chosen;
-- **the trigger functions that update `communication_threads` or
-  `communication_messages`,** if D3 is chosen;
+- **condition R-1 listed as UNMET** until the relay is built and its seven
+  duties are tested (G7-2 (ii); (a2) decided);
 - Slice 6's carried limits, none as proven.
 
 ### 6.5 Step 0: done
@@ -1143,17 +1326,23 @@ identical results, and are ours.
 
 ## 7. Acceptance conditions
 
-1. **The contract is unchanged,** apart from CORRECTION-006 if G7-7 (a) is
-   decided and approved. The relay's header is outside the OpenAPI
-   (G7-2 (ii)).
+1. **The contract changes only by two corrections:**
+   - **CORRECTION-006,** which narrows `CommunicationThreadCreate.party_id`
+     to required (G7-7 (a)), once written and approved;
+   - **CORRECTION-007,** which adds the webhook's `500
+     WEBHOOK_PROCESSING_FAILED` (decided in the review of `4aed49b`).
+
+   Each is an entry of `CONTRACT_CORRECTIONS.yaml`, from which the
+   effective contract is regenerated and checked by the gate. The relay's
+   header is outside the OpenAPI (G7-2 (ii)).
 2. **A completed webhook event, replayed, writes nothing;** an incomplete
    one is completed once (J01, S42, G7-2 (v)).
 3. **A provider message identity is global** (J02), the NULL case included.
 4. **An unverified webhook writes nothing** (S41). Its check is described
    as the relay's origin, never as Meta's signature.
-5. **Thread links are consistent at creation, SALE checked, and protected
-   as G7-12 (D) decides** (D2: never changed; D3: never re-pointed, with its
-   stated limit).
+5. **Thread links are consistent at creation, SALE checked, and never
+   changed afterwards** (D2); a WHATSAPP thread's reference is scoped and
+   unique (G7-3).
 6. **A phone decision's confirmation link is append-only,** and claims no
    legal value.
 7. **No content is stored without a consent valid at write time,** in any
@@ -1164,8 +1353,9 @@ identical results, and are ours.
 10. **SALE only,** checked (G4-5R open). **K06 UNPROVEN.** **No AI.**
 11. **A processing failure is recorded,** or the event keeps its previous
     status, and no half-written message remains (G7-2 (iv)).
-12. **Condition R-1** (if (a2) is chosen) is listed as UNMET. Meta's
-    verification is never counted as done in this slice.
+12. **Condition R-1** ((a2), decided) is listed as UNMET, and is required
+    before any real event. Meta's verification is never counted as done in
+    this slice.
 
 ---
 
@@ -1174,9 +1364,9 @@ identical results, and are ours.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
-| 1 | migration `0008`, as G7-12 decides; tests, mutations | G7-4, G7-5, G7-12 with D2 or D3 chosen; the text of §5.1 approved |
+| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | the text of §5.1 approved |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11 |
-| 3 | the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 or G7-2 (v) (b) |
+| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 
