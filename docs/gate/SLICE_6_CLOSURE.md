@@ -78,9 +78,20 @@ reviewer did not re-run them independently.
       AND title = 'Confirm the offer''s price terms';
    ```
 
-   No path updates a title. Such a row keeps its title until it is DONE.
-   While it is OPEN or IN_PROGRESS, the open-work index refuses a new task
-   for the same subject (`test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`).
+   No path updates a title, so such a row keeps its old title, before and
+   **after** it is DONE: completing a task does not change its title.
+   - **While it is OPEN or IN_PROGRESS,** the open-work index refuses a new
+     task for the same subject.
+   - **Once it is DONE,** a later run that raises the work again creates a
+     **new** task, which carries the corrected title. The old row stays as it
+     was, with its old title.
+
+   Both are shown by
+   `test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`. *(The
+   documentary correction of the review of `3583b6a`: the earlier wording,
+   "keeps its title until it is DONE", suggested that the title changes on
+   completion. The test's name carries the same ambiguity; its assertions
+   do not, since they check the DONE row's old title.)*
 
 ## 2. The steps, and the reviews that closed them
 

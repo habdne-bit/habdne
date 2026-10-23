@@ -887,3 +887,7 @@ docs/gate/SLICE_6_CLOSURE.md                                   new   8f4780a4904
 docs/gate/SLICE_6_STEP5_DELIVERY.md                            ---   40b6179ff8a005202ad4c536dfa823f9416cb56c06a2d33a6ed95228a57e099e
 docs/gate/SLICE_6_PLAN.md                                      rev17 c2be247371cf0c36d89f986df7cacc9ca97545b4b1dcd7ac4700402e5186d37a
 SLICE_6_PLAN.md changed revision: 16 -> 17 (Slice 6 closed at ce8cfa0, SALE only; K06 remedy an independent condition before any release gate).
+--- Review of 3583b6a: two documentary corrections in place (Slice 6 stays CLOSED at ce8cfa0) ---
+docs/gate/SLICE_6_CLOSURE.md                                   ---   da99b8ebed30eddb1aa62bb525ce42b8af1fca57f04b88e3af29304bab372780
+docs/gate/SLICE_6_PLAN.md                                      rev17 89469610722f20c092f8795f253b3d27872fd7546920d8215704c7a4ba7be351
+SLICE_6_PLAN.md revision 17 corrected in place: its commit named (3583b6a); not a new revision.
