@@ -898,3 +898,5 @@ docs/gate/SLICE_6_EVIDENCE.md                                  ---   55431cf4966
 docs/gate/SLICE_6_CLOSURE.md                                   ---   bcc5ce83fd14991f1d3bcf086ed7bb46552563adda25d62c49852169b0ad3899
 docs/gate/SLICE_6_PLAN.md                                      rev18 76ca12db71ed33adfa542f89d79c08302b8a8408353ce4020f7c20dbc7d68bdf
 SLICE_6_PLAN.md changed revision: 17 -> 18 (the later tree's evidence corrected and run again; Slice 6 stays closed at ce8cfa0).
+docs/gate/SLICE_6_PLAN.md                                      rev18 9423616a4633fc5a6057bc6afa431db7524d91bf7126d33b1d0b47e00a2aae72
+SLICE_6_PLAN.md revision 18: its commit named (223ea6e) in place; no new revision.
