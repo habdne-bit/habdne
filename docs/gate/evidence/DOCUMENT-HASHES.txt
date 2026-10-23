@@ -872,3 +872,13 @@ SLICE_6_PLAN.md changed revision: 13 -> 14 (step 5 delivered for review; F6-21, 
 docs/gate/evidence/SLICE6-STEP5-F6-22-STORED-TITLES.txt        new   fed520d3c1bdea51249e9cf54c337f00cd1352374d5664b52850349def471809
 docs/gate/SLICE_6_PLAN.md                                      rev15 a5d28560e297150a15020769e35a081fe2921ab83bd85d380a454dffee44930f
 SLICE_6_PLAN.md changed revision: 14 -> 15 (review of 3657973: step 5 not closed; F6-21 documentary correction; F6-22 title by type and entity).
+--- Slice 6 step 5, the correction of the review of 3657973 delivered; Slice 6 plan revision 16 ---
+docs/gate/evidence/SLICE6-STEP5-F6-22-BEFORE-FIX.txt           new   41c48b543b9f5c965500e472eaec6f0bc29b55b86d2fc1483e4d9dccc931b4e8
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS.txt                  ---   860e8f959d957902bdca4c696e9746ae0e2080ea2ed15f125cb6af0f08581870
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS-REPEAT.txt           ---   4f1f6b020d624273ba221c61e81e7cb1505aba13b5edde8e3207882568663303
+docs/gate/evidence/SLICE6-STEP4-MUTATIONS-AT-F6-22-FIX.txt     new   53f624825a6dec9bd0b93a2c6f1caec4a2f88b4494d9e04b5aef81c23a7d39b5
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   900681d4a6ed1c3ab9f2e3077e897eff02d81e8ae1a7c1cdb4da26c18f6b6b44
+docs/gate/SLICE_6_EVIDENCE.md                                  ---   7b2ac2a02b579587e34fb89f17009f16743f7ce87518b31d30bd830993e9024a
+docs/gate/SLICE_6_STEP5_DELIVERY.md                            ---   9aabea71779490d946cf6bf05304ac467c5585f63a50f22f068ff5baa007c08f
+docs/gate/SLICE_6_PLAN.md                                      rev16 c4302cda1102e59911724e0325c753457be1c0bba06f26675795be89da110664
+SLICE_6_PLAN.md changed revision: 15 -> 16 (the correction of the review of 3657973 delivered; Slice 6 not declared closed).
