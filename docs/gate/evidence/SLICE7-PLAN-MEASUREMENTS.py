@@ -342,11 +342,15 @@ def m8(conn) -> None:
             t = thread(conn, p)
             direct = attempt(conn, "UPDATE communication_threads SET party_id = %(p)s "
                                    "WHERE thread_id = %(t)s", {"p": p2, "t": t})
+            t2 = thread(conn, p2)
+            to_null = attempt(conn, "UPDATE communication_threads SET party_id = NULL "
+                                    "WHERE thread_id = %(t)s", {"t": t2})
             delete = attempt(conn, "DELETE FROM parties WHERE party_id = %(p)s", {"p": p})
             left = conn.execute("SELECT party_id IS NULL FROM communication_threads "
                                 "WHERE thread_id = %s", (t,)).fetchone()[0]
             out(f"    {label}:")
             out(f"      a direct UPDATE of party_id to another party: {direct}")
+            out(f"      a direct UPDATE of party_id to NULL (no delete): {to_null}")
             out(f"      DELETE of the thread's party (FK ON DELETE SET NULL): {delete}")
             out(f"      the thread's party_id is now NULL: {left}; "
                 f"pg_trigger_depth seen by the guard: {sorted(set(notices))}")
