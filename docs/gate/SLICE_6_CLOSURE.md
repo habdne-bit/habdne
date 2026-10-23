@@ -125,9 +125,13 @@ reviewer did not re-run them independently.
 
 ## 4. The evidence the closure rests on
 
+**The evidence of `ce8cfa0`'s tree,** which the closure rests on. The
+closure evidence as it stood there is `git show ce8cfa0:docs/gate/SLICE_6_EVIDENCE.md`.
+The current file is the evidence of a later tree (§6).
+
 | Evidence | Result | Record |
 |---|---|---|
-| Closure evidence (not a STOP GATE) | generated from the bound run; `slice6_evidence.py --check` exits 0 | `SLICE_6_EVIDENCE.md` |
+| Closure evidence (not a STOP GATE) | generated from the bound run; `slice6_evidence.py --check` exits 0 | `SLICE_6_EVIDENCE.md` at `ce8cfa0` (generated at `d4a1263`) |
 | Suite | 2614 passed, 0 failed, 0 errors, 0 skipped; `bound`; source fingerprint `2858511a…cbde` | `evidence/TEST-RUN-PROVENANCE.txt` (`5d0cd09`) |
 | PostgreSQL gate | PASS; 70 PASS notices; 67 operations equal | `evidence/gate-run.txt` (`c627551`) |
 | Authorization matrix | 189 rules | `AUTHORIZATION_EVIDENCE_MATRIX.md` (`130b725`) |
@@ -141,3 +145,51 @@ reviewer did not re-run them independently.
 - **No code for the next slice** before its plan is approved.
 - **K06's remedy** stays an independent condition before any release gate
   (§1, limit 4).
+
+## 6. After the closure: the evidence of a later tree (review of `1c27241`)
+
+**Decided** (review of `1c27241`):
+- correct the two remaining places where "keeps it until DONE" suggested
+  that an old row loses its title on completion:
+  - the generator's text;
+  - the test's name;
+- update the name's references in the generator, and regenerate the
+  evidence;
+- run again the evidence round the new tree needs, recorded as a new run.
+
+**Not reopened.** This is a correction of the evidence of a later tree. It
+does not reopen Slice 6, and it is not a release authorization. The closure
+at `ce8cfa0`, and its evidence (§4), stay attributed to their tree.
+
+**What changed** (`c25ec48`):
+- **the test is renamed.** It was
+  `test_f6_22_a_task_stored_with_the_old_title_keeps_it_until_done`, and is
+  now
+  `test_f6_22_an_old_title_stays_after_done_and_new_work_gets_the_corrected_title`.
+  Its assertions are unchanged, and its docstring states the old name;
+- **the generator's text** now reads: "such a row keeps its old title, also
+  after it is DONE; a later run that raises the work again creates a new row
+  with the corrected title". So does the F6-22 decision's wording, and the
+  mapping now uses the new name;
+- **no line of `src/` changed.** The source fingerprint changes through
+  `tests/` and `db/gate/`.
+
+**The records of `ce8cfa0`'s tree keep the old name, as written then:**
+- the mutation runs at `fd648e8`;
+- `SLICE6-STEP5-F6-22-STORED-TITLES.txt`;
+- `SLICE6-STEP5-F6-22-BEFORE-FIX.txt`.
+
+**The evidence round of the later tree,** a new run. Every row was run on a
+clean tree, with source fingerprint
+`2d11e774856f78ba9217880297422066ea03fb6d5592e315588d7c157c3c5563`, on
+PostgreSQL 16.15.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Mutations, step 5, twice | 16/16 each, none survives; counts identical to `fd648e8`'s | `54fa81c` (runs at `c25ec48`) | `evidence/SLICE6-STEP5-MUTATIONS-AT-c25ec48.txt`, `…-REPEAT.txt` |
+| Authorization matrix | 2614 passed; the document is unchanged (189 rules; it names no renamed test), so nothing was committed | — (run at `54fa81c`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS. The body is identical to the run at `c627551`; only the header differs | `0cdc714` (run at `54fa81c`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | 2614 passed, 0 failed, 0 errors, 0 skipped; `bound` | `846de5e` (run at `0cdc714`) | `evidence/TEST-RUN-PROVENANCE.txt` |
+| Closure evidence | regenerated from that run; `--check` exits 0; "until DONE" no longer appears | `8a7e6fa` | `SLICE_6_EVIDENCE.md` |
+
+**These results are ours.** The reviewer did not re-run them.

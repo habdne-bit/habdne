@@ -891,3 +891,10 @@ SLICE_6_PLAN.md changed revision: 16 -> 17 (Slice 6 closed at ce8cfa0, SALE only
 docs/gate/SLICE_6_CLOSURE.md                                   ---   da99b8ebed30eddb1aa62bb525ce42b8af1fca57f04b88e3af29304bab372780
 docs/gate/SLICE_6_PLAN.md                                      rev17 89469610722f20c092f8795f253b3d27872fd7546920d8215704c7a4ba7be351
 SLICE_6_PLAN.md revision 17 corrected in place: its commit named (3583b6a); not a new revision.
+--- Review of 1c27241: after the closure, the F6-22 fate test renamed and the generator's text corrected; the later tree's evidence run again (Slice 6 stays CLOSED at ce8cfa0); Slice 6 plan revision 18 ---
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS-AT-c25ec48.txt       new   c94b8d8b635a2c7240a4206bf0c26e9701361450bb29998fc2f95f2339f40b2a
+docs/gate/evidence/SLICE6-STEP5-MUTATIONS-AT-c25ec48-REPEAT.txt new  0d2096179a7c8891397a225e1b41270d6611802aefaa7596fd3b9803ef692338
+docs/gate/SLICE_6_EVIDENCE.md                                  ---   55431cf496693fa31baa28b52d41606dcf03a5cd5d412b06479edebdbc1538f7
+docs/gate/SLICE_6_CLOSURE.md                                   ---   bcc5ce83fd14991f1d3bcf086ed7bb46552563adda25d62c49852169b0ad3899
+docs/gate/SLICE_6_PLAN.md                                      rev18 76ca12db71ed33adfa542f89d79c08302b8a8408353ce4020f7c20dbc7d68bdf
+SLICE_6_PLAN.md changed revision: 17 -> 18 (the later tree's evidence corrected and run again; Slice 6 stays closed at ce8cfa0).
