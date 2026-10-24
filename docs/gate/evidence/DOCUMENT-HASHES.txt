@@ -921,3 +921,15 @@ SLICE_7_PLAN.md changed revision: 3 -> 4 (review of 4aed49b; its commit named in
 --- Review of 38281ab: Slice 7 plan revision 5 (33434a8); 0008 text approved; step 1 authorized ---
 docs/gate/SLICE_7_PLAN.md                                      rev5  8b8a0a6c5d7f203fbdb137ca75fbb1187856dd5da2c02787e48a3e824237bfd1
 SLICE_7_PLAN.md changed revision: 4 -> 5 (its commit named in place).
+--- Slice 7 step 1 (0008): delivered for review; review of the progress report (after dc35b50) answered; Slice 7 plan revision 6 ---
+docs/gate/evidence/SLICE7-STEP1-0008-BEFORE.txt                new   abe8171b32a902128c68aba454b1ffdc1c641d440f577e38ae5913b85f159e35
+docs/gate/evidence/SLICE7-STEP1-0008-MUTATIONS.txt             new   7b3bf849de2e64f4b2b51de59cb3d4db750c1389f969c56b282707caa2e2e0f6
+docs/gate/evidence/SLICE7-STEP1-0008-MUTATIONS-REPEAT.txt      new   0cd705a20e246db6755d209837a3718e10d70c683819887addd9001009945d68
+docs/gate/evidence/SLICE7-STEP1-0008-MUTATIONS-FIRST-RUN.txt   new   5001cf04cab37d3c86a0288adc2d850bb59ce41b191547c958a8932ef1a3176e
+docs/gate/evidence/SLICE7-STEP1-0008-MUTATIONS-AT-4d9e4ec.txt  new   30fdeafbc07c6de3dce22ff09e28564ef820d0151d4eb38c99f9630cd6612b3b
+docs/gate/evidence/SLICE7-STEP1-0008-MUTATIONS-AT-4d9e4ec-REPEAT.txt new   50004efd8318134034625c03bb1eab26d2f48a36ffedc2f63e74af0559f2b545
+docs/gate/evidence/SLICE7-STEP1-S5-RACE-UNDER-LOAD.txt         new   7850ce322082e2091f95ace8f58277a14319742522c59d113a1d829afa603a13
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   09c311ebc2260bfe02a06066d2f776ae4150905e21a6712a408147603e14e5d7
+docs/gate/SLICE_7_STEP1_DELIVERY.md                            new   4ed79e8d64a49759ba256d7c529fdd7854189be9dc56872037c602aede6c8e36
+docs/gate/SLICE_7_PLAN.md                                      rev6  e8f177d91680831b214d96ea37bbf9c6784d81b098b8e01bf41a0b8db9469f87
+SLICE_7_PLAN.md changed revision: 5 -> 6 (step 1 delivered).

@@ -1,11 +1,14 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 5**
+## Implementation plan — **revision 6**
 
-**Status: the text of `0008` is APPROVED and step 1 is AUTHORIZED** (review
-of `38281ab`, recorded below). Step 2 does not start before step 1's delivery
-is reviewed.
-- **No code for this slice exists, and none is written before this plan is
-  approved.** Slice 7 is in **planning only**.
+**Status: step 1 is DELIVERED for review** (`SLICE_7_STEP1_DELIVERY.md`).
+The text of `0008` was approved and step 1 authorized in the review of
+`38281ab`, recorded below. Step 2 does not start before step 1's delivery is
+reviewed.
+- **The only code of this slice is step 1's:** migration `0008`, its tests,
+  and its mutation script. No webhook, command or endpoint exists.
+- **The review of step 1's progress report** (after `dc35b50`; recorded
+  below) did not close step 1. It set what the delivery must show.
 - **What the review of `4aed49b` did** (recorded below):
   - **decided** D2 (G7-12 (D)), CORRECTION-007, (a2) with R-1 a condition
     before any real event, and G7-4's provider rule;
@@ -57,6 +60,32 @@ a recommendation. A recommendation is not a decision.
 | 3 | `dcc1c74` | the review of `58a0067` recorded; the four points settled: (D) put as an explicit choice between D2 (strict, six foreign keys made RESTRICT, its consequences) and D3 (a narrower guarantee stated exactly), D1's "FK-only" name withdrawn; the failure inside the processing transaction (a savepoint, the FAILED record, the stop after RECEIVED, their tests), and the 500 settled by a proposed CORRECTION-007; the relay made condition R-1 before any real event; the provider rule for every channel. The proposed text of `0008` (§5.1) and of CORRECTION-007 (§5.2), neither executed nor approved |
 | 4 | `587f8b3` | the review of `4aed49b` recorded: D2, CORRECTION-007, (a2) with R-1, and G7-4 decided; the other directions approved. Its two gaps settled: a WHATSAPP thread's reference is scoped and unique (G7-3; `0008` part E; R-1 duty 6), and UNKNOWN → FAILED is refused (G7-5; part B rewritten). R-1 measures the relay's real envelopes against G7-15's limit (duty 7). §7 (1) and OQ7-2 aligned with CORRECTION-007. The full text of `0008` (§5.1), not executed |
 | 5 | `33434a8` | the review of `38281ab` recorded: the text of `0008` (parts E, A, B, C, D2) approved; step 1 authorized; no other change |
+| 6 | this revision | the review of step 1's progress report recorded; step 1 delivered (`SLICE_7_STEP1_DELIVERY.md`); the status and §8 updated; no decision, and no text of `0008`, changed |
+
+**The review of step 1's progress report (after `dc35b50`). Step 1 is NOT
+closed by it.**
+- **What it read:** a progress report, not a delivery. B6 had survived the
+  first mutation run, and a test was then added for it, but the two final
+  runs had not been shown. A full run had failed one Slice 5 concurrency
+  test, and its ten passes alone "do not by themselves prove the failure is
+  incidental".
+- **What the delivery must show:**
+  - the full suite on the final tree;
+  - both runs of the 77 mutations;
+  - the state of that concurrency test;
+  - the state of the database after a downgrade that `0007` refuses.
+- **What it could not check:** `dc35b50` returned 404. It had not been
+  pushed. The review ran no test.
+- **What stands:** the approval of `0008`'s text, and the authorization of
+  step 1.
+- **Where each point is answered** (`SLICE_7_STEP1_DELIVERY.md`):
+  - the suite: §6, 2741 passed, 0 failed, at `f9df6ab`;
+  - the mutations: §4, 77/77 twice, identical, at `7eedd77`;
+  - the concurrency test: §6.1. It fails under load on `582b522`, which has
+    no Slice 7 code, and the cause is in the field it measures. The test is
+    unchanged, and a remedy is proposed;
+  - the refused downgrade: §2.6, a new test asserting the database's state;
+  - every commit is pushed.
 
 **The review of `38281ab`. The text of `0008` is APPROVED, parts E, A, B, C
 and D2, and step 1 is AUTHORIZED, in the plan's sequence.**
@@ -942,7 +971,7 @@ recommended:
   - a refused webhook is logged without its body.
 - **Blocks:** steps 2–4.
 
-### G7-12 · Migration `0008` (the text proposed in §5.1; not executed; not approved)
+### G7-12 · Migration `0008` (the text of §5.1; approved in the review of `38281ab`; executed in step 1)
 
 - **(A)** The message identity (G7-4).
 - **(B)** Messages are append-only; `delivery_status` forward only (G7-5).
@@ -1050,14 +1079,17 @@ recommended:
   decided.
 - **OQ7-4 · An app-wide request-body limit** (F7-12).
 
-### 5.1 The text of migration `0008` (proposed; NOT executed; NOT approved)
+### 5.1 The text of migration `0008` (APPROVED in the review of `38281ab`; executed in step 1)
 
 **Revision 4.** Part D is D2 (chosen in the review of `4aed49b`). Part B's
 status rule is corrected (UNKNOWN → FAILED refused). Part E is new: a
 WHATSAPP thread's reference is scoped and unique.
 
-**Not executed.** This text has not been run against any database. It is run
-for the first time in step 1, with its tests, once approved.
+**Executed in step 1** (revision 6). `0008_communication_records.py` runs
+this block statement by statement, and
+`test_the_migration_executes_the_approved_text` compares the two. Its
+execution, tests and mutations are reported in `SLICE_7_STEP1_DELIVERY.md`.
+The block below is unchanged since revision 4.
 
 ```sql
 -- 0008 — communication records: identity, append-only rows, frozen threads
@@ -1398,7 +1430,7 @@ identical results, and are ours.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
-| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | the text of §5.1 approved; **authorized** (review of `38281ab`) |
+| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | the text of §5.1 approved; **authorized** (review of `38281ab`); **delivered for review** (`SLICE_7_STEP1_DELIVERY.md`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11 |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
