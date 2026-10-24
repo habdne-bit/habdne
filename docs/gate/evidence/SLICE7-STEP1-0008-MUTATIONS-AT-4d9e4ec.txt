@@ -1,0 +1,715 @@
+TURAB — Slice 7 step 1: which test refuses which weakened guard of migration 0008
+============================================================
+Base commit       : 4d9e4ec6e9284e3f0129035bf304101043b9507e
+Source fingerprint: 6d86d65f9c50809f93187bd7eb12b19d22a8c83c33f87ebd951d6b69ee6d87e9
+Working tree      : CLEAN
+Recorded          : 2026-10-24 12:07:58 UTC
+Test file         : tests/test_migration_0008_communication_records.py
+Deselected        : test_the_migration_executes_the_approved_text
+
+=== baseline (no mutation) ===
+   123 passed, 1 deselected in 16.34s
+== E1 the pre-check not run [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 18.22s
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   cause: AssertionError: psycopg.errors.CheckViolation) check constraint "ck_whatsapp_thread_ref_scoped" of relation "communication_threads" is violated by some row
+   cause: AssertionError: psycopg.errors.UniqueViolation) could not create unique index "ux_whatsapp_thread_ref"
+   cause: E   AssertionError: psycopg.errors.CheckViolation) check constraint "ck_whatsapp_thread_ref_scoped" of relation "communication_threads" is violated by some row
+   cause: E   AssertionError: psycopg.errors.UniqueViolation) could not create unique index "ux_whatsapp_thread_ref"
+== E2 the pre-check refuses unscoped references only [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.29s
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   cause: AssertionError: psycopg.errors.UniqueViolation) could not create unique index "ux_whatsapp_thread_ref"
+   cause: E   AssertionError: psycopg.errors.UniqueViolation) could not create unique index "ux_whatsapp_thread_ref"
+== E3 the pre-check counts shared references across every channel [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   2 failed, 121 passed, 1 deselected in 17.32s
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   cause: AssertionError: psycopg.errors.RaiseException) 0008: 1 WHATSAPP thread reference(s) not scoped, 1 reference(s) shared; resolve them before this migration
+   cause: AssertionError: psycopg.errors.RaiseException) 0008: 1 WHATSAPP thread reference(s) not scoped, 2 reference(s) shared; resolve them before this migration
+   cause: E   AssertionError: psycopg.errors.RaiseException) 0008: 1 WHATSAPP thread reference(s) not scoped, 1 reference(s) shared; resolve them before this migration
+   cause: E   AssertionError: psycopg.errors.RaiseException) 0008: 1 WHATSAPP thread reference(s) not scoped, 2 reference(s) shared; resolve them before this migration
+== E4 the scoped CHECK not created [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   11 failed, 112 passed, 1 deselected in 11.37s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[:]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[:x]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[a:b:c]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[abc]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[x:]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert 1 == 0
+   cause: AssertionError: psycopg.errors.UndefinedObject) constraint "ck_whatsapp_thread_ref_scoped" of relation "communication_threads" does not exist
+   cause: AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): None, ('indexes', 'communication_threads.ux_w...nication_messages.ck_message_prov
+   cause: E   AssertionError: assert 1 == 0
+   cause: E   AssertionError: psycopg.errors.UndefinedObject) constraint "ck_whatsapp_thread_ref_scoped" of relation "communication_threads" does not exist
+   cause: E   AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): None, ('indexes', 'communication_threads.ux_w...nication_messages.ck_message_
+== E5 the scoped CHECK asks for one colon anywhere [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   4 failed, 119 passed, 1 deselected in 17.32s
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[:]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[:x]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[a:b:c]
+   FAILED test_e_an_unscoped_whatsapp_reference_is_refused[x:]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== E6 the index not unique (the race makes two threads) [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 57.02s
+   FAILED test_e_a_second_whatsapp_thread_with_one_reference_is_refused
+   FAILED test_e_two_concurrent_threads_with_one_reference_make_one[commit]
+   FAILED test_e_two_concurrent_threads_with_one_reference_make_one[rollback]
+   cause: AssertionError: {'contender': 'ok', 'blocked_by_holder': False, 'holder': 'ok'}
+   cause: E   AssertionError: {'contender': 'ok', 'blocked_by_holder': False, 'holder': 'ok'}
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== E7 the index over every channel [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 17.29s
+   FAILED test_e_other_channels_and_null_references_are_not_constrained
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
+   cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
+== A1 a reference without a provider accepted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 17.14s
+   FAILED test_a_a_reference_needs_a_provider
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A2 any provider accepted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   4 failed, 119 passed, 1 deselected in 16.95s
+   FAILED test_a_the_provider_is_whatsapp[WHATSAPP]
+   FAILED test_a_the_provider_is_whatsapp[]
+   FAILED test_a_the_provider_is_whatsapp[meta]
+   FAILED test_a_the_provider_is_whatsapp[sms-gateway]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A3 the provider compared without case [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.68s
+   FAILED test_a_the_provider_is_whatsapp[WHATSAPP]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A4 an INTERNAL message may carry a reference [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 18.14s
+   FAILED test_a_an_internal_message_has_no_reference
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A5 the provider/channel trigger not created [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   11 failed, 112 passed, 1 deselected in 11.65s
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[EMAIL]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[IN_PERSON]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[OTHER]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[PHONE]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[SMS]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[WEB]
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert 1 == 0
+   cause: AssertionError: psycopg.errors.UndefinedObject) trigger "trg_message_provider_channel" for table "communication_messages" does not exist
+   cause: AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_prov
+   cause: E   AssertionError: assert 1 == 0
+   cause: E   AssertionError: psycopg.errors.UndefinedObject) trigger "trg_message_provider_channel" for table "communication_messages" does not exist
+   cause: E   AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_
+== A6 the provider/channel trigger on UPDATE instead of INSERT [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   6 failed, 117 passed, 1 deselected in 17.01s
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[EMAIL]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[IN_PERSON]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[OTHER]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[PHONE]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[SMS]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[WEB]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== A7 any thread's channel accepted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   6 failed, 117 passed, 1 deselected in 16.58s
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[EMAIL]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[IN_PERSON]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[OTHER]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[PHONE]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[SMS]
+   FAILED test_a_a_provider_needs_a_whatsapp_thread[WEB]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B1 the message guard not created [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   37 failed, 86 passed, 1 deselected in 11.16s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_b_a_message_cannot_be_deleted
+   FAILED test_b_a_message_without_a_provider_never_gains_one
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-FAILED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-READ]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[QUEUED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-FAILED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-FAILED]
+   FAILED test_b_no_other_column_of_a_message_changes[body_text
+   FAILED test_b_no_other_column_of_a_message_changes[created_at
+   FAILED test_b_no_other_column_of_a_message_changes[direction
+   FAILED test_b_no_other_column_of_a_message_changes[external_message_ref
+   FAILED test_b_no_other_column_of_a_message_changes[media_ref
+   FAILED test_b_no_other_column_of_a_message_changes[message_id
+   FAILED test_b_no_other_column_of_a_message_changes[message_type
+   FAILED test_b_no_other_column_of_a_message_changes[metadata
+   FAILED test_b_no_other_column_of_a_message_changes[occurred_at
+   FAILED test_b_no_other_column_of_a_message_changes[provider
+   FAILED test_b_no_other_column_of_a_message_changes[sent_by_account_id
+   FAILED test_b_no_other_column_of_a_message_changes[thread_id
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert 1 == 0
+   cause: AssertionError: psycopg.errors.UndefinedObject) trigger "trg_guard_communication_message" for table "communication_messages" does not exist
+   cause: AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_prov
+   cause: E   AssertionError: assert 1 == 0
+   cause: E   AssertionError: psycopg.errors.UndefinedObject) trigger "trg_guard_communication_message" for table "communication_messages" does not exist
+   cause: E   AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_
+== B2 the message guard on UPDATE only: a message may be deleted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.26s
+   FAILED test_b_a_message_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B3 the message guard on DELETE only: a message may be rewritten [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   31 failed, 92 passed, 1 deselected in 16.35s
+   FAILED test_b_a_message_without_a_provider_never_gains_one
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-FAILED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-READ]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[QUEUED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-FAILED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-FAILED]
+   FAILED test_b_no_other_column_of_a_message_changes[body_text
+   FAILED test_b_no_other_column_of_a_message_changes[created_at
+   FAILED test_b_no_other_column_of_a_message_changes[direction
+   FAILED test_b_no_other_column_of_a_message_changes[external_message_ref
+   FAILED test_b_no_other_column_of_a_message_changes[media_ref
+   FAILED test_b_no_other_column_of_a_message_changes[message_id
+   FAILED test_b_no_other_column_of_a_message_changes[message_type
+   FAILED test_b_no_other_column_of_a_message_changes[metadata
+   FAILED test_b_no_other_column_of_a_message_changes[occurred_at
+   FAILED test_b_no_other_column_of_a_message_changes[provider
+   FAILED test_b_no_other_column_of_a_message_changes[sent_by_account_id
+   FAILED test_b_no_other_column_of_a_message_changes[thread_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B4 a message column: message_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.51s
+   FAILED test_b_no_other_column_of_a_message_changes[message_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B5 a message column: thread_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.76s
+   FAILED test_b_no_other_column_of_a_message_changes[thread_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B6 a message column: provider compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.34s
+   FAILED test_b_a_message_without_a_provider_never_gains_one
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B7 a message column: external_message_ref compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.32s
+   FAILED test_b_no_other_column_of_a_message_changes[external_message_ref
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B8 a message column: direction compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.60s
+   FAILED test_b_no_other_column_of_a_message_changes[direction
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B9 a message column: message_type compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 17.08s
+   FAILED test_b_no_other_column_of_a_message_changes[message_type
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B10 a message column: body_text compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.08s
+   FAILED test_b_no_other_column_of_a_message_changes[body_text
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B11 a message column: media_ref compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.27s
+   FAILED test_b_no_other_column_of_a_message_changes[media_ref
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B12 a message column: occurred_at compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.37s
+   FAILED test_b_no_other_column_of_a_message_changes[occurred_at
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B13 a message column: sent_by_account_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.51s
+   FAILED test_b_no_other_column_of_a_message_changes[sent_by_account_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B14 a message column: metadata compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 17.09s
+   FAILED test_b_no_other_column_of_a_message_changes[metadata
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B15 a message column: created_at compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.79s
+   FAILED test_b_no_other_column_of_a_message_changes[created_at
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B16 UNKNOWN -> FAILED accepted (G7-5's contradiction back) [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.55s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-FAILED]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B17 UNKNOWN moves nowhere [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   4 failed, 119 passed, 1 deselected in 17.97s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-READ]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-SENT]
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status UNKNOWN -> DELIVERED refused
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status UNKNOWN -> QUEUED refused
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status UNKNOWN -> READ refused
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status UNKNOWN -> SENT refused
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status UNKNOWN -> DELIVERED refused
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status UNKNOWN -> QUEUED refused
+== B18 backward moves accepted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   6 failed, 117 passed, 1 deselected in 17.62s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-QUEUED]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B19 FAILED from DELIVERED accepted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 17.54s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-FAILED]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== B20 FAILED from SENT refused [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 17.58s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-FAILED]
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status SENT -> FAILED refused
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status SENT -> FAILED refused
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status SENT -> FAILED refused
+== B21 the forward order loses DELIVERED [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   4 failed, 119 passed, 1 deselected in 17.59s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-READ]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[QUEUED-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-DELIVERED]
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status DELIVERED -> READ refused
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status QUEUED -> DELIVERED refused
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status SENT -> DELIVERED refused
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status UNKNOWN -> DELIVERED refused
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status DELIVERED -> READ refused
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status QUEUED -> DELIVERED refused
+== B22 an update that changes nothing refused [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.92s
+   FAILED test_b_an_update_that_changes_nothing_is_accepted
+   cause: E   psycopg.errors.RaiseException: communication_messages: delivery_status SENT -> SENT refused
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status SENT -> SENT refused
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: delivery_status SENT -> SENT refused
+== B23 a refused transition returns instead of raising [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   18 failed, 105 passed, 1 deselected in 16.74s
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-FAILED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[DELIVERED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-READ]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[FAILED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[QUEUED-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-DELIVERED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-FAILED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-SENT]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[READ-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-QUEUED]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[SENT-UNKNOWN]
+   FAILED test_b_delivery_status_transitions_are_exactly_the_decided_ones[UNKNOWN-FAILED]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C1 the event guard not created [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   22 failed, 101 passed, 1 deselected in 10.36s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_c_an_event_cannot_be_deleted
+   FAILED test_c_processing_moves_only_from_received_or_failed[FAILED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-FAILED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-IGNORED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-PROCESSED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-FAILED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-IGNORED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-PROCESSED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[RECEIVED-RECEIVED-False]
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[event_type
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[payload
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[provider
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[provider_event_id
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[received_at
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[webhook_event_id
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert 1 == 0
+   cause: AssertionError: psycopg.errors.UndefinedObject) trigger "trg_guard_webhook_event" for table "webhook_events" does not exist
+   cause: AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_prov
+   cause: E   AssertionError: assert 1 == 0
+   cause: E   AssertionError: psycopg.errors.UndefinedObject) trigger "trg_guard_webhook_event" for table "webhook_events" does not exist
+   cause: E   AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_
+== C2 the event guard on UPDATE only: an event may be deleted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.96s
+   FAILED test_c_an_event_cannot_be_deleted
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C3 the event guard on DELETE only: an event may be rewritten [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   16 failed, 107 passed, 1 deselected in 16.24s
+   FAILED test_c_processing_moves_only_from_received_or_failed[FAILED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-FAILED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-IGNORED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-PROCESSED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[IGNORED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-FAILED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-IGNORED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-PROCESSED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[RECEIVED-RECEIVED-False]
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[event_type
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[payload
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[provider
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[provider_event_id
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[received_at
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[webhook_event_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C4 an event field: webhook_event_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.37s
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[webhook_event_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C5 an event field: provider compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.55s
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[provider
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C6 an event field: provider_event_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.53s
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[provider_event_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C7 an event field: event_type compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.04s
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[event_type
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C8 an event field: payload compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 14.14s
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[payload
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C9 an event field: received_at compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 14.83s
+   FAILED test_c_the_immutable_fields_of_an_event_never_change[received_at
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C10 a PROCESSED event may be processed again [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 14.58s
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-FAILED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-IGNORED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[PROCESSED-PROCESSED-False]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== C11 a FAILED event is final [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   4 failed, 119 passed, 1 deselected in 15.51s
+   FAILED test_c_processing_moves_only_from_received_or_failed[FAILED-FAILED-True]
+   FAILED test_c_processing_moves_only_from_received_or_failed[FAILED-IGNORED-True]
+   FAILED test_c_processing_moves_only_from_received_or_failed[FAILED-PROCESSED-True]
+   FAILED test_c_received_then_failed_then_processed_is_one_path
+   cause: E   psycopg.errors.RaiseException: webhook_events: a FAILED event is final
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) webhook_events: a FAILED event is final
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) webhook_events: a FAILED event is final
+== C12 an event may go back to RECEIVED [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   2 failed, 121 passed, 1 deselected in 14.80s
+   FAILED test_c_processing_moves_only_from_received_or_failed[FAILED-RECEIVED-False]
+   FAILED test_c_processing_moves_only_from_received_or_failed[RECEIVED-RECEIVED-False]
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D1 party_id left ON DELETE SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 15.08s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[party-parties-party_id-communication_threads_party_id_fkey-None]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: E   AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+== D2 request_id left ON DELETE SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 14.51s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[request-requests-request_id-communication_threads_request_id_fkey-prevent_delete_requests]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...rty_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: E   AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...rty_id_fkey')} == {('communicat...d_fkey'), ...}
+== D3 property_id left ON DELETE SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 14.44s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[property-properties-property_id-communication_threads_property_id_fkey-prevent_delete_properties]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: E   AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+== D4 opportunity_id left ON DELETE SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 14.15s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[opportunity-opportunities-opportunity_id-communication_threads_opportunity_id_fkey-prevent_delete_opportunities]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: AssertionError: assert {'communicati...ey': 'n', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: E   AssertionError: assert {'communicati...ey': 'n', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+== D5 created_by_account_id left ON DELETE SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 14.69s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[account-user_accounts-account_id-communication_threads_created_by_account_id_fkey-None]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: E   AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+== D6 sent_by_account_id left ON DELETE SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 15.37s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[sender-user_accounts-account_id-communication_messages_sent_by_account_id_fkey-None]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_messages: only delivery_status may change
+   cause: AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_messages: only delivery_status may change
+   cause: E   AssertionError: assert {'communicati...ey': 'r', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...est_id_fkey')} == {('communicat...d_fkey'), ...}
+== D7 the thread guard not created [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   20 failed, 103 passed, 1 deselected in 9.69s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_nested_update_is_refused_too
+   FAILED test_d_a_thread_cannot_be_deleted
+   FAILED test_d_a_thread_never_changes_after_insert[archived_at
+   FAILED test_d_a_thread_never_changes_after_insert[channel
+   FAILED test_d_a_thread_never_changes_after_insert[created_by_account_id
+   FAILED test_d_a_thread_never_changes_after_insert[external_thread_ref
+   FAILED test_d_a_thread_never_changes_after_insert[opened_at
+   FAILED test_d_a_thread_never_changes_after_insert[opportunity_id
+   FAILED test_d_a_thread_never_changes_after_insert[party_id
+   FAILED test_d_a_thread_never_changes_after_insert[property_id
+   FAILED test_d_a_thread_never_changes_after_insert[request_id
+   FAILED test_d_a_thread_never_changes_after_insert[thread_id
+   FAILED test_d_last_message_at_moves_forward_only
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(c7b67112-7
+   cause: AssertionError: assert 1 == 0
+   cause: AssertionError: psycopg.errors.UndefinedObject) trigger "trg_guard_communication_thread" for table "communication_threads" does not exist
+   cause: AssertionError: {('constraints', 'communication_threads.ck_whatsapp_thread_ref_scoped'): 'a4958970980400de6cdb9a1b63f9e23573b1d771d4cd...nication_messages.ck_message_prov
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(c7b671
+   cause: E   AssertionError: assert 1 == 0
+== D8 the thread guard on UPDATE only: a thread may be deleted [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   2 failed, 121 passed, 1 deselected in 14.81s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_thread_cannot_be_deleted
+   cause: AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(412d8d64-7
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(412d8d
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D9 the thread guard on DELETE only: a thread may be rewritten [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   14 failed, 109 passed, 1 deselected in 14.76s
+   FAILED test_d_a_nested_update_is_refused_too
+   FAILED test_d_a_thread_never_changes_after_insert[archived_at
+   FAILED test_d_a_thread_never_changes_after_insert[channel
+   FAILED test_d_a_thread_never_changes_after_insert[created_by_account_id
+   FAILED test_d_a_thread_never_changes_after_insert[external_thread_ref
+   FAILED test_d_a_thread_never_changes_after_insert[opened_at
+   FAILED test_d_a_thread_never_changes_after_insert[opportunity_id
+   FAILED test_d_a_thread_never_changes_after_insert[party_id
+   FAILED test_d_a_thread_never_changes_after_insert[property_id
+   FAILED test_d_a_thread_never_changes_after_insert[request_id
+   FAILED test_d_a_thread_never_changes_after_insert[thread_id
+   FAILED test_d_last_message_at_moves_forward_only
+   cause: AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(3802b08b-b
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(3802b0
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D10 a thread column: thread_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 14.71s
+   FAILED test_d_a_thread_never_changes_after_insert[thread_id
+   cause: AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(a5fcbe26-1
+   cause: E   AssertionError: IntegrityError('(psycopg.errors.ForeignKeyViolation) update or delete on table "communication_threads" violates foreig...AIL:  Key (thread_id)=(a5fcbe
+== D11 a thread column: channel compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.03s
+   FAILED test_d_a_thread_never_changes_after_insert[channel
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D12 a thread column: party_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   3 failed, 120 passed, 1 deselected in 14.73s
+   FAILED test_d_a_nested_update_is_refused_too
+   FAILED test_d_a_thread_never_changes_after_insert[party_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D13 a thread column: request_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.02s
+   FAILED test_d_a_thread_never_changes_after_insert[request_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D14 a thread column: property_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.36s
+   FAILED test_d_a_thread_never_changes_after_insert[property_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D15 a thread column: opportunity_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 14.97s
+   FAILED test_d_a_thread_never_changes_after_insert[opportunity_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D16 a thread column: external_thread_ref compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   2 failed, 121 passed, 1 deselected in 14.35s
+   FAILED test_d_a_thread_never_changes_after_insert[external_thread_ref
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D17 a thread column: opened_at compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.07s
+   FAILED test_d_a_thread_never_changes_after_insert[opened_at
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D18 a thread column: archived_at compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.66s
+   FAILED test_d_a_thread_never_changes_after_insert[archived_at
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D19 a thread column: created_by_account_id compared NEW with NEW [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.94s
+   FAILED test_d_a_thread_never_changes_after_insert[created_by_account_id
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D20 a nested update passes (D3's limit) [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.63s
+   FAILED test_d_a_nested_update_is_refused_too
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D21 last_message_at may move back [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 16.26s
+   FAILED test_d_last_message_at_moves_forward_only
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D22 last_message_at may be cleared [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.70s
+   FAILED test_d_last_message_at_moves_forward_only
+   cause: E   Failed: DID NOT RAISE DBAPIError
+   cause: Failed: DID NOT RAISE DBAPIError
+== D23 the threads' ALTER not run: five keys stay SET NULL [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   7 failed, 116 passed, 1 deselected in 15.19s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_d_a_named_parent_cannot_be_deleted[account-user_accounts-account_id-communication_threads_created_by_account_id_fkey-None]
+   FAILED test_d_a_named_parent_cannot_be_deleted[opportunity-opportunities-opportunity_id-communication_threads_opportunity_id_fkey-prevent_delete_opportunities]
+   FAILED test_d_a_named_parent_cannot_be_deleted[party-parties-party_id-communication_threads_party_id_fkey-None]
+   FAILED test_d_a_named_parent_cannot_be_deleted[property-properties-property_id-communication_threads_property_id_fkey-prevent_delete_properties]
+   FAILED test_d_a_named_parent_cannot_be_deleted[request-requests-request_id-communication_threads_request_id_fkey-prevent_delete_requests]
+   FAILED test_d_the_six_keys_are_restrict
+   cause: AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: AssertionError: assert {'communicati...ey': 'n', ...} == {'communicati...ey': 'r', ...}
+   cause: AssertionError: assert {('communicat...ead_id_fkey')} == {('communicat...d_fkey'), ...}
+   cause: E   AssertionError: ProgrammingError('(psycopg.errors.RaiseException) communication_threads: a thread\'s links never change
+   cause: E   AssertionError: assert {'communicati...ey': 'n', ...} == {'communicati...ey': 'r', ...}
+   cause: E   AssertionError: assert {('communicat...ead_id_fkey')} == {('communicat...d_fkey'), ...}
+== G1 the downgrade leaves the party key RESTRICT [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.90s
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert {('constraint...'): None, ...} == {('constraint...'): None, ...}
+   cause: E   AssertionError: assert {('constraint...'): None, ...} == {('constraint...'): None, ...}
+== G2 the downgrade leaves the sender key RESTRICT [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   1 failed, 122 passed, 1 deselected in 15.06s
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert {('constraint...'): None, ...} == {('constraint...'): None, ...}
+   cause: E   AssertionError: assert {('constraint...'): None, ...} == {('constraint...'): None, ...}
+== G3 the downgrade leaves the index [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   5 failed, 118 passed, 1 deselected in 12.18s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert '0007_task_work_and_evidence' == '0008_communication_records'
+   cause: AssertionError: psycopg.errors.DuplicateTable) relation "ux_whatsapp_thread_ref" already exists
+   cause: E   AssertionError: assert '0007_task_work_and_evidence' == '0008_communication_records'
+   cause: E   AssertionError: psycopg.errors.DuplicateTable) relation "ux_whatsapp_thread_ref" already exists
+   cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
+== G4 the downgrade leaves one CHECK of part A [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   5 failed, 118 passed, 1 deselected in 13.54s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert '0007_task_work_and_evidence' == '0008_communication_records'
+   cause: AssertionError: psycopg.errors.DuplicateObject) constraint "ck_internal_message_has_no_ref" for relation "communication_messages" already exists
+   cause: E   AssertionError: assert '0007_task_work_and_evidence' == '0008_communication_records'
+   cause: E   AssertionError: psycopg.errors.DuplicateObject) constraint "ck_internal_message_has_no_ref" for relation "communication_messages" already exists
+== G5 the downgrade leaves the scoped CHECK [db/migrations/versions/0008_communication_records.py, 1 site(s)]  restored: sha256 731423d6808dc501 identical
+   5 failed, 118 passed, 1 deselected in 12.43s
+   FAILED test_a_downgrade_refused_by_0007_leaves_0008_whole
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs0-1-0]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs1-0-1]
+   FAILED test_e_the_precheck_refuses_unscoped_and_shared_references[whatsapp_refs2-1-1]
+   FAILED test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows
+   cause: AssertionError: assert '0007_task_work_and_evidence' == '0008_communication_records'
+   cause: AssertionError: psycopg.errors.DuplicateObject) constraint "ck_whatsapp_thread_ref_scoped" for relation "communication_threads" already exists
+   cause: E   AssertionError: assert '0007_task_work_and_evidence' == '0008_communication_records'
+   cause: E   AssertionError: psycopg.errors.DuplicateObject) constraint "ck_whatsapp_thread_ref_scoped" for relation "communication_threads" already exists
+   cause: E   psycopg.errors.CheckViolation: new row for relation "communication_threads" violates check constraint "ck_whatsapp_thread_ref_scoped"
+   cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_threads" violates check constraint "ck_whatsapp_thread_ref_scoped"
+
+SURVIVING MUTATIONS: none
