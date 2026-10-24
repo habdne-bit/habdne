@@ -1,0 +1,93 @@
+TURAB — the Slice 5 race test after share_committed_first was removed (review of 7e8993d, remedy (b))
+=====================================================================================================
+Test     : tests/test_slice5_step5.py::test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it
+Change   : ddd012d. The field share_committed_first (two response return times
+           compared) removed from the observed and the expected dict; the
+           _done timestamps, read by nothing else, removed; the docstring
+           states that the commit order is inferred from the lock, not
+           measured. Kept: binding_waited_on_the_share (pg_blocking_pids
+           witness), binding_committed_while_the_share_was_held, both answers,
+           the final state.
+Server   : PostgreSQL 16.15. These are our runs; nobody else has re-run them.
+
+1. What still kills the guarantee the test is for (the share's lock, R-S5-5-01)
+   The four mutations of mutate_slice5_step5.py that weaken that lock, W1-W4,
+   run BEFORE the change (SLICE7-S5-RACE-FIELD-W-BEFORE.txt, at 7e8993d) and
+   AFTER it (SLICE7-S5-RACE-FIELD-W-AFTER.txt, at ddd012d):
+     W1 7 failed · W2 5 failed · W3 2 failed · W4 2 failed, before and after,
+     with the same failing tests. Every cause recorded for this test, before
+     and after, is the kept fields: binding_waited_on_the_share False and
+     binding_committed_while_the_share_was_held True (7 causes after).
+
+2. The whole script, after the change (SLICE7-S5-RACE-FIELD-MUTATIONS-AFTER.txt)
+   At ddd012d, clean tree, source fingerprint a76f5c41…dc45: 51/51 fail, none
+   survives. Compared with the last committed run of the script,
+   SLICE5-STEP5-MUTATIONS-AFTER-NOTES.txt at 37701ce (the only change to the
+   test file since is ddd012d), every mutation fails the same tests except
+   ONE:
+     S3 (a revoked consent is answered as not valid): 3 failed at 37701ce,
+     2 failed now. At 37701ce this test's [PROPERTY] case also failed under
+     S3, with every visible field as expected (waited True, not committed
+     while held, 200 SHARED, 200); the differing field was elided.
+   S3 changes the answer to a revoked consent, not any lock. To test whether
+   that kill was S3's or the timing field's, S3 was run three times on the
+   tree BEFORE the change (7e8993d, field present), idle, in an isolated
+   worktree: each time S3 failed exactly its two consent tests, and this test
+   passed. The 37701ce kill is not reproduced; it is consistent with the
+   timing field failing by chance, not with S3 being detected. S3 is still
+   killed, by those two tests.
+   In the second of those three runs, the runner's BASELINE (no mutation)
+   reported 1 failed, 88 passed. The runner does not print which test fails
+   in a baseline, so it is not attributed here.
+
+3. Under load, after the change (same script and conditions as
+   SLICE7-STEP1-S5-RACE-UNDER-LOAD.txt)
+2026-10-24 20:19:47 UTC
+new_load: tree ddd012d, 20 runs, 4 busy processes on 4 CPUs
+run 1: 2 passed, 1 warning in 8.19s 
+run 2: 2 passed, 1 warning in 8.98s 
+run 3: 2 passed, 1 warning in 7.93s 
+run 4: 2 passed, 1 warning in 7.73s 
+run 5: 2 passed, 1 warning in 9.04s 
+run 6: 2 passed, 1 warning in 9.62s 
+run 7: 2 passed, 1 warning in 9.57s 
+run 8: 2 passed, 1 warning in 9.72s 
+run 9: 2 passed, 1 warning in 9.71s 
+run 10: 2 passed, 1 warning in 8.35s 
+run 11: 2 passed, 1 warning in 9.80s 
+run 12: 2 passed, 1 warning in 9.38s 
+run 13: 2 passed, 1 warning in 8.90s 
+run 14: 2 passed, 1 warning in 8.60s 
+run 15: 2 passed, 1 warning in 9.53s 
+run 16: 2 passed, 1 warning in 9.63s 
+run 17: 2 passed, 1 warning in 9.30s 
+run 18: 2 passed, 1 warning in 9.38s 
+run 19: 2 passed, 1 warning in 9.42s 
+run 20: 2 passed, 1 warning in 9.62s 
+new_idle: tree ddd012d, 20 runs, 0 busy processes on 4 CPUs
+run 1: 2 passed, 1 warning in 5.73s 
+run 2: 2 passed, 1 warning in 6.18s 
+run 3: 2 passed, 1 warning in 5.74s 
+run 4: 2 passed, 1 warning in 6.47s 
+run 5: 2 passed, 1 warning in 5.53s 
+run 6: 2 passed, 1 warning in 5.60s 
+run 7: 2 passed, 1 warning in 5.64s 
+run 8: 2 passed, 1 warning in 6.04s 
+run 9: 2 passed, 1 warning in 5.89s 
+run 10: 2 passed, 1 warning in 6.66s 
+run 11: 2 passed, 1 warning in 6.60s 
+run 12: 2 passed, 1 warning in 6.36s 
+run 13: 2 passed, 1 warning in 6.51s 
+run 14: 2 passed, 1 warning in 6.05s 
+run 15: 2 passed, 1 warning in 6.92s 
+run 16: 2 passed, 1 warning in 6.27s 
+run 17: 2 passed, 1 warning in 6.79s 
+run 18: 2 passed, 1 warning in 6.51s 
+run 19: 2 passed, 1 warning in 5.86s 
+run 20: 2 passed, 1 warning in 5.95s 
+2026-10-24 20:25:52 UTC
+
+   Result: 0 of 20 runs with a failure under four busy processes, 0 of 20
+   idle. Before the change, on 582b522 and dc35b50: 9 of 20 and 3 of 20 under
+   load. Twenty runs without a failure do not prove that no kept field can
+   fail under load; none did in these runs.
