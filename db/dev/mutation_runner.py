@@ -1,6 +1,6 @@
 """Shared machinery for the mutation evidence scripts in db/dev/.
 
-`run(title, test_file, mutations, only)`:
+`run(title, test_file, mutations, only, deselect)`:
 1. prints a header binding the output to the commit, the source fingerprint
    and whether the tree was clean;
 2. runs the baseline;
@@ -8,6 +8,11 @@
    to the production file, runs the shipped test file, restores the file, and
    checks its sha256 is unchanged;
 4. prints the failing tests and the CAUSE each failure reports.
+
+`deselect` names tests left out of every run, the baseline included, and is
+printed in the header. It is for a test that compares the production file's
+TEXT (0008's approved-text test): it fails under every mutation, and would
+hide which behaviour test refuses the weakened write.
 
 Write the output OUTSIDE the tree (a redirect into the tree dirties it before
 the header is taken), then copy it in.
@@ -30,9 +35,11 @@ def _out(*argv):
     return subprocess.run(argv, cwd=ROOT, capture_output=True, text=True).stdout.strip()
 
 
-def _pytest(test_file):
+def _pytest(test_file, deselect=()):
+    extra = [arg for test in deselect for arg in ("--deselect", f"{test_file}::{test}")]
     return subprocess.run([PYTHON, "-m", "pytest", test_file, "-q", "-p", "no:cacheprovider",
-                           "--tb=line", "-rf"], cwd=ROOT, capture_output=True, text=True).stdout
+                           "--tb=line", "-rf", *extra], cwd=ROOT, capture_output=True,
+                          text=True).stdout
 
 
 def _cause(line):
@@ -44,7 +51,7 @@ def _cause(line):
     return re.sub(r"^/\S+:\d+: ", "", line)[:170]
 
 
-def run(title, test_file, mutations, only=()):
+def run(title, test_file, mutations, only=(), deselect=()):
     dirty = _out("git", "status", "--porcelain")
     print(title)
     print("=" * 60)
@@ -54,8 +61,11 @@ def run(title, test_file, mutations, only=()):
     print("Recorded          :",
           datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"))
     print("Test file         :", test_file)
+    if deselect:
+        print("Deselected        :", ", ".join(deselect))
     print()
-    print("=== baseline (no mutation) ===\n   " + _pytest(test_file).strip().splitlines()[-1])
+    print("=== baseline (no mutation) ===\n   "
+          + _pytest(test_file, deselect).strip().splitlines()[-1])
     survivors = []
     for name, rel, old, new in mutations:
         if only and name.split()[0] not in only:
@@ -75,7 +85,7 @@ def run(title, test_file, mutations, only=()):
         shutil.copy2(path, backup)
         path.write_text(source.replace(old, new))
         try:
-            out = _pytest(test_file)
+            out = _pytest(test_file, deselect)
         finally:
             shutil.copy2(backup, path)
             backup.unlink()

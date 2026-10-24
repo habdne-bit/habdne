@@ -43,7 +43,7 @@ VERSIONS = REPO_ROOT / "db" / "migrations" / "versions"
 sys.path.insert(0, str(REPO_ROOT / "db" / "gate"))
 from migration_deltas import DELTAS, for_revision, split_row  # noqa: E402
 BASELINE = "0001_frozen_baseline_v0_2_3"
-HEAD = "0007_task_work_and_evidence"
+HEAD = "0008_communication_records"
 
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGUSER = os.environ.get("PGUSER", "turab")
@@ -943,7 +943,12 @@ def test_0006_refuses_to_downgrade(migrated):
 
 def test_0007_refuses_to_downgrade(migrated):
     """Reverting 0007 lets a task completion's evidence be rewritten (G6-8
-    (iv)) and strips the outcome codes events may name."""
+    (iv)) and strips the outcome codes events may name.
+
+    Since 0008, which has a downgrade, `alembic downgrade` from head runs
+    0008's downgrade first and then stops at 0007's refusal. Every revision
+    runs in ONE transaction (`db/migrations/env.py`), so 0008's downgrade is
+    rolled back with the refusal and the version stays at head."""
     result = _alembic("downgrade", "0006_opportunity_history")
     output = result.stderr + result.stdout
     assert result.returncode != 0, output
@@ -976,6 +981,41 @@ def test_the_declared_deltas_for_0007_are_exactly_its_four_objects():
         ("functions", "prevent_cited_observation_change()"),
         ("triggers", "observations.trg_cited_observation_unchanged"),
     }
+
+
+def test_the_declared_deltas_for_0008_are_exactly_its_nineteen_objects():
+    """Approved scope (Slice 7 plan §5.1, parts E, A, B, C, D2; review of
+    38281ab): part E's CHECK and index; part A's three CHECKs, function and
+    trigger; parts B and C's function and trigger each; part D's function and
+    trigger, and the six foreign keys it makes RESTRICT. Nothing else."""
+    got = {(d.section, d.object_name)
+           for d in for_revision("0008_communication_records")}
+    assert got == {
+        ("constraints", "communication_threads.ck_whatsapp_thread_ref_scoped"),
+        ("indexes", "communication_threads.ux_whatsapp_thread_ref"),
+        ("constraints", "communication_messages.ck_message_ref_needs_provider"),
+        ("constraints", "communication_messages.ck_message_provider_known"),
+        ("constraints", "communication_messages.ck_internal_message_has_no_ref"),
+        ("functions", "enforce_message_provider_channel()"),
+        ("triggers", "communication_messages.trg_message_provider_channel"),
+        ("functions", "guard_communication_message()"),
+        ("triggers", "communication_messages.trg_guard_communication_message"),
+        ("functions", "guard_webhook_event()"),
+        ("triggers", "webhook_events.trg_guard_webhook_event"),
+        ("functions", "guard_communication_thread()"),
+        ("triggers", "communication_threads.trg_guard_communication_thread"),
+        ("constraints", "communication_threads.communication_threads_party_id_fkey"),
+        ("constraints", "communication_threads.communication_threads_request_id_fkey"),
+        ("constraints", "communication_threads.communication_threads_property_id_fkey"),
+        ("constraints", "communication_threads.communication_threads_opportunity_id_fkey"),
+        ("constraints",
+         "communication_threads.communication_threads_created_by_account_id_fkey"),
+        ("constraints",
+         "communication_messages.communication_messages_sent_by_account_id_fkey"),
+    }
+    changed = [d for d in for_revision("0008_communication_records") if d.digest_before]
+    assert len(changed) == 6 and all(d.kind.startswith("FOREIGN KEY") for d in changed), (
+        "only the six keys of D2 change a frozen object")
 
 
 def test_the_declared_deltas_for_0006_are_exactly_its_four_objects():
