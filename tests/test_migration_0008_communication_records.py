@@ -749,17 +749,21 @@ def test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows(scratc
                                  external_message_ref, direction, occurred_at)
                           VALUES (:t, 'whatsapp', 'wamid.down', 'INBOUND', now())"""),
                   {"t": thread})
-    down = _alembic("downgrade", PREVIOUS)
-    assert down.returncode == 0, _error(down.stdout + down.stderr)
-    assert _version(scratch) == PREVIOUS
-    assert _digests(scratch) == {k: d.digest_before for k, d in deltas.items()}
-    with scratch.connect() as c:
-        assert c.execute(text("SELECT count(*) FROM turab.communication_messages "
-                              "WHERE thread_id = :t"), {"t": thread}).scalar_one() == 1
-        assert c.execute(text("""SELECT confdeltype FROM pg_constraint
-                                  WHERE conname = 'communication_threads_party_id_fkey'""")
-                         ).scalar_one() == "n"
-    up = _alembic("upgrade", "head")
+    # Brought back to head even when an assertion fails, so that a failure
+    # here is this test's and the tests after it start from head.
+    try:
+        down = _alembic("downgrade", PREVIOUS)
+        assert down.returncode == 0, _error(down.stdout + down.stderr)
+        assert _version(scratch) == PREVIOUS
+        assert _digests(scratch) == {k: d.digest_before for k, d in deltas.items()}
+        with scratch.connect() as c:
+            assert c.execute(text("SELECT count(*) FROM turab.communication_messages "
+                                  "WHERE thread_id = :t"), {"t": thread}).scalar_one() == 1
+            assert c.execute(text("""SELECT confdeltype FROM pg_constraint
+                                      WHERE conname = 'communication_threads_party_id_fkey'""")
+                             ).scalar_one() == "n"
+    finally:
+        up = _alembic("upgrade", "head")
     assert up.returncode == 0, _error(up.stdout + up.stderr)
     assert _version(scratch) == REVISION
     assert _digests(scratch) == at_head
