@@ -933,3 +933,12 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   09c311ebc22
 docs/gate/SLICE_7_STEP1_DELIVERY.md                            new   4ed79e8d64a49759ba256d7c529fdd7854189be9dc56872037c602aede6c8e36
 docs/gate/SLICE_7_PLAN.md                                      rev6  e8f177d91680831b214d96ea37bbf9c6784d81b098b8e01bf41a0b8db9469f87
 SLICE_7_PLAN.md changed revision: 5 -> 6 (step 1 delivered).
+--- Review of 7e8993d: Slice 7 step 1 CLOSED at 7e8993d; step 2 authorized; Slice 5 race test remedy (b) at ddd012d; Slice 7 plan revision 7 ---
+docs/gate/evidence/SLICE7-S5-RACE-FIELD-W-BEFORE.txt           new   2fff82653b45a5547368a33a778762e788227983205110929b7b256c4ffbb6cb
+docs/gate/evidence/SLICE7-S5-RACE-FIELD-W-AFTER.txt            new   ba077ffa77e0ccf79eaa6b53dcebce00a0ef93c3a252f49eaffa1c7341e4e742
+docs/gate/evidence/SLICE7-S5-RACE-FIELD-MUTATIONS-AFTER.txt    new   55c5f9b8764fff473986a62879b2de29f3ee4c2d840355dbbec7e5d51854ce59
+docs/gate/evidence/SLICE7-S5-RACE-FIELD-AFTER.txt              new   db28ca351a86298c809b41181273cd9e787befaeeb04cfb08de502b9c4319ff4
+docs/gate/MIGRATION_POLICY.md                                  ---   57baebe9fbe0363ea4ab46da5320cfbc2880a7cd9b7ae7544b819102bf349562
+docs/gate/SLICE_7_STEP1_DELIVERY.md                            add   b1052b859e64697d2f9a0b8af6318833ae0a8081174f0dd3a555e9b8cf3ba805
+docs/gate/SLICE_7_PLAN.md                                      rev7  61e9aeaa4edc57b6ba33b6678bafa162111925966b901a2277cd65ff607e0cd4
+SLICE_7_PLAN.md changed revision: 6 -> 7 (review of 7e8993d; G7-16 added).
