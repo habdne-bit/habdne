@@ -230,6 +230,18 @@ than kept, and the test now pins Alembic's real refusal.
    schema-change approval path** (R14.6) — the same path that produced
    v0.2.2 and v0.2.3. Corrections to the baseline arrive as a new official
    handoff package, not as a local migration.
+   **Applied once to frozen constraints: `0008` (review of `7e8993d`).**
+   - **What changed:** part D of `0008` changes six foreign keys that the
+     frozen schema declares, from `ON DELETE SET NULL` to `RESTRICT`.
+   - **How it was accepted:** as an approved evolution on top of the
+     baseline, under §1a, without a new handoff package, because:
+     - decision D2 named the change;
+     - the migration text that makes it was approved;
+     - `schema_v0.2.3.sql`, and its application by `0001`, are unchanged;
+     - each change is a declared delta, with both digests.
+   - **The limit:** the acceptance covers these six keys. It does not extend
+     to a correction of the baseline file itself, which still arrives as a
+     new official handoff package.
 3. **A migration that adds new objects** (Slice 2 onward) is ordinary work and
    does not touch the frozen digests.
 4. **The 70-assertion gate keeps running against the frozen SQL**, never

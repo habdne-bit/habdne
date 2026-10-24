@@ -1,10 +1,10 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 6**
+## Implementation plan — **revision 7**
 
-**Status: step 1 is DELIVERED for review** (`SLICE_7_STEP1_DELIVERY.md`).
-The text of `0008` was approved and step 1 authorized in the review of
-`38281ab`, recorded below. Step 2 does not start before step 1's delivery is
-reviewed.
+**Status: step 1 is CLOSED at `7e8993d`, and step 2 is AUTHORIZED** (review
+of `7e8993d`, recorded below). Slice 7 is not closed.
+- **Step 2's preparation found six points the plan does not decide** (G7-16).
+  No step 2 code is written before they are decided.
 - **The only code of this slice is step 1's:** migration `0008`, its tests,
   and its mutation script. No webhook, command or endpoint exists.
 - **The review of step 1's progress report** (after `dc35b50`; recorded
@@ -60,7 +60,50 @@ a recommendation. A recommendation is not a decision.
 | 3 | `dcc1c74` | the review of `58a0067` recorded; the four points settled: (D) put as an explicit choice between D2 (strict, six foreign keys made RESTRICT, its consequences) and D3 (a narrower guarantee stated exactly), D1's "FK-only" name withdrawn; the failure inside the processing transaction (a savepoint, the FAILED record, the stop after RECEIVED, their tests), and the 500 settled by a proposed CORRECTION-007; the relay made condition R-1 before any real event; the provider rule for every channel. The proposed text of `0008` (§5.1) and of CORRECTION-007 (§5.2), neither executed nor approved |
 | 4 | `587f8b3` | the review of `4aed49b` recorded: D2, CORRECTION-007, (a2) with R-1, and G7-4 decided; the other directions approved. Its two gaps settled: a WHATSAPP thread's reference is scoped and unique (G7-3; `0008` part E; R-1 duty 6), and UNKNOWN → FAILED is refused (G7-5; part B rewritten). R-1 measures the relay's real envelopes against G7-15's limit (duty 7). §7 (1) and OQ7-2 aligned with CORRECTION-007. The full text of `0008` (§5.1), not executed |
 | 5 | `33434a8` | the review of `38281ab` recorded: the text of `0008` (parts E, A, B, C, D2) approved; step 1 authorized; no other change |
-| 6 | this revision | the review of step 1's progress report recorded; step 1 delivered (`SLICE_7_STEP1_DELIVERY.md`); the status and §8 updated; no decision, and no text of `0008`, changed |
+| 6 | `7e8993d` | the review of step 1's progress report recorded; step 1 delivered (`SLICE_7_STEP1_DELIVERY.md`); the status and §8 updated; no decision, and no text of `0008`, changed |
+| 7 | this revision | the review of `7e8993d` recorded: step 1 CLOSED, step 2 authorized, D2's reading of R14.6 accepted for the six keys only, the Slice 5 race test's remedy (b) applied; G7-16 added: six points of step 2 put as decisions, and CORRECTION-006's reading |
+
+**The review of `7e8993d`. Step 1 is CLOSED at `7e8993d`; step 2 is
+AUTHORIZED, in the plan's sequence. Slice 7 is not closed.**
+- **What the closure rests on:** the reviewer read the migration, its tests,
+  the delivery and the evidence records:
+  - the suite, 2741/2741;
+  - the two mutation runs;
+  - the gate.
+
+  The reviewer also checked that the difference after the mutations' tree
+  `7eedd77` is documents and evidence only. **The reviewer did not re-run
+  PostgreSQL, the suite or the mutations.** The numbers are the
+  implementing team's, bound to the tree.
+- **D2 and R14.6: the implementation's reading is ACCEPTED, in this case
+  only.**
+  - **Why:**
+    - decision D2 named the change of the six frozen foreign keys, and the
+      migration text that makes it was then approved;
+    - `schema_v0.2.3.sql`, and its application by `0001`, are unchanged;
+    - each change is a declared delta, with its digests before and after.
+  - **What follows:** it is an approved evolution on top of the baseline,
+    under the distinction of `MIGRATION_POLICY.md` §1a and §4. No new
+    official handoff package is required for these six.
+  - **What it does not cover:** a correction of the baseline file itself.
+    `MIGRATION_POLICY.md` §4 records this (revision of `7e8993d`'s review).
+- **The Slice 5 concurrency test: remedy (b) chosen.**
+  - **What is removed:** `share_committed_first`, which compared the return
+    times of the two HTTP responses.
+  - **What is kept:**
+    - the `pg_blocking_pids` witness;
+    - the assertion that the binding did not complete while the share was
+      held;
+    - the final result.
+  - **What the measurement shows, and does not:** 9/20 against 3/20 under
+    load shows the failure exists before `0008`. It does not show that the
+    two trees fail at the same rate, and that is not concluded.
+  - **How it is done:** as a maintenance change of known effect, with the
+    new tree's evidence bound to it. It does not delay `0008`'s closure.
+- **Standing:**
+  - R-1 unmet for real traffic;
+  - K06 UNPROVEN;
+  - the SALE scope unchanged.
 
 **The review of step 1's progress report (after `dc35b50`). Step 1 is NOT
 closed by it.**
@@ -480,6 +523,13 @@ F7-5). G7-2 decides how TURAB meets them.
 | G7-4 | **DECIDED** as proposed (the provider rule, the three CHECKs, the channel guard) |
 | G7-1, G7-2 (other parts), G7-3, G7-5, G7-6, G7-7, G7-8 (a), G7-9 (a), G7-10, G7-11, G7-13, G7-14, G7-15 (64 KiB, R-1 measuring real envelopes) | **directions approved** as the plan's basis; G7-3 and G7-5 completed in revision 4 |
 | The text of `0008` (§5.1) | **not approved**; step 1 does not start |
+
+**Since then:**
+- the text of `0008` was approved (review of `38281ab`);
+- step 1 was closed at `7e8993d`, with D2's reading of R14.6 accepted for the
+  six keys only (review of `7e8993d`);
+- **G7-16 (i–vi), and CORRECTION-006's reading, are put as decisions**
+  (revision 7), and are not decided.
 
 
 ### G7-1 · Scope
@@ -1067,6 +1117,108 @@ recommended:
   F7-12 concerns them all: put as a separate question (OQ7-4).
 - **Blocks:** step 3.
 
+### G7-16 · What step 2 needs and the plan does not decide (revision 7; found preparing step 2)
+
+**Why this exists.** Preparing step 2 against the contract and
+`API_CONTRACTS_v0.2.md` §4.12 found six points on which neither the sources
+nor G7-1 to G7-15 fix the behaviour. Each is put as a decision, with a
+recommendation; a recommendation is not a decision.
+- **What depends on them:** the message command only. Thread creation
+  (G7-6, G7-7 with CORRECTION-006, G7-3's reference, G7-11) depends on none
+  of (i)–(vi), but it does depend on the reading of CORRECTION-006 below.
+- **What waits:** **no step 2 code is written before these points and that
+  reading are decided,** so that step 2 is delivered as one.
+
+The sources read:
+- **`API_CONTRACTS` §4.12:**
+  - the thread is "linked to the relevant PARTY and optional domain
+    context";
+  - the message route "stores outbound/internal messages. Provider ids and
+    delivery/read status are preserved";
+- **`MessageCreate`:**
+  - `direction` admits INBOUND, OUTBOUND and INTERNAL;
+  - `delivery_status` admits all six statuses;
+  - `metadata` is an open object;
+  - `message_type` is free text, default `TEXT`.
+
+**(i) A message with direction INBOUND, written by staff.**
+- **(a) Recommended: refused,** with a typed 422 `DIRECTION_NOT_ACCEPTED`,
+  writing nothing.
+  - **The source:** §4.12 gives the route outbound and internal messages.
+  - **Where inbound comes from:** an inbound message enters through the
+    webhook (step 3).
+  - **What staff record instead:** what a party said on a call, as an
+    INTERNAL message (G7-10 records a phone decision that way).
+  - **The consequence:** `sent_by_account_id` is then always the caller.
+- **(b) Accepted, with `sent_by_account_id` NULL.** The party sent it, and the
+  staff member who wrote it is in the audit row.
+
+**(ii) The `delivery_status` a staff message states.**
+- **(a) Recommended:**
+  - **OUTBOUND:** the stated status is stored, default UNKNOWN, as §4.12's
+    "preserved" says. After creation it changes through the webhook only
+    (F7-10, G7-5);
+  - **INTERNAL:** absent or UNKNOWN only. A note has no delivery, so any
+    other value is a typed 422 `DELIVERY_STATUS_NOT_ACCEPTED`.
+- **(b) UNKNOWN only, for every direction.** It would not preserve a status
+  that staff know.
+
+**(iii) The `metadata` a staff message carries.**
+- **What constrains it:** G7-9 (2) fixes what `metadata` holds
+  (`content_archived`, `content_withheld_reason`, and a webhook event id),
+  and says that it never holds content.
+- **(a) Recommended:** an absent or empty `metadata` only. Any key is a typed
+  422 `MESSAGE_METADATA_NOT_ACCEPTED`, writing nothing. The service writes
+  the keys G7-9 names.
+  - **Why:** an open object could carry content outside the consent rule,
+    and no source names a staff key to allow.
+- **(b) An allow-list of staff keys.** No source names one.
+- **(c) Stored as given.** Contrary to G7-9 (2).
+
+Dropping it silently is not offered: G7-9 (3) refuses to hide what an
+operator sent.
+
+**(iv) `communication_threads.last_message_at`.**
+- **(a) Recommended:** each message sets it to the later of its value and the
+  message's `occurred_at`, in the message's transaction, with the thread row
+  locked `FOR UPDATE`. Part D allows that change, and only that one.
+- **(b) Not maintained** by Slice 7.
+
+**(v) The message types G7-10 gives a meaning.**
+- **(a) Recommended:** step 2 refuses the `message_type` values
+  `PHONE_DECISION` and `CONFIRMATION_LINK`, with a typed 422
+  `MESSAGE_TYPE_RESERVED`, until step 4 implements G7-10's rules for them.
+  - **Why:** a `CONFIRMATION_LINK` written without G7-10's four checks would
+    be a link nobody checked.
+  - **Every other value** stays free text, as frozen.
+- **(b) Accepted now,** without the checks.
+
+**(vi) The names of the typed refusals.**
+- **Named by the plan, and kept:**
+  - `EXTERNAL_REF_WITHOUT_PROVIDER` (G7-4);
+  - `THREAD_REF_TAKEN` (G7-3);
+  - `CONTENT_NOT_ARCHIVABLE` (G7-9).
+- **Recommended for the rest:**
+  - 422 `THREAD_REF_NOT_SCOPED`: a WHATSAPP reference not of the form
+    `<scope>:<id>`;
+  - 422 `OPPORTUNITY_NOT_SALE` (G7-6 rule 0);
+  - 422 `THREAD_LINKS_INCONSISTENT` (G7-6 rules 1–3), whose `field_errors`
+    name the fields, never the ids;
+  - 422 `LINKED_RECORD_NOT_FOUND`: a body id naming no row (G7-6 rule 4).
+    The 404 is kept for the path's thread;
+  - 409 `MESSAGE_REF_TAKEN`: the 23505 of M2 (G7-4).
+
+**And a reading to confirm: CORRECTION-006.**
+- **The basis:** G7-7 (a) was approved as a direction, and §7 (1) applies
+  CORRECTION-006 "once written and approved".
+- **The precedent:** CORRECTION-005 was written in Slice 6 step 2 from an
+  approved direction, and its text was reviewed with that step's delivery.
+- **The reading:** step 2 writes CORRECTION-006 the same way. Its text is
+  submitted for approval with the delivery.
+
+**Blocks:** step 2's message command (i–vi); step 2's thread command, for
+CORRECTION-006's reading.
+
 ### Open questions (not decisions)
 - **OQ7-1 · Retention:** of archived content, and its fate on revocation
   (J03, F7-6). The sources leave it to "pilot/legal review".
@@ -1430,8 +1582,8 @@ identical results, and are ours.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
-| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | the text of §5.1 approved; **authorized** (review of `38281ab`); **delivered for review** (`SLICE_7_STEP1_DELIVERY.md`) |
-| 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11 |
+| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
+| 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading; **authorized** (review of `7e8993d`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |

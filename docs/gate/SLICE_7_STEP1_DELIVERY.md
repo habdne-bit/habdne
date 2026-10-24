@@ -23,7 +23,17 @@ execution". This document reports that execution.
   Each has its own section, with the tests that prove it and the mutations
   that weaken it.
 
-**Status:** delivered for review. **Step 2 has not started.**
+**Status: CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_PLAN.md`
+revision 7). Step 2 is authorized. Slice 7 is not closed.
+- **The review accepted D2's reading of R14.6 (§1) for these six keys
+  only.** It does not extend to a correction of the baseline file itself.
+- **The review chose remedy (b) for the Slice 5 test (§6.1):**
+  `share_committed_first` is removed (`ddd012d`), and its effect is measured
+  in `evidence/SLICE7-S5-RACE-FIELD-AFTER.txt`.
+- **What the review did not do:** re-run PostgreSQL, the suite or the
+  mutations. The numbers are ours, bound to the tree.
+
+*As delivered:* delivered for review. Step 2 had not started.
 
 **The review of the progress report.** An earlier account of this step was
 a progress report, not this delivery (review of the progress report, after

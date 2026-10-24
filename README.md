@@ -18,7 +18,7 @@
 | Slice 4 — Deterministic Matching Core | **CLOSED at `58368d1`**, within the approved scope — see [`docs/gate/SLICE_4_CLOSURE.md`](docs/gate/SLICE_4_CLOSURE.md) |
 | Slice 5 — Human Review → OPPORTUNITY | **CLOSED at `339dbc4`**, SALE only — see [`docs/gate/SLICE_5_CLOSURE.md`](docs/gate/SLICE_5_CLOSURE.md) |
 | Slice 6 — Match Diagnostic / Information Work | **CLOSED at `ce8cfa0`**, SALE only — see [`docs/gate/SLICE_6_CLOSURE.md`](docs/gate/SLICE_6_CLOSURE.md) |
-| Slice 7 — Communication / WhatsApp Record | **Step 1 delivered for review**: migration `0008` (parts E, A, B, C, D2, as approved in the review of `38281ab`), its tests, 77/77 mutations twice; suite 2741/2741 — see [`docs/gate/SLICE_7_STEP1_DELIVERY.md`](docs/gate/SLICE_7_STEP1_DELIVERY.md) and [`docs/gate/SLICE_7_PLAN.md`](docs/gate/SLICE_7_PLAN.md) (revision 6). Step 2 not started; R-1 unmet; K06 UNPROVEN |
+| Slice 7 — Communication / WhatsApp Record | **Step 1 CLOSED at `7e8993d`** (migration `0008`; [`docs/gate/SLICE_7_STEP1_DELIVERY.md`](docs/gate/SLICE_7_STEP1_DELIVERY.md)); **step 2 authorized**, its six open points put as decisions (G7-16) — see [`docs/gate/SLICE_7_PLAN.md`](docs/gate/SLICE_7_PLAN.md) (revision 7). R-1 unmet; K06 UNPROVEN |
 
 Standing: K06 **UNPROVEN** (EN-02); G4-5R open, SALE only. The current
 suite count and its binding to the tree are in
