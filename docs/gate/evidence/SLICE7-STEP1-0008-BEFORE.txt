@@ -1,20 +1,27 @@
 TURAB — Slice 7 step 1: migration 0008's tests, run BEFORE the migration exists
 ==============================================================================
-Recorded : 2026-10-24 09:50:52 UTC
+Recorded : 2026-10-24 10:09:53 UTC
 Base     : commit 582b522 (plan revision 5; no 0008), in an ISOLATED worktree
            (git worktree, detached at 582b522), into which only the new test file
            was copied. The base's migrations stop at 0007_task_work_and_evidence.
 Test file: tests/test_migration_0008_communication_records.py
-           sha256 2f22920b300999adb2a8e4c8d3849cf870ed720817a8e1f7b001d6aedf44defc
+           sha256 3be272309bd3097611fb890529df3892167c5c1358146839d4e3ac62c53b0a27
+           (as committed in the step's second commit)
 Database : turab_s7_before, built by the suite's own conftest (frozen schema,
            seed, fixtures, stamp 0001, upgrade head = 0007); and
            turab_s7_before_scratch, built by db/dev/reset_db.sh, dropped after.
 Server   : PostgreSQL 16.15
-Result   : 96 failed, 26 passed in 52.66s
+Result   : 96 failed, 26 passed in 55.62s
 
 What this measures. The defect, before the fix: the schema at 0007 accepts
 what plan §5.1 parts E, A, B, C and D2 are approved to refuse. These are our
 runs; nobody else has re-run them.
+
+Two measurements. A first one, at 09:50:52 UTC, ran the test file of the
+step's first commit (sha256 2f22920b…defc). Its clean-up of the pre-check
+cases was then moved into a `finally` and its assertion messages made to name
+the database's error; the file was measured again, here. Both give the same
+result for each of the 122 tests (compared line by line).
 
 Reading:
   FAILED because the refusal is absent ("DID NOT RAISE", 87 tests): part E,
@@ -36,7 +43,7 @@ Reading:
     - test_d_the_six_keys_are_restrict: the six keys are 'n' (SET NULL), not 'r'.
     - the two race tests: the contender was NOT blocked ("blocked_by_holder":
       False) and BOTH inserts committed: two WHATSAPP threads, one reference.
-    - the three pre-check cases: the upgrade to head SUCCEEDED (head is 0007),
+    - the three pre-check cases: "the upgrade was accepted" (head is 0007),
       so nothing refused the unscoped or shared rows.
     - the downgrade test: the version is 0007, not 0008.
     - test_the_migration_executes_the_approved_text: no migration file
