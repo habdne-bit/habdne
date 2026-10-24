@@ -1,0 +1,56 @@
+TURAB — Slice 5 step 5: which test refuses which weakening of the opportunity commands and queue
+============================================================
+Base commit       : 7e8993d079b11d3134b593c79749e75ea3e377c6
+Source fingerprint: 0fff3ec562f2503ad605f3891da4a78c086a71296b1d49cdac3bc4d3a583b6ad
+Working tree      : CLEAN
+Recorded          : 2026-10-24 19:25:51 UTC
+Test file         : tests/test_slice5_step5.py
+
+=== baseline (no mutation) ===
+   89 passed, 1 warning in 40.72s
+== W1 the share takes the shared lock [src/turab/services/opportunity_commands.py, 1 site(s)]  restored: sha256 5837cc9bd904c0c4 identical
+   7 failed, 82 passed, 1 warning in 42.75s
+   FAILED test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes
+   FAILED test_an_approval_on_the_same_property_waits_for_a_held_share_and_both_succeed
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   FAILED test_two_shares_on_one_property_serialize_and_both_succeed
+   cause: AssertionError: the approval never waited on the share
+   cause: AssertionError: the run never waited on the share
+   cause: AssertionError: the second share never waited on the first
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: the approval never waited on the share
+== W2 the exclusive lock does not conflict with FOR KEY SHARE [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   5 failed, 84 passed, 1 warning in 38.73s
+   FAILED test_a_matching_run_on_the_property_waits_for_a_held_share_and_completes
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   cause: AssertionError: the run never waited on the share
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: the run never waited on the share
+   cause: E   AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+== W3 the share locks the offer only [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   2 failed, 87 passed, 1 warning in 36.31s
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY]
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+== W4 the share locks the property only [src/turab/services/currency.py, 1 site(s)]  restored: sha256 b274da5218a2c998 identical
+   2 failed, 87 passed, 1 warning in 35.85s
+   FAILED test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it[PROPERTY_OFFER]
+   FAILED test_r_s5_5_01_b_a_share_waits_for_a_binding_in_flight_and_reads_it[PROPERTY_OFFER]
+   cause: AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+   cause: E   AssertionError: {'binding_waited_on_the_share': False, 'binding_committed_while_the_share_was_held': True, 'share': (200, 'SHARED'), 'bind': 200, ...}
+   cause: E   AssertionError: {'share_waited_on_the_binding': False, 'share_answered_while_the_binding_was_held': True, 'bind': 200, 'share': (200, 'SHARED'), ...}
+
+SURVIVING MUTATIONS: none

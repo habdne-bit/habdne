@@ -1039,7 +1039,6 @@ def _in_thread(engine, out, name, call):
     def run():
         with TestClient(create_app(engine=engine)) as c:
             out[name] = call(c)
-            out[f"{name}_done"] = time.monotonic()
     t = threading.Thread(target=run)
     t.start()
     return t
@@ -1085,11 +1084,16 @@ def _contact_facts(engine, world, key=None):
 def test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it(
         client, engine, ids, monkeypatch, on):
     """Order A. The share holds after its check. The binding command, in
-    another transaction, must wait on the share (witness), and commit only
-    after the share has committed: the share was right when it committed.
-    Without the serialization the binding commits while the share is held,
-    and the share then commits SHARED over a CURRENT CONTACT_BEFORE_SHARING
-    binding."""
+    another transaction, must wait on the share (witness), and must not commit
+    while the share is held: the share was right when it committed. Without
+    the serialization the binding commits while the share is held, and the
+    share then commits SHARED over a CURRENT CONTACT_BEFORE_SHARING binding.
+
+    That the binding commits after the share follows from the lock it waits
+    on; it is not measured. A field that compared the two responses' return
+    times stood for it, and failed under CPU load on trees with and without
+    Slice 7's code; it was removed in the review of 7e8993d
+    (`evidence/SLICE7-STEP1-S5-RACE-UNDER-LOAD.txt`)."""
     world = _fresh(ids, engine, client)
     body = _bind_body(engine, ids, world, "PROPERTY" if on == "PROPERTY" else "OFFER")
     out = {}
@@ -1111,13 +1115,12 @@ def test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it(
         "binding_committed_while_the_share_was_held": bound_while_held,
         "share": (out["share"].status_code, out["share"].json().get("status")),
         "bind": out["bind"].status_code,
-        "share_committed_first": out["share_done"] < out["bind_done"],
         **_contact_facts(engine, world),
     }
     assert observed == {
         "binding_waited_on_the_share": True,
         "binding_committed_while_the_share_was_held": False,
-        "share": (200, "SHARED"), "bind": 200, "share_committed_first": True,
+        "share": (200, "SHARED"), "bind": 200,
         "status": "SHARED", "current_contact_bindings": 1, "share_key_records": None,
     }, observed
 
