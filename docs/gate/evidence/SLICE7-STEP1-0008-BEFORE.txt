@@ -1,35 +1,41 @@
 TURAB — Slice 7 step 1: migration 0008's tests, run BEFORE the migration exists
 ==============================================================================
-Recorded : 2026-10-24 10:09:53 UTC
+Recorded : 2026-10-24 10:36:23 UTC
 Base     : commit 582b522 (plan revision 5; no 0008), in an ISOLATED worktree
            (git worktree, detached at 582b522), into which only the new test file
            was copied. The base's migrations stop at 0007_task_work_and_evidence.
 Test file: tests/test_migration_0008_communication_records.py
-           sha256 3be272309bd3097611fb890529df3892167c5c1358146839d4e3ac62c53b0a27
-           (as committed in the step's second commit)
+           sha256 74db17d546e523e7ea10aa462daa004b2a1c6a5de9f0fd6ba07c3d865d342c54
+           (as committed in the step's fourth commit)
 Database : turab_s7_before, built by the suite's own conftest (frozen schema,
            seed, fixtures, stamp 0001, upgrade head = 0007); and
            turab_s7_before_scratch, built by db/dev/reset_db.sh, dropped after.
 Server   : PostgreSQL 16.15
-Result   : 96 failed, 26 passed in 55.62s
+Result   : 97 failed, 26 passed in 55.23s
 
 What this measures. The defect, before the fix: the schema at 0007 accepts
 what plan §5.1 parts E, A, B, C and D2 are approved to refuse. These are our
 runs; nobody else has re-run them.
 
-Two measurements. A first one, at 09:50:52 UTC, ran the test file of the
-step's first commit (sha256 2f22920b…defc). Its clean-up of the pre-check
-cases was then moved into a `finally` and its assertion messages made to name
-the database's error; the file was measured again, here. Both give the same
-result for each of the 122 tests (compared line by line).
+Three measurements, one per version of the test file:
+  09:50:52 UTC  sha256 2f22920b…defc (first commit): 96 failed, 26 passed;
+  10:09:53 UTC  sha256 3be27230…0b27 (second commit: the pre-check clean-up
+                moved into a `finally`, the messages naming the database's
+                error): 96 failed, 26 passed, the same result for each of the
+                122 tests (compared line by line);
+  10:36:23 UTC  sha256 74db17d5…2c54 (fourth commit: one test added, after
+                mutation B6 survived the first full mutation run): this
+                record. The same result for the 122, and the new test fails
+                ("DID NOT RAISE": provider gains 'whatsapp' unrefused).
 
 Reading:
-  FAILED because the refusal is absent ("DID NOT RAISE", 87 tests): part E,
+  FAILED because the refusal is absent ("DID NOT RAISE", 88 tests): part E,
     7 (the six unscoped references, the second thread with one reference);
     part A, 12 (the reference without a provider, the four unknown providers,
     the INTERNAL message with a reference, the provider in each of the six
-    non-WHATSAPP channels); part B, 31 (the 18 refused transitions,
-    UNKNOWN -> FAILED among them; the 12 column changes; the delete); part C,
+    non-WHATSAPP channels); part B, 32 (the 18 refused transitions,
+    UNKNOWN -> FAILED among them; the 12 column changes; provider gained
+    alone; the delete); part C,
     17 (the 6 immutable fields, the 10 refused status moves, the delete test,
     over the four statuses); part D, 20 (11 of the 12 thread changes; the six
     named parents, whose deletion is ACCEPTED because ON DELETE SET NULL
@@ -135,6 +141,7 @@ FAILED test_b_no_other_column_of_a_message_changes[occurred_at = occurred_at - i
 FAILED test_b_no_other_column_of_a_message_changes[sent_by_account_id = :account]
 FAILED test_b_no_other_column_of_a_message_changes[metadata = '{"x": 1}'::jsonb]
 FAILED test_b_no_other_column_of_a_message_changes[created_at = created_at - interval '1 day']
+FAILED test_b_a_message_without_a_provider_never_gains_one
 FAILED test_b_a_message_cannot_be_deleted
 FAILED test_c_the_immutable_fields_of_an_event_never_change[webhook_event_id = gen_random_uuid()]
 FAILED test_c_the_immutable_fields_of_an_event_never_change[provider = 'other']
