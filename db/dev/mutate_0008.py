@@ -30,7 +30,6 @@ The suite's database and the scratch database are both built by
 `alembic upgrade head` at session start, so a mutated migration is what the
 tests run against. See `mutation_runner.py`.
 """
-import pathlib
 import sys
 
 from mutation_runner import ROOT, run
@@ -225,13 +224,17 @@ MUTATIONS = [
   NOTHING),
 ]
 
-# Each anchor must name ONE site: the runner replaces every occurrence, and a
-# second site would weaken two guards under one name.
-_source = (ROOT / MIG).read_text()
-for _name, _rel, _old, _new in MUTATIONS:
-    assert _source.count(_old) == 1, (_name, _source.count(_old))
-assert len({m[0].split()[0] for m in MUTATIONS}) == len(MUTATIONS)
+def _check_anchors() -> None:
+    """Each anchor must name ONE site: the runner replaces every occurrence,
+    and a second site would weaken two guards under one name. Each mutation
+    has its own label. Run before a run, never on import."""
+    source = (ROOT / MIG).read_text()
+    for name, _rel, old, _new in MUTATIONS:
+        assert source.count(old) == 1, (name, source.count(old))
+    assert len({m[0].split()[0] for m in MUTATIONS}) == len(MUTATIONS)
+
 
 if __name__ == "__main__":
+    _check_anchors()
     run("TURAB — Slice 7 step 1: which test refuses which weakened guard of migration 0008",
         TESTS, MUTATIONS, sys.argv[1:], deselect=DESELECT)
