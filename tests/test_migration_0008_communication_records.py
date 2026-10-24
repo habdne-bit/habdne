@@ -763,3 +763,50 @@ def test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows(scratc
     assert up.returncode == 0, _error(up.stdout + up.stderr)
     assert _version(scratch) == REVISION
     assert _digests(scratch) == at_head
+
+
+def test_a_downgrade_refused_by_0007_leaves_0008_whole(scratch):
+    """`alembic downgrade 0006` from head runs 0008's downgrade FIRST (alembic
+    announces it), then reaches 0007, which refuses. Every revision runs in one
+    transaction (`db/migrations/env.py`), so 0008's downgrade is rolled back
+    with the refusal. Asserted on the database, not on the version alone:
+    every object of 0008 keeps its head digest, the six keys stay RESTRICT,
+    the guards still refuse, and the rows written at head are kept."""
+    assert _version(scratch) == REVISION
+    at_head = _digests(scratch)
+    with scratch.begin() as c:
+        party = c.execute(text("INSERT INTO turab.parties (kind) VALUES ('PERSON') "
+                               "RETURNING party_id")).scalar_one()
+        thread = c.execute(text("""INSERT INTO turab.communication_threads (channel,
+                                          external_thread_ref, party_id)
+                                   VALUES ('WHATSAPP', :r, :p) RETURNING thread_id"""),
+                           {"r": _ref(), "p": party}).scalar_one()
+        c.execute(text("""INSERT INTO turab.communication_messages (thread_id, provider,
+                                 external_message_ref, direction, occurred_at)
+                          VALUES (:t, 'whatsapp', :m, 'INBOUND', now())"""),
+                  {"t": thread, "m": f"wamid.{uuid.uuid4().hex}"})
+
+    refused = _alembic("downgrade", "0006_opportunity_history")
+    output = refused.stdout + refused.stderr
+    assert refused.returncode != 0, "the downgrade was accepted"
+    assert f"Running downgrade {REVISION} -> {PREVIOUS}" in output, _error(output)
+    assert "0007 has no downgrade" in output, _error(output)
+
+    assert _version(scratch) == REVISION
+    assert _digests(scratch) == at_head
+    with scratch.connect() as c:
+        kinds = dict(c.execute(text("""
+            SELECT conname, confdeltype FROM pg_constraint
+             WHERE contype = 'f' AND conname = ANY(:names)"""),
+            {"names": [name for _, name in SIX_KEYS]}).all())
+        assert kinds == {name: "r" for _, name in SIX_KEYS}
+        assert c.execute(text("SELECT count(*) FROM turab.communication_messages "
+                              "WHERE thread_id = :t"), {"t": thread}).scalar_one() == 1
+    for sql, expected in (
+            ("DELETE FROM turab.communication_threads WHERE thread_id = :v",
+             "communication_threads: DELETE refused"),
+            ("DELETE FROM turab.parties WHERE party_id = :v",
+             "communication_threads_party_id_fkey")):
+        with pytest.raises(DBAPIError) as caught, scratch.begin() as c:
+            c.execute(text(sql), {"v": thread if "threads" in sql else party})
+        assert expected in str(caught.value), caught.value

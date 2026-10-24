@@ -1,0 +1,166 @@
+TURAB — Slice 7 step 1: the Slice 5 race test that failed once, measured under load
+====================================================================================
+Test     : tests/test_slice5_step5.py::test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it
+           (two cases, PROPERTY_OFFER and PROPERTY; the file is unchanged since 37701ce)
+Trees    : 582b522 (plan revision 5: NO Slice 7 code, no 0008) and dc35b50 (0008),
+           each in an isolated git worktree, each on a database of its own
+           (turab_s5_race_<label>, built by the suite's conftest, dropped after)
+Load     : "4 busy processes" = four `python -c "while True: pass"` on the machine's
+           4 CPUs, for the whole of that block; "0" = none
+Server   : PostgreSQL 16.15
+Script   : reproduced at the end of this file
+
+Why measured. A full suite run on the working tree, before this step's
+commits, failed this test once (case PROPERTY, field share_committed_first),
+while the before record ran in parallel on the same machine. Ten passes run
+alone do not show the failure is incidental (review of this step's progress
+report); this measures it.
+
+Result (runs with a failing case, out of 20; each run executes both cases):
+
+  582b522, 4 busy processes : 9
+  dc35b50, 4 busy processes : 3
+  582b522, idle             : 0
+  dc35b50, idle             : 0
+
+In EVERY failing case the one differing field is share_committed_first
+(False, expected True). Every other field of the observed dict held: the
+binding waited on the share (pg_blocking_pids witness), did not commit while
+the share was held, both answered 200, the opportunity is SHARED, one current
+CONTACT_BEFORE_SHARING binding.
+
+Reading:
+  - The failure reproduces at 582b522, which contains no Slice 7 code. It is
+    not caused by 0008. (The 9 against 3 is not a difference between the
+    trees: the test and the code it exercises are identical in both.)
+  - The cause is in the test's measurement. share_committed_first compares
+    out["share_done"] < out["bind_done"], two time.monotonic() readings each
+    taken in its thread AFTER its HTTP response has returned through
+    TestClient, not at commit. The binding is blocked on a lock the share's
+    transaction holds, so it can proceed only once that transaction ends; it
+    then commits and returns. Under CPU load the share's thread can be
+    scheduled later, after its commit, than the binder's: the response order
+    inverts while the commit order cannot.
+  - What is proven by the other fields, and stays proven: the wait (witness),
+    and no commit of the binding while the share is held. What
+    share_committed_first claims (commit order) it does not measure.
+
+Not done here: the Slice 5 test is outside this step and is not changed.
+Proposed, for decision: replace share_committed_first by a measurement taken
+on the database side, or remove it as redundant with
+binding_committed_while_the_share_was_held plus the witness. These are our
+runs; nobody else has re-run them.
+
+Raw output:
+2026-10-24 11:05:33 UTC
+base_load: tree 582b522, 20 runs, 4 busy processes on 4 CPUs
+run 1: 1 failed, 1 passed, 1 warning in 9.18s {'share_committed_first': False} !{'share_committed_first': True} 
+run 2: 2 passed, 1 warning in 10.19s 
+run 3: 1 failed, 1 passed, 1 warning in 9.26s {'share_committed_first': False} !{'share_committed_first': True} 
+run 4: 1 failed, 1 passed, 1 warning in 8.50s {'share_committed_first': False} !{'share_committed_first': True} 
+run 5: 2 passed, 1 warning in 10.25s 
+run 6: 1 failed, 1 passed, 1 warning in 8.89s {'share_committed_first': False} !{'share_committed_first': True} 
+run 7: 2 passed, 1 warning in 7.69s 
+run 8: 2 passed, 1 warning in 8.61s 
+run 9: 2 passed, 1 warning in 8.97s 
+run 10: 2 passed, 1 warning in 9.00s 
+run 11: 2 passed, 1 warning in 9.87s 
+run 12: 2 passed, 1 warning in 8.56s 
+run 13: 1 failed, 1 passed, 1 warning in 10.02s {'share_committed_first': False} !{'share_committed_first': True} 
+run 14: 2 passed, 1 warning in 9.83s 
+run 15: 1 failed, 1 passed, 1 warning in 9.97s {'share_committed_first': False} !{'share_committed_first': True} 
+run 16: 2 passed, 1 warning in 8.74s 
+run 17: 1 failed, 1 passed, 1 warning in 9.51s {'share_committed_first': False} !{'share_committed_first': True} 
+run 18: 2 passed, 1 warning in 9.38s 
+run 19: 1 failed, 1 passed, 1 warning in 9.75s {'share_committed_first': False} !{'share_committed_first': True} 
+run 20: 1 failed, 1 passed, 1 warning in 9.46s {'share_committed_first': False} !{'share_committed_first': True} 
+head_load: tree dc35b50, 20 runs, 4 busy processes on 4 CPUs
+run 1: 2 passed, 1 warning in 10.03s 
+run 2: 2 passed, 1 warning in 9.12s 
+run 3: 2 passed, 1 warning in 8.61s 
+run 4: 2 passed, 1 warning in 9.70s 
+run 5: 2 passed, 1 warning in 9.57s 
+run 6: 2 passed, 1 warning in 9.90s 
+run 7: 2 passed, 1 warning in 9.13s 
+run 8: 2 passed, 1 warning in 9.24s 
+run 9: 1 failed, 1 passed, 1 warning in 8.84s {'share_committed_first': False} !{'share_committed_first': True} 
+run 10: 2 passed, 1 warning in 10.36s 
+run 11: 1 failed, 1 passed, 1 warning in 9.48s {'share_committed_first': False} !{'share_committed_first': True} 
+run 12: 2 passed, 1 warning in 9.48s 
+run 13: 2 passed, 1 warning in 9.49s 
+run 14: 2 passed, 1 warning in 9.48s 
+run 15: 1 failed, 1 passed, 1 warning in 9.26s {'share_committed_first': False} !{'share_committed_first': True} 
+run 16: 2 passed, 1 warning in 8.62s 
+run 17: 2 passed, 1 warning in 9.46s 
+run 18: 2 passed, 1 warning in 9.30s 
+run 19: 2 passed, 1 warning in 9.38s 
+run 20: 2 passed, 1 warning in 9.95s 
+base_idle: tree 582b522, 20 runs, 0 busy processes on 4 CPUs
+run 1: 2 passed, 1 warning in 6.11s 
+run 2: 2 passed, 1 warning in 6.04s 
+run 3: 2 passed, 1 warning in 5.97s 
+run 4: 2 passed, 1 warning in 6.12s 
+run 5: 2 passed, 1 warning in 6.26s 
+run 6: 2 passed, 1 warning in 6.30s 
+run 7: 2 passed, 1 warning in 6.06s 
+run 8: 2 passed, 1 warning in 5.70s 
+run 9: 2 passed, 1 warning in 5.67s 
+run 10: 2 passed, 1 warning in 5.78s 
+run 11: 2 passed, 1 warning in 5.84s 
+run 12: 2 passed, 1 warning in 6.04s 
+run 13: 2 passed, 1 warning in 6.01s 
+run 14: 2 passed, 1 warning in 6.13s 
+run 15: 2 passed, 1 warning in 6.17s 
+run 16: 2 passed, 1 warning in 5.69s 
+run 17: 2 passed, 1 warning in 6.00s 
+run 18: 2 passed, 1 warning in 6.02s 
+run 19: 2 passed, 1 warning in 6.38s 
+run 20: 2 passed, 1 warning in 6.59s 
+head_idle: tree dc35b50, 20 runs, 0 busy processes on 4 CPUs
+run 1: 2 passed, 1 warning in 5.90s 
+run 2: 2 passed, 1 warning in 6.53s 
+run 3: 2 passed, 1 warning in 6.49s 
+run 4: 2 passed, 1 warning in 6.54s 
+run 5: 2 passed, 1 warning in 6.07s 
+run 6: 2 passed, 1 warning in 6.14s 
+run 7: 2 passed, 1 warning in 5.92s 
+run 8: 2 passed, 1 warning in 5.77s 
+run 9: 2 passed, 1 warning in 7.57s 
+run 10: 2 passed, 1 warning in 6.66s 
+run 11: 2 passed, 1 warning in 6.08s 
+run 12: 2 passed, 1 warning in 6.45s 
+run 13: 2 passed, 1 warning in 6.71s 
+run 14: 2 passed, 1 warning in 6.76s 
+run 15: 2 passed, 1 warning in 7.22s 
+run 16: 2 passed, 1 warning in 6.33s 
+run 17: 2 passed, 1 warning in 6.91s 
+run 18: 2 passed, 1 warning in 6.32s 
+run 19: 2 passed, 1 warning in 6.22s 
+run 20: 2 passed, 1 warning in 6.47s 
+2026-10-24 11:18:03 UTC
+
+Script (s5_race_load.sh):
+#!/usr/bin/env bash
+# Runs tests/test_slice5_step5.py::test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it
+# (both cases) RUNS times in TREE, with LOAD busy CPU processes running, and
+# prints one line per run: the outcome, and every differing field reported.
+# Usage: s5_race_load.sh TREE LABEL RUNS LOAD
+set -u
+TREE=$1; LABEL=$2; RUNS=$3; LOAD=$4
+VENV=/home/user/habdne/.venv/bin
+TEST="tests/test_slice5_step5.py::test_r_s5_5_01_a_binding_created_while_a_share_is_held_waits_for_it"
+pids=()
+for _ in $(seq 1 "$LOAD"); do
+  "$VENV/python" -c "while True: pass" & pids+=($!)
+done
+cd "$TREE"
+echo "== $LABEL: tree $(git rev-parse --short HEAD), $RUNS runs, $LOAD busy processes on $(nproc) CPUs"
+for i in $(seq 1 "$RUNS"); do
+  out=$(PATH=$VENV:$PATH TURAB_TEST_DB=turab_s5_race_${LABEL} timeout 300 \
+        "$VENV/python" -m pytest "$TEST" -q -p no:cacheprovider -vv 2>&1)
+  summary=$(echo "$out" | tail -1)
+  fields=$(echo "$out" | grep -oE "\{'[a-z_]+': [^}]*\} != \{'[a-z_]+': [^}]*\}" | sort -u | tr '\n' ' ')
+  echo "run $i: $summary ${fields}"
+done
+for p in "${pids[@]}"; do kill "$p" 2>/dev/null; done
+PGPASSWORD=turab dropdb -h 127.0.0.1 -U turab --if-exists "turab_s5_race_${LABEL}" 2>/dev/null
