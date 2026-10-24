@@ -644,6 +644,12 @@ def scratch():
                    env={**os.environ, "PGPASSWORD": PGPASSWORD}, check=False)
 
 
+def _error(output: str) -> str:
+    """The database's error in an alembic run's output, or its last line."""
+    found = re.findall(r"psycopg\.errors\.\w+\) .*", output)
+    return found[0] if found else (output.strip().splitlines() or [""])[-1]
+
+
 def _version(eng):
     with eng.connect() as c:
         return c.execute(text("SELECT version_num FROM public.alembic_version")).scalar_one()
@@ -660,29 +666,36 @@ def test_e_the_precheck_refuses_unscoped_and_shared_references(scratch, whatsapp
     counts, and leave the database at the previous revision. A PHONE thread
     carrying the shared reference, and one with an unscoped reference, are in
     every case and are counted by neither. Once the WHATSAPP rows are
-    resolved, the migration applies."""
+    resolved, the migration applies.
+
+    The rows are removed and the database brought back to head even when an
+    assertion fails, so that each case, and the downgrade test, starts from
+    head: a failure here is this case's, not a consequence of the one before."""
     assert _alembic("downgrade", PREVIOUS).returncode == 0
     assert _version(scratch) == PREVIOUS
     rows = [("WHATSAPP", r) for r in whatsapp_refs] + [("PHONE", "shared:ref"),
                                                         ("PHONE", "unscoped-ref")]
-    with scratch.begin() as c:
-        for channel, ref in rows:
-            c.execute(text("INSERT INTO turab.communication_threads (channel, "
-                           "external_thread_ref) VALUES "
-                           "(CAST(:c AS turab.communication_channel), :r)"),
-                      {"c": channel, "r": ref})
-    refused = _alembic("upgrade", "head")
-    output = refused.stdout + refused.stderr
-    assert refused.returncode != 0, output
-    assert (f"0008: {unscoped} WHATSAPP thread reference(s) not scoped, "
-            f"{shared} reference(s) shared" in output), output
-    assert _version(scratch) == PREVIOUS, "a refused upgrade must leave the version"
-    with scratch.begin() as c:
-        c.execute(text("DELETE FROM turab.communication_threads "
-                       "WHERE external_thread_ref IN ('unscoped-ref', 'shared:ref', "
-                       "'one:ref')"))
-    applied = _alembic("upgrade", "head")
-    assert applied.returncode == 0, applied.stdout + applied.stderr
+    try:
+        with scratch.begin() as c:
+            for channel, ref in rows:
+                c.execute(text("INSERT INTO turab.communication_threads (channel, "
+                               "external_thread_ref) VALUES "
+                               "(CAST(:c AS turab.communication_channel), :r)"),
+                          {"c": channel, "r": ref})
+        refused = _alembic("upgrade", "head")
+        output = refused.stdout + refused.stderr
+        assert refused.returncode != 0, "the upgrade was accepted"
+        assert (f"0008: {unscoped} WHATSAPP thread reference(s) not scoped, "
+                f"{shared} reference(s) shared" in output), _error(output)
+        assert _version(scratch) == PREVIOUS, "a refused upgrade must leave the version"
+    finally:
+        if _version(scratch) == PREVIOUS:
+            with scratch.begin() as c:
+                c.execute(text("DELETE FROM turab.communication_threads "
+                               "WHERE external_thread_ref IN ('unscoped-ref', "
+                               "'shared:ref', 'one:ref')"))
+        applied = _alembic("upgrade", "head")
+    assert applied.returncode == 0, _error(applied.stdout + applied.stderr)
     assert _version(scratch) == REVISION
 
 
@@ -726,7 +739,7 @@ def test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows(scratc
                           VALUES (:t, 'whatsapp', 'wamid.down', 'INBOUND', now())"""),
                   {"t": thread})
     down = _alembic("downgrade", PREVIOUS)
-    assert down.returncode == 0, down.stdout + down.stderr
+    assert down.returncode == 0, _error(down.stdout + down.stderr)
     assert _version(scratch) == PREVIOUS
     assert _digests(scratch) == {k: d.digest_before for k, d in deltas.items()}
     with scratch.connect() as c:
@@ -736,6 +749,6 @@ def test_the_downgrade_restores_the_frozen_definitions_and_keeps_the_rows(scratc
                                   WHERE conname = 'communication_threads_party_id_fkey'""")
                          ).scalar_one() == "n"
     up = _alembic("upgrade", "head")
-    assert up.returncode == 0, up.stdout + up.stderr
+    assert up.returncode == 0, _error(up.stdout + up.stderr)
     assert _version(scratch) == REVISION
     assert _digests(scratch) == at_head
