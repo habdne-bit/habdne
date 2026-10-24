@@ -1,7 +1,9 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 4**
+## Implementation plan — **revision 5**
 
-**Status: submitted for review.**
+**Status: the text of `0008` is APPROVED and step 1 is AUTHORIZED** (review
+of `38281ab`, recorded below). Step 2 does not start before step 1's delivery
+is reviewed.
 - **No code for this slice exists, and none is written before this plan is
   approved.** Slice 7 is in **planning only**.
 - **What the review of `4aed49b` did** (recorded below):
@@ -54,6 +56,38 @@ a recommendation. A recommendation is not a decision.
 | 2 | `7200b3c` | the review of `dcebe46` recorded; step 0 measured (M1–M8); the five gaps settled in the text: content and consent (G7-9), the stuck event and its recovery (G7-2 (v)), Meta and the relay (G7-2 (ii), §3.9), what staff can read (G7-8), the SALE boundary (§0.2, G7-6 rule 0); new: F7-12, G7-15; G7-12 (D) rewritten on M8 |
 | 3 | `dcc1c74` | the review of `58a0067` recorded; the four points settled: (D) put as an explicit choice between D2 (strict, six foreign keys made RESTRICT, its consequences) and D3 (a narrower guarantee stated exactly), D1's "FK-only" name withdrawn; the failure inside the processing transaction (a savepoint, the FAILED record, the stop after RECEIVED, their tests), and the 500 settled by a proposed CORRECTION-007; the relay made condition R-1 before any real event; the provider rule for every channel. The proposed text of `0008` (§5.1) and of CORRECTION-007 (§5.2), neither executed nor approved |
 | 4 | `587f8b3` | the review of `4aed49b` recorded: D2, CORRECTION-007, (a2) with R-1, and G7-4 decided; the other directions approved. Its two gaps settled: a WHATSAPP thread's reference is scoped and unique (G7-3; `0008` part E; R-1 duty 6), and UNKNOWN → FAILED is refused (G7-5; part B rewritten). R-1 measures the relay's real envelopes against G7-15's limit (duty 7). §7 (1) and OQ7-2 aligned with CORRECTION-007. The full text of `0008` (§5.1), not executed |
+| 5 | the commit that adds this revision | the review of `38281ab` recorded: the text of `0008` (parts E, A, B, C, D2) approved; step 1 authorized; no other change |
+
+**The review of `38281ab`. The text of `0008` is APPROVED, parts E, A, B, C
+and D2, and step 1 is AUTHORIZED, in the plan's sequence.**
+- **What is approved:** the proposed text and its testing. "The migration has
+  not been run yet, so I do not count the guards as proven by execution."
+- **The two gaps are closed:**
+  - **the thread's identity:** part E enforces the reference's form and a
+    partial unique index for WHATSAPP threads, after checking the existing
+    violations, so resolving an inbound message finds zero or one thread
+    within the defined scope. Proving that the business number's and the
+    customer's identifiers are extracted from Meta's notification stays
+    within R-1, before any real traffic;
+  - **the delivery status:** part B refuses UNKNOWN → FAILED, in agreement
+    with G7-5's table and the test list. A provider's status of that kind
+    stays an IGNORED event, with the reason the plan states.
+- **Also matched by the reviewer:** the recording of D2, CORRECTION-007 and
+  (a2) with R-1; §7 (1); OQ7-2's status.
+- **Not checked by the reviewer:** that the local and remote heads of the
+  branch match. M1–M8 were not re-measured, and no SQL was run.
+- **How step 1's delivery is judged:** by running the migration and its
+  tests, in particular:
+  - the refusal of old non-conforming data;
+  - the race on one reference;
+  - the status transitions;
+  - the six keys and their guard;
+  - the downgrade.
+- **Step 2 does not start** before step 1's delivery is reviewed.
+- **Carried:**
+  - R-1 stays unmet for real traffic;
+  - K06 stays UNPROVEN, an independent condition before the release gate;
+  - this approval does not widen the approved SALE scope.
 
 **The review of `4aed49b`. The four points are accepted as directions. The
 text of `0008` is not approved, and step 1 does not start, for two gaps in
@@ -1364,7 +1398,7 @@ identical results, and are ours.
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
-| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | the text of §5.1 approved |
+| 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | the text of §5.1 approved; **authorized** (review of `38281ab`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11 |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
