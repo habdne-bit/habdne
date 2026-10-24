@@ -414,6 +414,17 @@ def test_b_no_other_column_of_a_message_changes(session, assignment):
                       "WHERE message_id = :m", MESSAGE_FROZEN, **params)
 
 
+def test_b_a_message_without_a_provider_never_gains_one(session):
+    """`provider` alone changing. Part A's CHECKs accept a message with
+    `provider` 'whatsapp' and no reference, and the channel trigger runs on
+    INSERT only, so on a WHATSAPP thread only the guard refuses this UPDATE.
+    The case above that clears `provider` also clears `external_message_ref`,
+    and so could not show it (mutation B6 survived the first full run)."""
+    message = _message(session, _thread(session, ref=_ref()), provider=None)
+    _refused(session, "UPDATE turab.communication_messages SET provider = 'whatsapp' "
+                      "WHERE message_id = :m", MESSAGE_FROZEN, m=message)
+
+
 def test_b_a_message_cannot_be_deleted(session):
     message = _message(session, _thread(session, ref=_ref()))
     _refused(session, "DELETE FROM turab.communication_messages WHERE message_id = :m",
