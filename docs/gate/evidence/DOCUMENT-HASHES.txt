@@ -918,3 +918,6 @@ SLICE_7_PLAN.md changed revision: 2 -> 3 (review of 58a0067; its commit named in
 --- Review of 4aed49b: D2, CORRECTION-007, (a2)+R-1, G7-4 decided; Slice 7 plan revision 4 (587f8b3); 0008 text in full, not executed, not approved ---
 docs/gate/SLICE_7_PLAN.md                                      rev4  105177be22620506c5a94b29bd5ba4f0274bf6b7f5a30e8f55004fe78b8086ca
 SLICE_7_PLAN.md changed revision: 3 -> 4 (review of 4aed49b; its commit named in place).
+--- Review of 38281ab: Slice 7 plan revision 5 (33434a8); 0008 text approved; step 1 authorized ---
+docs/gate/SLICE_7_PLAN.md                                      rev5  8b8a0a6c5d7f203fbdb137ca75fbb1187856dd5da2c02787e48a3e824237bfd1
+SLICE_7_PLAN.md changed revision: 4 -> 5 (its commit named in place).
