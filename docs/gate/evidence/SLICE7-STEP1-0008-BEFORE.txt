@@ -1,23 +1,23 @@
 TURAB — Slice 7 step 1: migration 0008's tests, run BEFORE the migration exists
 ==============================================================================
-Recorded : 2026-10-24 11:18:44 UTC
+Recorded : 2026-10-24 12:06:45 UTC
 Base     : commit 582b522 (plan revision 5; no 0008), in an ISOLATED worktree
            (git worktree, detached at 582b522), into which only the new test file
            was copied. The base's migrations stop at 0007_task_work_and_evidence.
 Test file: tests/test_migration_0008_communication_records.py
-           sha256 8f5b3d3f51588a46c3aedabe26731d51c19a530b3a559dd012eb7102dfbc204f
-           (as committed in the step's sixth commit)
+           sha256 263570a57b2f9017a0520658098d39c636c77a4b8289ab3dd0aa319773b00959
+           (as committed in the step's eighth commit)
 Database : turab_s7_before, built by the suite's own conftest (frozen schema,
            seed, fixtures, stamp 0001, upgrade head = 0007); and
            turab_s7_before_scratch, built by db/dev/reset_db.sh, dropped after.
 Server   : PostgreSQL 16.15
-Result   : 98 failed, 26 passed in 54.75s
+Result   : 98 failed, 26 passed in 54.12s
 
 What this measures. The defect, before the fix: the schema at 0007 accepts
 what plan §5.1 parts E, A, B, C and D2 are approved to refuse. These are our
 runs; nobody else has re-run them.
 
-Four measurements, one per version of the test file:
+Five measurements, one per version of the test file:
   09:50:52 UTC  sha256 2f22920b…defc (first commit): 96 failed, 26 passed;
   10:09:53 UTC  sha256 3be27230…0b27 (second commit: the pre-check clean-up
                 moved into a `finally`, the messages naming the database's
@@ -28,9 +28,12 @@ Four measurements, one per version of the test file:
                 failed, 26 passed; the new test fails ("DID NOT RAISE":
                 provider gains 'whatsapp' unrefused);
   11:18:44 UTC  sha256 8f5b3d3f…204f (sixth commit: one test added, the
-                database's state after a downgrade 0007 refuses): this
-                record. The same result for the 123, and the new test fails
-                (the scratch database is at 0007, not 0008).
+                database's state after a downgrade 0007 refuses): 98
+                failed, 26 passed; the new test fails (the scratch database
+                is at 0007, not 0008);
+  12:06:45 UTC  sha256 263570a5…0959 (eighth commit: the downgrade test
+                upgrades back to head in a finally): this record. The same
+                result for each of the 124 tests.
 
 Reading:
   FAILED because the refusal is absent ("DID NOT RAISE", 88 tests): part E,
