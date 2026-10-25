@@ -1,0 +1,71 @@
+TURAB — R-S7-2-01: a consent binding in flight and a staff message, both orders
+================================================================================
+Recorded : 2026-10-25 12:15:35 UTC
+Commit   : c56fe4f (clean tree; no source change since f7e5297 but this test)
+Server   : PostgreSQL 16.15
+Tests    : tests/test_slice7_step2.py -k r_s7_2_01, -vv, five consecutive runs
+
+--- run 1
+test_slice7_step2.py::test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait PASSED [ 33%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[commit] PASSED [ 66%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback] PASSED [100%]
+================= 3 passed, 72 deselected, 1 warning in 5.39s ==================
+--- run 2
+test_slice7_step2.py::test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait PASSED [ 33%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[commit] PASSED [ 66%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback] PASSED [100%]
+================= 3 passed, 72 deselected, 1 warning in 5.39s ==================
+--- run 3
+test_slice7_step2.py::test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait PASSED [ 33%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[commit] PASSED [ 66%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback] PASSED [100%]
+================= 3 passed, 72 deselected, 1 warning in 5.69s ==================
+--- run 4
+test_slice7_step2.py::test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait PASSED [ 33%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[commit] PASSED [ 66%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback] PASSED [100%]
+================= 3 passed, 72 deselected, 1 warning in 5.61s ==================
+--- run 5
+test_slice7_step2.py::test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait PASSED [ 33%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[commit] PASSED [ 66%]
+test_slice7_step2.py::test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback] PASSED [100%]
+================= 3 passed, 72 deselected, 1 warning in 5.78s ==================
+
+Result: 15 of 15 cases passed (3 cases x 5 runs). Each case asserts ONE dict,
+which therefore held exactly in every run:
+
+Order A — the message holds the thread (FOR UPDATE), stopped before its
+consent check; the binding command (POST /consents/bindings) then starts:
+  binding_waited_on_the_message                       : True  (pg_blocking_pids)
+  binding_answered_while_the_message_held_the_thread  : False
+  message                                             : 422 CONTENT_NOT_ARCHIVABLE
+  binding                                             : 200
+  messages / archived bodies on the thread            : 0 / 0
+  bindings on the thread                              : 1
+  message key records / binding key records           : 0 / 1
+
+Order B — the binding command has inserted its binding and is stopped
+before its commit; the message (POST .../messages, with content) then starts:
+  message_waited_on_the_binding                       : True  (pg_blocking_pids)
+  message_answered_while_the_binding_was_held         : False
+  binding committed:
+    binding 200; message 201; messages 1, archived bodies 1; bindings 1;
+    message key 1, binding key 1
+  binding rolled back (refused after its insert, 422):
+    binding 422; message 422 CONTENT_NOT_ARCHIVABLE; messages 0, archived
+    bodies 0; bindings 0; message key 0, binding key 0
+
+Reading:
+  - The binding's INSERT checks fk_consent_binding_thread (schema_v0.2.3.sql)
+    with FOR KEY SHARE on the thread row; the message takes FOR UPDATE on it.
+    The two conflict (PostgreSQL 16, §13.3.2, Table 13.3), in both orders.
+  - Order B: the message's consent check is a later statement than its
+    lock; under READ COMMITTED it reads the binding as committed when the
+    wait ended (PostgreSQL 16, §13.2.1). A committed binding is therefore
+    SEEN, and the content archived.
+  - So the delivery of f7e5297 (§3, reading 6) and the docstring of
+    services/communication.py were WRONG: they said the binding table had no
+    foreign key to the thread and that a binding in flight is not waited
+    for. Both are corrected after this record. The review of f7e5297
+    inferred this from the schema, the code and the lock table, unmeasured;
+    this measures it. These are our runs.
