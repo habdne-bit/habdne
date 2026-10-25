@@ -33,12 +33,19 @@ from sqlalchemy import text
 
 from tests.test_slice4_step7 import _all, _criterion, _exec, _offer, _one, _property, _run
 from turab.auth.audit import AccessAuditor, RecordingAuditSink
-from turab.services import communication as communication_service
 
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SECRET = "SECRET-BODY-7f3e"
 AT = "2026-10-25T10:00:00Z"
 CHANNELS = ("WHATSAPP", "PHONE", "SMS", "EMAIL", "WEB", "IN_PERSON", "OTHER")
+
+
+def _service():
+    """Imported where used, so that this file is collected on a tree without
+    step 2's code and each test there fails on its own (the before record)."""
+    from turab.services import communication
+
+    return communication
 
 
 @pytest.fixture
@@ -375,7 +382,7 @@ def test_g7_3_a_reference_taken_after_the_check_is_the_same_409(client, engine, 
     409, not a 500. The transaction rolls back, the claim with it."""
     ref = _ref()
     _new_thread(client, ids, engine, channel="WHATSAPP", ref=ref)
-    monkeypatch.setattr(communication_service, "_refuse_taken_thread_ref",
+    monkeypatch.setattr(_service(), "_refuse_taken_thread_ref",
                         lambda session, ref: None)
     _refused(engine, lambda k: _thread(
         client, {"channel": "WHATSAPP", "party_id": str(_party(engine)),
@@ -520,7 +527,7 @@ def test_g7_4_a_reference_recorded_after_the_check_is_the_same_409(client, engin
     thread = _new_thread(client, ids, engine, channel="WHATSAPP", ref=_ref())
     _ok(_message(client, thread, {"direction": "OUTBOUND", "occurred_at": AT,
                                   "external_message_ref": ref}, ids.ACC_OPERATOR))
-    monkeypatch.setattr(communication_service, "_refuse_taken_message_ref",
+    monkeypatch.setattr(_service(), "_refuse_taken_message_ref",
                         lambda session, ref: None)
     _refused(engine, lambda k: _message(
         client, thread, {"direction": "OUTBOUND", "occurred_at": AT,
@@ -715,7 +722,7 @@ def test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later(
     thread = _new_thread(client, ids, engine)
     out: dict = {}
     held, release = threading.Event(), threading.Event()
-    real = communication_service.record_message
+    real = _service().record_message
 
     def holding(session, prepared, **kw):
         if prepared.occurred_at.isoformat().startswith(first_at[:19]) and "pid" not in out:
@@ -723,7 +730,7 @@ def test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later(
             held.set()
             assert release.wait(30), "the first message was never released"
         return real(session, prepared, **kw)
-    monkeypatch.setattr(communication_service, "record_message", holding)
+    monkeypatch.setattr(_service(), "record_message", holding)
 
     first = _in_thread(engine, out, "first", lambda c: _message(
         c, thread, {"direction": "INTERNAL", "occurred_at": first_at}, ids.ACC_OPERATOR))
@@ -799,7 +806,7 @@ def test_no_refusal_carries_an_id_or_database_text(client, engine, ids, monkeypa
         lambda: _message(client, phone, {"direction": "INTERNAL", "occurred_at": AT,
                                          "metadata": {"k": SECRET}}, ids.ACC_OPERATOR),
     ]
-    monkeypatch.setattr(communication_service, "_refuse_taken_thread_ref",
+    monkeypatch.setattr(_service(), "_refuse_taken_thread_ref",
                         lambda session, ref: None)
     calls.append(lambda: _thread(client, {"channel": "WHATSAPP", "party_id": party,
                                           "external_thread_ref": ref}, ids.ACC_OPERATOR))
