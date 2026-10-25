@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **198**
-- Distinct tests cited: **646**
-- Suite total: **2846/2846** test cases passing (1568 distinct test functions)
+- Rules and invariants covered: **199**
+- Distinct tests cited: **648**
+- Suite total: **2849/2849** test cases passing (1570 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -209,6 +209,7 @@ matrix, because it reads as assurance.
 | `S7-2 / G7-4 / J02 / mandatory test 2` | A provider message identity is global: a reference only in a WHATSAPP thread, its provider set by the service, never on an INTERNAL message; a recorded reference is 409 in any thread, also when recorded between the check and the write | `test_g7_4_an_internal_message_carries_no_reference`<br>`test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused`<br>`test_g7_4_in_a_whatsapp_thread_the_service_sets_the_provider`<br>`test_g7_4_a_recorded_reference_is_409_in_any_thread`<br>`test_g7_4_a_reference_recorded_after_the_check_is_the_same_409` | PASS |
 | `S7-2 / G7-16 (i), (ii), (iii), (v)` | A staff message is OUTBOUND or INTERNAL; an OUTBOUND keeps the status it states, an INTERNAL states none but UNKNOWN; metadata is absent or empty; the types G7-10 gives a meaning are reserved | `test_i_inbound_is_refused`<br>`test_ii_an_outbound_message_keeps_the_status_it_states`<br>`test_ii_an_internal_message_states_no_status_but_unknown`<br>`test_iii_metadata_is_absent_or_empty_and_the_service_writes_its_own`<br>`test_v_the_types_g7_10_gives_a_meaning_are_reserved`<br>`test_v_any_other_type_is_free_text_and_text_is_the_default` | PASS |
 | `S7-2 / G7-9 / J03` | No content is stored without the archive consent of the thread's party, bound to the thread and current, read FOR SHARE: a revocation in flight is waited for, then seen; a staff message with content is otherwise refused, writing nothing | `test_g7_9_content_without_the_archive_consent_is_refused`<br>`test_g7_9_with_the_archive_consent_content_is_archived`<br>`test_g7_9_a_consent_that_does_not_hold_archives_nothing`<br>`test_g7_9_an_internal_note_is_held_to_the_same_rule`<br>`test_g7_9_a_revocation_in_flight_is_waited_for_then_seen` | PASS |
+| `S7-2 / R-S7-2-01 / G7-9 (3)` | A consent binding in flight and a message are serialized by the thread row (fk_consent_binding_thread's FOR KEY SHARE against the message's FOR UPDATE): a message holding the thread makes the binding wait, and stores no content; a binding inserted and held makes the message wait, which then sees it if committed and archives, and is refused if rolled back; responses, rows and keys asserted | `test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait`<br>`test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen` | PASS |
 | `S7-2 / G7-16 (iv)` | The thread row is locked FOR UPDATE before the message is inserted: two concurrent messages serialize on it and last_message_at keeps the later time, in either order | `test_iv_last_message_at_moves_to_the_later_time_only`<br>`test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later` | PASS |
 | `S7-2 / G7-11 / G7-16 (vi) / K05` | Threads and messages are audited, the content withheld and absent from logs; no refusal carries a row id or database text; a replay writes nothing | `test_g7_11_the_content_never_reaches_the_audit_log_or_a_log`<br>`test_no_refusal_carries_an_id_or_database_text`<br>`test_a_thread_is_audited_and_a_replay_writes_nothing`<br>`test_a_message_and_its_thread_move_are_audited_and_a_replay_writes_nothing` | PASS |
 
