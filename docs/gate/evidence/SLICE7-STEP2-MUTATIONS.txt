@@ -1,15 +1,15 @@
 TURAB — Slice 7 step 2: the staff thread and the staff message
 ============================================================
-Base commit       : 35958e7c8c0153f984352d7432883b13f86ba392
-Source fingerprint: 9dd247c359bcd15394575db9dbdc4e26e29f2efad6550e991799cf4bfb804091
+Base commit       : f21a113b582ec08f88f6e4915b605cf3958dbeef
+Source fingerprint: e704aceab245fe5dd3fcf7216531f5002782a08026e6aedf4ae6387d57b5b4b6
 Working tree      : CLEAN
-Recorded          : 2026-10-25 10:55:34 UTC
+Recorded          : 2026-10-25 12:27:50 UTC
 Test file         : tests/test_slice7_step2.py
 
 === baseline (no mutation) ===
-   72 passed, 1 warning in 26.06s
-== T1 an unscoped WHATSAPP reference accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   6 failed, 66 passed, 1 warning in 26.70s
+   75 passed, 1 warning in 29.02s
+== T1 an unscoped WHATSAPP reference accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   6 failed, 69 passed, 1 warning in 27.88s
    FAILED test_g7_3_an_unscoped_whatsapp_reference_is_refused[:x]
    FAILED test_g7_3_an_unscoped_whatsapp_reference_is_refused[]
    FAILED test_g7_3_an_unscoped_whatsapp_reference_is_refused[a:b:c]
@@ -19,8 +19,8 @@ Test file         : tests/test_slice7_step2.py
    cause: E   psycopg.errors.CheckViolation: new row for relation "communication_threads" violates check constraint "ck_whatsapp_thread_ref_scoped"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_threads" violates check constraint "ck_whatsapp_thread_ref_scoped"
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_threads" violates check constraint "ck_whatsapp_thread_ref_scoped"
-== T2 an id naming no row passes the check [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   5 failed, 67 passed, 1 warning in 25.96s
+== T2 an id naming no row passes the check [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   5 failed, 70 passed, 1 warning in 27.42s
    FAILED test_no_refusal_carries_an_id_or_database_text
    FAILED test_rule_4_an_id_naming_no_row_is_refused_by_field[opportunity_id]
    FAILED test_rule_4_an_id_naming_no_row_is_refused_by_field[party_id]
@@ -31,126 +31,126 @@ Test file         : tests/test_slice7_step2.py
    cause: E   sqlalchemy.exc.NoResultFound: No row was found when one was required
    cause: HTTP 422 field error: is not the party of an offer of the property
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) insert or update on table "communication_threads" violates foreign key constraint "communication_threa
-== T3 a named opportunity's type not checked [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 26.49s
+== T3 a named opportunity's type not checked [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 26.36s
    FAILED test_rule_0_a_named_opportunity_must_be_a_sale
-   cause: AssertionError: {"thread_id":"19e56921-d33c-4406-89fd-1cd64d6c50e5","opened_at":"2026-10-25T10:57:19.624147+00:00"}
-   cause: E   AssertionError: {"thread_id":"19e56921-d33c-4406-89fd-1cd64d6c50e5","opened_at":"2026-10-25T10:57:19.624147+00:00"}
-== T4 the SALE check reads the evaluated offer only [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 26.48s
+   cause: AssertionError: {"thread_id":"c19f5570-3746-44c9-9ce0-d10644a042a5","opened_at":"2026-10-25T12:29:40.911638+00:00"}
+   cause: E   AssertionError: {"thread_id":"c19f5570-3746-44c9-9ce0-d10644a042a5","opened_at":"2026-10-25T12:29:40.911638+00:00"}
+== T4 the SALE check reads the evaluated offer only [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 28.47s
    FAILED test_rule_0_a_named_opportunity_must_be_a_sale
-   cause: AssertionError: {"thread_id":"53766a2d-9136-405a-96fd-8c0f8de001d4","opened_at":"2026-10-25T10:57:52.315290+00:00"}
-   cause: E   AssertionError: {"thread_id":"53766a2d-9136-405a-96fd-8c0f8de001d4","opened_at":"2026-10-25T10:57:52.315290+00:00"}
-== T5 the SALE check reads the request's intent only [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 25.00s
+   cause: AssertionError: {"thread_id":"68262e3a-fd51-4c93-8488-abfdfffcd575","opened_at":"2026-10-25T12:30:14.479834+00:00"}
+   cause: E   AssertionError: {"thread_id":"68262e3a-fd51-4c93-8488-abfdfffcd575","opened_at":"2026-10-25T12:30:14.479834+00:00"}
+== T5 the SALE check reads the request's intent only [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 29.76s
    FAILED test_rule_0_a_named_opportunity_must_be_a_sale
-   cause: AssertionError: {"thread_id":"fdff2371-df47-4fd0-8295-50476d07dcd3","opened_at":"2026-10-25T10:58:24.322095+00:00"}
-   cause: E   AssertionError: {"thread_id":"fdff2371-df47-4fd0-8295-50476d07dcd3","opened_at":"2026-10-25T10:58:24.322095+00:00"}
-== T6 rule 1: the opportunity's request not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 25.23s
+   cause: AssertionError: {"thread_id":"6ebd3841-2610-4dc0-8533-85a92a1a4dea","opened_at":"2026-10-25T12:30:49.892838+00:00"}
+   cause: E   AssertionError: {"thread_id":"6ebd3841-2610-4dc0-8533-85a92a1a4dea","opened_at":"2026-10-25T12:30:49.892838+00:00"}
+== T6 rule 1: the opportunity's request not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 28.06s
    FAILED test_rule_1_a_link_the_opportunity_does_not_have_is_refused[request-request_id-NOT_THE_OPPORTUNITYS_REQUEST]
-   cause: AssertionError: {"thread_id":"5f18c59c-ca9a-4659-bb1c-8f40db3f512e","opened_at":"2026-10-25T10:58:56.325600+00:00"}
-   cause: E   AssertionError: {"thread_id":"5f18c59c-ca9a-4659-bb1c-8f40db3f512e","opened_at":"2026-10-25T10:58:56.325600+00:00"}
-== T7 rule 1: the opportunity's property not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 25.38s
+   cause: AssertionError: {"thread_id":"f6d2b76f-1ddc-4804-854c-a2726176270b","opened_at":"2026-10-25T12:31:26.975206+00:00"}
+   cause: E   AssertionError: {"thread_id":"f6d2b76f-1ddc-4804-854c-a2726176270b","opened_at":"2026-10-25T12:31:26.975206+00:00"}
+== T7 rule 1: the opportunity's property not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 27.29s
    FAILED test_rule_1_a_link_the_opportunity_does_not_have_is_refused[property-property_id-NOT_THE_OPPORTUNITYS_PROPERTY]
-   cause: AssertionError: {"thread_id":"b2cef536-ec51-4156-8c01-e34792d63633","opened_at":"2026-10-25T10:59:27.528392+00:00"}
-   cause: E   AssertionError: {"thread_id":"b2cef536-ec51-4156-8c01-e34792d63633","opened_at":"2026-10-25T10:59:27.528392+00:00"}
-== T8 rule 1: the seller refused [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 25.06s
+   cause: AssertionError: {"thread_id":"c589b370-264b-4abd-9061-f25dd86e6d5c","opened_at":"2026-10-25T12:32:01.980031+00:00"}
+   cause: E   AssertionError: {"thread_id":"c589b370-264b-4abd-9061-f25dd86e6d5c","opened_at":"2026-10-25T12:32:01.980031+00:00"}
+== T8 rule 1: the seller refused [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 27.29s
    FAILED test_rule_1_the_opportunitys_buyer_and_seller_are_accepted_with_its_own_links
    cause: HTTP 422 field error: is neither the opportunity's buyer nor its seller
-== T9 rule 1: any party accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 25.98s
+== T9 rule 1: any party accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.17s
    FAILED test_no_refusal_carries_an_id_or_database_text
    FAILED test_rule_1_a_link_the_opportunity_does_not_have_is_refused[party-party_id-NOT_A_PARTY_OF_THE_OPPORTUNITY]
-   cause: AssertionError: {"thread_id":"06c1cdcc-0a48-4db8-96de-ec84baa632ab","opened_at":"2026-10-25T11:00:46.237064+00:00"}
-   cause: AssertionError: {"thread_id":"43a5bcf6-0aa7-4c60-a9ca-36918e1c4b4b","opened_at":"2026-10-25T11:00:28.719645+00:00"}
-   cause: E   AssertionError: {"thread_id":"06c1cdcc-0a48-4db8-96de-ec84baa632ab","opened_at":"2026-10-25T11:00:46.237064+00:00"}
-   cause: E   AssertionError: {"thread_id":"43a5bcf6-0aa7-4c60-a9ca-36918e1c4b4b","opened_at":"2026-10-25T11:00:28.719645+00:00"}
-== T10 rule 2: the request's party not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 26.54s
+   cause: AssertionError: {"thread_id":"bc827721-7c62-448f-9546-1b36455ad642","opened_at":"2026-10-25T12:33:23.289033+00:00"}
+   cause: AssertionError: {"thread_id":"cbc27ebf-9563-4dd9-a925-23aeee1ce6ee","opened_at":"2026-10-25T12:33:07.226069+00:00"}
+   cause: E   AssertionError: {"thread_id":"bc827721-7c62-448f-9546-1b36455ad642","opened_at":"2026-10-25T12:33:23.289033+00:00"}
+   cause: E   AssertionError: {"thread_id":"cbc27ebf-9563-4dd9-a925-23aeee1ce6ee","opened_at":"2026-10-25T12:33:07.226069+00:00"}
+== T10 rule 2: the request's party not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 29.56s
    FAILED test_rule_2_a_request_without_an_opportunity_needs_its_own_party
-   cause: AssertionError: {"thread_id":"eaa0c6d6-5c78-4d3c-b35c-39247098f454","opened_at":"2026-10-25T11:01:02.181077+00:00"}
-   cause: E   AssertionError: {"thread_id":"eaa0c6d6-5c78-4d3c-b35c-39247098f454","opened_at":"2026-10-25T11:01:02.181077+00:00"}
-== T11 rule 3: the offer's party not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 27.19s
+   cause: AssertionError: {"thread_id":"d4fa674e-d33c-42ae-9ab3-39c7f256491b","opened_at":"2026-10-25T12:33:42.342625+00:00"}
+   cause: E   AssertionError: {"thread_id":"d4fa674e-d33c-42ae-9ab3-39c7f256491b","opened_at":"2026-10-25T12:33:42.342625+00:00"}
+== T11 rule 3: the offer's party not compared [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 26.56s
    FAILED test_rule_3_a_property_without_an_opportunity_needs_one_of_its_offers_party
-   cause: AssertionError: {"thread_id":"01467e43-e3b6-4935-b7bb-8bc05f366817","opened_at":"2026-10-25T11:01:35.389727+00:00"}
-   cause: E   AssertionError: {"thread_id":"01467e43-e3b6-4935-b7bb-8bc05f366817","opened_at":"2026-10-25T11:01:35.389727+00:00"}
-== T12 rule 3 not applied [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 27.03s
+   cause: AssertionError: {"thread_id":"92f76b12-e973-4ca2-a956-ff1a7ba09303","opened_at":"2026-10-25T12:34:17.194562+00:00"}
+   cause: E   AssertionError: {"thread_id":"92f76b12-e973-4ca2-a956-ff1a7ba09303","opened_at":"2026-10-25T12:34:17.194562+00:00"}
+== T12 rule 3 not applied [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 27.82s
    FAILED test_rule_3_a_property_without_an_opportunity_needs_one_of_its_offers_party
-   cause: AssertionError: {"thread_id":"173c88ad-4cc8-41ea-850f-88c4c19d5329","opened_at":"2026-10-25T11:02:08.340755+00:00"}
-   cause: E   AssertionError: {"thread_id":"173c88ad-4cc8-41ea-850f-88c4c19d5329","opened_at":"2026-10-25T11:02:08.340755+00:00"}
-== T13 the thread reference's backstop raises (500) [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 27.62s
+   cause: AssertionError: {"thread_id":"e64dc20f-4391-4a60-b65d-020bdabeb49c","opened_at":"2026-10-25T12:34:49.827364+00:00"}
+   cause: E   AssertionError: {"thread_id":"e64dc20f-4391-4a60-b65d-020bdabeb49c","opened_at":"2026-10-25T12:34:49.827364+00:00"}
+== T13 the thread reference's backstop raises (500) [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.50s
    FAILED test_g7_3_a_reference_taken_after_the_check_is_the_same_409
    FAILED test_no_refusal_carries_an_id_or_database_text
    cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ux_whatsapp_thread_ref"
-== T15 the creator not recorded [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 26.19s
+== T15 the creator not recorded [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 27.28s
    FAILED test_admin_and_operator_create_a_thread_and_a_message[ACC_ADMIN]
    FAILED test_admin_and_operator_create_a_thread_and_a_message[ACC_OPERATOR]
-   cause: AssertionError: assert (UUID('c94034...b0d4b'), None) == (UUID('c94034...00000000005'))
-   cause: AssertionError: assert (UUID('cdb8bd...d4a4e'), None) == (UUID('cdb8bd...00000000002'))
-   cause: E   AssertionError: assert (UUID('c94034...b0d4b'), None) == (UUID('c94034...00000000005'))
-   cause: E   AssertionError: assert (UUID('cdb8bd...d4a4e'), None) == (UUID('cdb8bd...00000000002'))
-== T16 the thread not audited [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 27.23s
+   cause: AssertionError: assert (UUID('674f93...464a7'), None) == (UUID('674f93...00000000002'))
+   cause: AssertionError: assert (UUID('dc2895...bb7e3'), None) == (UUID('dc2895...00000000005'))
+   cause: E   AssertionError: assert (UUID('674f93...464a7'), None) == (UUID('674f93...00000000002'))
+   cause: E   AssertionError: assert (UUID('dc2895...bb7e3'), None) == (UUID('dc2895...00000000005'))
+== T16 the thread not audited [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 25.83s
    FAILED test_a_thread_is_audited_and_a_replay_writes_nothing
    FAILED test_iv_last_message_at_moves_to_the_later_time_only
    cause: AssertionError: a message that moves nothing writes no thread audit row
    cause: AssertionError: assert [] == [('INSERT', U...0000000002'))]
    cause: E   AssertionError: a message that moves nothing writes no thread audit row
    cause: E   AssertionError: assert [] == [('INSERT', U...0000000002'))]
-== M1 INBOUND accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 27.27s
+== M1 INBOUND accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.82s
    FAILED test_i_inbound_is_refused
    FAILED test_no_refusal_carries_an_id_or_database_text
-   cause: AssertionError: {"message_id":"39c0cdea-b5bc-4a31-a4c5-b25b7890b07a","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"55877109-4c94-4e6c-93b4-a8c79c2ae0ed","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"39c0cdea-b5bc-4a31-a4c5-b25b7890b07a","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"55877109-4c94-4e6c-93b4-a8c79c2ae0ed","delivery_status":"UNKNOWN"}
-== M2 metadata accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 27.53s
+   cause: AssertionError: {"message_id":"5a235268-5367-4494-99ff-315a03a5688a","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"884e7b6e-cb2e-4e4b-ac51-22656d7e2cca","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"5a235268-5367-4494-99ff-315a03a5688a","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"884e7b6e-cb2e-4e4b-ac51-22656d7e2cca","delivery_status":"UNKNOWN"}
+== M2 metadata accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.26s
    FAILED test_iii_metadata_is_absent_or_empty_and_the_service_writes_its_own
    FAILED test_no_refusal_carries_an_id_or_database_text
-   cause: AssertionError: {"message_id":"5b35c535-810c-4fa0-8c0f-d4118f4c8508","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"d5f177ed-4d10-4c2f-956d-237b045e28ad","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"5b35c535-810c-4fa0-8c0f-d4118f4c8508","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"d5f177ed-4d10-4c2f-956d-237b045e28ad","delivery_status":"UNKNOWN"}
-== M3 no message type reserved [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 26.68s
+   cause: AssertionError: {"message_id":"83b2183c-dfe6-4342-886a-63325624f194","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"c91383c7-871e-4433-aa67-f192f29cb2fa","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"83b2183c-dfe6-4342-886a-63325624f194","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"c91383c7-871e-4433-aa67-f192f29cb2fa","delivery_status":"UNKNOWN"}
+== M3 no message type reserved [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.87s
    FAILED test_v_the_types_g7_10_gives_a_meaning_are_reserved[CONFIRMATION_LINK]
    FAILED test_v_the_types_g7_10_gives_a_meaning_are_reserved[PHONE_DECISION]
-   cause: AssertionError: {"message_id":"d89b4ae9-1a2e-4603-8ffc-f7f367d59e83","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"f04c646e-1e61-449d-82b8-7e030cda82ec","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"d89b4ae9-1a2e-4603-8ffc-f7f367d59e83","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"f04c646e-1e61-449d-82b8-7e030cda82ec","delivery_status":"UNKNOWN"}
-== M4 an INTERNAL message may state a status [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   5 failed, 67 passed, 1 warning in 27.51s
+   cause: AssertionError: {"message_id":"3027e3e0-e9c5-48e5-9429-d6674318444e","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"4d232756-a11d-4f9e-8278-cdc5bbcb7927","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"3027e3e0-e9c5-48e5-9429-d6674318444e","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"4d232756-a11d-4f9e-8278-cdc5bbcb7927","delivery_status":"UNKNOWN"}
+== M4 an INTERNAL message may state a status [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   5 failed, 70 passed, 1 warning in 24.90s
    FAILED test_ii_an_internal_message_states_no_status_but_unknown[DELIVERED]
    FAILED test_ii_an_internal_message_states_no_status_but_unknown[FAILED]
    FAILED test_ii_an_internal_message_states_no_status_but_unknown[QUEUED]
    FAILED test_ii_an_internal_message_states_no_status_but_unknown[READ]
    FAILED test_ii_an_internal_message_states_no_status_but_unknown[SENT]
-   cause: AssertionError: {"message_id":"049e7c20-cd0b-485a-9199-93c1839a80ca","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"1001961a-4cca-426c-b2cb-7ddfe199c306","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"10fb1f45-721f-4eb7-8846-fd75d1f40e12","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"b1edc11c-ddfa-41ee-9a36-5febd06e3621","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"e5180cc6-1aab-474f-a8ba-4ee38642c491","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"049e7c20-cd0b-485a-9199-93c1839a80ca","delivery_status":"UNKNOWN"}
-== M5 an INTERNAL message may carry a reference [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 28.62s
+   cause: AssertionError: {"message_id":"0a188a20-7af9-42d1-a259-0f4d329efce3","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"515f5422-c90d-43fe-86ed-c7d02f53e9dd","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"562cb35f-3149-4002-af24-0fcf751ae048","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"b6c571cd-d87e-4059-a8b0-b4e8813c39e8","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"d870c3a9-dd56-405f-a280-a92ad5bb2724","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"0a188a20-7af9-42d1-a259-0f4d329efce3","delivery_status":"UNKNOWN"}
+== M5 an INTERNAL message may carry a reference [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 26.45s
    FAILED test_g7_4_an_internal_message_carries_no_reference
    cause: E   psycopg.errors.CheckViolation: new row for relation "communication_messages" violates check constraint "ck_internal_message_has_no_ref"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_messages" violates check constraint "ck_internal_message_has_no_ref
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_messages" violates check constraint "ck_internal_message_has_no_ref"
-== M6 a reference accepted in any channel [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   6 failed, 66 passed, 1 warning in 27.97s
+== M6 a reference accepted in any channel [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   6 failed, 69 passed, 1 warning in 26.05s
    FAILED test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[EMAIL]
    FAILED test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[IN_PERSON]
    FAILED test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[OTHER]
@@ -160,8 +160,8 @@ Test file         : tests/test_slice7_step2.py
    cause: E   psycopg.errors.RaiseException: communication_messages: provider whatsapp outside a WHATSAPP thread
    cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: provider whatsapp outside a WHATSAPP thread
    cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: provider whatsapp outside a WHATSAPP thread
-== M7 the provider not set [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   4 failed, 68 passed, 1 warning in 28.37s
+== M7 the provider not set [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   4 failed, 71 passed, 1 warning in 27.73s
    FAILED test_g7_4_a_recorded_reference_is_409_in_any_thread
    FAILED test_g7_4_a_reference_recorded_after_the_check_is_the_same_409
    FAILED test_g7_4_in_a_whatsapp_thread_the_service_sets_the_provider
@@ -169,8 +169,8 @@ Test file         : tests/test_slice7_step2.py
    cause: E   psycopg.errors.CheckViolation: new row for relation "communication_messages" violates check constraint "ck_message_ref_needs_provider"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_messages" violates check constraint "ck_message_ref_needs_provider"
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "communication_messages" violates check constraint "ck_message_ref_needs_provider"
-== M8 an OUTBOUND message's status not kept [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   5 failed, 67 passed, 1 warning in 29.02s
+== M8 an OUTBOUND message's status not kept [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   5 failed, 70 passed, 1 warning in 28.91s
    FAILED test_ii_an_outbound_message_keeps_the_status_it_states[DELIVERED]
    FAILED test_ii_an_outbound_message_keeps_the_status_it_states[FAILED]
    FAILED test_ii_an_outbound_message_keeps_the_status_it_states[QUEUED]
@@ -182,14 +182,14 @@ Test file         : tests/test_slice7_step2.py
    cause: AssertionError: assert 'UNKNOWN' == 'READ'
    cause: AssertionError: assert 'UNKNOWN' == 'SENT'
    cause: E   AssertionError: assert 'UNKNOWN' == 'DELIVERED'
-== M9 the message reference's backstop raises (500) [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 28.12s
+== M9 the message reference's backstop raises (500) [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 28.03s
    FAILED test_g7_4_a_reference_recorded_after_the_check_is_the_same_409
    cause: E   psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "communication_messages_provider_external_message_ref_key"
    cause: E   sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "communication_messages_provider_external_message_ref_k
    cause: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "communication_messages_provider_external_message_ref_key"
-== M11 content stored without the consent [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   11 failed, 61 passed, 1 warning in 26.63s
+== M11 content stored without the consent [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   13 failed, 62 passed, 1 warning in 58.68s
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[binding_revoked]
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[bound_for_another_purpose]
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[bound_to_another_thread]
@@ -201,56 +201,65 @@ Test file         : tests/test_slice7_step2.py
    FAILED test_g7_9_content_without_the_archive_consent_is_refused[content1]
    FAILED test_g7_9_content_without_the_archive_consent_is_refused[content2]
    FAILED test_no_refusal_carries_an_id_or_database_text
-   cause: AssertionError: {"message_id":"06bf2a5a-21cd-478c-a17e-2e6b89ce7895","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"124d89ed-fc09-4663-8505-d6fc9ef604e6","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"1c330826-b273-4fdb-8eae-8a24e36274ca","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"6470bdcc-47e4-4ec2-8adc-1805881ea655","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"6ccd0034-95ef-4a90-94f1-b22d1d72d2ff","delivery_status":"UNKNOWN"}
-   cause: AssertionError: {"message_id":"83dbed89-6b9b-4c96-abe3-62e0e99395ff","delivery_status":"UNKNOWN"}
-== M12 a consent bound to any thread counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 28.29s
+   FAILED test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback]
+   FAILED test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait
+   cause: AssertionError: the message never reached its consent check
+   cause: AssertionError: {"message_id":"006a99e3-87b5-469a-a37f-e6464fea6ee3","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"25529d24-2686-4971-802e-0ef10d9d1544","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"3d38afa0-bd14-47b5-b9a1-d4a2899b63ef","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"5bb65625-7b77-4331-a8d8-94c18938b3b5","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"7f9aecc0-5ed7-4b72-bb67-0e68a3230650","delivery_status":"UNKNOWN"}
+== M12 a consent bound to any thread counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 28.02s
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[bound_to_another_thread]
-   cause: AssertionError: {"message_id":"67c1552f-1691-4525-ad0c-9754845596ed","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"67c1552f-1691-4525-ad0c-9754845596ed","delivery_status":"UNKNOWN"}
-== M13 a consent of any purpose counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 26.06s
+   cause: AssertionError: {"message_id":"111c7c7f-813f-4f42-bb30-57e730179fd9","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"111c7c7f-813f-4f42-bb30-57e730179fd9","delivery_status":"UNKNOWN"}
+== M13 a consent of any purpose counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 27.66s
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[bound_for_another_purpose]
-   cause: AssertionError: {"message_id":"02c91ada-36c4-453d-885c-4ba840b0a746","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"02c91ada-36c4-453d-885c-4ba840b0a746","delivery_status":"UNKNOWN"}
-== M14 a revoked binding counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 28.15s
+   cause: AssertionError: {"message_id":"a82b3c45-05a4-4fd3-8b75-ffd68abe17b2","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"a82b3c45-05a4-4fd3-8b75-ffd68abe17b2","delivery_status":"UNKNOWN"}
+== M14 a revoked binding counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 27.57s
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[binding_revoked]
-   cause: AssertionError: {"message_id":"216c276c-e467-4129-ac89-68c6975f6523","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"216c276c-e467-4129-ac89-68c6975f6523","delivery_status":"UNKNOWN"}
-== M15 a revoked grant counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 26.63s
+   cause: AssertionError: {"message_id":"00bf265e-8ba3-4d2d-8c07-716304f11296","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"00bf265e-8ba3-4d2d-8c07-716304f11296","delivery_status":"UNKNOWN"}
+== M15 a revoked grant counts [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.80s
    FAILED test_g7_9_a_consent_that_does_not_hold_archives_nothing[revoked]
    FAILED test_g7_9_a_revocation_in_flight_is_waited_for_then_seen[commit]
-   cause: AssertionError: {"message_id":"70793860-926a-45f2-8c83-9a6e0b8096c0","delivery_status":"UNKNOWN"}
-   cause: E   AssertionError: {"message_id":"70793860-926a-45f2-8c83-9a6e0b8096c0","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"a056c5cc-28e0-4f68-9e85-18a9c7a62fea","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"a056c5cc-28e0-4f68-9e85-18a9c7a62fea","delivery_status":"UNKNOWN"}
    cause: E   KeyError: 'code'
    cause: KeyError: 'code'
-== M16 the consent read without a lock [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 26.88s
+== M16 the consent read without a lock [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.59s
    FAILED test_g7_9_a_revocation_in_flight_is_waited_for_then_seen[commit]
    FAILED test_g7_9_a_revocation_in_flight_is_waited_for_then_seen[rollback]
    cause: E   assert (False, True) == (True, False)
    cause: assert (False, True) == (True, False)
-== M17 the thread read without a lock (G7-16 (iv)) [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 28.83s
+== M17 the thread read without a lock (G7-16 (iv)) [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   5 failed, 70 passed, 1 warning in 26.30s
    FAILED test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[earlier_holds]
    FAILED test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[later_holds]
-   cause: E   assert (False, True) == (True, False)
-   cause: assert (False, True) == (True, False)
-== M18 last_message_at not moved [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   3 failed, 69 passed, 1 warning in 28.60s
+   FAILED test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[commit]
+   FAILED test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen[rollback]
+   FAILED test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait
+   cause: AssertionError: {'binding_waited_on_the_message': False, 'binding_answered_while_the_message_held_the_thread': True, 'message': (201, None), 'binding': 200, ...}
+   cause: AssertionError: {'message_waited_on_the_binding': False, 'message_answered_while_the_binding_was_held': True, 'binding': 200, 'message': (422, 'CONTENT_NOT_ARCHIVABLE'), 
+   cause: AssertionError: {'message_waited_on_the_binding': False, 'message_answered_while_the_binding_was_held': True, 'binding': 422, 'message': (422, 'CONTENT_NOT_ARCHIVABLE'), 
+   cause: E   AssertionError: {'binding_waited_on_the_message': False, 'binding_answered_while_the_message_held_the_thread': True, 'message': (201, None), 'binding': 200, ...}
+   cause: E   AssertionError: {'message_waited_on_the_binding': False, 'message_answered_while_the_binding_was_held': True, 'binding': 200, 'message': (422, 'CONTENT_NOT_ARCHIVABLE
+   cause: E   AssertionError: {'message_waited_on_the_binding': False, 'message_answered_while_the_binding_was_held': True, 'binding': 422, 'message': (422, 'CONTENT_NOT_ARCHIVABLE
+== M18 last_message_at not moved [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   3 failed, 72 passed, 1 warning in 26.99s
    FAILED test_iv_last_message_at_moves_to_the_later_time_only
    FAILED test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[earlier_holds]
    FAILED test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[later_holds]
    cause: AttributeError: 'NoneType' object has no attribute 'isoformat'
    cause: E   AttributeError: 'NoneType' object has no attribute 'isoformat'
-== M19 last_message_at moved backwards too [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 2 warnings in 27.28s
+== M19 last_message_at moved backwards too [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 2 warnings in 29.08s
    FAILED test_iv_last_message_at_moves_to_the_later_time_only
    FAILED test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[later_holds]
    cause: E   KeyError: 'second'
@@ -258,113 +267,113 @@ Test file         : tests/test_slice7_step2.py
    cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_threads: last_message_at moves forward only
    cause: KeyError: 'second'
    cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_threads: last_message_at moves forward only
-== M20 the sender not recorded [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 27.34s
+== M20 the sender not recorded [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 27.39s
    FAILED test_admin_and_operator_create_a_thread_and_a_message[ACC_ADMIN]
    FAILED test_admin_and_operator_create_a_thread_and_a_message[ACC_OPERATOR]
    cause: AssertionError: assert None == UUID('f3000000-0000-4000-8000-000000000002')
    cause: AssertionError: assert None == UUID('f3000000-0000-4000-8000-000000000005')
    cause: E   AssertionError: assert None == UUID('f3000000-0000-4000-8000-000000000002')
    cause: E   AssertionError: assert None == UUID('f3000000-0000-4000-8000-000000000005')
-== M21 content_archived always false [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 28.52s
+== M21 content_archived always false [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.15s
    FAILED test_g7_11_the_content_never_reaches_the_audit_log_or_a_log
    FAILED test_g7_9_with_the_archive_consent_content_is_archived
    cause: AssertionError: assert ('SECRET-BODY...ived': False}) == ('SECRET-BODY...hived': True})
    cause: AssertionError: assert {'content_archived': False} == {'content_archived': True}
    cause: E   AssertionError: assert ('SECRET-BODY...ived': False}) == ('SECRET-BODY...hived': True})
    cause: E   AssertionError: assert {'content_archived': False} == {'content_archived': True}
-== M22 the message not audited [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   2 failed, 70 passed, 1 warning in 28.07s
+== M22 the message not audited [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   2 failed, 73 passed, 1 warning in 26.16s
    FAILED test_a_message_and_its_thread_move_are_audited_and_a_replay_writes_nothing
    FAILED test_g7_11_the_content_never_reaches_the_audit_log_or_a_log
    cause: AssertionError: assert [] == [('INSERT', U...0000000002'))]
    cause: E   AssertionError: assert [] == [('INSERT', U...0000000002'))]
    cause: E   assert 0 == 1
    cause: assert 0 == 1
-== M23 the thread's move not audited [src/turab/services/communication.py, 1 site(s)]  restored: sha256 2d6c1994e8373ed0 identical
-   1 failed, 71 passed, 1 warning in 26.11s
+== M23 the thread's move not audited [src/turab/services/communication.py, 1 site(s)]  restored: sha256 45a9045b21b9f770 identical
+   1 failed, 74 passed, 1 warning in 25.93s
    FAILED test_iv_last_message_at_moves_to_the_later_time_only
    cause: AssertionError: a message that moves nothing writes no thread audit row
    cause: E   AssertionError: a message that moves nothing writes no thread audit row
 == M24 the content enters the audit log [src/turab/services/audit_rows.py, 1 site(s)]  restored: sha256 22fd673690574409 identical
-   1 failed, 71 passed, 1 warning in 28.37s
+   1 failed, 74 passed, 1 warning in 26.05s
    FAILED test_g7_11_the_content_never_reaches_the_audit_log_or_a_log
    cause: AssertionError: assert ('body_text' not in {'metadata': {'content_archived': True}, 'provider': None, 'body_text': 'SECRET-BODY-7f3e', 'direction': 'OUTBOUND', ...})
    cause: E   AssertionError: assert ('body_text' not in {'metadata': {'content_archived': True}, 'provider': None, 'body_text': 'SECRET-BODY-7f3e', 'direction': 'OUTBOUND', ...})
 == R1 the unknown thread not refused at the route (no recorded denial) [src/turab/api/routes/communication.py, 1 site(s)]  restored: sha256 1b3b24c93cdfea2e identical
-   1 failed, 71 passed, 1 warning in 24.89s
+   1 failed, 74 passed, 1 warning in 26.54s
    FAILED test_an_unknown_thread_is_403_and_the_denial_is_recorded
    cause: E   ValueError: not enough values to unpack (expected 1, got 0)
    cause: ValueError: not enough values to unpack (expected 1, got 0)
 == R2 CORRECTION-006 not applied by the route: party_id optional [src/turab/api/routes/communication.py, 1 site(s)]  restored: sha256 1b3b24c93cdfea2e identical
-   2 failed, 70 passed, 1 warning in 26.65s
+   2 failed, 73 passed, 1 warning in 24.82s
    FAILED test_correction_006_a_thread_without_a_party_is_refused[absent]
    FAILED test_correction_006_a_thread_without_a_party_is_refused[null]
-   cause: AssertionError: {"thread_id":"029b7038-0c82-4d98-825f-9b61221cbf28","opened_at":"2026-10-25T11:17:48.940675+00:00"}
-   cause: AssertionError: {"thread_id":"72354226-4785-451f-9f63-7c0c462f4dfd","opened_at":"2026-10-25T11:17:48.653924+00:00"}
-   cause: E   AssertionError: {"thread_id":"029b7038-0c82-4d98-825f-9b61221cbf28","opened_at":"2026-10-25T11:17:48.940675+00:00"}
-   cause: E   AssertionError: {"thread_id":"72354226-4785-451f-9f63-7c0c462f4dfd","opened_at":"2026-10-25T11:17:48.653924+00:00"}
+   cause: AssertionError: {"thread_id":"45f704d9-005d-4f89-9744-ddde6a1a6ff6","opened_at":"2026-10-25T12:50:42.464164+00:00"}
+   cause: AssertionError: {"thread_id":"af2ff3e2-779e-472f-bab8-f2ed74e40204","opened_at":"2026-10-25T12:50:42.785196+00:00"}
+   cause: E   AssertionError: {"thread_id":"45f704d9-005d-4f89-9744-ddde6a1a6ff6","opened_at":"2026-10-25T12:50:42.464164+00:00"}
+   cause: E   AssertionError: {"thread_id":"af2ff3e2-779e-472f-bab8-f2ed74e40204","opened_at":"2026-10-25T12:50:42.785196+00:00"}
 
 SURVIVING MUTATIONS: none
 
 TURAB — Slice 7 step 2: CORRECTION-006, the route's body and the loader's anyOf extension
 ============================================================
-Base commit       : 35958e7c8c0153f984352d7432883b13f86ba392
-Source fingerprint: 9dd247c359bcd15394575db9dbdc4e26e29f2efad6550e991799cf4bfb804091
+Base commit       : f21a113b582ec08f88f6e4915b605cf3958dbeef
+Source fingerprint: e704aceab245fe5dd3fcf7216531f5002782a08026e6aedf4ae6387d57b5b4b6
 Working tree      : CLEAN
-Recorded          : 2026-10-25 11:18:14 UTC
+Recorded          : 2026-10-25 12:51:07 UTC
 Test file         : tests/test_correction_006.py
 
 === baseline (no mutation) ===
-   29 passed, 1 warning in 8.59s
+   29 passed, 1 warning in 7.92s
 == R3 the thread reference made nullable at the route [src/turab/api/routes/communication.py, 1 site(s)]  restored: sha256 1b3b24c93cdfea2e identical
-   1 failed, 28 passed, 1 warning in 9.30s
+   1 failed, 28 passed, 1 warning in 8.56s
    FAILED test_the_route_refuses_exactly_what_the_effective_schema_refuses[reference
-   cause: AssertionError: ('reference null', 201, '{"thread_id":"81ecfc81-49f6-4c7f-b8d3-43c668fa81c5","opened_at":"2026-10-25T11:18:34.023506+00:00"}')
-   cause: E   AssertionError: ('reference null', 201, '{"thread_id":"81ecfc81-49f6-4c7f-b8d3-43c668fa81c5","opened_at":"2026-10-25T11:18:34.023506+00:00"}')
+   cause: AssertionError: ('reference null', 201, '{"thread_id":"2e4c8f38-f8d7-4a61-8cc0-a0ef4cc49c18","opened_at":"2026-10-25T12:51:25.625224+00:00"}')
+   cause: E   AssertionError: ('reference null', 201, '{"thread_id":"2e4c8f38-f8d7-4a61-8cc0-a0ef4cc49c18","opened_at":"2026-10-25T12:51:25.625224+00:00"}')
 == K1 several null branches accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 8.49s
+   1 failed, 28 passed, 1 warning in 7.85s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[two
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K2 no null branch accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 9.33s
+   1 failed, 28 passed, 1 warning in 8.26s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[no
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K3 a null-only field accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 9.07s
+   1 failed, 28 passed, 1 warning in 7.54s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[null
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K4 a branch that may admit null accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   6 failed, 23 passed, 1 warning in 8.55s
+   6 failed, 23 passed, 1 warning in 7.55s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[another
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K5 a branch whose type list holds null counts as non-null [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 8.31s
+   1 failed, 28 passed, 1 warning in 7.99s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[another
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K6 a branch by reference counts as non-null [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 7.96s
+   1 failed, 28 passed, 1 warning in 7.95s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[another
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K10 a branch with its own combinator counts as non-null [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 8.48s
+   1 failed, 28 passed, 1 warning in 7.92s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[another
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K7 a type beside the anyOf accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   1 failed, 28 passed, 1 warning in 8.73s
+   1 failed, 28 passed, 1 warning in 7.63s
    FAILED test_the_anyof_extension_refuses_what_would_not_narrow[a
    cause: E   Failed: DID NOT RAISE ContractError
    cause: Failed: DID NOT RAISE ContractError
 == K8 the transformation keeps the null branch [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 e88945c80b0af81c identical
-   3 failed, 26 passed, 1 warning in 8.41s
+   3 failed, 26 passed, 1 warning in 8.51s
    FAILED test_the_anyof_extension_keeps_the_fields_other_keywords_and_several_branches
    FAILED test_the_effective_body_is_the_frozen_component_with_party_id_required_and_not_null
    FAILED test_the_route_refuses_exactly_what_the_effective_schema_refuses[party
