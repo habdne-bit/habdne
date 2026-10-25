@@ -1,10 +1,13 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 8**
+## Implementation plan — **revision 9**
 
 **Status: step 1 is CLOSED at `7e8993d`, and step 2 is AUTHORIZED** (review
 of `7e8993d`, recorded below). Slice 7 is not closed.
 - **G7-16 is DECIDED** and CORRECTION-006's reading approved (review of
-  `0f423d2`, recorded below). Step 2 is being implemented.
+  `0f423d2`, recorded below).
+- **Step 2 is DELIVERED for review** (`SLICE_7_STEP2_DELIVERY.md`), with
+  CORRECTION-006's text submitted for approval. Step 3 does not start before
+  that review.
 - **The only code of this slice is step 1's:** migration `0008`, its tests,
   and its mutation script. No webhook, command or endpoint exists.
 - **The review of step 1's progress report** (after `dc35b50`; recorded
@@ -62,7 +65,8 @@ a recommendation. A recommendation is not a decision.
 | 5 | `33434a8` | the review of `38281ab` recorded: the text of `0008` (parts E, A, B, C, D2) approved; step 1 authorized; no other change |
 | 6 | `7e8993d` | the review of step 1's progress report recorded; step 1 delivered (`SLICE_7_STEP1_DELIVERY.md`); the status and §8 updated; no decision, and no text of `0008`, changed |
 | 7 | `fe27c67` | the review of `7e8993d` recorded: step 1 CLOSED, step 2 authorized, D2's reading of R14.6 accepted for the six keys only, the Slice 5 race test's remedy (b) applied; G7-16 added: six points of step 2 put as decisions, and CORRECTION-006's reading |
-| 8 | this revision | the review of `0f423d2` recorded: G7-16 decided as recommended; CORRECTION-006's reading approved; one sentence of G7-16 (vi) corrected to RFC-001 R5.3b |
+| 8 | `921a1d7` | the review of `0f423d2` recorded: G7-16 decided as recommended; CORRECTION-006's reading approved; one sentence of G7-16 (vi) corrected to RFC-001 R5.3b |
+| 9 | this revision | step 2 delivered (`SLICE_7_STEP2_DELIVERY.md`); CORRECTION-006's text submitted; §8 updated; no decision changed |
 
 **The review of `0f423d2`. G7-16 is DECIDED, as recommended, and
 CORRECTION-006's reading is APPROVED. Step 2 may be implemented in full.**
@@ -1630,7 +1634,7 @@ identical results, and are ours.
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
-| 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **authorized** (review of `7e8993d`) |
+| 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **authorized** (review of `7e8993d`); **delivered for review** (`SLICE_7_STEP2_DELIVERY.md`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |

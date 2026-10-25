@@ -942,3 +942,13 @@ docs/gate/MIGRATION_POLICY.md                                  ---   57baebe9fbe
 docs/gate/SLICE_7_STEP1_DELIVERY.md                            add   b1052b859e64697d2f9a0b8af6318833ae0a8081174f0dd3a555e9b8cf3ba805
 docs/gate/SLICE_7_PLAN.md                                      rev7  61e9aeaa4edc57b6ba33b6678bafa162111925966b901a2277cd65ff607e0cd4
 SLICE_7_PLAN.md changed revision: 6 -> 7 (review of 7e8993d; G7-16 added).
+--- Slice 7 step 2: delivered for review; CORRECTION-006 text submitted; Slice 7 plan revisions 8 (921a1d7) and 9 ---
+docs/gate/evidence/SLICE7-STEP2-BEFORE.txt                     new   ac5460de31e7406e7c928ec8d6dfab7c02b358c2be6560602c313b08d6896c91
+docs/gate/evidence/SLICE7-STEP2-MUTATIONS.txt                  new   c30963531487f5fcf813a03df1e8346d76f4786a73386fdfeddd237e02338684
+docs/gate/evidence/SLICE7-STEP2-MUTATIONS-REPEAT.txt           new   a694ebca36d7f31a6579e6b71ef1ec0f1142c503a8286105a1e0a1ce749c9991
+docs/gate/evidence/SLICE7-STEP2-MUTATIONS-FIRST-RUN.txt        new   1140188a8b2a2df8e86aed1ac7171e6f402eb106cfca12127d382d5d9ce49c65
+docs/contract/CORRECTION-006-thread-party-required.md          new   685d8690b08d99886d1a06dcefefd18d7172c1de1f737e5108ef0a89e65cec48
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   6f9429c2b52c872b6df637e374802e1c69007634cb63f7d1e058af4593fe9f4d
+docs/gate/SLICE_7_STEP2_DELIVERY.md                            new   22d50ae9e5eb5c9fc83b7b679a8c9d7098261701ba8e049e637dbb15cab56a8c
+docs/gate/SLICE_7_PLAN.md                                      rev9  5b35edf737edba3abea2a9fc88358d5ded22e2c5f0c34c15fbbda5a1aa549a1d
+SLICE_7_PLAN.md changed revision: 7 -> 8 (review of 0f423d2) -> 9 (step 2 delivered).
