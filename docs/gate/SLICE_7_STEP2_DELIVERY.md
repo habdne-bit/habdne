@@ -23,7 +23,8 @@
   message types are refused for now (G7-16 (v));
 - the relay (R-1).
 
-**Status:** delivered for review. **Step 3 has not started.**
+**Status:** delivered for review at `f7e5297`; **NOT closed** by the review of
+`f7e5297`, for R-S7-2-01. The answer is §9. **Step 3 has not started.**
 
 **Submitted for decision with this delivery:**
 1. **The text of CORRECTION-006** (§4). The review of `0f423d2` approves it
@@ -202,13 +203,19 @@ tests.
    buyer is accepted under rule 1.
 5. **An opportunity's status is not checked** at the thread's creation. No
    rule of the plan asks for it.
-6. **A consent bound while the message is in flight is not waited for.**
-   - **Why:** the binding table has no foreign key to the thread, so no lock
-     the message holds conflicts with the INSERT.
-   - **The consequence:** the message does not see the binding, and is
-     refused. That errs on the side of storing nothing.
-   - **What is measured instead:** a revocation in flight is waited for, and
-     then seen (§2).
+6. **~~A consent bound while the message is in flight is not waited for.~~
+   WRONG, and corrected after measuring (R-S7-2-01, review of `f7e5297`;
+   §9).**
+   - **What this item said:** "the binding table has no foreign key to the
+     thread", so a binding in flight is not waited for.
+   - **Why it is wrong:** the frozen schema declares
+     `fk_consent_binding_thread`. The binding's INSERT takes FOR KEY SHARE on
+     the thread row, which conflicts with the message's FOR UPDATE.
+   - **What is measured** through both commands
+     (`evidence/SLICE7-STEP2-R-S7-2-01.txt`):
+     - a binding in flight makes the message wait. Committed, the binding is
+       SEEN and the content is archived; rolled back, the message is refused;
+     - a message holding the thread makes the binding wait.
 
 ## 4. CORRECTION-006
 
@@ -338,3 +345,71 @@ Every row ran on a clean tree, with source fingerprint `9dd247c3…4091`.
 - **Step 2 closes on review,** with CORRECTION-006's text.
 - **Step 3** (CORRECTION-007, the webhook) does not start before that
   review.
+
+---
+
+## 9. Addendum: the review of `f7e5297` and R-S7-2-01
+
+**What the review decided:**
+- **CORRECTION-006's text is APPROVED.**
+  - **What it means:** `party_id` is required and not null in the effective
+    body, and the frozen component is unchanged.
+  - **Where it is recorded:** the entry now carries `approved: "2026-10-25"`.
+    The effective contract was regenerated, and changes in that annotation
+    only.
+- **Accepted:**
+  - the 403 `OBJECT_NOT_AUTHORIZED`, recorded, for an unknown thread
+    (R5.3b);
+  - the code `INTERNAL_MESSAGE_REF_NOT_ACCEPTED`;
+  - the first five readings of §3, as decisions for this scope. They are not
+    a widening of an opportunity's sharing authority.
+- **Not closed, and step 3 not authorized, for one gap: R-S7-2-01**, the
+  sixth reading.
+  - **The review's inference:** the frozen schema defines
+    `fk_consent_binding_thread`; the binding command inserts `thread_id`; and
+    FOR UPDATE conflicts with FOR KEY SHARE. So a binding in flight can make
+    the message wait, and be seen after the wait.
+  - **Its status:** inferred, not measured, by the review.
+
+**Measured** (`evidence/SLICE7-STEP2-R-S7-2-01.txt`, at `c56fe4f`):
+- **How:** through the real `POST /consents/bindings` and the real message
+  command, with a `pg_blocking_pids` witness, the responses, the rows and both
+  idempotency keys asserted. Five consecutive runs, 15/15 cases.
+- **`test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait`:**
+  - the message holds the thread, stopped before its consent check, and the
+    binding WAITS on it;
+  - the message reads no committed binding, and answers 422
+    `CONTENT_NOT_ARCHIVABLE`. It writes no message and consumes no key;
+  - the binding then commits (200, one binding, its key consumed).
+- **`test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen`,
+  committed and rolled back:**
+  - the binding is inserted and held, and the message WAITS on it at its
+    thread lock;
+  - **committed:** the message's consent check, a later statement under READ
+    COMMITTED, sees the binding. The answer is 201 and the content is
+    archived; one message and one binding exist, and both keys are consumed;
+  - **rolled back:** the binding command is refused after its insert. The
+    message answers 422 `CONTENT_NOT_ARCHIVABLE`, and no message, no binding
+    and no key remain.
+
+**The review's inference is CONFIRMED**, and §3 (6) was wrong. Corrected:
+- §3 (6) above;
+- the docstring of `services/communication.py`;
+- plan revision 10.
+
+**No behaviour changed.** The code was correct and its account was not.
+- **What did not change:** no source line beyond the docstring. The guarantee
+  of G7-9 was never weaker than stated: a committed binding is seen, an
+  uncommitted one is not.
+- **What changed:**
+  - the tests (the three cases);
+  - the matrix (one rule);
+  - the documents;
+  - CORRECTION-006's recorded approval.
+- **The evidence round,** and the step's mutations, are bound to the new
+  tree (§10).
+
+## 10. The evidence round on the new tree
+
+[ADDENDUM EVIDENCE]
+

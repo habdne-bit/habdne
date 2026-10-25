@@ -1,13 +1,14 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 9**
+## Implementation plan — **revision 10**
 
 **Status: step 1 is CLOSED at `7e8993d`, and step 2 is AUTHORIZED** (review
 of `7e8993d`, recorded below). Slice 7 is not closed.
 - **G7-16 is DECIDED** and CORRECTION-006's reading approved (review of
   `0f423d2`, recorded below).
-- **Step 2 is DELIVERED for review** (`SLICE_7_STEP2_DELIVERY.md`), with
-  CORRECTION-006's text submitted for approval. Step 3 does not start before
-  that review.
+- **Step 2 was delivered at `f7e5297` and NOT closed** (review of `f7e5297`,
+  recorded below): CORRECTION-006's text APPROVED; one gap, R-S7-2-01,
+  measured and answered in the delivery's §9. Step 3 does not start before
+  step 2 is closed.
 - **The only code of this slice is step 1's:** migration `0008`, its tests,
   and its mutation script. No webhook, command or endpoint exists.
 - **The review of step 1's progress report** (after `dc35b50`; recorded
@@ -66,7 +67,54 @@ a recommendation. A recommendation is not a decision.
 | 6 | `7e8993d` | the review of step 1's progress report recorded; step 1 delivered (`SLICE_7_STEP1_DELIVERY.md`); the status and §8 updated; no decision, and no text of `0008`, changed |
 | 7 | `fe27c67` | the review of `7e8993d` recorded: step 1 CLOSED, step 2 authorized, D2's reading of R14.6 accepted for the six keys only, the Slice 5 race test's remedy (b) applied; G7-16 added: six points of step 2 put as decisions, and CORRECTION-006's reading |
 | 8 | `921a1d7` | the review of `0f423d2` recorded: G7-16 decided as recommended; CORRECTION-006's reading approved; one sentence of G7-16 (vi) corrected to RFC-001 R5.3b |
-| 9 | this revision | step 2 delivered (`SLICE_7_STEP2_DELIVERY.md`); CORRECTION-006's text submitted; §8 updated; no decision changed |
+| 9 | `f7e5297` | step 2 delivered (`SLICE_7_STEP2_DELIVERY.md`); CORRECTION-006's text submitted; §8 updated; no decision changed |
+| 10 | this revision | the review of `f7e5297` recorded: CORRECTION-006 approved; R5.3b and INTERNAL_MESSAGE_REF_NOT_ACCEPTED accepted; readings 1–5 accepted; R-S7-2-01 measured, reading 6 corrected |
+
+**The review of `f7e5297`. Step 2 is NOT closed, and step 3 is not
+authorized, for one gap: R-S7-2-01.**
+- **What the review did not do:** re-run the tests or PostgreSQL. 2846/2846,
+  51/51 and the gate are the implementing team's results.
+- **Decided:**
+  - **CORRECTION-006's text is APPROVED.** `party_id` is required and not
+    null in the effective body; the frozen component is unchanged;
+  - **accepted:** the recorded 403 `OBJECT_NOT_AUTHORIZED` for an unknown
+    thread on the staff path, and the code 422
+    `INTERNAL_MESSAGE_REF_NOT_ACCEPTED`;
+  - **accepted:** the first five readings of the delivery's §3, as decisions
+    for this scope:
+    - the provider only when a reference is given;
+    - `body_text=""` is content, needing consent;
+    - the request's and the property's rules applied together;
+    - only the buyer for an opportunity without a current offer;
+    - no particular status of the opportunity required.
+
+    They are not a widening of an opportunity's sharing authority.
+- **R-S7-2-01, the sixth reading.**
+  - **What it said:** the binding table has no foreign key to the thread, so
+    a message does not wait for an uncommitted binding.
+  - **What the review read:** the frozen schema defines
+    `fk_consent_binding_thread`, and the binding command inserts
+    `thread_id`. FOR UPDATE conflicts with FOR KEY SHARE (PostgreSQL 16 lock
+    table). Hence "binding inserted and uncommitted, then the message" may
+    make the message wait and see the result under READ COMMITTED: the
+    reverse of the reading. This was inferred, not measured.
+  - **What it asked:** measure, through the two real HTTP commands with a
+    `pg_blocking_pids` witness, both orders:
+    - the message holding the thread, then the binding;
+    - the binding inserted and uncommitted, then the message, with the
+      binding committed and rolled back.
+
+    Prove the response, the rows and the idempotency key; correct the reading
+    and the service's comment by the result; and, if the change is tests and
+    documents only, bind the evidence round to the new tree.
+- **Answered** in `SLICE_7_STEP2_DELIVERY.md` §9: **the inference is
+  confirmed.** The reading and the comment are corrected; no behaviour
+  changed.
+- **Standing:**
+  - step 1 stays CLOSED, and Slice 7 is open;
+  - R-1 is a condition before real traffic;
+  - K06 is UNPROVEN;
+  - the scope is SALE only.
 
 **The review of `0f423d2`. G7-16 is DECIDED, as recommended, and
 CORRECTION-006's reading is APPROVED. Step 2 may be implemented in full.**

@@ -1131,6 +1131,14 @@ RULES: tuple[Rule, ...] = (
           "test_g7_9_a_consent_that_does_not_hold_archives_nothing",
           "test_g7_9_an_internal_note_is_held_to_the_same_rule",
           "test_g7_9_a_revocation_in_flight_is_waited_for_then_seen")),
+    Rule("S7-2 / R-S7-2-01 / G7-9 (3)",
+         "A consent binding in flight and a message are serialized by the thread row "
+         "(fk_consent_binding_thread's FOR KEY SHARE against the message's FOR UPDATE): a "
+         "message holding the thread makes the binding wait, and stores no content; a "
+         "binding inserted and held makes the message wait, which then sees it if committed "
+         "and archives, and is refused if rolled back; responses, rows and keys asserted",
+         ("test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait",
+          "test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen")),
     Rule("S7-2 / G7-16 (iv)",
          "The thread row is locked FOR UPDATE before the message is inserted: two concurrent "
          "messages serialize on it and last_message_at keeps the later time, in either order",

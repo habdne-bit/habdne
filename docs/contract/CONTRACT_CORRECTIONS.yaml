@@ -118,10 +118,9 @@ request_body_narrowings:
   - id: CORRECTION-006
     decision: >-
       G7-7 (a), Slice 7 plan (docs/gate/SLICE_7_PLAN.md): direction approved in
-      the review of 4aed49b; the method (written in step 2, its text reviewed
-      with step 2's delivery) approved in the review of 0f423d2. The TEXT of
-      this entry is submitted for approval with that delivery, and is not yet
-      approved.
+      the review of 4aed49b; the method approved in the review of 0f423d2; the
+      text of this entry approved in the review of f7e5297.
+    approved: "2026-10-25"
     operation_id: postCommunicationThreads
     require: [party_id]
     non_null: [party_id]

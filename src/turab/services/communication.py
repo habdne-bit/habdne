@@ -46,8 +46,19 @@ and GRANTED, read `FOR SHARE OF b, g`. A revocation is an UPDATE of the grant
 (`consent.revoke_consent`), which conflicts with FOR SHARE (PostgreSQL 16,
 §13.3.2, Table 13.3): a revocation committing meanwhile is waited for, and
 READ COMMITTED then re-checks the row, which no longer qualifies (§13.2.1).
-A binding inserted meanwhile is not waited for: it is not seen, and the
-message is refused. That errs on the side of storing nothing.
+A binding being created is serialized with the message by the thread row:
+the binding's INSERT checks `fk_consent_binding_thread` with FOR KEY SHARE on
+the thread, which conflicts with the message's FOR UPDATE (Table 13.3).
+- A binding inserted and not yet committed makes the message wait at its
+  thread lock. Once it commits, the consent check, a later statement under
+  READ COMMITTED, sees it and the content is archived; rolled back, the
+  message is refused.
+- A message holding the thread makes a new binding wait until the message's
+  transaction ends; the message does not see it.
+Measured through both commands (R-S7-2-01, review of f7e5297;
+`evidence/SLICE7-STEP2-R-S7-2-01.txt`). An earlier version of this text said
+the binding table had no foreign key to the thread and that a binding in
+flight was not waited for; that was wrong.
 
 **What a message never writes (G7-9, G7-11).** `metadata` holds
 `content_archived` only, written here. The audit row withholds `body_text`

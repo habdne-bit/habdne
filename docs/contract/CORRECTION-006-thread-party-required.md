@@ -5,7 +5,7 @@
 | **Kind** | Request-body narrowing, through the corrections overlay. It only narrows |
 | **Operation** | `postCommunicationThreads` (POST `/communication/threads`) |
 | **Decision** | G7-7 (a), Slice 7 plan (`docs/gate/SLICE_7_PLAN.md`). Direction approved in the review of `4aed49b`; the method approved in the review of `0f423d2`: written in step 2, its text, the effective contract and their agreement test delivered for review, as for CORRECTION-005 |
-| **Status of this text** | **Submitted for approval with Slice 7 step 2's delivery. Not yet approved.** The entry in `CONTRACT_CORRECTIONS.yaml` carries no `approved` date for that reason |
+| **Status of this text** | **APPROVED in the review of `f7e5297`** (2026-10-25): `party_id` required and not null in the effective body, the frozen component unchanged. Submitted with Slice 7 step 2's delivery; the entry carries its `approved` date since |
 | **Frozen package** | `openapi_v0.2.3.yaml`, unchanged. The correction is applied in `docs/api/openapi_effective_v0.2.3.yaml` |
 
 ## 1. The frozen text, and why it does not suffice

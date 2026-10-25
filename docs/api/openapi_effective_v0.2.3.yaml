@@ -23,7 +23,7 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    b6b16eb0c044b5789bd6deea08aa4f8d4a474c7f6c32fdd2bda7d3fb7daa51df
+#   CONTRACT_CORRECTIONS.yaml    f2bab1e4535dcfaa90423be58094789163ce0a6498c78c57d1907defd1624ccb
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
 # Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-002 (postRequestsRequestIdState)
@@ -1947,10 +1947,9 @@ paths:
         id: CORRECTION-006
         kind: REQUEST_BODY_NARROWING
         decision: 'G7-7 (a), Slice 7 plan (docs/gate/SLICE_7_PLAN.md): direction approved in the review
-          of 4aed49b; the method (written in step 2, its text reviewed with step 2''s delivery) approved
-          in the review of 0f423d2. The TEXT of this entry is submitted for approval with that delivery,
-          and is not yet approved.'
-        approved: ''
+          of 4aed49b; the method approved in the review of 0f423d2; the text of this entry approved in
+          the review of f7e5297.'
+        approved: '2026-10-25'
         frozen-required:
         - channel
         frozen-defaults: {}

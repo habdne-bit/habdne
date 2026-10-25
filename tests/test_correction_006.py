@@ -58,7 +58,8 @@ def test_the_entry_is_exactly_the_narrowing_of_party_id():
             entry["frozen_defaults"]) == ("postCommunicationThreads", ["party_id"],
                                           ["party_id"], {})
     assert "enum" not in entry
-    assert "approved" not in entry, "the text is submitted with step 2, not yet approved"
+    # Approved in the review of f7e5297; submitted until then without a date.
+    assert entry["approved"] == "2026-10-25" and "review of f7e5297" in entry["decision"]
 
 
 def test_the_effective_body_is_the_frozen_component_with_party_id_required_and_not_null():
@@ -91,11 +92,11 @@ def test_the_roles_are_untouched():
         frozen["paths"][THREADS[0]][THREADS[1]]["x-roles"] == ["ADMIN", "OPERATOR"]
 
 
-def test_the_annotation_names_the_correction_and_says_it_is_not_yet_approved():
+def test_the_annotation_names_the_correction_and_its_approval():
     note = _effective()["paths"][THREADS[0]][THREADS[1]]["x-turab-correction"]
     assert (note["id"], note["kind"], note["non-null"], note["frozen-body-ref"]) == (
         "CORRECTION-006", "REQUEST_BODY_NARROWING", ["party_id"], REF)
-    assert "not yet approved" in note["decision"] and note["approved"] == ""
+    assert "review of f7e5297" in note["decision"] and note["approved"] == "2026-10-25"
 
 
 # --- the route refuses exactly what the effective schema refuses --------------------
