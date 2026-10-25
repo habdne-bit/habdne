@@ -21,6 +21,7 @@ from ..services.access import AccessService
 from ..services.command import CommandService
 from ..services.otp import OtpService, VerificationProvider
 from ..services.public_listing import PublicReads
+from ..services.webhooks import WebhookService
 
 
 def get_policies(request: Request) -> PolicyTable:
@@ -167,12 +168,24 @@ def get_public(
     return PublicReads(session, policies)
 
 
+def get_webhook(
+    request: Request,
+    session: Annotated[Session, Depends(get_write_session)],
+    auditor: Annotated[AccessAuditor, Depends(get_auditor)],
+) -> WebhookService:
+    """For `postWebhooksWhatsapp` (R10.4): no subject is resolved, and an
+    `Authorization` header is not read. The relay's signature is the
+    webhook's own check (R10.5), made by the route before any write."""
+    return WebhookService(session, auditor, getattr(request.state, "trace_id", "-"))
+
+
 Access = Annotated[AccessService, Depends(get_access)]
 Command = Annotated[CommandService, Depends(get_command)]
 Otp = Annotated[OtpService, Depends(get_otp)]
 Public = Annotated[PublicReads, Depends(get_public)]
+Webhook = Annotated[WebhookService, Depends(get_webhook)]
 
 __all__ = [
-    "Access", "Command", "Otp", "Public", "get_access", "get_command", "get_otp",
-    "get_public", "get_policies", "get_auditor", "build_policy_table",
+    "Access", "Command", "Otp", "Public", "Webhook", "get_access", "get_command",
+    "get_otp", "get_public", "get_webhook", "get_policies", "get_auditor", "build_policy_table",
 ]

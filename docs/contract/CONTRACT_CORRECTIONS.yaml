@@ -21,6 +21,14 @@
 #
 # Every entry names the decision that approved it. A correction without one is
 # an opinion.
+#
+# ONE exception to invariant 1, and only this one (Slice 7 plan G7-17 (vi),
+# decided in the review of bf1fe3d): a `response_additions` entry ADDS one
+# error response (a 5xx, `application/problem+json` with `Problem`, a fixed
+# code) that the frozen operation does not declare. It grants no access and
+# accepts no request the frozen contract refuses. Its rules are enforced in
+# `turab.auth.contract.load_response_additions`: one entry per (operation,
+# status), the frozen statuses pinned so a changed package makes it stale.
 # =============================================================================
 
 baseline: "0.2.3"
@@ -137,3 +145,57 @@ request_body_narrowings:
       LINKED_RECORD_NOT_FOUND for an unknown party), writing nothing. Its
       consistency with the other links is G7-6's.
     reference: docs/contract/CORRECTION-006-thread-party-required.md
+
+# ---------------------------------------------------------------------------
+# Response additions (G7-17 (vi)). Each adds ONE error response to an
+# operation, never a success, never a role. `frozen_statuses` pins what the
+# package declares today. Validated by
+# `turab.auth.contract.load_response_additions`.
+# ---------------------------------------------------------------------------
+
+response_additions:
+  - id: CORRECTION-007
+    decision: >-
+      Slice 7 plan §5.2 (docs/gate/SLICE_7_PLAN.md): adopted in the review of
+      4aed49b; its mechanism (response_additions) decided in the review of
+      bf1fe3d. The TEXT of this entry is submitted for approval with step 3's
+      delivery, and is not yet approved.
+    operation_id: postWebhooksWhatsapp
+    status: "500"
+    code: WEBHOOK_PROCESSING_FAILED
+    description: >-
+      The event is stored (its provider_event_id is recorded) and was not
+      processed. Deliver the same provider_event_id again; a later delivery
+      completes it once.
+    frozen_statuses: ["200", "400", "401"]
+    rationale: >-
+      The relay must know that a stored event was not processed, to redeliver
+      it with its content (G7-2 (v)). An answer of 200 would leave a FAILED
+      event recoverable only without its content.
+    runtime_rule: >-
+      Answered when T2 ends FAILED (its processing raised, the failure
+      recorded with PROCESSING_FAILED), and when T2 is lost whole after T1
+      committed (the event keeps RECEIVED or FAILED). Never before T1 commits.
+    reference: docs/contract/CORRECTION-007-webhook-processing-failed.md
+  - id: CORRECTION-008
+    decision: >-
+      Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d. The
+      TEXT of this entry is submitted for approval with step 3's delivery, and
+      is not yet approved.
+    operation_id: postWebhooksWhatsapp
+    status: "503"
+    code: WEBHOOK_NOT_READY
+    description: >-
+      The webhook cannot verify deliveries: its signing secret is not
+      configured. Nothing is recorded. Deliver the same provider_event_id
+      again later.
+    frozen_statuses: ["200", "400", "401"]
+    rationale: >-
+      A missing or empty secret is not an authentication fault of the relay,
+      so 401 would be false, and nothing is stored, so CORRECTION-007's 500
+      would be false too. The relay redelivers on a 503 (R-1, duty 5).
+    runtime_rule: >-
+      Answered when TURAB_RELAY_SIGNING_SECRET is absent or empty, after the
+      size check and before the signature is computed, writing nothing.
+    reference: docs/contract/CORRECTION-008-webhook-not-ready.md
+

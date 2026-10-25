@@ -1151,6 +1151,116 @@ RULES: tuple[Rule, ...] = (
           "test_no_refusal_carries_an_id_or_database_text",
           "test_a_thread_is_audited_and_a_replay_writes_nothing",
           "test_a_message_and_its_thread_move_are_audited_and_a_replay_writes_nothing")),
+    # --- Slice 7, step 3: the webhook (G7-2, G7-17, CORRECTION-007, CORRECTION-008) -------
+    Rule("S7-3 / R10.4",
+         "The webhook stays in the closed list of six public operations and reads no bearer: "
+         "the relay's signature alone decides",
+         ("test_the_webhook_stays_in_the_closed_public_list_and_reads_no_bearer",)),
+    Rule("S7-3 / G7-17 (ii) / CORRECTION-008",
+         "A missing or empty signing secret is 503 WEBHOOK_NOT_READY with no event row and "
+         "nothing written, after the size and before the signature, logged without the body",
+         ("test_ii_a_missing_or_empty_secret_is_503_with_no_event_row",
+          "test_ii_the_503_comes_after_the_size_and_before_the_signature")),
+    Rule("S7-3 / S41 / G7-17 (ii) / R10.5",
+         "A missing or wrong relay signature is 401 before any write: sha256= and 64 "
+         "lower-case hex of the HMAC over the raw bytes under the UTF-8 secret, compared in "
+         "constant time. It proves the relay's origin, not Meta's",
+         ("test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing",
+          "test_ii_the_signature_is_over_the_raw_bytes",
+          "test_ii_the_secret_is_read_as_utf_8",
+          "test_ii_the_signature_is_compared_in_constant_time")),
+    Rule("S7-3 / G7-15 / G7-17 (iii)",
+         "Before T1, in order: a body over 64 KiB is 400 (on Content-Length and while "
+         "reading); the signature; an invalid envelope or a known type's missing or mistyped "
+         "key is 400, a time without a zone included; each writes nothing; an unknown type "
+         "is stored, then IGNORED",
+         ("test_g7_15_a_body_over_64_kib_is_400_and_one_of_64_kib_is_read",
+          "test_g7_15_the_limit_holds_without_a_content_length",
+          "test_g7_15_a_false_content_length_does_not_pass_the_limit",
+          "test_g7_15_a_declared_length_over_the_limit_is_refused_before_reading",
+          "test_iii_the_order_size_signature_envelope",
+          "test_iii_an_invalid_envelope_is_400_writing_nothing",
+          "test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400",
+          "test_iii_an_rfc_3339_instant_with_a_zone_is_accepted",
+          "test_iii_an_unknown_type_is_stored_then_ignored")),
+    Rule("S7-3 / G7-9 / J03",
+         "The event store holds the allow-list only, never content; a webhook message keeps "
+         "its content only under the archive consent of the thread's party, bound and "
+         "current, and is otherwise stored without it (NO_ARCHIVE_CONSENT); no content, "
+         "signature, secret or envelope reference reaches a log, an access record or an "
+         "answer",
+         ("test_g7_9_1_the_event_store_holds_the_allow_list_only",
+          "test_g7_9_a_message_without_the_archive_consent_is_stored_without_content",
+          "test_g7_9_with_the_archive_consent_the_content_is_archived",
+          "test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld",
+          "test_a_message_without_content_carries_no_withheld_reason",
+          "test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record")),
+    Rule("S7-3 / G7-3 / G7-4 / J02 / mandatory test 2",
+         "A message is an INBOUND message of the WHATSAPP thread holding its thread_ref, "
+         "else IGNORED UNKNOWN_THREAD; a recorded reference is IGNORED MESSAGE_REF_TAKEN in "
+         "any thread, also when recorded between the check and the insert, with no row; the "
+         "thread is locked before the insert, so a new binding waits for it, and moves to "
+         "the later time only",
+         ("test_g7_3_a_message_is_an_inbound_message_of_its_whatsapp_thread",
+          "test_g7_3_a_thread_ref_of_no_whatsapp_thread_is_ignored",
+          "test_g7_4_mandatory_test_2_a_recorded_reference_is_ignored_in_any_thread",
+          "test_g7_4_a_reference_recorded_after_the_check_is_the_same_ignored",
+          "test_g7_16_iv_the_thread_moves_to_the_later_time_only",
+          "test_g7_16_iv_the_thread_is_locked_before_the_message_is_inserted",
+          "test_g7_16_iv_a_webhook_holding_the_thread_makes_a_new_binding_wait")),
+    Rule("S7-3 / G7-5",
+         "A status event applies only G7-5's transitions, checked on the message read FOR "
+         "UPDATE before the UPDATE, "
+         "equal to 0008 part B's set; any other, a same status included, is IGNORED "
+         "STATUS_TRANSITION_NOT_ACCEPTED; a status for no message is IGNORED UNKNOWN_MESSAGE",
+         ("test_g7_5_an_accepted_transition_updates_the_message_and_is_audited",
+          "test_g7_5_another_transition_is_ignored_and_writes_nothing",
+          "test_g7_5_the_table_is_the_triggers",
+          "test_g7_5_a_status_change_in_flight_is_waited_for_then_seen",
+          "test_g7_5_a_status_for_no_recorded_message_is_ignored",
+          "test_g7_5_a_webhook_message_takes_its_statuses")),
+    Rule("S7-3 / S42 / J01 / mandatory test 1 / G7-2 (v)",
+         "A replay of a PROCESSED or IGNORED event is an empty 200 and writes nothing; the "
+         "same envelope delivered concurrently makes one event and one message",
+         ("test_s42_a_replay_of_a_completed_event_is_200_and_writes_nothing",
+          "test_s42_a_replay_of_an_ignored_event_writes_nothing",
+          "test_mandatory_test_1_concurrent_deliveries_make_one_message")),
+    Rule("S7-3 / G7-2 (iv) / CORRECTION-007",
+         "The four failure tests: a failure in processing is FAILED PROCESSING_FAILED in the "
+         "same T2, nothing of it kept, answered 500 WEBHOOK_PROCESSING_FAILED without "
+         "exception text; a stop after T1 is completed once by a redelivery, with content, "
+         "or by the recovery, without; a failure of the status update loses T2 whole; a "
+         "replay during the claim is 200 and writes nothing. A T1 that does not commit is "
+         "not CORRECTION-007",
+         ("test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500",
+          "test_iv_1_a_python_exception_in_processing_is_failed_likewise",
+          "test_iv_2_a_stop_after_t1_is_completed_by_a_redelivery",
+          "test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content",
+          "test_iv_3_a_failure_of_the_status_update_loses_t2_whole",
+          "test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing",
+          "test_iv_a_t1_that_does_not_commit_is_not_correction_007")),
+    Rule("S7-3 / G7-2 (v)",
+         "The operator recovery command re-runs T2 on FAILED events and on RECEIVED ones "
+         "older than 5 minutes, skips a held row, and prints counts only",
+         ("test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one",
+          "test_recovery_skips_a_row_another_processor_holds",
+          "test_the_recovery_script_prints_counts_only")),
+    Rule("S7-3 / G7-11 / G7-17 (vii)",
+         "The webhook's message insert and the thread's actual move are audited with a NULL "
+         "actor, the content withheld; the event is not audited twice; one access record per "
+         "answer",
+         ("test_vii_the_message_and_the_thread_move_are_audited_with_a_null_actor",
+          "test_vii_a_thread_not_moved_is_not_audited",
+          "test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record")),
+    Rule("S7-3 / CORRECTION-007 / CORRECTION-008 / G7-17 (vi)",
+         "The two added responses are exactly the entries', annotated, the frozen operation "
+         "unchanged; each code is a ProblemCode of its status; the loader refuses what is not "
+         "one error response added to one (operation, status)",
+         ("test_the_effective_operation_is_the_frozen_one_with_the_two_responses",
+          "test_each_code_is_a_problem_code_of_the_entrys_status",
+          "test_the_loader_refuses_what_is_not_one_added_error_response",
+          "test_the_loader_refuses_a_status_the_operation_already_declares",
+          "test_the_loader_refuses_a_package_whose_statuses_changed")),
 )
 
 

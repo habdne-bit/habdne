@@ -28,6 +28,8 @@ class AccessEvent(StrEnum):
     DENIED = "DENIED"
     CLAIM_AUTHORITY_CONFLICT = "CLAIM_AUTHORITY_CONFLICT"
     ROLE_CONFIGURATION_ANOMALY = "ROLE_CONFIGURATION_ANOMALY"
+    #: Slice 7 step 3 (G7-17 (vii)): one record per answer of the webhook.
+    WEBHOOK_ANSWERED = "WEBHOOK_ANSWERED"
 
 
 #: R6.3b. Keys that must never appear in audit metadata. Enforced, not merely
@@ -272,4 +274,29 @@ class AccessAuditor:
             decision="DENY",
             reason_code="ROLE_CONFIGURATION_ANOMALY",
             extra={"offending_roles": sorted(r.value for r in offending)},
+        )
+
+    def webhook_answered(
+        self, *, trace_id: str, status: int, outcome: str,
+        webhook_event_id: uuid.UUID | None = None,
+    ) -> AccessRecord:
+        """G7-17 (vii). ONE record per answer of `postWebhooksWhatsapp`,
+        refusals (400, 401, 503) included, to the log stream: a refusal writes
+        nothing to the database, and this record does not either.
+
+        It carries the HTTP status, a fixed outcome and, once T1 has stored
+        it, the event's id. Never the body, the signature, the secret, the
+        provider's event id or any reference the envelope carried.
+        """
+        return self._emit(
+            event=AccessEvent.WEBHOOK_ANSWERED,
+            trace_id=trace_id,
+            actor_account_id=None,
+            actor_roles=(),
+            operation_id="postWebhooksWhatsapp",
+            resource_kind="webhook_event" if webhook_event_id else None,
+            resource_id=webhook_event_id,
+            decision="DENY" if status in (400, 401, 503) else "ALLOW",
+            reason_code=outcome,
+            extra={"http_status": status},
         )

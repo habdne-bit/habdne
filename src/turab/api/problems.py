@@ -161,6 +161,17 @@ class ProblemCode(StrEnum):
     INTERNAL_MESSAGE_REF_NOT_ACCEPTED = "INTERNAL_MESSAGE_REF_NOT_ACCEPTED"
     MESSAGE_REF_TAKEN = "MESSAGE_REF_TAKEN"
     CONTENT_NOT_ARCHIVABLE = "CONTENT_NOT_ARCHIVABLE"
+    #: Slice 7 step 3, the webhook (G7-15, G7-17). None echoes the body, a
+    #: reference or the signature. The body is larger than 64 KiB (G7-15), or
+    #: its envelope or a known type's keys are not valid (G7-17 (iii)): 400,
+    #: the status the frozen operation declares. Both names are ours,
+    #: submitted with step 3's delivery (the plan names no code).
+    WEBHOOK_BODY_TOO_LARGE = "WEBHOOK_BODY_TOO_LARGE"
+    WEBHOOK_ENVELOPE_NOT_VALID = "WEBHOOK_ENVELOPE_NOT_VALID"
+    #: CORRECTION-007 and CORRECTION-008: the event stored and not processed
+    #: (500); the signing secret not configured, nothing stored (503).
+    WEBHOOK_PROCESSING_FAILED = "WEBHOOK_PROCESSING_FAILED"
+    WEBHOOK_NOT_READY = "WEBHOOK_NOT_READY"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -230,6 +241,10 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.CONTENT_NOT_ARCHIVABLE: (422, "Content not archivable"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),
+    ProblemCode.WEBHOOK_BODY_TOO_LARGE: (400, "Request rejected"),
+    ProblemCode.WEBHOOK_ENVELOPE_NOT_VALID: (400, "Request rejected"),
+    ProblemCode.WEBHOOK_PROCESSING_FAILED: (500, "Webhook event not processed"),
+    ProblemCode.WEBHOOK_NOT_READY: (503, "Webhook not ready"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),
     ProblemCode.PROVIDER_UNAVAILABLE: (503, "Verification provider unavailable"),
     ProblemCode.NOT_IMPLEMENTED: (501, "Not implemented"),

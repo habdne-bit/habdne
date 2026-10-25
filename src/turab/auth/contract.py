@@ -12,6 +12,7 @@ import copy
 import functools
 import json
 import pathlib
+import re
 from typing import Any
 
 import yaml
@@ -489,6 +490,102 @@ def load_request_body_narrowings(
     return entries
 
 
+_RESPONSE_ADDITION_KEYS = frozenset({
+    "id", "decision", "approved", "operation_id", "status", "code", "description",
+    "frozen_statuses", "rationale", "runtime_rule", "reference",
+})
+_PROBLEM_REF = "#/components/schemas/Problem"
+_CODE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+
+
+def load_response_additions(
+    path: pathlib.Path | None = None, contract: dict[str, Any] | None = None,
+) -> tuple[dict, ...]:
+    """Read and validate the approved response additions (CORRECTION-007,
+    CORRECTION-008; Slice 7 plan G7-17 (vi), decided in the review of
+    bf1fe3d).
+
+    An addition gives an operation ONE error response it does not declare:
+    a 5xx, `application/problem+json` with the contract's `Problem`, and a
+    fixed problem `code`. It is not a narrowing, and it is the only kind of
+    addition the overlay accepts. Refused:
+    - an unknown key; a missing or reused id; a missing decision;
+    - an operation absent from the frozen contract;
+    - a second addition of the same (operation, status) pair;
+    - a status that is not a 5xx written as three digits, or that the frozen
+      operation already declares;
+    - `frozen_statuses` that differ from the statuses the package declares
+      today: the entry is then stale and must be re-approved;
+    - a code that is not an upper-case identifier; an empty description.
+    The generator of the effective contract applies what this returns, with
+    `added_response`."""
+    doc = yaml.safe_load((path or CORRECTIONS_PATH).read_text(encoding="utf-8"))
+    entries = tuple(doc.get("response_additions") or ())
+    frozen = contract if contract is not None else load_contract()
+    by_operation = {op.get("operationId"): op for _, _, op in _operations(frozen)}
+    taken = {e.get("id") for section in ("corrections", "workflow_adoptions",
+                                         "request_body_narrowings")
+             for e in doc.get(section) or ()}
+    seen: set[str] = set()
+    pairs: set[tuple[str, str]] = set()
+    for entry in entries:
+        cid = entry.get("id")
+        unknown = set(entry) - _RESPONSE_ADDITION_KEYS
+        if unknown:
+            raise ContractError(f"{cid}: unknown key(s) {sorted(unknown)}; a response "
+                                "addition only adds one error response")
+        if not cid or cid in seen or cid in taken:
+            raise ContractError(f"response addition {cid!r}: missing or duplicated id")
+        seen.add(cid)
+        if not entry.get("decision"):
+            raise ContractError(f"{cid}: names no decision")
+        operation_id = entry.get("operation_id")
+        op = by_operation.get(operation_id)
+        if op is None:
+            raise ContractError(f"{cid}: {operation_id!r} is not in the frozen contract")
+        status = entry.get("status")
+        if not (isinstance(status, str) and re.fullmatch(r"5[0-9]{2}", status)):
+            raise ContractError(f"{cid}: status {status!r} is not a 5xx written as three "
+                                "digits; only an error response may be added")
+        if (operation_id, status) in pairs:
+            raise ContractError(f"{cid}: {operation_id} {status} is already added; one "
+                                "addition per (operation, status)")
+        pairs.add((operation_id, status))
+        declared = sorted(str(k) for k in (op.get("responses") or {}))
+        if status in declared:
+            raise ContractError(f"{cid}: {operation_id} already declares {status}; "
+                                "nothing to add")
+        if sorted(str(s) for s in entry.get("frozen_statuses") or ()) != declared:
+            raise ContractError(
+                f"{cid}: frozen_statuses {entry.get('frozen_statuses')!r} but the package "
+                f"declares {declared!r}. The correction is stale and must be "
+                "re-approved against the current package.")
+        code = entry.get("code")
+        if not (isinstance(code, str) and _CODE.match(code)):
+            raise ContractError(f"{cid}: code {code!r} is not an upper-case identifier")
+        if not (isinstance(entry.get("description"), str) and entry["description"].strip()):
+            raise ContractError(f"{cid}: the response has no description")
+    return entries
+
+
+def added_response(entry: dict[str, Any]) -> dict[str, Any]:
+    """The response a VALIDATED addition adds, with its annotation. The one
+    implementation, used by the generator."""
+    return {
+        "description": " ".join(entry["description"].split()),
+        "content": {"application/problem+json": {"schema": {"$ref": _PROBLEM_REF}}},
+        "x-turab-correction": {
+            "id": entry["id"],
+            "kind": "RESPONSE_ADDITION",
+            "decision": " ".join(entry["decision"].split()),
+            "approved": str(entry.get("approved", "")),
+            "code": entry["code"],
+            "frozen-statuses": sorted(str(s) for s in entry["frozen_statuses"]),
+            "reference": entry.get("reference"),
+        },
+    }
+
+
 @functools.cache
 def effective_request_body(operation_id: str) -> dict[str, Any] | None:
     """The effective body schema of a narrowed operation, or None. The runtime
@@ -524,6 +621,8 @@ def build_policy_table(path: pathlib.Path | None = None) -> PolicyTable:
     # Validated here too, so a stale or widening body narrowing stops the
     # application at startup, as a bad role correction does (CORRECTION-004).
     load_request_body_narrowings(contract=doc)
+    # And the response additions (CORRECTION-007, CORRECTION-008), likewise.
+    load_response_additions(contract=doc)
     policies: dict[str, RoutePolicy] = {}
     unannotated: list[str] = []
     corrected_frozen: dict[str, frozenset[Role]] = {}

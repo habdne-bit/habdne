@@ -18,6 +18,7 @@ from .api.routes import (
     offers as offer_routes, properties as property_routes, records,
     public as public_routes, relations as relation_routes, truth as truth_routes,
     requests as request_routes, tasks as task_routes, communication as communication_routes,
+    webhooks as webhook_routes,
 )
 from .auth.audit import AccessAuditor
 from .auth.contract import build_policy_table, verify_policy_matches_contract
@@ -106,4 +107,5 @@ def create_app(
     app.include_router(matching_routes.router)
     app.include_router(task_routes.router)
     app.include_router(communication_routes.router)
+    app.include_router(webhook_routes.router)
     return app

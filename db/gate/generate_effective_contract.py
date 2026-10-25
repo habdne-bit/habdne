@@ -280,8 +280,32 @@ def build() -> tuple[str, list[str]]:
             narrowed.append(f"{entry['id']} ({op['operationId']})")
     applied += narrowed
 
+    # Response additions (CORRECTION-007, CORRECTION-008; G7-17 (vi)).
+    # Validated by the runtime's loader; each adds ONE error response,
+    # annotated on the response itself, so two additions to one operation
+    # carry one annotation each.
+    from turab.auth.contract import added_response, load_response_additions
+
+    additions = load_response_additions(CORRECTIONS, doc)
+    by_pair = {(e["operation_id"], e["status"]): e for e in additions}
+    added_responses: list[str] = []
+    for item in doc.get("paths", {}).values():
+        for method in _METHODS:
+            op = item.get(method)
+            if not isinstance(op, dict):
+                continue
+            for (operation_id, status), entry in by_pair.items():
+                if op.get("operationId") != operation_id:
+                    continue
+                op["responses"] = {**op["responses"], status: added_response(entry)}
+                added_responses.append(f"{entry['id']} ({operation_id} {status})")
+    if len(added_responses) != len(by_pair):
+        raise SystemExit("a response addition names an operation the contract does not "
+                         "have")
+    applied += sorted(added_responses)
+
     unmatched = set(by_operation) - {
-        a.split("(")[1].rstrip(")") for a in applied
+        a.split("(")[1].rstrip(")").split(" ")[0] for a in applied
     }
     if unmatched:
         raise SystemExit(

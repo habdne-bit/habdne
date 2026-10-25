@@ -454,11 +454,36 @@ def test_the_effective_contract_changes_nothing_else():
 
     role_corrected = set(load_corrections())
     narrowings = {e["operation_id"]: e for e in load_request_body_narrowings()}
+    from turab.auth.contract import load_response_additions
+
+    additions: dict[str, list] = {}
+    for entry in load_response_additions():
+        additions.setdefault(entry["operation_id"], []).append(entry)
     for path, method, op in _operations(frozen):
         other = {
             k: v for k, v in effective["paths"][path][method].items()
             if k not in ANNOTATIONS
         }
+        # CORRECTION-007 / CORRECTION-008 kind (G7-17 (vi)): an added error
+        # response, checked against its entry here, written out without the
+        # production transformation, then removed, so that every other part
+        # of the operation must still equal the frozen one.
+        for entry in additions.get(op["operationId"], ()):
+            responses = dict(other["responses"])
+            got = responses.pop(entry["status"])
+            assert entry["status"] not in op["responses"]
+            assert got == {
+                "description": " ".join(entry["description"].split()),
+                "content": {"application/problem+json": {
+                    "schema": {"$ref": "#/components/schemas/Problem"}}},
+                "x-turab-correction": {
+                    "id": entry["id"], "kind": "RESPONSE_ADDITION",
+                    "decision": " ".join(entry["decision"].split()),
+                    "approved": str(entry.get("approved", "")), "code": entry["code"],
+                    "frozen-statuses": sorted(entry["frozen_statuses"]),
+                    "reference": entry["reference"]},
+            }, f"{entry['id']} adds a response other than its entry"
+            other = {**other, "responses": responses}
         if op["operationId"] in narrowings:
             # CORRECTION-004 kind: exactly the named fields become required
             # and lose their default. The expected operation is built by that
