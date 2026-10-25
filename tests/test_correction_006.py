@@ -119,7 +119,9 @@ def _keywords(schema):
 
 
 def test_the_effective_body_uses_only_the_keywords_the_judge_below_reads():
-    assert _keywords(effective_request_body("postCommunicationThreads")) <= _KEYWORDS
+    schema = effective_request_body("postCommunicationThreads")
+    assert schema is not None, "the operation is narrowed"
+    assert _keywords(schema) <= _KEYWORDS
 
 
 def _accepts(schema, value) -> bool:
