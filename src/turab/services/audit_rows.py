@@ -45,6 +45,10 @@ AUDITED_BY_COMMAND = {
     # Slice 6 step 2 (plan §3.7): the completion event. The table has no
     # audit trigger; `tasks` is already above.
     "task_completion_events": "task_completion_event_id",
+    # Slice 7 step 2 (G7-11): the staff thread and message. Neither table has
+    # an audit trigger in the frozen schema.
+    "communication_threads": "thread_id",
+    "communication_messages": "message_id",
 }
 
 #: Columns a command-layer audit row leaves out. The review of 6c6e614
@@ -57,6 +61,9 @@ WITHHELD: dict[str, tuple[str, ...]] = {
     # Slice 6 plan §3.7 (R6.3b, "staff notes"): the completion's free-text
     # note stays in its own row, as the share's summary does.
     "task_completion_events": ("note",),
+    # G7-11: a message's content never enters the audit log. It is kept only
+    # in its own row, under the consent of G7-9.
+    "communication_messages": ("body_text", "media_ref"),
 }
 
 

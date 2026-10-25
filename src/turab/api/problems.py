@@ -141,6 +141,26 @@ class ProblemCode(StrEnum):
     #: waited for it: 422, input (G6-8 (iv), R2d). Neither echoes an id.
     TASK_NOT_OPEN = "TASK_NOT_OPEN"
     EVIDENCE_OBSERVATION_NOT_FOUND = "EVIDENCE_OBSERVATION_NOT_FOUND"
+    #: Slice 7 step 2, the communication record (SLICE_7_PLAN.md G7-3, G7-4,
+    #: G7-6, G7-9, G7-16 (vi), decided in the review of 0f423d2). None echoes
+    #: an id, a reference or database text; `field_errors` name fields only.
+    #: The thread command:
+    THREAD_REF_NOT_SCOPED = "THREAD_REF_NOT_SCOPED"
+    THREAD_REF_TAKEN = "THREAD_REF_TAKEN"
+    OPPORTUNITY_NOT_SALE = "OPPORTUNITY_NOT_SALE"
+    THREAD_LINKS_INCONSISTENT = "THREAD_LINKS_INCONSISTENT"
+    LINKED_RECORD_NOT_FOUND = "LINKED_RECORD_NOT_FOUND"
+    #: The message command:
+    DIRECTION_NOT_ACCEPTED = "DIRECTION_NOT_ACCEPTED"
+    DELIVERY_STATUS_NOT_ACCEPTED = "DELIVERY_STATUS_NOT_ACCEPTED"
+    MESSAGE_METADATA_NOT_ACCEPTED = "MESSAGE_METADATA_NOT_ACCEPTED"
+    MESSAGE_TYPE_RESERVED = "MESSAGE_TYPE_RESERVED"
+    EXTERNAL_REF_WITHOUT_PROVIDER = "EXTERNAL_REF_WITHOUT_PROVIDER"
+    #: G7-4: "an INTERNAL message never carries a reference (422)"; the plan
+    #: names no code, so this name is ours, submitted with step 2's delivery.
+    INTERNAL_MESSAGE_REF_NOT_ACCEPTED = "INTERNAL_MESSAGE_REF_NOT_ACCEPTED"
+    MESSAGE_REF_TAKEN = "MESSAGE_REF_TAKEN"
+    CONTENT_NOT_ARCHIVABLE = "CONTENT_NOT_ARCHIVABLE"
     INVALID_ROLE_COMBINATION = "INVALID_ROLE_COMBINATION"
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
@@ -194,6 +214,20 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.CLOSE_REASON_NOT_ALLOWED: (422, "Close reason not allowed"),
     ProblemCode.TASK_NOT_OPEN: (409, "Task not open"),
     ProblemCode.EVIDENCE_OBSERVATION_NOT_FOUND: (422, "Evidence observation not found"),
+    ProblemCode.THREAD_REF_NOT_SCOPED: (422, "Thread reference not scoped"),
+    ProblemCode.THREAD_REF_TAKEN: (409, "Thread reference taken"),
+    ProblemCode.OPPORTUNITY_NOT_SALE: (422, "Opportunity not of a sale"),
+    ProblemCode.THREAD_LINKS_INCONSISTENT: (422, "Thread links inconsistent"),
+    ProblemCode.LINKED_RECORD_NOT_FOUND: (422, "Linked record not found"),
+    ProblemCode.DIRECTION_NOT_ACCEPTED: (422, "Direction not accepted"),
+    ProblemCode.DELIVERY_STATUS_NOT_ACCEPTED: (422, "Delivery status not accepted"),
+    ProblemCode.MESSAGE_METADATA_NOT_ACCEPTED: (422, "Message metadata not accepted"),
+    ProblemCode.MESSAGE_TYPE_RESERVED: (422, "Message type reserved"),
+    ProblemCode.EXTERNAL_REF_WITHOUT_PROVIDER: (422, "External reference without provider"),
+    ProblemCode.INTERNAL_MESSAGE_REF_NOT_ACCEPTED: (422,
+                                                    "Internal message reference not accepted"),
+    ProblemCode.MESSAGE_REF_TAKEN: (409, "Message reference taken"),
+    ProblemCode.CONTENT_NOT_ARCHIVABLE: (422, "Content not archivable"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),
     ProblemCode.INVALID_ROLE_COMBINATION: (422, "Invalid role combination"),

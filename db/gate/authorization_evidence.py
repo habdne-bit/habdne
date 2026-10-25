@@ -1067,6 +1067,82 @@ RULES: tuple[Rule, ...] = (
           "test_the_enum_is_the_active_task_outcome_codes_of_the_database",
           "test_the_extended_loader_refuses",
           "test_a_component_another_operation_also_uses_is_refused")),
+    # --- Slice 7, step 2: the staff thread and the staff message --------------------
+    Rule("S7-2 / §1 / R5.3b / R6.3a",
+         "The thread and the message commands are ADMIN and OPERATOR only: each allowed; a "
+         "reviewer and a customer refused 403, writing nothing; anonymous refused 401; a "
+         "message on an unknown thread is 403 OBJECT_NOT_AUTHORIZED, recorded with its kind "
+         "and id",
+         ("test_admin_and_operator_create_a_thread_and_a_message",
+          "test_a_reviewer_and_a_customer_are_refused_both_writing_nothing",
+          "test_an_anonymous_caller_is_refused_both",
+          "test_an_unknown_thread_is_403_and_the_denial_is_recorded")),
+    Rule("S7-2 / G7-6 / mandatory test 3 / CORRECTION-006",
+         "A thread's links are checked at creation by the service: a party is required; "
+         "every id names a row; a named opportunity is a SALE, checked; the party is the "
+         "opportunity's buyer or seller, the request's party, or an offer's party of the "
+         "property; a link the opportunity lacks is refused; the links are frozen after",
+         ("test_correction_006_a_thread_without_a_party_is_refused",
+          "test_rule_4_an_id_naming_no_row_is_refused_by_field",
+          "test_rule_0_a_named_opportunity_must_be_a_sale",
+          "test_rule_1_the_opportunitys_buyer_and_seller_are_accepted_with_its_own_links",
+          "test_rule_1_a_link_the_opportunity_does_not_have_is_refused",
+          "test_rule_2_a_request_without_an_opportunity_needs_its_own_party",
+          "test_rule_3_a_property_without_an_opportunity_needs_one_of_its_offers_party",
+          "test_the_links_are_frozen_after_creation")),
+    Rule("S7-2 / CORRECTION-006",
+         "The thread's body is the effective contract's: the route refuses exactly what the "
+         "effective schema refuses; the extended loader narrows only",
+         ("test_the_route_refuses_exactly_what_the_effective_schema_refuses",
+          "test_the_effective_body_is_the_frozen_component_with_party_id_required_and_not_null",
+          "test_the_anyof_extension_refuses_what_would_not_narrow")),
+    Rule("S7-2 / G7-3",
+         "A WHATSAPP thread's reference is scoped and held by one thread: an unscoped one is "
+         "422, a taken one 409, also when taken between the check and the write; other "
+         "channels are free",
+         ("test_g7_3_an_unscoped_whatsapp_reference_is_refused",
+          "test_g7_3_a_taken_whatsapp_reference_is_409_and_other_channels_are_free",
+          "test_g7_3_a_reference_taken_after_the_check_is_the_same_409")),
+    Rule("S7-2 / G7-4 / J02 / mandatory test 2",
+         "A provider message identity is global: a reference only in a WHATSAPP thread, its "
+         "provider set by the service, never on an INTERNAL message; a recorded reference is "
+         "409 in any thread, also when recorded between the check and the write",
+         ("test_g7_4_an_internal_message_carries_no_reference",
+          "test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused",
+          "test_g7_4_in_a_whatsapp_thread_the_service_sets_the_provider",
+          "test_g7_4_a_recorded_reference_is_409_in_any_thread",
+          "test_g7_4_a_reference_recorded_after_the_check_is_the_same_409")),
+    Rule("S7-2 / G7-16 (i), (ii), (iii), (v)",
+         "A staff message is OUTBOUND or INTERNAL; an OUTBOUND keeps the status it states, an "
+         "INTERNAL states none but UNKNOWN; metadata is absent or empty; the types G7-10 "
+         "gives a meaning are reserved",
+         ("test_i_inbound_is_refused",
+          "test_ii_an_outbound_message_keeps_the_status_it_states",
+          "test_ii_an_internal_message_states_no_status_but_unknown",
+          "test_iii_metadata_is_absent_or_empty_and_the_service_writes_its_own",
+          "test_v_the_types_g7_10_gives_a_meaning_are_reserved",
+          "test_v_any_other_type_is_free_text_and_text_is_the_default")),
+    Rule("S7-2 / G7-9 / J03",
+         "No content is stored without the archive consent of the thread's party, bound to "
+         "the thread and current, read FOR SHARE: a revocation in flight is waited for, then "
+         "seen; a staff message with content is otherwise refused, writing nothing",
+         ("test_g7_9_content_without_the_archive_consent_is_refused",
+          "test_g7_9_with_the_archive_consent_content_is_archived",
+          "test_g7_9_a_consent_that_does_not_hold_archives_nothing",
+          "test_g7_9_an_internal_note_is_held_to_the_same_rule",
+          "test_g7_9_a_revocation_in_flight_is_waited_for_then_seen")),
+    Rule("S7-2 / G7-16 (iv)",
+         "The thread row is locked FOR UPDATE before the message is inserted: two concurrent "
+         "messages serialize on it and last_message_at keeps the later time, in either order",
+         ("test_iv_last_message_at_moves_to_the_later_time_only",
+          "test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later")),
+    Rule("S7-2 / G7-11 / G7-16 (vi) / K05",
+         "Threads and messages are audited, the content withheld and absent from logs; no "
+         "refusal carries a row id or database text; a replay writes nothing",
+         ("test_g7_11_the_content_never_reaches_the_audit_log_or_a_log",
+          "test_no_refusal_carries_an_id_or_database_text",
+          "test_a_thread_is_audited_and_a_replay_writes_nothing",
+          "test_a_message_and_its_thread_move_are_audited_and_a_replay_writes_nothing")),
 )
 
 

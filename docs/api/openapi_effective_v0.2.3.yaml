@@ -23,10 +23,10 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    6c8f988b0eabc47bafd83351454ce6daa49778bae258d1e0bcc103b8a87c77d0
+#   CONTRACT_CORRECTIONS.yaml    b6b16eb0c044b5789bd6deea08aa4f8d4a474c7f6c32fdd2bda7d3fb7daa51df
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
-# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-002 (postRequestsRequestIdState)
+# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-002 (postRequestsRequestIdState)
 # Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd)
 # =============================================================================
 openapi: 3.1.0
@@ -1887,7 +1887,42 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommunicationThreadCreate'
+              type: object
+              required:
+              - channel
+              - party_id
+              properties:
+                channel:
+                  type: string
+                  enum:
+                  - WHATSAPP
+                  - PHONE
+                  - SMS
+                  - EMAIL
+                  - WEB
+                  - IN_PERSON
+                  - OTHER
+                party_id:
+                  type: string
+                  format: uuid
+                request_id:
+                  anyOf:
+                  - type: string
+                    format: uuid
+                  - type: 'null'
+                property_id:
+                  anyOf:
+                  - type: string
+                    format: uuid
+                  - type: 'null'
+                opportunity_id:
+                  anyOf:
+                  - type: string
+                    format: uuid
+                  - type: 'null'
+                external_thread_ref:
+                  type: string
+              additionalProperties: false
       responses:
         '201':
           description: Created
@@ -1908,6 +1943,24 @@ paths:
       - ADMIN
       - OPERATOR
       operationId: postCommunicationThreads
+      x-turab-correction:
+        id: CORRECTION-006
+        kind: REQUEST_BODY_NARROWING
+        decision: 'G7-7 (a), Slice 7 plan (docs/gate/SLICE_7_PLAN.md): direction approved in the review
+          of 4aed49b; the method (written in step 2, its text reviewed with step 2''s delivery) approved
+          in the review of 0f423d2. The TEXT of this entry is submitted for approval with that delivery,
+          and is not yet approved.'
+        approved: ''
+        frozen-required:
+        - channel
+        frozen-defaults: {}
+        frozen-body-ref: '#/components/schemas/CommunicationThreadCreate'
+        non-null:
+        - party_id
+        runtime-rule: party_id is required, not null, and names an existing party; otherwise the body
+          is refused (422 VALIDATION_FAILED for the schema, 422 LINKED_RECORD_NOT_FOUND for an unknown
+          party), writing nothing. Its consistency with the other links is G7-6's.
+        reference: docs/contract/CORRECTION-006-thread-party-required.md
   /communication/threads/{thread_id}/messages:
     post:
       summary: Archive/send message reference in official channel

@@ -36,6 +36,8 @@ OPPORTUNITY_KIND = "OPPORTUNITY"
 DIAGNOSTIC_KIND = "MATCH_DIAGNOSTIC_RUN"
 #: Slice 6 step 2: a task, staff-only by role; it has no customer loader.
 TASK_KIND = "TASK"
+#: Slice 7 step 2: a communication thread, the object of a staff message.
+THREAD_KIND = "COMMUNICATION_THREAD"
 
 
 @dataclass(frozen=True, slots=True)

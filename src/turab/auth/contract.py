@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import functools
+import json
 import pathlib
 from typing import Any
 
@@ -242,13 +243,45 @@ def _non_null_types(field_schema: dict[str, Any]) -> list[str]:
     return [t for t in types if t != "null"]
 
 
+_NULL_BRANCH = {"type": "null"}
+
+
+def _admits_null(branch: Any) -> bool:
+    """Whether one `anyOf` branch, other than the null branch itself, could
+    accept null. Only a branch whose `type` is a string or a list without
+    "null", and which has no combinator of its own, is known not to; any
+    other shape counts as admitting null, so a narrowing is never assumed."""
+    if not isinstance(branch, dict):
+        return True
+    if any(k in branch for k in ("anyOf", "oneOf", "allOf", "not", "$ref")):
+        return True
+    declared = branch.get("type")
+    if isinstance(declared, str):
+        return declared == "null"
+    if isinstance(declared, list) and declared:
+        return "null" in declared
+    return True
+
+
+def _null_branches(field_schema: dict[str, Any]) -> tuple[list[Any], list[Any]] | None:
+    """For a field written `anyOf: [..., {type: 'null'}]` (CORRECTION-006,
+    `CommunicationThreadCreate.party_id`): the null branches and the others,
+    or None when the field has no `anyOf`."""
+    branches = field_schema.get("anyOf")
+    if not isinstance(branches, list):
+        return None
+    nulls = [b for b in branches if b == _NULL_BRANCH]
+    return nulls, [b for b in branches if b != _NULL_BRANCH]
+
+
 def narrowed_body_schema(entry: dict[str, Any], contract: dict[str, Any]) -> dict[str, Any]:
     """The effective body schema of a VALIDATED narrowing, as a new object.
 
     The one implementation of the transformation: the generator writes it into
     the effective contract, and the runtime reads its enum (CORRECTION-005).
     - `require`: appended to `required`; each field's `default` removed;
-    - `non_null`: `null` removed from the field's type list;
+    - `non_null`: `null` removed from the field's type list, or the
+      `{type: 'null'}` branch removed from its `anyOf` (CORRECTION-006);
     - `enum`: the field's values.
     A body given by `$ref` is copied, so the frozen component is unchanged.
 
@@ -262,13 +295,26 @@ def narrowed_body_schema(entry: dict[str, Any], contract: dict[str, Any]) -> dic
               if o.get("operationId") == entry["operation_id"])
     frozen, ref = _frozen_body(entry["id"], op, contract)
     if ref is not None:
-        frozen = copy.deepcopy(frozen)
+        # A JSON round trip, not `deepcopy`: deepcopy keeps the objects the
+        # component shares within itself shared in the copy, which a YAML dump
+        # then writes as aliases, renumbering every later anchor of the file.
+        # Measured on CORRECTION-006 (three `anyOf` branches of one object).
+        frozen = json.loads(json.dumps(frozen))
     schema = dict(frozen)
     schema["required"] = list(frozen.get("required") or []) + list(entry["require"])
     properties = schema["properties"] = dict(frozen["properties"])
     for field in entry["require"]:
         properties[field] = {k: v for k, v in properties[field].items() if k != "default"}
     for field in entry.get("non_null") or ():
+        split = _null_branches(properties[field])
+        if split is not None:
+            # CORRECTION-006: the null branch removed. One branch left
+            # replaces the `anyOf`; the field's other keywords are kept.
+            others = split[1]
+            rest = {k: v for k, v in properties[field].items() if k != "anyOf"}
+            properties[field] = ({**rest, **copy.deepcopy(others[0])} if len(others) == 1
+                                 else {**rest, "anyOf": copy.deepcopy(others)})
+            continue
         remaining = _non_null_types(properties[field])
         properties[field] = {**properties[field],
                              "type": remaining[0] if len(remaining) == 1 else remaining}
@@ -286,6 +332,26 @@ def _check_non_null(cid: str, fields: Any, properties: dict[str, Any]) -> None:
     for field in fields:
         if field not in properties:
             raise ContractError(f"{cid}: {field!r} is not a property of the body")
+        split = _null_branches(properties[field])
+        if split is not None:
+            # CORRECTION-006: `anyOf` with exactly one `{type: 'null'}` branch,
+            # and other branches none of which admits null. Removing that
+            # branch then refuses null and nothing else. The field may carry
+            # no `type` beside its `anyOf`, which could admit null on its own.
+            nulls, others = split
+            if len(nulls) != 1:
+                raise ContractError(f"{cid}: {field!r} has {len(nulls)} null branches in "
+                                    "its anyOf; non_null needs exactly one")
+            if not others:
+                raise ContractError(f"{cid}: {field!r} admits null only; non_null would "
+                                    "refuse every value")
+            if any(_admits_null(b) for b in others):
+                raise ContractError(f"{cid}: another anyOf branch of {field!r} may admit "
+                                    "null; removing the null branch would not refuse it")
+            if "type" in properties[field]:
+                raise ContractError(f"{cid}: {field!r} declares a type beside its anyOf; "
+                                    "nothing is narrowed with certainty")
+            continue
         declared = properties[field].get("type")
         if not isinstance(declared, list) or "null" not in declared:
             raise ContractError(f"{cid}: {field!r} has no type list admitting null; "

@@ -115,3 +115,26 @@ request_body_narrowings:
       outcome_code is required, not null, and one of the four codes. A code
       changes no fact and raises no verification level.
     reference: docs/contract/CORRECTION-005-task-outcome-code.md
+  - id: CORRECTION-006
+    decision: >-
+      G7-7 (a), Slice 7 plan (docs/gate/SLICE_7_PLAN.md): direction approved in
+      the review of 4aed49b; the method (written in step 2, its text reviewed
+      with step 2's delivery) approved in the review of 0f423d2. The TEXT of
+      this entry is submitted for approval with that delivery, and is not yet
+      approved.
+    operation_id: postCommunicationThreads
+    require: [party_id]
+    non_null: [party_id]
+    frozen_defaults: {}
+    rationale: >-
+      A thread is "linked to the relevant PARTY" (API_CONTRACTS_v0.2.md
+      §4.12). A thread without a party can never carry a COMMUNICATION_ARCHIVE
+      consent: the frozen binding trigger refuses it (measured, M5,
+      SLICE7-PLAN-MEASUREMENTS.txt), so no content could ever be archived in it
+      (G7-9).
+    runtime_rule: >-
+      party_id is required, not null, and names an existing party; otherwise
+      the body is refused (422 VALIDATION_FAILED for the schema, 422
+      LINKED_RECORD_NOT_FOUND for an unknown party), writing nothing. Its
+      consistency with the other links is G7-6's.
+    reference: docs/contract/CORRECTION-006-thread-party-required.md

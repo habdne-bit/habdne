@@ -331,6 +331,26 @@ class CommandService:
             return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not an available task")
         return ALLOW_DECISION
 
+    def authorize_thread_exists(self, thread_id: uuid.UUID, operation_id: str) -> Decision:
+        """Slice 7 step 2: a staff message on a thread. An unknown id is
+        refused as `OBJECT_NOT_AUTHORIZED` and RECORDED: RFC-001 R5.3b, the
+        staff convention of `authorize_task_exists` (plan revision 8 corrects
+        G7-16 (vi)'s "404 for the path's thread" to this). Migration 0008
+        refuses a thread's DELETE, so the answer cannot go stale."""
+        from .access import THREAD_KIND
+
+        exists = self._read_session.execute(
+            text("SELECT 1 FROM turab.communication_threads WHERE thread_id = :t"),
+            {"t": thread_id}).scalar_one_or_none()
+        if exists is None:
+            self._auditor.denied(
+                subject=self._subject, operation_id=operation_id,
+                trace_id=self._trace_id,
+                reason_code=DenyReason.OBJECT_NOT_AUTHORIZED.value,
+                resource_kind=THREAD_KIND, resource_id=thread_id)
+            return deny(DenyReason.OBJECT_NOT_AUTHORIZED, "not an available thread")
+        return ALLOW_DECISION
+
     def authorize_staff_only(self, operation_id: str, reason: str) -> Decision:
         """For commands whose object does not exist yet.
 

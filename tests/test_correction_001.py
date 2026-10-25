@@ -477,8 +477,17 @@ def test_the_effective_contract_changes_nothing_else():
             for field in entry["require"]:
                 schema["properties"][field].pop("default", None)
             for field in entry.get("non_null") or ():
-                kept = [t for t in schema["properties"][field]["type"] if t != "null"]
-                schema["properties"][field]["type"] = kept[0] if len(kept) == 1 else kept
+                declared = schema["properties"][field]
+                if "anyOf" in declared:
+                    # CORRECTION-006 kind: the `{type: 'null'}` branch goes;
+                    # one branch left replaces the `anyOf`.
+                    kept = [b for b in declared["anyOf"] if b != {"type": "null"}]
+                    rest = {k: v for k, v in declared.items() if k != "anyOf"}
+                    schema["properties"][field] = (
+                        {**rest, **kept[0]} if len(kept) == 1 else {**rest, "anyOf": kept})
+                    continue
+                kept = [t for t in declared["type"] if t != "null"]
+                declared["type"] = kept[0] if len(kept) == 1 else kept
             for field, values in (entry.get("enum") or {}).items():
                 schema["properties"][field]["enum"] = list(values)
             assert other == expected, f"{op['operationId']} changed beyond its narrowing"
