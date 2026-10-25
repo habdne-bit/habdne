@@ -819,3 +819,161 @@ def test_no_refusal_carries_an_id_or_database_text(client, engine, ids, monkeypa
         for leaked in (ref, mref, SECRET, "turab.", "constraint", "violates", "SELECT",
                        "INSERT", "ux_", "_key", "_fkey"):
             assert leaked not in body, (leaked, body)
+
+
+# ======================================================================================
+# R-S7-2-01 (review of f7e5297): a binding being created and a message, in both orders
+# ======================================================================================
+#
+# `resource_consent_bindings.thread_id` has a foreign key to the thread
+# (`fk_consent_binding_thread`, schema_v0.2.3.sql). Its INSERT checks it with
+# FOR KEY SHARE on the thread row, which conflicts with the message's FOR UPDATE
+# (PostgreSQL 16, §13.3.2, Table 13.3). The delivery of f7e5297 said there was no
+# such key and that the message would not wait for a binding in flight; it was
+# wrong. Measured here through the two real HTTP commands.
+
+def _bind(client, consent_id, thread_id, account, key=None):
+    return client.post("/consents/bindings", headers=_headers(account, key), json={
+        "consent_id": str(consent_id), "purpose": "COMMUNICATION_ARCHIVE",
+        "resource_type": "COMMUNICATION_THREAD", "resource_id": str(thread_id)})
+
+
+def _grant_only(engine, party):
+    return _one(engine, """
+        INSERT INTO turab.consent_grants (party_id, scope, channel, consent_version, granted_at)
+        VALUES (:p, 'COMMUNICATION_ARCHIVE', 'WHATSAPP', 'v1', now() - interval '1 day')
+        RETURNING consent_id""", p=party)
+
+
+def _facts(engine, thread_id, message_key, binding_key):
+    return {
+        "messages": _one(engine, "SELECT count(*) FROM turab.communication_messages "
+                                 "WHERE thread_id = :t", t=thread_id),
+        "archived_bodies": _one(engine, "SELECT count(*) FROM turab.communication_messages "
+                                        "WHERE thread_id = :t AND body_text = :b",
+                                t=thread_id, b=SECRET),
+        "bindings": _one(engine, "SELECT count(*) FROM turab.resource_consent_bindings "
+                                 "WHERE thread_id = :t", t=thread_id),
+        "message_key": _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                                    "WHERE idempotency_key = :k", k=message_key),
+        "binding_key": _one(engine, "SELECT count(*) FROM turab.idempotency_records "
+                                    "WHERE idempotency_key = :k", k=binding_key),
+    }
+
+
+def test_r_s7_2_01_a_message_holding_the_thread_makes_a_new_binding_wait(
+        client, engine, ids, monkeypatch):
+    """Order A. The message holds the thread (FOR UPDATE), stopped before its
+    consent check. The binding command, in another transaction, WAITS on it
+    (witness) and does not answer while it is held. Released, the message
+    reads no binding (none is committed) and is refused 422, writing nothing
+    and consuming no key; its transaction ends, and the binding then commits."""
+    party = _party(engine)
+    thread = _new_thread(client, ids, engine, party=party)
+    grant = _grant_only(engine, party)
+    out: dict = {}
+    held, release = threading.Event(), threading.Event()
+    service = _service()
+    real = service._archive_consent_holds
+
+    def holding(session, **kw):
+        out["pid"] = session.execute(text("SELECT pg_backend_pid()")).scalar_one()
+        held.set()
+        assert release.wait(30), "the message was never released"
+        return real(session, **kw)
+    monkeypatch.setattr(service, "_archive_consent_holds", holding)
+    message_key, binding_key = str(uuid.uuid4()), str(uuid.uuid4())
+    sender = _in_thread(engine, out, "message", lambda c: _message(
+        c, thread, {"direction": "OUTBOUND", "occurred_at": AT, "body_text": SECRET},
+        ids.ACC_OPERATOR, message_key))
+    binder = None
+    try:
+        assert held.wait(30), "the message never reached its consent check"
+        binder = _in_thread(engine, out, "binding", lambda c: _bind(
+            c, grant, thread, ids.ACC_OPERATOR, binding_key))
+        waited = _wait_until_blocked(engine, out["pid"], binder)
+        bound_while_held = not binder.is_alive()
+    finally:
+        release.set()
+        sender.join(30)
+        if binder is not None:
+            binder.join(30)
+    observed = {
+        "binding_waited_on_the_message": waited,
+        "binding_answered_while_the_message_held_the_thread": bound_while_held,
+        "message": (out["message"].status_code, out["message"].json().get("code")),
+        "binding": out["binding"].status_code,
+        **_facts(engine, thread, message_key, binding_key),
+    }
+    assert observed == {
+        "binding_waited_on_the_message": True,
+        "binding_answered_while_the_message_held_the_thread": False,
+        "message": (422, "CONTENT_NOT_ARCHIVABLE"), "binding": 200,
+        "messages": 0, "archived_bodies": 0, "bindings": 1,
+        "message_key": 0, "binding_key": 1,
+    }, observed
+
+
+@pytest.mark.parametrize("ending", ["commit", "rollback"])
+def test_r_s7_2_01_a_binding_in_flight_makes_the_message_wait_then_is_seen(
+        client, engine, ids, monkeypatch, ending):
+    """Order B. The binding command has inserted its binding and is stopped
+    before its commit. The message, in another transaction, WAITS on it at the
+    thread's FOR UPDATE (witness) and does not answer while it is held.
+    - committed: the message's consent check, a later statement under READ
+      COMMITTED, sees the binding, and the content is archived (201);
+    - rolled back (the binding command refused after its insert): the message
+      sees no binding and is refused 422, writing nothing and consuming no key."""
+    from turab.services import consent as consent_service
+
+    party = _party(engine)
+    thread = _new_thread(client, ids, engine, party=party)
+    grant = _grant_only(engine, party)
+    out: dict = {}
+    held, release = threading.Event(), threading.Event()
+    real = consent_service.bind_consent
+
+    def holding(session, **kw):
+        row = real(session, **kw)
+        out["pid"] = session.execute(text("SELECT pg_backend_pid()")).scalar_one()
+        held.set()
+        assert release.wait(30), "the binding was never released"
+        if ending == "rollback":
+            raise consent_service.ConsentError("VALIDATION_FAILED", "refused after its insert")
+        return row
+    monkeypatch.setattr(consent_service, "bind_consent", holding)
+    message_key, binding_key = str(uuid.uuid4()), str(uuid.uuid4())
+    binder = _in_thread(engine, out, "binding", lambda c: _bind(
+        c, grant, thread, ids.ACC_OPERATOR, binding_key))
+    sender = None
+    try:
+        assert held.wait(30), "the binding was never inserted"
+        sender = _in_thread(engine, out, "message", lambda c: _message(
+            c, thread, {"direction": "OUTBOUND", "occurred_at": AT, "body_text": SECRET},
+            ids.ACC_OPERATOR, message_key))
+        waited = _wait_until_blocked(engine, out["pid"], sender)
+        answered_while_held = not sender.is_alive()
+    finally:
+        release.set()
+        binder.join(30)
+        if sender is not None:
+            sender.join(30)
+    observed = {
+        "message_waited_on_the_binding": waited,
+        "message_answered_while_the_binding_was_held": answered_while_held,
+        "binding": out["binding"].status_code,
+        "message": (out["message"].status_code, out["message"].json().get("code")),
+        **_facts(engine, thread, message_key, binding_key),
+    }
+    committed = ending == "commit"
+    assert observed == {
+        "message_waited_on_the_binding": True,
+        "message_answered_while_the_binding_was_held": False,
+        "binding": 200 if committed else 422,
+        "message": (201, None) if committed else (422, "CONTENT_NOT_ARCHIVABLE"),
+        "messages": 1 if committed else 0,
+        "archived_bodies": 1 if committed else 0,
+        "bindings": 1 if committed else 0,
+        "message_key": 1 if committed else 0,
+        "binding_key": 1 if committed else 0,
+    }, observed
