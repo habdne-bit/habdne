@@ -23,8 +23,14 @@
   message types are refused for now (G7-16 (v));
 - the relay (R-1).
 
-**Status:** delivered for review at `f7e5297`; **NOT closed** by the review of
-`f7e5297`, for R-S7-2-01. The answer is §9. **Step 3 has not started.**
+**Status: CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_PLAN.md`
+revision 11). Step 3 is authorized, with no real event before R-1.
+- **What the closure rests on:** R-S7-2-01 is closed by §9.
+- **What the reviewer did not do:** re-run the suite or PostgreSQL. The
+  results are ours.
+
+*History:* delivered for review at `f7e5297`; NOT closed by the review of
+`f7e5297`, for R-S7-2-01, which §9 answers.
 
 **Submitted for decision with this delivery:**
 1. **The text of CORRECTION-006** (§4). The review of `0f423d2` approves it
@@ -222,8 +228,9 @@ tests.
 `docs/contract/CORRECTION-006-thread-party-required.md` is the text submitted.
 - **The entry:** `CONTRACT_CORRECTIONS.yaml`, `request_body_narrowings`,
   with `require: [party_id]`, `non_null: [party_id]` and
-  `frozen_defaults: {}`. It carries no `approved` date, since the text is not
-  yet approved.
+  `frozen_defaults: {}`. *As delivered at `f7e5297`* it carried no
+  `approved` date, the text not yet approved. Since the review of `f7e5297`
+  approved it, the entry carries `approved: "2026-10-25"` (§9).
 - **The effective body:** the frozen component, copied into the operation,
   with `party_id` required and its `anyOf` null branch removed, which leaves
   `{type: string, format: uuid}`.

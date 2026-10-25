@@ -1,16 +1,18 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 10**
+## Implementation plan — **revision 11**
 
-**Status: step 1 is CLOSED at `7e8993d`, and step 2 is AUTHORIZED** (review
-of `7e8993d`, recorded below). Slice 7 is not closed.
-- **G7-16 is DECIDED** and CORRECTION-006's reading approved (review of
-  `0f423d2`, recorded below).
-- **Step 2 was delivered at `f7e5297` and NOT closed** (review of `f7e5297`,
-  recorded below): CORRECTION-006's text APPROVED; one gap, R-S7-2-01,
-  measured and answered in the delivery's §9. Step 3 does not start before
-  step 2 is closed.
-- **The only code of this slice is step 1's:** migration `0008`, its tests,
-  and its mutation script. No webhook, command or endpoint exists.
+**Status: step 2 is CLOSED at `6d8815d`, and step 3 is AUTHORIZED** (review
+of `6d8815d`, recorded below). Step 1 is CLOSED at `7e8993d`. Slice 7 is not
+closed.
+- **Step 3's authorization does not allow receiving real events** before R-1
+  is met.
+- **The slice's code so far:**
+  - step 1's migration `0008`, with its tests and mutation script;
+  - step 2's two staff commands, `postCommunicationThreads` and
+    `postCommunicationThreadsThreadIdMessages` (`services/communication.py`,
+    `api/routes/communication.py`), with CORRECTION-006, approved.
+
+  No webhook, recovery command or timeline exists yet.
 - **The review of step 1's progress report** (after `dc35b50`; recorded
   below) did not close step 1. It set what the delivery must show.
 - **What the review of `4aed49b` did** (recorded below):
@@ -68,7 +70,35 @@ a recommendation. A recommendation is not a decision.
 | 7 | `fe27c67` | the review of `7e8993d` recorded: step 1 CLOSED, step 2 authorized, D2's reading of R14.6 accepted for the six keys only, the Slice 5 race test's remedy (b) applied; G7-16 added: six points of step 2 put as decisions, and CORRECTION-006's reading |
 | 8 | `921a1d7` | the review of `0f423d2` recorded: G7-16 decided as recommended; CORRECTION-006's reading approved; one sentence of G7-16 (vi) corrected to RFC-001 R5.3b |
 | 9 | `f7e5297` | step 2 delivered (`SLICE_7_STEP2_DELIVERY.md`); CORRECTION-006's text submitted; §8 updated; no decision changed |
-| 10 | this revision | the review of `f7e5297` recorded: CORRECTION-006 approved; R5.3b and INTERNAL_MESSAGE_REF_NOT_ACCEPTED accepted; readings 1–5 accepted; R-S7-2-01 measured, reading 6 corrected |
+| 10 | `f21a113` | the review of `f7e5297` recorded: CORRECTION-006 approved; R5.3b and INTERNAL_MESSAGE_REF_NOT_ACCEPTED accepted; readings 1–5 accepted; R-S7-2-01 measured, reading 6 corrected |
+| 11 | this revision | the review of `6d8815d` recorded: step 2 CLOSED, step 3 authorized (no real event before R-1); the two stale statements corrected |
+
+**The review of `6d8815d`. Step 2 is CLOSED at `6d8815d`; step 3 is
+AUTHORIZED, in the approved plan. Slice 7 stays open.**
+- **R-S7-2-01 is closed.** What it rests on:
+  - the three tests use the two real HTTP commands, witness the wait with
+    `pg_blocking_pids`, and check the responses, the rows and both
+    idempotency keys, in both orders (the message first; the binding first,
+    committed or rolled back);
+  - the record keeps 15/15 cases in five runs;
+  - the reviewer compared the code before and after the change: past the
+    docstring of `communication.py`, it is identical. The account of the
+    behaviour and the tests changed; the service's logic did not.
+- **Read by the reviewer:** the run's binding record and the two mutation
+  records (2849 tests passing; 51 mutations failing in each run, the same
+  mutations and failing tests in both).
+- **What the reviewer did not do:** re-run the suite or PostgreSQL. The
+  results are the implementing team's.
+- **CORRECTION-006's approval stands,** as decided in the previous review.
+- **Two stale statements, corrected with this revision.** The correction is
+  documentary, and does not suspend the closure:
+  - §4 of the step 2 delivery said CORRECTION-006 carried no approval date;
+  - this plan's introduction said the slice's code was step 1's only.
+- **Standing:**
+  - step 3's authorization does not allow receiving real events before R-1
+    is met;
+  - K06 is UNPROVEN, an independent condition before the release gate;
+  - the approved scope is SALE only.
 
 **The review of `f7e5297`. Step 2 is NOT closed, and step 3 is not
 authorized, for one gap: R-S7-2-01.**
@@ -1682,8 +1712,8 @@ identical results, and are ours.
 |---|---|---|
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
-| 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **authorized** (review of `7e8993d`); **delivered for review** (`SLICE_7_STEP2_DELIVERY.md`) |
-| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007 |
+| 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
+| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1 |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 
