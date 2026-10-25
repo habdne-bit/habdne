@@ -1,11 +1,13 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 11**
+## Implementation plan — **revision 12**
 
 **Status: step 2 is CLOSED at `6d8815d`, and step 3 is AUTHORIZED** (review
 of `6d8815d`, recorded below). Step 1 is CLOSED at `7e8993d`. Slice 7 is not
 closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
+- **Step 3's preparation found seven points the plan does not decide**
+  (G7-17, revision 12). No step 3 code is written before they are decided.
 - **The slice's code so far:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
@@ -71,7 +73,8 @@ a recommendation. A recommendation is not a decision.
 | 8 | `921a1d7` | the review of `0f423d2` recorded: G7-16 decided as recommended; CORRECTION-006's reading approved; one sentence of G7-16 (vi) corrected to RFC-001 R5.3b |
 | 9 | `f7e5297` | step 2 delivered (`SLICE_7_STEP2_DELIVERY.md`); CORRECTION-006's text submitted; §8 updated; no decision changed |
 | 10 | `f21a113` | the review of `f7e5297` recorded: CORRECTION-006 approved; R5.3b and INTERNAL_MESSAGE_REF_NOT_ACCEPTED accepted; readings 1–5 accepted; R-S7-2-01 measured, reading 6 corrected |
-| 11 | this revision | the review of `6d8815d` recorded: step 2 CLOSED, step 3 authorized (no real event before R-1); the two stale statements corrected |
+| 11 | `af61400` | the review of `6d8815d` recorded: step 2 CLOSED, step 3 authorized (no real event before R-1); the two stale statements corrected |
+| 12 | this revision | G7-17 added: seven points of step 3 put as decisions, each with a recommendation; no other change |
 
 **The review of `6d8815d`. Step 2 is CLOSED at `6d8815d`; step 3 is
 AUTHORIZED, in the approved plan. Slice 7 stays open.**
@@ -1348,6 +1351,123 @@ operator sent.
 **Blocks:** step 2's message command (i–vi); step 2's thread command, for
 CORRECTION-006's reading.
 
+### G7-17 · What step 3 needs and the plan does not decide (revision 12; found preparing step 3)
+
+**Why this exists.** Preparing step 3 against G7-2, G7-3, G7-5, G7-9,
+G7-15, §5.2, RFC-001 R10.4 and R10.5, and the webhook's frozen contract
+(responses 200 "Accepted" with no body schema, 400, 401; the envelope
+`provider_event_id`, `event_type`, `payload`, all open) found seven points on
+which neither the sources nor G7-1 to G7-16 fix the behaviour. Each is put as
+a decision, with a recommendation; a recommendation is not a decision. **No
+step 3 code is written before they are decided.** The decided parts are not
+reopened: T1 and T2, the savepoint and the FAILED record, the 55P03 answer,
+the replay table, the recovery command, the content-free payload, the 64 KiB
+limit, and CORRECTION-007's adoption.
+
+**(i) The interaction row in T2.** G7-2 (iv) step 3 lists "the interaction"
+among T2's writes. G7-8, which decides that each message writes one
+`interactions` row, is step 4's ("Blocks: step 4"), as are its allow-list
+and its key-set test.
+- **(a) Recommended:** step 3 writes no `interactions` row. Step 4 adds the
+  row for every message, staff and webhook alike, with G7-8's tests. T2's
+  writes in step 3 are then the message, the thread's `last_message_at`, and
+  the audit rows.
+- **(b)** Step 3 writes the webhook's interaction now, ahead of G7-8's
+  allow-list and tests, and step 4 adds the staff ones.
+
+**(ii) The relay signature's form, and a missing secret.** G7-2 (ii) names
+the header `X-Turab-Relay-Signature`, "HMAC-SHA256 of the envelope's raw
+bytes", without its encoding; (i) says "a missing secret fails closed",
+without the answer.
+- **(a) Recommended:**
+  - **the value is `sha256=<64 lowercase hex digits>`.** This is the form of
+    Meta's `X-Hub-Signature-256`, which the relay already reads. It is
+    compared in constant time with the HMAC of the raw body under the secret
+    of the environment variable `TURAB_RELAY_SIGNING_SECRET`. Any other form
+    is 401;
+  - **a missing or empty secret** is 401 for every request, writing
+    nothing, with the configuration fault logged under the trace id. The
+    500 of CORRECTION-007 means "stored, deliver again", which would be
+    false here.
+- **(b)** Bare hex, or base64.
+- **(c)** A missing secret answered 500.
+
+**(iii) The order of the checks, and a valid signature on an invalid
+body.**
+- **(a) Recommended:** in this order, each writing nothing:
+  1. the size: more than 64 KiB is 400, on `Content-Length` and while
+     reading (G7-15);
+  2. the signature: 401 ((ii));
+  3. the JSON and the envelope (`provider_event_id` a non-empty string,
+     `event_type` a string, `payload` an object): 400;
+  4. **for `event_type` `message` or `status`, the keys G7-3 gives it**
+     (`message`: `external_message_ref`, `thread_ref`, `occurred_at`,
+     `message_type`; `status`: `external_message_ref`, `status`,
+     `occurred_at`), each a string, `occurred_at` an RFC 3339 instant, and
+     `status` one of the six. A missing or mistyped key is 400, writing
+     nothing. The relay, which formed it, then sees its fault, where an
+     IGNORED event would hide it.
+
+  Every refusal is logged without the body. **An unknown `event_type`** is
+  stored by T1 and IGNORED (G7-3).
+- **(b)** The event stored by T1 and IGNORED (`PAYLOAD_NOT_VALID`) instead of 400.
+
+**(iv) The fixed codes of IGNORED and FAILED.** G7-3 and G7-5 decide when an
+event is IGNORED, and name one code (`STATUS_TRANSITION_NOT_ACCEPTED`); G7-2
+(iv) decides that a FAILED event carries "a fixed code".
+- **(a) Recommended:** written to `webhook_events.error_text`, the column
+  0008 part C leaves writable:
+  - **IGNORED:** `UNKNOWN_EVENT_TYPE`; `UNKNOWN_THREAD` (no WHATSAPP thread
+    holds `thread_ref`); `UNKNOWN_MESSAGE` (a status for no recorded
+    message); `MESSAGE_REF_TAKEN` (the message's reference is already
+    recorded: G7-4's 23505); `STATUS_TRANSITION_NOT_ACCEPTED` (G7-5);
+  - **FAILED:** `PROCESSING_FAILED`.
+
+  None carries the exception's text.
+
+**(v) The 200's body.**
+- **(a) Recommended:** no body. The contract's 200 is "Accepted" with no
+  content, and the relay needs only the status. The same 200 answers a new
+  event, a replay, an event in flight (55P03) and an IGNORED one: none of
+  them asks the relay to act.
+- **(b)** A small JSON body naming the outcome. That would tell an
+  unauthenticated caller what TURAB holds.
+
+**(vi) CORRECTION-007's mechanism.**
+- **The constraint:** the corrections overlay accepts only narrowings
+  (`CONTRACT_CORRECTIONS.yaml`, its header: "A correction may only
+  NARROW"), and §5.2 calls CORRECTION-007 "an addition to the frozen
+  contract's responses".
+- **(a) Recommended:** a new section, `response_additions`, with its own
+  loader rules, each refused otherwise:
+  - one entry per operation;
+  - an operation of the frozen contract;
+  - a status code the frozen operation does not declare;
+  - a 5xx;
+  - `application/problem+json` with `$ref: Problem`;
+  - a fixed `code`;
+  - the frozen responses pinned (`frozen_statuses`), so a changed package
+    makes the entry stale.
+
+  The effective contract gains the response and an `x-turab-correction`
+  annotation of kind `RESPONSE_ADDITION`. The overlay's header is amended
+  to say that this one kind adds an error response and nothing else. Its
+  text is submitted with step 3's delivery, as CORRECTION-006's was.
+- **(b)** The 500 enforced in code, outside the effective contract: contrary
+  to §5.2.
+
+**(vii) The webhook in the authorization matrix and the audit log.**
+- **(a) Recommended:**
+  - every answer of the route is recorded by the access auditor, with the
+    operation and the outcome (accepted, refused 400 or 401, failed), and
+    no body;
+  - the message and the thread's move are audited by `audit_rows`, the
+    actor NULL (no account) and the context `postWebhooksWhatsapp`;
+  - `webhook_events` is its own record and is not audited twice (G7-11).
+- **(b)** The route unaudited beyond `webhook_events`.
+
+**Blocks:** step 3.
+
 ### Open questions (not decisions)
 - **OQ7-1 · Retention:** of archived content, and its fate on revocation
   (J03, F7-6). The sources leave it to "pilot/legal review".
@@ -1713,7 +1833,7 @@ identical results, and are ours.
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
-| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1 |
+| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17** to decide |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 

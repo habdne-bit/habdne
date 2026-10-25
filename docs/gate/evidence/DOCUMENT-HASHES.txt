@@ -967,3 +967,6 @@ SLICE_7_PLAN.md changed revision: 9 -> 10 (review of f7e5297).
 docs/gate/SLICE_7_STEP2_DELIVERY.md                            add   31554d26f00717cf3a3e225c4e4e0c35ae262eb7898426a6c49c953587dc257e
 docs/gate/SLICE_7_PLAN.md                                      rev11 bbafa799f7d0a62cc052c31c7dcc41e46609ff8f71663b1b902cf3d4d7cb9b99
 SLICE_7_PLAN.md changed revision: 10 -> 11 (review of 6d8815d).
+--- Slice 7 plan revision 12: G7-17, seven points of step 3 put as decisions; no step 3 code ---
+docs/gate/SLICE_7_PLAN.md                                      rev12 28febfe9ce01c5c5164064e652ce9f39e165d3998152d27f98d9e42a9fe496e3
+SLICE_7_PLAN.md changed revision: 11 -> 12 (G7-17 added).
