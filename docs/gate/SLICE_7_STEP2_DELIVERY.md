@@ -411,5 +411,23 @@ Every row ran on a clean tree, with source fingerprint `9dd247c3…4091`.
 
 ## 10. The evidence round on the new tree
 
-[ADDENDUM EVIDENCE]
+Every row ran on a clean tree with source fingerprint `e704acea…b4b6`, the
+tree of `f21a113`. The commits after it are evidence and documents only.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Suite (`record_test_run.py`) | **2849 passed, 0 failed, 0 errors, 0 skipped**: the 2846 of §7, plus R-S7-2-01's three cases | `d8c136f` (run at `c4fc957`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+| PostgreSQL gate | PASS: ALL DATABASE-LEVEL CONTRACT TESTS PASSED; the effective contract current; the same 67 operations | `c4fc957` (run at `4e19059`) | `evidence/gate-run.txt` |
+| Authorization matrix | 199 rules (one for R-S7-2-01); suite 2849/2849 | `4e19059` (run at `1a705d9`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| Step 2 mutations | 51/51 fail, twice, identical (they differ only in one printed duration) | `1a705d9` (run at `f21a113`) | `evidence/SLICE7-STEP2-MUTATIONS.txt`, `-REPEAT.txt` |
+| R-S7-2-01 | 15/15 cases, five runs | `e9b566d` (run at `c56fe4f`) | `evidence/SLICE7-STEP2-R-S7-2-01.txt` |
+
+**Against the runs at `35958e7`** (kept as `-AT-35958e7`), every mutation
+fails the same tests, except two, which now fail more:
+- **M17** (the thread read without a lock), 2 → 5: the three R-S7-2-01
+  cases fail without the thread's FOR UPDATE, because nothing then orders
+  the binding and the message;
+- **M11** (content stored without the consent), 11 → 13: the binding
+  rolled back, and the message that holds the thread, archive what they
+  must not.
 
