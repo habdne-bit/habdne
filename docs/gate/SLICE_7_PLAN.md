@@ -1,13 +1,14 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 12**
+## Implementation plan — **revision 13**
 
 **Status: step 2 is CLOSED at `6d8815d`, and step 3 is AUTHORIZED** (review
 of `6d8815d`, recorded below). Step 1 is CLOSED at `7e8993d`. Slice 7 is not
 closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
-- **Step 3's preparation found seven points the plan does not decide**
-  (G7-17, revision 12). No step 3 code is written before they are decided.
+- **G7-17 is DECIDED** (review of `bf1fe3d`, recorded below), with a 503
+  `WEBHOOK_NOT_READY` under a new CORRECTION-008. Step 3 is being
+  implemented.
 - **The slice's code so far:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
@@ -74,7 +75,32 @@ a recommendation. A recommendation is not a decision.
 | 9 | `f7e5297` | step 2 delivered (`SLICE_7_STEP2_DELIVERY.md`); CORRECTION-006's text submitted; §8 updated; no decision changed |
 | 10 | `f21a113` | the review of `f7e5297` recorded: CORRECTION-006 approved; R5.3b and INTERNAL_MESSAGE_REF_NOT_ACCEPTED accepted; readings 1–5 accepted; R-S7-2-01 measured, reading 6 corrected |
 | 11 | `af61400` | the review of `6d8815d` recorded: step 2 CLOSED, step 3 authorized (no real event before R-1); the two stale statements corrected |
-| 12 | this revision | G7-17 added: seven points of step 3 put as decisions, each with a recommendation; no other change |
+| 12 | `bf1fe3d` | G7-17 added: seven points of step 3 put as decisions, each with a recommendation; no other change |
+| 13 | this revision | the review of `bf1fe3d` recorded: G7-17 decided, a 503 `WEBHOOK_NOT_READY` (CORRECTION-008) for a missing secret, `response_additions` unique per (operation, status), R-1 duty 5 extended to the 503 |
+
+**The review of `bf1fe3d`. G7-17 is DECIDED; step 3 may be implemented.** The
+recording of step 2's closure is correct.
+- **What the reviewer did:** read the texts and the code; re-ran no test.
+- **The decisions:**
+
+| Point | Decision |
+|---|---|
+| (i) the interaction | **(a):** step 3 writes none. **In step 4:** one row is created for every message that exists before it, with no duplicate on a re-run of the backfill; then the row is written with every new message, in the message's own transaction. **State explicitly** that the atomicity with the message's creation does not apply retroactively to the old rows. |
+| (ii) the signature and the secret | `sha256=<64 lowercase hex>`, an HMAC over the raw body bytes, the secret from `TURAB_RELAY_SIGNING_SECRET` encoded UTF-8, compared in constant time. A missing or wrong signature is **401**. **A missing or empty secret is not an authentication fault of the relay:** its answer is **503**, before any write, with the fixed code `WEBHOOK_NOT_READY`, and the fault logged without the request's body. |
+| (iii) the order of the checks | **(a):** the size, then the signature, then the envelope, then the keys of a known type, all before T1. The time must carry a zone. An unknown type is stored, then IGNORED, as the plan says. |
+| (iv) the codes | **(a):** the proposed IGNORED list, and `PROCESSING_FAILED` for FAILED, with no exception text. |
+| (v) the 200 | an empty body, for every case named. |
+| (vi) the contract correction | the `response_additions` mechanism with its proposed controls, **its uniqueness per pair (operation, HTTP status)** rather than one entry per operation. **CORRECTION-007** stays the 500, which means the event is recorded and its processing failed. **CORRECTION-008** is added, the 503, which asks for a redelivery without claiming the event is recorded. **R-1 must test the redelivery on 500, on 503 and on a timeout.** The two corrections' texts, and the resulting contract, are delivered with step 3. |
+| (vii) the audit | **(a).** The access auditor sends a record to the log stream, not to `audit_log`, so it can record a 400/401/503 refusal without breaking "nothing written to the database". **One record per answer**, with no body, signature or secret. The message's insert and the thread's actual move are audited by `audit_rows` with a NULL actor, without copying the content or auditing the webhook event twice. |
+
+- **Two tests asked for, pinning the two limits this decision changes:**
+  - a 503 when the secret is absent, with no event row;
+  - the one-time backfill of the earlier messages' interactions, in step 4.
+- **Standing:**
+  - **R-1 is a condition before any real event is received;**
+  - K06 is UNPROVEN;
+  - the scope is SALE;
+  - this is not a release authorization.
 
 **The review of `6d8815d`. Step 2 is CLOSED at `6d8815d`; step 3 is
 AUTHORIZED, in the approved plan. Slice 7 stays open.**
@@ -733,8 +759,9 @@ here:**
        signature dropped before any transformation;
     3. the transformation to envelopes, one per message and per status;
     4. its own signature;
-    5. the **redelivery** of an event TURAB did not complete, on its 500 or
-       on a timeout;
+    5. the **redelivery** of an event TURAB did not complete, **on its 500,
+       on its 503 and on a timeout** (review of `bf1fe3d`: CORRECTION-008's
+       503 added);
     6. **(Revision 4, review of `4aed49b`.) The scope of `thread_ref`.**
        - The relay forms every `thread_ref` as `<business number id>:<customer
          id>`: the identifier of the WhatsApp business number the
@@ -1351,7 +1378,7 @@ operator sent.
 **Blocks:** step 2's message command (i–vi); step 2's thread command, for
 CORRECTION-006's reading.
 
-### G7-17 · What step 3 needs and the plan does not decide (revision 12; found preparing step 3)
+### G7-17 · What step 3 needs and the plan does not decide (revision 12; found preparing step 3; DECIDED in the review of `bf1fe3d`, with (ii) and (vi) amended: see that review's table)
 
 **Why this exists.** Preparing step 3 against G7-2, G7-3, G7-5, G7-9,
 G7-15, §5.2, RFC-001 R10.4 and R10.5, and the webhook's frozen contract
@@ -1833,7 +1860,7 @@ identical results, and are ours.
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
-| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17** to decide |
+| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 
