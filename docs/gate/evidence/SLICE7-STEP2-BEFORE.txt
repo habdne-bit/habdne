@@ -1,0 +1,143 @@
+TURAB — Slice 7 step 2: its tests, run BEFORE its code exists
+=============================================================
+Recorded : 2026-10-25 10:44:42 UTC
+Base     : commit 921a1d7 (plan revision 8; no step 2 code: no route, no service,
+           no CORRECTION-006), in an ISOLATED worktree, into which only the two
+           new test files were copied.
+Tests    : tests/test_slice7_step2.py
+             sha256 559dafbf34e8a9bea97221e8cc88881df149be59d78eb90014af1f5d2592cfd1
+           tests/test_correction_006.py
+             sha256 4f1251cfb97a7a2377d64508c3928ee45361a272ae68f0ea23245b15a733e995
+Database : turab_s72_before, built by the suite's conftest (head 0008), dropped after.
+Server   : PostgreSQL 16.15
+Result   : 99 failed, 2 passed in 20.33s
+
+What this measures: the base has neither command nor the correction, so
+every test of what step 2 adds fails. These are our runs.
+
+Reading of the failures:
+  72 tests of test_slice7_step2.py: the route does not exist; the first
+     call answers 404 NOT_FOUND (the test asserts its status and code, or a
+     201).
+  The tests of test_correction_006.py on the correction: there is no
+     narrowing of the operation (effective_request_body returns None; the
+     entry is absent; the effective contract has no x-turab-correction and
+     still the frozen $ref), and the loader's anyOf extension does not exist
+     (the eight refusals: "DID NOT RAISE ContractError"; and the transformation).
+  The twelve route-vs-schema bodies: no narrowed schema to judge by.
+
+Passed, as they must at the base too: the frozen component is unchanged and
+used by this operation alone; the roles are ADMIN and OPERATOR. Both are
+facts of the frozen package.
+
+Three measurements were made; this is the last.
+  10:43:08 UTC  test_slice7_step2.py imported the service at module level:
+                collection failed (1 error), which measures nothing per test.
+                The import was made lazy (commit after 732d81b).
+  10:43:57 UTC  98 failed, 3 passed: test_the_effective_body_uses_only_the_
+                keywords_the_judge_below_reads passed VACUOUSLY (no schema,
+                no keyword). It now requires the narrowed schema.
+  10:44:42 UTC  this record.
+
+Per test:
+PASSED test_correction_006.py::test_the_frozen_component_is_unchanged_and_used_by_this_operation_alone
+PASSED test_correction_006.py::test_the_roles_are_untouched
+FAILED test_slice7_step2.py::test_admin_and_operator_create_a_thread_and_a_message[ACC_ADMIN]
+FAILED test_slice7_step2.py::test_admin_and_operator_create_a_thread_and_a_message[ACC_OPERATOR]
+FAILED test_slice7_step2.py::test_a_reviewer_and_a_customer_are_refused_both_writing_nothing[ACC_REVIEWER]
+FAILED test_slice7_step2.py::test_a_reviewer_and_a_customer_are_refused_both_writing_nothing[ACC_AMINA]
+FAILED test_slice7_step2.py::test_an_anonymous_caller_is_refused_both
+FAILED test_slice7_step2.py::test_an_unknown_thread_is_403_and_the_denial_is_recorded
+FAILED test_slice7_step2.py::test_correction_006_a_thread_without_a_party_is_refused[absent]
+FAILED test_slice7_step2.py::test_correction_006_a_thread_without_a_party_is_refused[null]
+FAILED test_slice7_step2.py::test_rule_4_an_id_naming_no_row_is_refused_by_field[party_id]
+FAILED test_slice7_step2.py::test_rule_4_an_id_naming_no_row_is_refused_by_field[request_id]
+FAILED test_slice7_step2.py::test_rule_4_an_id_naming_no_row_is_refused_by_field[property_id]
+FAILED test_slice7_step2.py::test_rule_4_an_id_naming_no_row_is_refused_by_field[opportunity_id]
+FAILED test_slice7_step2.py::test_rule_0_a_named_opportunity_must_be_a_sale
+FAILED test_slice7_step2.py::test_rule_1_the_opportunitys_buyer_and_seller_are_accepted_with_its_own_links
+FAILED test_slice7_step2.py::test_rule_1_a_link_the_opportunity_does_not_have_is_refused[party-party_id-NOT_A_PARTY_OF_THE_OPPORTUNITY]
+FAILED test_slice7_step2.py::test_rule_1_a_link_the_opportunity_does_not_have_is_refused[request-request_id-NOT_THE_OPPORTUNITYS_REQUEST]
+FAILED test_slice7_step2.py::test_rule_1_a_link_the_opportunity_does_not_have_is_refused[property-property_id-NOT_THE_OPPORTUNITYS_PROPERTY]
+FAILED test_slice7_step2.py::test_rule_2_a_request_without_an_opportunity_needs_its_own_party
+FAILED test_slice7_step2.py::test_rule_3_a_property_without_an_opportunity_needs_one_of_its_offers_party
+FAILED test_slice7_step2.py::test_the_links_are_frozen_after_creation
+FAILED test_slice7_step2.py::test_g7_3_an_unscoped_whatsapp_reference_is_refused[abc]
+FAILED test_slice7_step2.py::test_g7_3_an_unscoped_whatsapp_reference_is_refused[:x]
+FAILED test_slice7_step2.py::test_g7_3_an_unscoped_whatsapp_reference_is_refused[x:]
+FAILED test_slice7_step2.py::test_g7_3_an_unscoped_whatsapp_reference_is_refused[a:b:c]
+FAILED test_slice7_step2.py::test_g7_3_an_unscoped_whatsapp_reference_is_refused[]
+FAILED test_slice7_step2.py::test_g7_3_a_taken_whatsapp_reference_is_409_and_other_channels_are_free
+FAILED test_slice7_step2.py::test_g7_3_a_reference_taken_after_the_check_is_the_same_409
+FAILED test_slice7_step2.py::test_a_thread_is_audited_and_a_replay_writes_nothing
+FAILED test_slice7_step2.py::test_i_inbound_is_refused - AssertionError...
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[QUEUED]
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[SENT]
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[DELIVERED]
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[READ]
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[FAILED]
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[UNKNOWN]
+FAILED test_slice7_step2.py::test_ii_an_outbound_message_keeps_the_status_it_states[None]
+FAILED test_slice7_step2.py::test_ii_an_internal_message_states_no_status_but_unknown[QUEUED]
+FAILED test_slice7_step2.py::test_ii_an_internal_message_states_no_status_but_unknown[SENT]
+FAILED test_slice7_step2.py::test_ii_an_internal_message_states_no_status_but_unknown[DELIVERED]
+FAILED test_slice7_step2.py::test_ii_an_internal_message_states_no_status_but_unknown[READ]
+FAILED test_slice7_step2.py::test_ii_an_internal_message_states_no_status_but_unknown[FAILED]
+FAILED test_slice7_step2.py::test_iii_metadata_is_absent_or_empty_and_the_service_writes_its_own
+FAILED test_slice7_step2.py::test_v_the_types_g7_10_gives_a_meaning_are_reserved[PHONE_DECISION]
+FAILED test_slice7_step2.py::test_v_the_types_g7_10_gives_a_meaning_are_reserved[CONFIRMATION_LINK]
+FAILED test_slice7_step2.py::test_v_any_other_type_is_free_text_and_text_is_the_default
+FAILED test_slice7_step2.py::test_g7_4_an_internal_message_carries_no_reference
+FAILED test_slice7_step2.py::test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[PHONE]
+FAILED test_slice7_step2.py::test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[SMS]
+FAILED test_slice7_step2.py::test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[EMAIL]
+FAILED test_slice7_step2.py::test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[WEB]
+FAILED test_slice7_step2.py::test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[IN_PERSON]
+FAILED test_slice7_step2.py::test_g7_4_a_reference_outside_a_whatsapp_thread_is_refused[OTHER]
+FAILED test_slice7_step2.py::test_g7_4_in_a_whatsapp_thread_the_service_sets_the_provider
+FAILED test_slice7_step2.py::test_g7_4_a_recorded_reference_is_409_in_any_thread
+FAILED test_slice7_step2.py::test_g7_4_a_reference_recorded_after_the_check_is_the_same_409
+FAILED test_slice7_step2.py::test_g7_9_content_without_the_archive_consent_is_refused[content0]
+FAILED test_slice7_step2.py::test_g7_9_content_without_the_archive_consent_is_refused[content1]
+FAILED test_slice7_step2.py::test_g7_9_content_without_the_archive_consent_is_refused[content2]
+FAILED test_slice7_step2.py::test_g7_9_with_the_archive_consent_content_is_archived
+FAILED test_slice7_step2.py::test_g7_9_a_consent_that_does_not_hold_archives_nothing[revoked]
+FAILED test_slice7_step2.py::test_g7_9_a_consent_that_does_not_hold_archives_nothing[bound_to_another_thread]
+FAILED test_slice7_step2.py::test_g7_9_a_consent_that_does_not_hold_archives_nothing[bound_for_another_purpose]
+FAILED test_slice7_step2.py::test_g7_9_a_consent_that_does_not_hold_archives_nothing[binding_revoked]
+FAILED test_slice7_step2.py::test_g7_9_an_internal_note_is_held_to_the_same_rule
+FAILED test_slice7_step2.py::test_g7_11_the_content_never_reaches_the_audit_log_or_a_log
+FAILED test_slice7_step2.py::test_g7_9_a_revocation_in_flight_is_waited_for_then_seen[commit]
+FAILED test_slice7_step2.py::test_g7_9_a_revocation_in_flight_is_waited_for_then_seen[rollback]
+FAILED test_slice7_step2.py::test_iv_last_message_at_moves_to_the_later_time_only
+FAILED test_slice7_step2.py::test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[later_holds]
+FAILED test_slice7_step2.py::test_iv_two_concurrent_messages_serialize_on_the_thread_and_keep_the_later[earlier_holds]
+FAILED test_slice7_step2.py::test_a_message_and_its_thread_move_are_audited_and_a_replay_writes_nothing
+FAILED test_slice7_step2.py::test_no_refusal_carries_an_id_or_database_text
+FAILED test_correction_006.py::test_the_entry_is_exactly_the_narrowing_of_party_id
+FAILED test_correction_006.py::test_the_effective_body_is_the_frozen_component_with_party_id_required_and_not_null
+FAILED test_correction_006.py::test_the_annotation_names_the_correction_and_says_it_is_not_yet_approved
+FAILED test_correction_006.py::test_the_effective_body_uses_only_the_keywords_the_judge_below_reads
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[party absent]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[party null]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[party not a uuid]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[party a number]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[party given]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[channel unknown]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[channel absent]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[an extra key]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[reference null]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[reference given]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[request null]
+FAILED test_correction_006.py::test_the_route_refuses_exactly_what_the_effective_schema_refuses[opportunity not a uuid]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[two null branches-field0-2 null branches]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[no null branch-field1-0 null branches]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[null only-field2-admits null only]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[another branch whose type list admits null-field3-may admit null]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[another branch with no type-field4-may admit null]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[another branch by reference-field5-may admit null]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[another branch with its own combinator-field6-may admit null]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[another branch by reference, with a type-field7-may admit null]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[another branch with its own combinator, with a type-field8-may admit null]
+FAILED test_correction_006.py::test_the_anyof_extension_refuses_what_would_not_narrow[a type beside the anyOf-field9-declares a type beside]
+FAILED test_correction_006.py::test_the_anyof_extension_keeps_the_fields_other_keywords_and_several_branches
