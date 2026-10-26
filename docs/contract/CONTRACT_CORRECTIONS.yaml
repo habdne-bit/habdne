@@ -158,44 +158,51 @@ response_additions:
     decision: >-
       Slice 7 plan §5.2 (docs/gate/SLICE_7_PLAN.md): adopted in the review of
       4aed49b; its mechanism (response_additions) decided in the review of
-      bf1fe3d. The TEXT of this entry is submitted for approval with step 3's
-      delivery, and is not yet approved.
+      bf1fe3d; its meaning narrowed to "the result of the processing is not
+      confirmed" in the review of 3dfb717. The TEXT of this entry is
+      submitted for approval with step 3's delivery, and is not yet approved.
     operation_id: postWebhooksWhatsapp
     status: "500"
     code: WEBHOOK_PROCESSING_FAILED
     description: >-
-      The event is stored (its provider_event_id is recorded) and was not
-      processed. Deliver the same provider_event_id again; a later delivery
-      completes it once.
+      The event is stored (its provider_event_id is recorded); the result of
+      its processing could not be confirmed. Deliver it again with the same
+      provider_event_id; the event's record decides the redelivery, which
+      completes it once or replays it.
     frozen_statuses: ["200", "400", "401"]
     rationale: >-
       The relay must know that a stored event was not processed, to redeliver
       it with its content (G7-2 (v)). An answer of 200 would leave a FAILED
       event recoverable only without its content.
     runtime_rule: >-
-      Answered when T2 ends FAILED (its processing raised, the failure
-      recorded with PROCESSING_FAILED), and when T2 is lost whole after T1
-      committed (the event keeps RECEIVED or FAILED). Never before T1 commits.
+      Answered after T1 committed, in two cases: T2 ended FAILED (its
+      processing raised; the failure recorded with PROCESSING_FAILED), or T2
+      raised (PROCESSING_LOST), whether or not its COMMIT took effect. Never
+      when T1 raised: that is CORRECTION-008.
     reference: docs/contract/CORRECTION-007-webhook-processing-failed.md
   - id: CORRECTION-008
     decision: >-
-      Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d. The
-      TEXT of this entry is submitted for approval with step 3's delivery, and
-      is not yet approved.
+      Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d;
+      widened in the review of 3dfb717 to a T1 that raised. The TEXT of this
+      entry is submitted for approval with step 3's delivery, and is not yet
+      approved.
     operation_id: postWebhooksWhatsapp
     status: "503"
     code: WEBHOOK_NOT_READY
     description: >-
-      The webhook cannot verify deliveries: its signing secret is not
-      configured. Nothing is recorded. Deliver the same provider_event_id
-      again later.
+      The event's acceptance could not be confirmed: the webhook cannot
+      verify deliveries now, or storing the event did not confirm. Deliver it
+      again with the same provider_event_id.
     frozen_statuses: ["200", "400", "401"]
     rationale: >-
       A missing or empty secret is not an authentication fault of the relay,
-      so 401 would be false, and nothing is stored, so CORRECTION-007's 500
-      would be false too. The relay redelivers on a 503 (R-1, duty 5).
+      so 401 would be false. A T1 that raised may have committed or not (the
+      connection can be lost during the COMMIT), so neither "stored"
+      (CORRECTION-007) nor "nothing recorded" may be claimed. The relay
+      redelivers on a 503 (R-1, duty 5); the event's record then decides.
     runtime_rule: >-
       Answered when TURAB_RELAY_SIGNING_SECRET is absent or empty, after the
-      size check and before the signature is computed, writing nothing.
+      size check and before the signature is computed, writing nothing; and
+      when T1 raises after every check of the request passed.
     reference: docs/contract/CORRECTION-008-webhook-not-ready.md
 

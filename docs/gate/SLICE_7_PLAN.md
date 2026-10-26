@@ -1,5 +1,5 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 13**
+## Implementation plan — **revision 14**
 
 **Status: step 2 is CLOSED at `6d8815d`, and step 3 is AUTHORIZED** (review
 of `6d8815d`, recorded below). Step 1 is CLOSED at `7e8993d`. Slice 7 is not
@@ -7,15 +7,20 @@ closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
 - **G7-17 is DECIDED** (review of `bf1fe3d`, recorded below), with a 503
-  `WEBHOOK_NOT_READY` under a new CORRECTION-008. Step 3 is being
-  implemented.
+  `WEBHOOK_NOT_READY` under a new CORRECTION-008.
+- **Step 3's code is at `3dfb717`, and is NOT delivered** (review of
+  `3dfb717`, recorded below): a contractual blocker is being answered before
+  the evidence round.
 - **The slice's code so far:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
     `postCommunicationThreadsThreadIdMessages` (`services/communication.py`,
-    `api/routes/communication.py`), with CORRECTION-006, approved.
+    `api/routes/communication.py`), with CORRECTION-006, approved;
+  - step 3's webhook, its recovery command and CORRECTION-007 and 008, not
+    yet delivered (`services/webhooks.py`, `api/routes/webhooks.py`,
+    `db/ops/recover_webhook_events.py`).
 
-  No webhook, recovery command or timeline exists yet.
+  No timeline and no `interactions` row exist yet (step 4).
 - **The review of step 1's progress report** (after `dc35b50`; recorded
   below) did not close step 1. It set what the delivery must show.
 - **What the review of `4aed49b` did** (recorded below):
@@ -76,7 +81,46 @@ a recommendation. A recommendation is not a decision.
 | 10 | `f21a113` | the review of `f7e5297` recorded: CORRECTION-006 approved; R5.3b and INTERNAL_MESSAGE_REF_NOT_ACCEPTED accepted; readings 1–5 accepted; R-S7-2-01 measured, reading 6 corrected |
 | 11 | `af61400` | the review of `6d8815d` recorded: step 2 CLOSED, step 3 authorized (no real event before R-1); the two stale statements corrected |
 | 12 | `bf1fe3d` | G7-17 added: seven points of step 3 put as decisions, each with a recommendation; no other change |
-| 13 | this revision | the review of `bf1fe3d` recorded: G7-17 decided, a 503 `WEBHOOK_NOT_READY` (CORRECTION-008) for a missing secret, `response_additions` unique per (operation, status), R-1 duty 5 extended to the 503 |
+| 13 | `e64ba93` | the review of `bf1fe3d` recorded: G7-17 decided, a 503 `WEBHOOK_NOT_READY` (CORRECTION-008) for a missing secret, `response_additions` unique per (operation, status), R-1 duty 5 extended to the 503 |
+| 14 | this revision | the review of `3dfb717` recorded: a T1 that raised is CORRECTION-008's 503, whose meaning is widened to "acceptance not confirmed"; CORRECTION-007's narrowed to "the processing's result not confirmed"; `archived_at` read; the stale statements corrected: the introduction (no webhook yet), "the interaction" among T2's writes (G7-2 (iv), its test 1, §3.1, §6.1), CORRECTION-007's meaning (G7-2 (v), §5.2), the 500 "for no operation" (§5.2), the two corrections of §7 (1) |
+
+**The review of `3dfb717`. Step 3 is NOT delivered and NOT closed.** The
+numbers (119 tests, 64 mutations) are the implementing team's; the reviewer
+did not re-run them.
+- **Accepted:** the two 400 codes, `WEBHOOK_BODY_TOO_LARGE` and
+  `WEBHOOK_ENVELOPE_NOT_VALID`; their details name fields, never a value of
+  the request.
+- **The blocker:** a T1 that raised was answered `500 INTERNAL_ERROR`, while
+  CORRECTION-007 gives the same operation a 500 with the fixed code
+  `WEBHOOK_PROCESSING_FAILED` and a description that presumes the event is
+  recorded. One status may not carry both meanings in the effective
+  contract.
+- **The decision:**
+  - **a T1 that raises, after the request's checks passed, is answered
+    `503 WEBHOOK_NOT_READY`.** CORRECTION-008's description is widened to
+    "the event's acceptance could not be confirmed; deliver it again with
+    the same identifier". With a missing secret, nothing is written, and that
+    is known; with a connection lost during the COMMIT, it may not be
+    asserted. The reviewer cites PostgreSQL 16's documentation, which names a
+    client disconnected while a COMMIT is in progress, and the need to
+    determine whether the transaction committed;
+  - **the same care for T2:** after T1 committed, CORRECTION-007's 500 stays
+    the signal to redeliver, but its description and detail say that **the
+    result of the processing is not confirmed to the sender**. The note
+    tells a FAILED event actually recorded apart from `PROCESSING_LOST`. A
+    redelivery with the same identifier decides both through the event's
+    record;
+  - **three tests:** T1 failing before its COMMIT; T1's COMMIT succeeding and
+    its answer lost; the same after T2's COMMIT. Each answer is retryable,
+    and no second message is made;
+  - **`archived_at`** adds, alone, no rule of refusal: the thread is resolved
+    by its reference and the consent checked as they are; this reading is
+    recorded and tested, without changing how archiving is marked;
+  - **the stale statements of this plan** are corrected in this revision.
+- **Then:** after this answer and an evidence round bound to the tree, step
+  3 may be delivered for review.
+- **Standing:** R-1 is a condition before any real event; K06 is UNPROVEN;
+  the scope is SALE only.
 
 **The review of `bf1fe3d`. G7-17 is DECIDED; step 3 may be implemented.** The
 recording of step 2's closure is correct.
@@ -584,7 +628,8 @@ to them):
 - **The sources:** `API_CONTRACTS` §4.12; ADR-09; the contract's
   description of `postWebhooksWhatsapp`.
 - **Consequence:** a replay of a **completed** event writes no second
-  message and no second interaction (S42, J01, mandatory test 1).
+  message (S42, J01, mandatory test 1), and, from step 4, no second
+  interaction.
 - **Measured:** the store deduplicates under concurrency (M4).
 - **What "stored" means** is settled by G7-9 (a): the event row is stored
   first, and its payload is the content-free event.
@@ -809,8 +854,9 @@ directly.**
    - No row means the event is already final. T2 rolls back, and the answer
      is 200.
 2. **`SAVEPOINT processing`.**
-3. **Resolution and its writes** (G7-3, G7-9): the message, the
-   interaction, the thread's `last_message_at`, the audit rows.
+3. **Resolution and its writes** (G7-3, G7-9): the message, the thread's
+   `last_message_at`, the audit rows. *(Revision 14: "the interaction" was
+   listed here; G7-17 (i) decided that step 3 writes none, step 4 adds it.)*
 4. **Success:** `UPDATE webhook_events SET processing_status = 'PROCESSED'`
    (or IGNORED, with its fixed reason), `processed_at = now()`; COMMIT.
 5. **Failure inside step 3** (an SQL error aborts only what follows the
@@ -833,8 +879,8 @@ directly.**
 
 **The tests (step 3):**
 1. **A failure injected in step 3,** by SQL: the event is FAILED with its
-   code; no message, no interaction, no audit row; the answer as §5.2
-   decides.
+   code; no message, no audit row; the answer as §5.2 decides. *(Step 3
+   writes no interaction: G7-17 (i).)*
 2. **A stop after T1 is committed,** with T2 never run: the event stays
    RECEIVED. A redelivery then completes it, PROCESSED, one message. The
    recovery command completes another one, PROCESSED, without content.
@@ -863,7 +909,10 @@ inferred from `API_CONTRACTS` §2.5:
   `postWebhooksWhatsapp` in the effective contract, typed
   `WEBHOOK_PROCESSING_FAILED`. Its meaning: "stored, not processed; deliver
   the same `provider_event_id` again". The relay's redelivery (R-1) is then
-  the recovery that keeps the content.
+  the recovery that keeps the content. *(Revision 14, the review of
+  `3dfb717`: its meaning is "stored; the result of its processing not
+  confirmed", since a T2 whose COMMIT's answer is lost may have committed.
+  A T1 that raised is CORRECTION-008's 503.)*
 - **(b) No contract change.** The answer is always 200 once T1 is committed.
   A FAILED event is then recovered only by the command below, **without its
   content**: the relay has no signal to redeliver.
@@ -1747,15 +1796,21 @@ was:
   effective contract is current");
 - delivered in step 3, before the route.
 
-Today the effective contract states a `500` for **no** operation (searched:
-no `'500'` in `openapi_effective_v0.2.3.yaml`).
+When this section was written, the effective contract stated a `500` for
+**no** operation (searched: no `'500'` in `openapi_effective_v0.2.3.yaml`).
+*(Revision 14: it now states CORRECTION-007's, and CORRECTION-008's 503, on
+this operation only.)*
 
 - **The operation:** `postWebhooksWhatsapp`.
 - **The change:** a `500` response, `application/problem+json`, with the code
   `WEBHOOK_PROCESSING_FAILED`.
-- **Its description:** "The event is stored (its `provider_event_id` is
-  recorded) and was not processed. Deliver the same `provider_event_id`
-  again; a later delivery completes it once."
+- **Its description, as adopted:** "The event is stored (its
+  `provider_event_id` is recorded) and was not processed. Deliver the same
+  `provider_event_id` again; a later delivery completes it once."
+  *(Revision 14, the review of `3dfb717`: "The event is stored (its
+  provider_event_id is recorded); the result of its processing could not be
+  confirmed. Deliver it again with the same provider_event_id; the event's
+  record decides the redelivery, which completes it once or replays it.")*
 - **Its nature:** an **addition** to the frozen contract's responses, not a
   narrowing.
 - **Unchanged:** 200, 400 and 401.
@@ -1772,7 +1827,7 @@ no `'500'` in `openapi_effective_v0.2.3.yaml`).
 
 | # | Test, as written | Proof planned |
 |---|---|---|
-| 1 | "repeated provider webhook creates one message" | the same signed envelope posted twice, and concurrently: one event row, one message, one interaction. A PROCESSED replay writes nothing; a FAILED or RECEIVED event is completed by the replay, still one message (G7-2 (v)) |
+| 1 | "repeated provider webhook creates one message" | the same signed envelope posted twice, and concurrently: one event row, one message (one interaction from step 4, G7-17 (i)). A PROCESSED replay writes nothing; a FAILED or RECEIVED event is completed by the replay, still one message (G7-2 (v)) |
 | 2 | "same provider message id cannot be inserted into another thread" | the same `(whatsapp, ref)`, by staff and by webhook, into a second thread: a typed 409, or IGNORED, and no row. The NULL-provider path is refused by the service and by `0008` (A) |
 | 3 | "thread/opportunity links are checked by service invariant" | each rule of G7-6, rule 0 (SALE) included, with an inconsistent link refused, writing nothing; the seller's thread about the buyer's opportunity accepted; the links never changed afterwards, and the named parents' deletion refused (D2) |
 | 4 | "phone decision can be linked to later written confirmation observation" | G7-10 end to end over HTTP |
@@ -1820,11 +1875,15 @@ identical results, and are ours.
 
 ## 7. Acceptance conditions
 
-1. **The contract changes only by two corrections:**
+1. **The contract changes only by three corrections** *(revision 14; two
+   before G7-17 (ii) added CORRECTION-008)*:
    - **CORRECTION-006,** which narrows `CommunicationThreadCreate.party_id`
-     to required (G7-7 (a)), once written and approved;
+     to required (G7-7 (a)), approved;
    - **CORRECTION-007,** which adds the webhook's `500
-     WEBHOOK_PROCESSING_FAILED` (decided in the review of `4aed49b`).
+     WEBHOOK_PROCESSING_FAILED` (decided in the review of `4aed49b`; its
+     meaning narrowed in the review of `3dfb717`);
+   - **CORRECTION-008,** which adds the webhook's `503 WEBHOOK_NOT_READY`
+     (G7-17 (ii), (vi); widened in the review of `3dfb717`).
 
    Each is an entry of `CONTRACT_CORRECTIONS.yaml`, from which the
    effective contract is regenerated and checked by the gate. The relay's

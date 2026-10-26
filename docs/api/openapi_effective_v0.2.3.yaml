@@ -23,7 +23,7 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    d294c2152ba42018a5dc30b69858a53f54ae6007b5c62844b54ba9972beeb15a
+#   CONTRACT_CORRECTIONS.yaml    493be979333ce68a15b8b91ddb730b75767e547cf5ad26d5e4de374344f70045
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
 # Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)
@@ -2060,8 +2060,9 @@ paths:
         '400': *id001
         '401': *id001
         '500':
-          description: The event is stored (its provider_event_id is recorded) and was not processed.
-            Deliver the same provider_event_id again; a later delivery completes it once.
+          description: The event is stored (its provider_event_id is recorded); the result of its processing
+            could not be confirmed. Deliver it again with the same provider_event_id; the event's record
+            decides the redelivery, which completes it once or replays it.
           content:
             application/problem+json:
               schema:
@@ -2070,8 +2071,9 @@ paths:
             id: CORRECTION-007
             kind: RESPONSE_ADDITION
             decision: 'Slice 7 plan §5.2 (docs/gate/SLICE_7_PLAN.md): adopted in the review of 4aed49b;
-              its mechanism (response_additions) decided in the review of bf1fe3d. The TEXT of this entry
-              is submitted for approval with step 3''s delivery, and is not yet approved.'
+              its mechanism (response_additions) decided in the review of bf1fe3d; its meaning narrowed
+              to "the result of the processing is not confirmed" in the review of 3dfb717. The TEXT of
+              this entry is submitted for approval with step 3''s delivery, and is not yet approved.'
             approved: ''
             code: WEBHOOK_PROCESSING_FAILED
             frozen-statuses:
@@ -2080,8 +2082,8 @@ paths:
             - '401'
             reference: docs/contract/CORRECTION-007-webhook-processing-failed.md
         '503':
-          description: 'The webhook cannot verify deliveries: its signing secret is not configured. Nothing
-            is recorded. Deliver the same provider_event_id again later.'
+          description: 'The event''s acceptance could not be confirmed: the webhook cannot verify deliveries
+            now, or storing the event did not confirm. Deliver it again with the same provider_event_id.'
           content:
             application/problem+json:
               schema:
@@ -2089,8 +2091,9 @@ paths:
           x-turab-correction:
             id: CORRECTION-008
             kind: RESPONSE_ADDITION
-            decision: Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d. The TEXT of
-              this entry is submitted for approval with step 3's delivery, and is not yet approved.
+            decision: Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d; widened in the
+              review of 3dfb717 to a T1 that raised. The TEXT of this entry is submitted for approval
+              with step 3's delivery, and is not yet approved.
             approved: ''
             code: WEBHOOK_NOT_READY
             frozen-statuses:

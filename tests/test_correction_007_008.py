@@ -75,15 +75,21 @@ def test_each_entry_is_one_error_response_of_the_webhook(cid, status, code):
 
 
 def test_the_two_meanings_differ_as_decided():
-    """G7-17 (vi): the 500 says the event is recorded; the 503 asks for a
-    redelivery WITHOUT claiming it is."""
+    """G7-17 (vi), and the review of 3dfb717: the 500 says the event is
+    recorded and its processing's result not confirmed, never that it was
+    not processed; the 503 says the acceptance is not confirmed, claiming
+    neither that the event is recorded nor that nothing is."""
     entries = _entries()
-    stored = entries["CORRECTION-007"]["description"]
-    not_ready = entries["CORRECTION-008"]["description"]
+    stored = " ".join(entries["CORRECTION-007"]["description"].split())
+    unconfirmed = " ".join(entries["CORRECTION-008"]["description"].split())
     assert "is stored" in stored and "provider_event_id is recorded" in stored
-    assert "Nothing is recorded" in not_ready and "stored" not in not_ready
-    for text in (stored, not_ready):
-        assert "Deliver the same provider_event_id again" in text
+    assert "the result of its processing could not be confirmed" in stored
+    assert "not processed" not in stored
+    assert "acceptance could not be confirmed" in unconfirmed
+    for claim in ("stored", "recorded", "Nothing"):
+        assert claim not in unconfirmed
+    for text in (stored, unconfirmed):
+        assert "Deliver it again with the same provider_event_id" in text
 
 
 def test_the_loader_returns_both_and_only_them():
@@ -130,14 +136,19 @@ def test_each_code_is_a_problem_code_of_the_entrys_status(cid):
 
 def test_the_runtimes_other_webhook_answers_are_declared_statuses():
     """The 400s and the 401 the route answers are statuses the frozen
-    operation declares; the generic 500 of a T1 that did not commit is the
-    500 CORRECTION-007 adds (with another code: nothing is stored)."""
+    operation declares. A T1 that raised is CORRECTION-008's 503 (the review
+    of 3dfb717): the route answers no other 5xx."""
     from turab.api.problems import _CATALOGUE, ProblemCode
 
     for code in (ProblemCode.WEBHOOK_BODY_TOO_LARGE, ProblemCode.WEBHOOK_ENVELOPE_NOT_VALID):
         assert _CATALOGUE[code][0] == 400
     assert _CATALOGUE[ProblemCode.UNAUTHENTICATED][0] == 401
-    assert _CATALOGUE[ProblemCode.INTERNAL_ERROR][0] == 500
+    route = (ROOT / "src" / "turab" / "api" / "routes" / "webhooks.py").read_text()
+    assert "INTERNAL_ERROR" not in route
+    used = {c for c in ProblemCode if f"ProblemCode.{c.name}" in route}
+    assert used == {ProblemCode.WEBHOOK_BODY_TOO_LARGE, ProblemCode.WEBHOOK_ENVELOPE_NOT_VALID,
+                    ProblemCode.UNAUTHENTICATED, ProblemCode.WEBHOOK_NOT_READY,
+                    ProblemCode.WEBHOOK_PROCESSING_FAILED}
 
 
 # --- the loader's refusals ----------------------------------------------------------------

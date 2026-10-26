@@ -1230,15 +1230,22 @@ RULES: tuple[Rule, ...] = (
          "same T2, nothing of it kept, answered 500 WEBHOOK_PROCESSING_FAILED without "
          "exception text; a stop after T1 is completed once by a redelivery, with content, "
          "or by the recovery, without; a failure of the status update loses T2 whole; a "
-         "replay during the claim is 200 and writes nothing. A T1 that does not commit is "
-         "not CORRECTION-007",
+         "replay during the claim is 200 and writes nothing. A T1 that raised, before or "
+         "after its COMMIT took effect, is CORRECTION-008's 503; a T2 whose COMMIT's answer "
+         "is lost is CORRECTION-007's 500; each redelivery makes no second message",
          ("test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500",
           "test_iv_1_a_python_exception_in_processing_is_failed_likewise",
           "test_iv_2_a_stop_after_t1_is_completed_by_a_redelivery",
           "test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content",
           "test_iv_3_a_failure_of_the_status_update_loses_t2_whole",
           "test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing",
-          "test_iv_a_t1_that_does_not_commit_is_not_correction_007")),
+          "test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it",
+          "test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once",
+          "test_iv_t2_whose_commit_answer_is_lost_is_500_then_a_redelivery_is_a_replay")),
+    Rule("S7-3 / review of 3dfb717",
+         "archived_at alone refuses nothing: an archived thread is resolved by its reference "
+         "and its consent checked as any other, its archived_at unchanged (0008 freezes it)",
+         ("test_archived_at_alone_refuses_nothing",)),
     Rule("S7-3 / G7-2 (v)",
          "The operator recovery command re-runs T2 on FAILED events and on RECEIVED ones "
          "older than 5 minutes, skips a held row, and prints counts only",

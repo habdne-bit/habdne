@@ -1161,23 +1161,137 @@ def test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing(
     assert len(_messages(engine, envelope["payload"]["external_message_ref"])) == 1
 
 
-def test_iv_a_t1_that_does_not_commit_is_not_correction_007(client, engine, ids, sink,
-                                                            monkeypatch):
-    """Nothing stored: the answer is the generic 500 `INTERNAL_ERROR`, never
-    `WEBHOOK_PROCESSING_FAILED`, which would claim the event is stored."""
+def _unconfirmed(r):
+    """A retryable answer that claims nothing about the event's record."""
+    assert (r.status_code, r.json()["code"]) == (503, "WEBHOOK_NOT_READY"), r.text
+    assert "stored" not in r.json()["detail"] and "nothing" not in r.json()["detail"].lower()
+
+
+def test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it(
+        client, engine, ids, sink, monkeypatch):
+    """The review of 3dfb717. T1 raises before it commits: nothing is stored,
+    but the answer does not say so; it is CORRECTION-008's 503, never
+    CORRECTION-007's 500, which would claim the event is stored. The
+    redelivery stores and processes it, one message."""
     webhooks = _svc()
     _, thread_ref = _whatsapp(client, ids, engine)
     envelope = _msg(thread_ref)
+    real = webhooks.store
 
     def lost(*a, **kw):
-        raise RuntimeError("T1 lost")
+        raise RuntimeError("T1 lost before its commit")
 
     monkeypatch.setattr(webhooks, "store", lost)
     sink.clear()
-    r = _post(client, envelope)
-    assert (r.status_code, r.json()["code"]) == (500, "INTERNAL_ERROR")
+    _unconfirmed(_post(client, envelope))
     assert _event(engine, envelope["provider_event_id"]) is None
-    assert [x.reason_code for x in sink.records] == ["NOT_STORED"]
+    [record] = sink.records
+    assert (record.reason_code, record.extra["http_status"], record.resource_id,
+            record.decision) == ("ACCEPTANCE_NOT_CONFIRMED", 503, None, "ALLOW")
+    monkeypatch.setattr(webhooks, "store", real)
+    _accepted(_post(client, envelope))
+    assert _event(engine, envelope["provider_event_id"])["status"] == "PROCESSED"
+    assert len(_messages(engine, envelope["payload"]["external_message_ref"])) == 1
+
+
+def test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once(
+        client, engine, ids, monkeypatch):
+    """T1 commits, and its answer is lost (the COMMIT took effect; the
+    application sees an exception). The answer is the same 503: the event is
+    in fact RECEIVED. The redelivery reads that record and processes it once:
+    one event, one message."""
+    webhooks = _svc()
+    _, thread_ref = _whatsapp(client, ids, engine)
+    envelope = _msg(thread_ref)
+    real = webhooks.store
+
+    def committed_then_lost(*a, **kw):
+        real(*a, **kw)
+        raise RuntimeError("the COMMIT's answer lost")
+
+    monkeypatch.setattr(webhooks, "store", committed_then_lost)
+    _unconfirmed(_post(client, envelope))
+    assert _event(engine, envelope["provider_event_id"])["status"] == "RECEIVED"
+    assert _messages(engine, envelope["payload"]["external_message_ref"]) == []
+    monkeypatch.setattr(webhooks, "store", real)
+    _accepted(_post(client, envelope))
+    assert _event(engine, envelope["provider_event_id"])["status"] == "PROCESSED"
+    assert len(_messages(engine, envelope["payload"]["external_message_ref"])) == 1
+    assert _one(engine, "SELECT count(*) FROM turab.webhook_events WHERE provider = "
+                        "'whatsapp' AND provider_event_id = :e",
+                e=envelope["provider_event_id"]) == 1
+
+
+def test_iv_t2_whose_commit_answer_is_lost_is_500_then_a_redelivery_is_a_replay(
+        client, engine, ids, sink, monkeypatch):
+    """T2 commits PROCESSED, and its answer is lost. The answer is
+    CORRECTION-007's 500, which says only that the result is not confirmed.
+    The redelivery reads PROCESSED: a replay, an empty 200, no second
+    message, nothing written."""
+    webhooks = _svc()
+    party = _party(engine)
+    thread, thread_ref = _whatsapp(client, ids, engine, party=party)
+    _archive_consent(engine, party, thread)
+    envelope = _msg(thread_ref, body=SECRET)
+    real = webhooks.run_t2
+
+    def committed_then_lost(*a, **kw):
+        real(*a, **kw)
+        raise RuntimeError("the COMMIT's answer lost")
+
+    monkeypatch.setattr(webhooks, "run_t2", committed_then_lost)
+    sink.clear()
+    r = _post(client, envelope)
+    assert (r.status_code, r.json()["code"]) == (500, "WEBHOOK_PROCESSING_FAILED")
+    assert "could not be confirmed" in r.json()["detail"]
+    assert [x.reason_code for x in sink.records] == ["PROCESSING_LOST"]
+    assert _event(engine, envelope["provider_event_id"])["status"] == "PROCESSED"
+    monkeypatch.setattr(webhooks, "run_t2", real)
+    before = _counts(engine)
+    sink.clear()
+    _accepted(_post(client, envelope))
+    assert _counts(engine) == before
+    assert [x.reason_code for x in sink.records] == ["REPLAYED"]
+    [m] = _messages(engine, envelope["payload"]["external_message_ref"])
+    assert m["body_text"] == SECRET
+
+
+def test_archived_at_alone_refuses_nothing(client, engine, ids):
+    """The review of 3dfb717: `archived_at` has no command (F7-9) and no rule
+    of the plan makes it a refusal. An archived WHATSAPP thread is resolved
+    by its reference and its consent checked as any other; its `archived_at`
+    is left as it was.
+
+    Measured while writing this test: 0008's thread guard refuses an UPDATE
+    of `archived_at` ("a thread's links never change"), so a thread carries
+    one only from its insert. The thread is inserted so, directly."""
+    party = _party(engine)
+    thread_ref = _ref()
+    thread = _one(engine, """
+        INSERT INTO turab.communication_threads (channel, party_id, external_thread_ref,
+                                                 archived_at)
+        VALUES ('WHATSAPP', :p, :r, '2026-10-01T00:00:00Z') RETURNING thread_id""",
+                  p=party, r=thread_ref)
+    archived = lambda: _one(engine, "SELECT archived_at FROM turab.communication_threads "
+                                    "WHERE thread_id = :t", t=thread)
+    stamp = archived()
+    without = _msg(thread_ref, body=SECRET)
+    _accepted(_post(client, without))
+    [m] = _messages(engine, without["payload"]["external_message_ref"])
+    assert (m["thread_id"], m["body_text"], m["metadata"]["content_withheld_reason"]) == (
+        thread, None, "NO_ARCHIVE_CONSENT")
+    _archive_consent(engine, party, thread)
+    with_consent = _msg(thread_ref, body=SECRET)
+    _accepted(_post(client, with_consent))
+    [n] = _messages(engine, with_consent["payload"]["external_message_ref"])
+    assert n["body_text"] == SECRET
+    assert archived() == stamp
+    from sqlalchemy.exc import DBAPIError
+
+    from tests.test_slice4_step7 import _exec
+    with pytest.raises(DBAPIError, match="a thread's links never change"):
+        _exec(engine, "UPDATE turab.communication_threads SET archived_at = NULL "
+                      "WHERE thread_id = :t", t=thread)
 
 
 # --- the recovery command -------------------------------------------------------------------

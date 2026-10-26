@@ -11,8 +11,23 @@ checks run in G7-17 (iii)'s order, each writing nothing:
 3. the relay's signature over the raw bytes (401);
 4. the envelope, and the keys of a known type (400).
 Then T1 stores the event, and T2 processes it. Every 200 has an empty body
-(G7-17 (v)): a new event, a replay, an event in flight, an IGNORED one. A
-FAILED T2, or a T2 lost whole after T1 committed, is CORRECTION-007's 500.
+(G7-17 (v)): a new event, a replay, an event in flight, an IGNORED one.
+
+**The two retryable answers** (the review of 3dfb717):
+- **503 `WEBHOOK_NOT_READY` (CORRECTION-008):** the event's acceptance is not
+  confirmed. Either the secret is missing (nothing is written, and that is
+  known), or T1 raised. A T1 that raised may or may not have committed: the
+  connection can be lost during the COMMIT itself (the case PostgreSQL 16's
+  §9.27 names for `pg_xact_status`, as the review cites it), so the answer
+  does not say that nothing is recorded.
+- **500 `WEBHOOK_PROCESSING_FAILED` (CORRECTION-007):** T1 committed, and the
+  result of the processing is not confirmed to the sender. Either T2 ended
+  FAILED (recorded), or T2 raised (`PROCESSING_LOST`), which may follow a
+  COMMIT that did take effect.
+
+In both, a redelivery of the same `provider_event_id` is decided by the
+event's own record (G7-2 (v)): a final event is a replay, written nothing;
+a RECEIVED or FAILED one is processed once.
 
 Each answer is recorded once by the access auditor (G7-17 (vii)); a refusal
 is logged by its fixed outcome, never with the body, the signature or the
@@ -34,10 +49,11 @@ logger = logging.getLogger("turab.webhook")
 
 #: The fixed details. None repeats what the request carried.
 TOO_LARGE = "The body exceeds 64 KiB."
-NOT_READY = "The webhook cannot verify deliveries now. Deliver the same event again later."
+NOT_READY = ("The event's acceptance could not be confirmed. Deliver it again with the "
+             "same provider_event_id.")
 NOT_VERIFIED = "The relay signature is missing or does not match the body."
-NOT_PROCESSED = ("The event is stored and was not processed. Deliver the same "
-                 "provider_event_id again.")
+NOT_CONFIRMED = ("The event is stored; the result of its processing could not be "
+                 "confirmed. Deliver it again with the same provider_event_id.")
 
 
 async def _read_limited(request: Request) -> bytes | None:
@@ -85,11 +101,12 @@ async def receive_whatsapp(request: Request, webhook: Webhook):
     try:
         event_id, status = await run_in_threadpool(webhook.store, envelope)
     except Exception as exc:
-        # T1 did not commit: nothing is stored, so CORRECTION-007 would be false.
-        logger.error("webhook event not stored",
+        # T1 raised: its COMMIT may or may not have taken effect, so neither
+        # "stored" (CORRECTION-007) nor "nothing recorded" may be claimed.
+        logger.error("webhook event not confirmed",
                      extra={"trace_id": trace, "cause": type(exc).__name__})
-        webhook.answered(500, "NOT_STORED")
-        return coded(ProblemCode.INTERNAL_ERROR, trace)
+        webhook.answered(503, "ACCEPTANCE_NOT_CONFIRMED")
+        return coded(ProblemCode.WEBHOOK_NOT_READY, trace, NOT_READY)
     if status in ("PROCESSED", "IGNORED"):
         webhook.answered(200, "REPLAYED", event_id)
         return Response(status_code=200)
@@ -103,6 +120,6 @@ async def receive_whatsapp(request: Request, webhook: Webhook):
         outcome = "PROCESSING_LOST"
     if outcome in ("FAILED", "PROCESSING_LOST"):
         webhook.answered(500, outcome, event_id)
-        return coded(ProblemCode.WEBHOOK_PROCESSING_FAILED, trace, NOT_PROCESSED)
+        return coded(ProblemCode.WEBHOOK_PROCESSING_FAILED, trace, NOT_CONFIRMED)
     webhook.answered(200, outcome, event_id)
     return Response(status_code=200)

@@ -281,7 +281,7 @@ class AccessAuditor:
         webhook_event_id: uuid.UUID | None = None,
     ) -> AccessRecord:
         """G7-17 (vii). ONE record per answer of `postWebhooksWhatsapp`,
-        refusals (400, 401, 503) included, to the log stream: a refusal writes
+        refusals (400, 401, the 503 of a missing secret) included, to the log stream: a refusal writes
         nothing to the database, and this record does not either.
 
         It carries the HTTP status, a fixed outcome and, once T1 has stored
@@ -296,7 +296,8 @@ class AccessAuditor:
             operation_id="postWebhooksWhatsapp",
             resource_kind="webhook_event" if webhook_event_id else None,
             resource_id=webhook_event_id,
-            decision="DENY" if status in (400, 401, 503) else "ALLOW",
+            decision="DENY" if status in (400, 401) or outcome == "SECRET_NOT_CONFIGURED"
+            else "ALLOW",
             reason_code=outcome,
             extra={"http_status": status},
         )

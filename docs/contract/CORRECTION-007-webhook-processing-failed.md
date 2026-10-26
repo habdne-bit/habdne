@@ -1,10 +1,10 @@
-# CORRECTION-007 — the webhook's 500: stored, not processed
+# CORRECTION-007 — the webhook's 500: stored, the processing's result not confirmed
 
 | | |
 |---|---|
 | **Kind** | Response addition, through the corrections overlay (`response_additions`). It adds one error response, and grants nothing |
 | **Operation** | `postWebhooksWhatsapp` (POST `/webhooks/whatsapp`) |
-| **Decision** | Slice 7 plan §5.2 (`docs/gate/SLICE_7_PLAN.md`): adopted in the review of `4aed49b`. Its mechanism (`response_additions`, unique per (operation, HTTP status)) was decided in the review of `bf1fe3d` (G7-17 (vi)) |
+| **Decision** | Slice 7 plan §5.2 (`docs/gate/SLICE_7_PLAN.md`): adopted in the review of `4aed49b`. Its mechanism (`response_additions`, unique per (operation, HTTP status)) was decided in the review of `bf1fe3d` (G7-17 (vi)). Its meaning was narrowed in the review of `3dfb717`: the result of the processing is **not confirmed** to the sender, rather than "not processed" |
 | **Status of this text** | **SUBMITTED for approval with Slice 7 step 3's delivery, not yet approved.** The entry carries no `approved` date |
 | **Frozen package** | `openapi_v0.2.3.yaml`, unchanged. The correction is applied in `docs/api/openapi_effective_v0.2.3.yaml` |
 
@@ -43,7 +43,7 @@
 | | Frozen | Effective |
 |---|---|---|
 | `responses.500` | — | `application/problem+json`, `$ref: Problem`, code `WEBHOOK_PROCESSING_FAILED` |
-| its description | — | "The event is stored (its provider_event_id is recorded) and was not processed. Deliver the same provider_event_id again; a later delivery completes it once." |
+| its description | — | "The event is stored (its provider_event_id is recorded); the result of its processing could not be confirmed. Deliver it again with the same provider_event_id; the event's record decides the redelivery, which completes it once or replays it." |
 | its annotation | — | `x-turab-correction`, kind `RESPONSE_ADDITION`, the entry's id, decision, code, frozen statuses and reference |
 | 200, 400, 401 | declared | unchanged |
 | `security`, the request body, every other operation | — | unchanged |
@@ -68,19 +68,42 @@ invariant ("a correction may only NARROW"), decided in G7-17 (vi).
 
 ## 3. The runtime rule
 
-- **When the 500 is answered** (`api/routes/webhooks.py`):
-  - T2 ended FAILED: its processing raised, every write of step 3 was
-    rolled back to the savepoint, and the event was recorded FAILED with
-    `error_text = PROCESSING_FAILED`, in the same T2;
-  - T2 was lost whole after T1 committed (a failure of step 4's UPDATE, of
-    the COMMIT or of the connection). The event keeps its status.
-- **Never before T1 commits.** A T1 that does not commit stores nothing, so
-  the claim "the event is stored" would be false. That case answers the
-  generic 500 `INTERNAL_ERROR`, not this code.
+- **When the 500 is answered** (`api/routes/webhooks.py`), always after T1
+  has committed, in two cases the access record tells apart:
+
+  | Outcome | What is known | The event's record |
+  |---|---|---|
+  | `FAILED` | T2's processing raised; every write of step 3 was rolled back to the savepoint, and the failure was **recorded**, `error_text = PROCESSING_FAILED`, in the same T2, which committed | FAILED |
+  | `PROCESSING_LOST` | T2 raised outside the savepoint: step 4's UPDATE, the COMMIT, or the connection. **Whether its COMMIT took effect is not known** | its previous status (RECEIVED or FAILED), or PROCESSED or IGNORED if the COMMIT took effect and only its answer was lost |
+
+- **Why the text says "not confirmed", not "not processed"** (the review of
+  `3dfb717`). A client can lose its connection while a COMMIT is in
+  progress, and then cannot tell from the error whether the transaction
+  committed. PostgreSQL 16's documentation of `pg_xact_status` (§9.27,
+  System Information Functions) names this case, as the review of `3dfb717`
+  cites it: a client disconnected while a COMMIT is in progress must find
+  out whether its transaction was committed. *This environment could not
+  fetch that page (DNS: `ENOTFOUND www.postgresql.org`), and holds no local
+  copy of the documentation; the statement is the reviewer's citation, not
+  our quotation. What we measured locally: PostgreSQL 16.15 has the function,
+  described in its catalogue as "commit status of transaction".* "Not
+  processed" would then be a claim the server cannot make.
+- **Why the redelivery is right in every case.** The event's record decides
+  (G7-2 (v)): a PROCESSED or IGNORED event is a replay, an empty 200 and
+  nothing written; a RECEIVED or FAILED one is processed once. Tested for a
+  COMMIT that took effect and whose answer was lost: the redelivery is a
+  replay, and no second message is made.
+- **Never when T1 raised.** A T1 that raised may or may not have committed,
+  so "the event is stored" cannot be claimed. That case is CORRECTION-008's
+  503 (the review of `3dfb717`; before it, the route answered a generic 500
+  `INTERNAL_ERROR`, which gave the same status two meanings in the effective
+  contract).
 - **The body:** a `Problem` with the code `WEBHOOK_PROCESSING_FAILED`, the
-  trace id, and a fixed detail. No exception text, no reference and no
-  content from the envelope. The cause's type is logged under the trace id,
-  without the body.
+  trace id, and a fixed detail ("The event is stored; the result of its
+  processing could not be confirmed. Deliver it again with the same
+  provider_event_id."). No exception text, no reference and no content from
+  the envelope. The cause's type is logged under the trace id, without the
+  body.
 - **What the relay does with it** is R-1's duty 5 (G7-2 (ii)): it redelivers
   the same `provider_event_id`, with its content. A redelivery of a RECEIVED
   or FAILED event runs T2 again (G7-2 (v)), so the event is completed once.
@@ -99,8 +122,11 @@ invariant ("a correction may only NARROW"), decided in G7-17 (vi).
 - **`tests/test_correction_001.py`:** the effective contract changes nothing
   but what the corrections name. Its independent expectation now pops each
   added response and compares it.
-- **`tests/test_slice7_step3.py`:** the 500 through the route, for the three
-  cases of G7-2 (iv): a failure in processing, by SQL and by a Python
-  exception; a failure of step 4's UPDATE; and a T1 that does not commit,
-  which answers `INTERNAL_ERROR` instead.
+- **`tests/test_slice7_step3.py`:** the 500 through the route:
+  - a failure in processing, by SQL and by a Python exception (FAILED,
+    recorded);
+  - a failure of step 4's UPDATE (`PROCESSING_LOST`, the event unchanged);
+  - a T2 that committed and whose answer was lost (`PROCESSING_LOST`, the
+    event PROCESSED): the redelivery is a replay, with no second message;
+  - and the route answers no other 5xx than this one and CORRECTION-008's.
 - **Mutations:** `db/dev/mutate_slice7_step3.py`.
