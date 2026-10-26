@@ -8,16 +8,18 @@ closed.
   is met.
 - **G7-17 is DECIDED** (review of `bf1fe3d`, recorded below), with a 503
   `WEBHOOK_NOT_READY` under a new CORRECTION-008.
-- **Step 3's code is at `3dfb717`, and is NOT delivered** (review of
-  `3dfb717`, recorded below): a contractual blocker is being answered before
-  the evidence round.
+- **Step 3 is DELIVERED FOR REVIEW, not closed**
+  (`SLICE_7_STEP3_DELIVERY.md`). The review of `3dfb717` (recorded below)
+  found a contractual blocker; it is answered in `5e152ff`, and the evidence
+  round is bound to the tree that holds the answer. CORRECTION-007's and
+  CORRECTION-008's texts are submitted, not approved.
 - **The slice's code so far:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
     `postCommunicationThreadsThreadIdMessages` (`services/communication.py`,
     `api/routes/communication.py`), with CORRECTION-006, approved;
-  - step 3's webhook, its recovery command and CORRECTION-007 and 008, not
-    yet delivered (`services/webhooks.py`, `api/routes/webhooks.py`,
+  - step 3's webhook, its recovery command and CORRECTION-007 and 008,
+    delivered for review (`services/webhooks.py`, `api/routes/webhooks.py`,
     `db/ops/recover_webhook_events.py`).
 
   No timeline and no `interactions` row exist yet (step 4).

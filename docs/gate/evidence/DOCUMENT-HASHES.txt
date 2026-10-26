@@ -970,3 +970,15 @@ SLICE_7_PLAN.md changed revision: 10 -> 11 (review of 6d8815d).
 --- Slice 7 plan revision 12: G7-17, seven points of step 3 put as decisions; no step 3 code ---
 docs/gate/SLICE_7_PLAN.md                                      rev12 28febfe9ce01c5c5164064e652ce9f39e165d3998152d27f98d9e42a9fe496e3
 SLICE_7_PLAN.md changed revision: 11 -> 12 (G7-17 added).
+--- Slice 7 plan revision 13 (e64ba93, the review of bf1fe3d): its entry was omitted when it was committed; stamped now from that commit's blob ---
+docs/gate/SLICE_7_PLAN.md                                      rev13 ff6b9839bf0aee7dfc002e090752cada720d14a28d62fefd7254e3223947f2ac
+SLICE_7_PLAN.md changed revision: 12 -> 13 (review of bf1fe3d).
+--- Slice 7 step 3 delivered for review; the review of 3dfb717 answered; Slice 7 plan revision 14 ---
+docs/gate/SLICE_7_STEP3_DELIVERY.md                            add   c947b280ad1ca8e7da8a57e96d8dad1a8f4df8aadd08e535cfdec0a414b84c80
+docs/contract/CORRECTION-007-webhook-processing-failed.md      add   e8ac3a3246b1427c84ea7ab82089b4d9b1bbd2c1f99f4cf0e2e8c955f51ace49
+docs/contract/CORRECTION-008-webhook-not-ready.md              add   46f6bf4292ada4196bd965b7b03b071d30faeeca6182ec1570c0ed0e7807cd94
+docs/contract/CONTRACT_CORRECTIONS.yaml                        ---   493be979333ce68a15b8b91ddb730b75767e547cf5ad26d5e4de374344f70045
+docs/api/openapi_effective_v0.2.3.yaml                         ---   1952130e9b7fefe5cc3c707b25a2b703c3bf8bdaa894d8503c590923919ca1b6
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   e0bb35d64ce3a2747bc9d140cc82943929e5eebeb0ff5c005f6b639047f5a2fa
+docs/gate/SLICE_7_PLAN.md                                      rev14 27285ad6a7df74ce7983d387c205f256f673d963a948cb8bb60c49809717594e
+SLICE_7_PLAN.md changed revision: 13 -> 14 (review of 3dfb717).
