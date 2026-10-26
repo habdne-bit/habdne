@@ -36,6 +36,14 @@ Not mutated, each with its reason:
   UPDATE's re-check under READ COMMITTED, give the later time either way.
   M1 is killed by the binding that must wait (R-S7-2-01 by webhook).
 
+`test_mandatory_test_1_concurrent_deliveries_make_one_message` is DESELECTED
+from the mutation runs; it runs in the suite (`record_test_run.py`). Eight
+deliveries race, so under a mutant its outcome can depend on timing: the
+first pair of runs at 56659db (kept, `SLICE7-STEP3-MUTATIONS-RACE-PAIR*.txt`)
+differed only there, under T3, failing it in one run and not the other. No
+mutation was killed by it alone, in either run. T3's path is pinned
+deterministically by `test_t2_on_a_final_event_is_final_and_writes_nothing`.
+
 Run in two parts, one per test file; each part prints its own header. See
 `mutation_runner.py`.
 """
@@ -50,6 +58,7 @@ PROBLEMS = "src/turab/api/problems.py"
 CONTRACT = "src/turab/auth/contract.py"
 TESTS = "tests/test_slice7_step3.py"
 CONTRACT_TESTS = "tests/test_correction_007_008.py"
+DESELECT = ("test_mandatory_test_1_concurrent_deliveries_make_one_message",)
 
 MUTATIONS = [
  # --- V: before T1 ------------------------------------------------------------------------
@@ -264,7 +273,8 @@ def _check_anchors() -> None:
 if __name__ == "__main__":
     _check_anchors()
     only = tuple(sys.argv[1:])
-    survivors = run("TURAB — Slice 7 step 3: the WhatsApp webhook", TESTS, MUTATIONS, only)
+    survivors = run("TURAB — Slice 7 step 3: the WhatsApp webhook", TESTS, MUTATIONS, only,
+                    deselect=DESELECT)
     print()
     survivors += run("TURAB — Slice 7 step 3: CORRECTION-007 and CORRECTION-008, the "
                      "response_additions loader", CONTRACT_TESTS, LOADER_MUTATIONS, only)

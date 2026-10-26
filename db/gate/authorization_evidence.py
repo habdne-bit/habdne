@@ -1251,6 +1251,7 @@ RULES: tuple[Rule, ...] = (
          "older than 5 minutes, skips a held row, and prints counts only",
          ("test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one",
           "test_recovery_skips_a_row_another_processor_holds",
+          "test_t2_on_a_final_event_is_final_and_writes_nothing",
           "test_the_recovery_script_prints_counts_only")),
     Rule("S7-3 / G7-11 / G7-17 (vii)",
          "The webhook's message insert and the thread's actual move are audited with a NULL "

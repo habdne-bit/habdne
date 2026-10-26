@@ -1322,6 +1322,25 @@ def test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one(client
         "a RECEIVED event younger than 5 minutes is not stuck"
 
 
+def test_t2_on_a_final_event_is_final_and_writes_nothing(client, engine, ids):
+    """The claim takes only a RECEIVED or FAILED event. A T2 started for an
+    event that became final meanwhile (a delivery that read RECEIVED, then
+    lost the race) claims nothing: FINAL, nothing written."""
+    from sqlalchemy.orm import Session
+
+    webhooks = _svc()
+    _, thread_ref = _whatsapp(client, ids, engine)
+    envelope = webhooks.parse_envelope(_raw(_msg(thread_ref)))
+    with Session(bind=engine) as session:
+        event_id, status = webhooks.store(session, envelope, "t")
+        assert status == "RECEIVED"
+        assert webhooks.run_t2(session, event_id, envelope, "t") == "PROCESSED"
+        before = _counts(engine)
+        assert webhooks.run_t2(session, event_id, envelope, "t") == "FINAL"
+    assert _counts(engine) == before
+    assert _event(engine, envelope.provider_event_id)["status"] == "PROCESSED"
+
+
 def test_recovery_skips_a_row_another_processor_holds(client, engine, ids):
     from sqlalchemy import text
     from sqlalchemy.orm import Session
