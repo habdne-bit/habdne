@@ -1,0 +1,214 @@
+TURAB — Slice 7 step 3: its tests, run BEFORE its code exists
+=============================================================
+Recorded : 2026-10-26 15:38:34 UTC
+Base     : commit e64ba93 (plan revision 13; no step 3 code: no route, no
+           service, no response_additions, no CORRECTION-007 or 008), in an
+           ISOLATED worktree, into which only the two new test files were
+           copied, at their state of 5e152ff.
+Tests    : tests/test_slice7_step3.py
+             sha256 2466e0d9293e219148ea3858f7832c48729eb149b7ccd6035cada70e750fd422
+           tests/test_correction_007_008.py
+             sha256 9c502754603c382f57c70530997e1eb7b6f311f33db21c9b7345ce90bbbe5313
+Database : turab_s73_before, built by the suite's conftest (head 0008), dropped after.
+Server   : PostgreSQL 16.15
+Result   : 150 failed, 1 passed in 43.75s
+
+What this measures: the base has neither the webhook nor the corrections, so
+every test of what step 3 adds fails. These are our runs.
+
+Reading of the failures (by their assertion):
+  the route does not exist: each call answers 404 NOT_FOUND, where the
+     test asserts 200, 400, 401, 500 or 503 with its code;
+  the service does not exist: ImportError on turab.services.webhooks
+     (the tests that call it directly);
+  the overlay has no response_additions section (KeyError), and the
+     loader and its refusals do not exist;
+  the problem codes WEBHOOK_* do not exist.
+
+Passed, as it must at the base too: test_the_frozen_operation_is_unchanged
+(the package declares 200, 400 and 401, and no security), a fact of the
+frozen package.
+
+Two measurements were made; this is the second.
+  15:38:07 UTC  119 errors, 31 failed, 1 passed: alembic was not on PATH
+                (FileNotFoundError at the fixture's setup), which measures
+                nothing per test. Rerun with .venv/bin on PATH, as the gate
+                runs.
+  15:38:34 UTC  this record.
+
+--- pytest -rfEp output (summary lines) ---
+__ test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500 ___
+    def test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500(
+________ test_iv_1_a_python_exception_in_processing_is_failed_likewise _________
+    def test_iv_1_a_python_exception_in_processing_is_failed_likewise(client, engine, ids,
+____ test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one _____
+    def test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one(client, engine,
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+        ("a lower-case code", _set(0, "code", "webhook_processing_failed"),
+FAILED tests/test_slice7_step3.py::test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[None]
+FAILED tests/test_slice7_step3.py::test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[]
+FAILED tests/test_slice7_step3.py::test_ii_the_503_comes_after_the_size_and_before_the_signature
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[missing-None]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[empty-]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[bare hex-HEX]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[upper-case hex-UPPER]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[another algorithm-sha1=HEX]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[too short-SHORT]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[under another key-OTHER_KEY]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[of another body-OTHER_BODY]
+FAILED tests/test_slice7_step3.py::test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[with a space- SIGNED]
+FAILED tests/test_slice7_step3.py::test_ii_the_signature_is_over_the_raw_bytes
+FAILED tests/test_slice7_step3.py::test_ii_the_secret_is_read_as_utf_8
+FAILED tests/test_slice7_step3.py::test_ii_the_signature_is_compared_in_constant_time
+FAILED tests/test_slice7_step3.py::test_g7_15_a_body_over_64_kib_is_400_and_one_of_64_kib_is_read
+FAILED tests/test_slice7_step3.py::test_g7_15_the_limit_holds_without_a_content_length
+FAILED tests/test_slice7_step3.py::test_g7_15_a_false_content_length_does_not_pass_the_limit
+FAILED tests/test_slice7_step3.py::test_g7_15_a_declared_length_over_the_limit_is_refused_before_reading
+FAILED tests/test_slice7_step3.py::test_iii_the_order_size_signature_envelope
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[not JSON-{]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[not UTF-8-{"provider_event_id": "\xff"}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[an array-[]]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[a string-"x"]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[no provider_event_id-{"event_type": "message", "payload": {}}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[an empty provider_event_id-{"provider_event_id": "", "event_type": "x", "payload": {}}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[a numeric provider_event_id-{"provider_event_id": 7, "event_type": "x", "payload": {}}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[no event_type-{"provider_event_id": "e", "payload": {}}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[a null event_type-{"provider_event_id": "e", "event_type": null, "payload": {}}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[no payload-{"provider_event_id": "e", "event_type": "x"}]
+FAILED tests/test_slice7_step3.py::test_iii_an_invalid_envelope_is_400_writing_nothing[a list payload-{"provider_event_id": "e", "event_type": "x", "payload": []}]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-external_message_ref-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-thread_ref-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-message_type-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-external_message_ref-7]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-thread_ref-7]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-7]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-message_type-7]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-external_message_ref-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-None]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-external_message_ref-value11]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-value12]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-value13]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25T10:00:00]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25 10:00:00Z]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25T10:00Z]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-20261025T100000Z]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-13-25T10:00:00Z]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-yesterday]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-2026-10-25T10:00:00]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-BOUNCED]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-read]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-body_text-7]
+FAILED tests/test_slice7_step3.py::test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-media_ref-value25]
+FAILED tests/test_slice7_step3.py::test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25T10:00:00Z]
+FAILED tests/test_slice7_step3.py::test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25t10:00:00z]
+FAILED tests/test_slice7_step3.py::test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25T10:00:00.123456+01:00]
+FAILED tests/test_slice7_step3.py::test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25T10:00:00-00:00]
+FAILED tests/test_slice7_step3.py::test_iii_an_unknown_type_is_stored_then_ignored
+FAILED tests/test_slice7_step3.py::test_g7_9_1_the_event_store_holds_the_allow_list_only
+FAILED tests/test_slice7_step3.py::test_g7_9_a_message_without_the_archive_consent_is_stored_without_content
+FAILED tests/test_slice7_step3.py::test_g7_9_with_the_archive_consent_the_content_is_archived
+FAILED tests/test_slice7_step3.py::test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[revoked]
+FAILED tests/test_slice7_step3.py::test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[bound_to_another_thread]
+FAILED tests/test_slice7_step3.py::test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[binding_revoked]
+FAILED tests/test_slice7_step3.py::test_a_message_without_content_carries_no_withheld_reason
+FAILED tests/test_slice7_step3.py::test_g7_3_a_message_is_an_inbound_message_of_its_whatsapp_thread
+FAILED tests/test_slice7_step3.py::test_g7_3_a_thread_ref_of_no_whatsapp_thread_is_ignored
+FAILED tests/test_slice7_step3.py::test_g7_4_mandatory_test_2_a_recorded_reference_is_ignored_in_any_thread
+FAILED tests/test_slice7_step3.py::test_g7_4_a_reference_recorded_after_the_check_is_the_same_ignored
+FAILED tests/test_slice7_step3.py::test_g7_16_iv_the_thread_moves_to_the_later_time_only
+FAILED tests/test_slice7_step3.py::test_g7_16_iv_the_thread_is_locked_before_the_message_is_inserted
+FAILED tests/test_slice7_step3.py::test_g7_16_iv_a_webhook_holding_the_thread_makes_a_new_binding_wait
+FAILED tests/test_slice7_step3.py::test_vii_the_message_and_the_thread_move_are_audited_with_a_null_actor
+FAILED tests/test_slice7_step3.py::test_vii_a_thread_not_moved_is_not_audited
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-QUEUED]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-SENT]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-DELIVERED]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-READ]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-SENT]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-READ]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[SENT-DELIVERED]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[DELIVERED-READ]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-FAILED]
+FAILED tests/test_slice7_step3.py::test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[SENT-FAILED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-FAILED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-UNKNOWN]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[QUEUED-QUEUED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[SENT-QUEUED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-SENT]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-READ]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-SENT]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-FAILED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-FAILED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[FAILED-READ]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[FAILED-FAILED]
+FAILED tests/test_slice7_step3.py::test_g7_5_another_transition_is_ignored_and_writes_nothing[SENT-UNKNOWN]
+FAILED tests/test_slice7_step3.py::test_g7_5_the_table_is_the_triggers
+FAILED tests/test_slice7_step3.py::test_g7_5_a_status_change_in_flight_is_waited_for_then_seen
+FAILED tests/test_slice7_step3.py::test_g7_5_a_status_for_no_recorded_message_is_ignored
+FAILED tests/test_slice7_step3.py::test_g7_5_a_webhook_message_takes_its_statuses
+FAILED tests/test_slice7_step3.py::test_s42_a_replay_of_a_completed_event_is_200_and_writes_nothing
+FAILED tests/test_slice7_step3.py::test_s42_a_replay_of_an_ignored_event_writes_nothing
+FAILED tests/test_slice7_step3.py::test_mandatory_test_1_concurrent_deliveries_make_one_message
+FAILED tests/test_slice7_step3.py::test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500
+FAILED tests/test_slice7_step3.py::test_iv_1_a_python_exception_in_processing_is_failed_likewise
+FAILED tests/test_slice7_step3.py::test_iv_2_a_stop_after_t1_is_completed_by_a_redelivery
+FAILED tests/test_slice7_step3.py::test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content
+FAILED tests/test_slice7_step3.py::test_iv_3_a_failure_of_the_status_update_loses_t2_whole
+FAILED tests/test_slice7_step3.py::test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing
+FAILED tests/test_slice7_step3.py::test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it
+FAILED tests/test_slice7_step3.py::test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once
+FAILED tests/test_slice7_step3.py::test_iv_t2_whose_commit_answer_is_lost_is_500_then_a_redelivery_is_a_replay
+FAILED tests/test_slice7_step3.py::test_archived_at_alone_refuses_nothing
+FAILED tests/test_slice7_step3.py::test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one
+FAILED tests/test_slice7_step3.py::test_recovery_skips_a_row_another_processor_holds
+FAILED tests/test_slice7_step3.py::test_the_recovery_script_prints_counts_only
+FAILED tests/test_slice7_step3.py::test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+FAILED tests/test_slice7_step3.py::test_the_webhook_stays_in_the_closed_public_list_and_reads_no_bearer
+FAILED tests/test_correction_007_008.py::test_each_entry_is_one_error_response_of_the_webhook[CORRECTION-007-500-WEBHOOK_PROCESSING_FAILED]
+FAILED tests/test_correction_007_008.py::test_each_entry_is_one_error_response_of_the_webhook[CORRECTION-008-503-WEBHOOK_NOT_READY]
+FAILED tests/test_correction_007_008.py::test_the_two_meanings_differ_as_decided
+FAILED tests/test_correction_007_008.py::test_the_loader_returns_both_and_only_them
+FAILED tests/test_correction_007_008.py::test_the_effective_operation_is_the_frozen_one_with_the_two_responses
+FAILED tests/test_correction_007_008.py::test_each_code_is_a_problem_code_of_the_entrys_status[CORRECTION-007]
+FAILED tests/test_correction_007_008.py::test_each_code_is_a_problem_code_of_the_entrys_status[CORRECTION-008]
+FAILED tests/test_correction_007_008.py::test_the_runtimes_other_webhook_answers_are_declared_statuses
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[an unknown key-change-unknown key]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a role-change-unknown key]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[no id-change-missing or duplicated id]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a reused id-change-missing or duplicated id]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[an id of another section-change-missing or duplicated id]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[no decision-change-names no decision]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[an unknown operation-change-not in the frozen contract]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a 2xx-change-not a 5xx]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a 4xx-change-not a 5xx]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a status as a number-change-not a 5xx]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a status of four digits-change-not a 5xx]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[the same pair twice-change-is already added; one addition per]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[stale frozen statuses-change-stale]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[no frozen statuses-change-stale]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[a lower-case code-change-not an upper-case identifier]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[no code-change-not an upper-case identifier]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_what_is_not_one_added_error_response[an empty description-change-no description]
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_a_status_the_operation_already_declares
+FAILED tests/test_correction_007_008.py::test_the_loader_refuses_a_package_whose_statuses_changed
+FAILED tests/test_correction_007_008.py::test_the_same_status_on_two_operations_is_two_pairs
+PASSED tests/test_correction_007_008.py::test_the_frozen_operation_is_unchanged
+150 failed, 1 passed, 1 warning in 43.75s
