@@ -27,6 +27,8 @@ import stop_gate_e_evidence  # noqa: E402
 REPORT = run_binding.REPORT
 PROOF = stop_gate_e_evidence.PROOF
 DOC = "docs/gate/SLICE_5_STOP_GATE_E.md"
+#: Slice 7's writer of `interactions` (step 4), absent from Slice 5's tree.
+SLICE7_WRITER = "src/turab/services/message_interactions.py"
 
 
 def _case(qualified: str, status: str = "pass", recorded: dict | None = None) -> str:
@@ -78,6 +80,12 @@ def tree(tmp_path) -> pathlib.Path:
     ignore = shutil.ignore_patterns("__pycache__", ".pytest_cache")
     for d in ("src", "tests", "db", "docs/gate"):
         shutil.copytree(ROOT / d, copy / d, ignore=ignore)
+    # STOP GATE E stays the record of Slice 5's tree (G7-18 (ix), review of
+    # e18271a). Slice 7 step 4 adds a decided second writer of `interactions`
+    # (G7-8 (a)), which the gate, unchanged, reports on the real tree. The
+    # copy is given Slice 5's writer set, so each experiment below still
+    # starts from a passing baseline and refuses for its own reason.
+    (copy / SLICE7_WRITER).unlink()
     shutil.copy(ROOT / "alembic.ini", copy / "alembic.ini")
     _bind(copy, _report(_all_passing()))
     written = _gen(copy, check=False)

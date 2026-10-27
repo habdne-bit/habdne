@@ -1283,14 +1283,22 @@ def test_two_shares_on_one_property_serialize_and_both_succeed(client, engine, i
 
 def test_g5_8_i_the_share_is_the_one_writer_of_interactions():
     """Computed from the tree, as the other writer checks: `interactions`
-    (a Slice 7 table) is written by one module, the opportunity commands
-    (share, close, and revalidate with a note), through one INSERT."""
+    (a Slice 7 table) is written by the opportunity commands (share, close,
+    and revalidate with a note), through one INSERT.
+
+    **Since Slice 7 step 4,** a second writer is decided: G7-8 (a) "changes
+    G5-8 (i)'s single writer", and G7-18 (ix) (review of e18271a) inventories
+    the writers by kind. `services/message_interactions.py` writes a
+    message's interaction, through one INSERT. No other module writes it.
+    (The name of this test is kept: the matrix and STOP GATE E cite it.)"""
     pattern = re.compile(r"INSERT\s+INTO\s+turab\.interactions\b")
     writers = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "src").rglob("*.py")
                      if pattern.search(p.read_text(encoding="utf-8")))
-    assert writers == ["src/turab/services/opportunity_commands.py"]
-    source = (ROOT / writers[0]).read_text(encoding="utf-8")
-    assert len(pattern.findall(source)) == 1, "one writer: `_record`"
+    assert writers == ["src/turab/services/message_interactions.py",
+                       "src/turab/services/opportunity_commands.py"]
+    for writer in writers:
+        source = (ROOT / writer).read_text(encoding="utf-8")
+        assert len(pattern.findall(source)) == 1, f"one INSERT in {writer}"
 
 
 # ======================================================================================
