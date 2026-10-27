@@ -5,18 +5,18 @@ db/gate/run_binding.py, through `db/gate/stop_gate_c_evidence.py --check`.
 A saved JUnit report says when IT was produced, not which tree produced it.
 This record binds the report to that tree, and to its own digest and counts.
 
-Recorded    : 2026-10-26 18:59:37 UTC
-Commit      : a7a4badf06b15ebb7de33019eebe14fbe0ba52b7
+Recorded    : 2026-10-27 18:21:52 UTC
+Commit      : 0ad35fb714495b703c87b17a65e618b1d0b218f3
 Working tree: clean when the suite started; unchanged when it ended
 Source fingerprint (db/dev/source_fingerprint.py):
-              4a09506f5206e2b4edd66a8af0e173bf986d174ba725cf386bada9a85b213ed7
+              9ddce632e4a7befe52ad78ed7fefb6d607aef427f73d1e98ff654ee30a8624af
 Report      : docs/gate/evidence/junit-run.xml
 Report sha256:
-              6cd740f33037674785d4947a5d41ca076eaa1ac313e235a7d4077c3b2bed2202
+              f759ad7154aabb3e00cd91550a1d8c4339636df96321e99f2c500de936f7c8f7
 Cases counted in the report, one per <testcase>:
-              tests=3005 failures=0 errors=0 skipped=0
+              tests=3027 failures=0 errors=0 skipped=0
 JUnit timestamp / time:
-              timestamp=2026-10-26T18:59:38.190805+00:00 time=602.826s
+              timestamp=2026-10-27T18:21:53.272514+00:00 time=521.278s
 
 WHAT THIS DOES AND DOES NOT SAY
   * It says: these tests were run, at this time, against a tree whose source
