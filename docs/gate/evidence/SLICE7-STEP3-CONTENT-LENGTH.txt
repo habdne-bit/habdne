@@ -62,3 +62,29 @@ Reading:
 The fix (see the delivery note): `declared_over_limit` accepts ASCII decimal
 only, drops leading zeros, and decides "over" by the count of significant
 digits before any int(), which then converts at most six digits.
+
+AFTER THE FIX, the same requests: commit 4e15815 (clean but for this record, appended as the run went); 2026-10-27 16:40:08 UTC
+== uvicorn --http httptools
+  Content-Length 9 x 5000 digits   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 0 x 5000 then 2   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"7b78312a95044e21a5fb715bde6822d2","
+  Content-Length 0 x 4299 then 2   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"3dea536581ba451189a6e9fa75c9a82e","
+  Content-Length 65537             : HTTP/1.1 400 Bad Request | {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_BODY_TOO_LARGE","trace_id":"5faa2be28590401f983bb9b0b42781
+  Content-Length 2 (true length)   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"b2e6ad31749349a69748049c9df89aef","
+  server log, lines naming an error:
+         1 WARNING:  Invalid HTTP request received.
+== uvicorn --http h11
+  Content-Length 9 x 5000 digits   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 0 x 5000 then 2   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 0 x 4299 then 2   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 65537             : HTTP/1.1 400 Bad Request | {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_BODY_TOO_LARGE","trace_id":"f0cf6caf0ba74cf6b5738c8b66199f
+  Content-Length 2 (true length)   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"d998903653b94d9b88e8e5333b0d8c52","
+  server log, lines naming an error:
+         3 WARNING:  Invalid HTTP request received.
+webhook_events rows: before 84, after 84
+
+Reading, after the fix: under httptools, '0' x 5000 + '2' is now read as the
+2-byte body it declares, and goes on to the signature check (401: these
+requests are signed wrong on purpose); no ValueError in the server log; h11
+unchanged. The cases no HTTP parser delivers (an overlong value over the
+limit with leading zeros, a non-ASCII digit) are tested over ASGI in
+tests/test_slice7_step3.py.
