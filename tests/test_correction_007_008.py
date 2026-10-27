@@ -70,8 +70,8 @@ def test_each_entry_is_one_error_response_of_the_webhook(cid, status, code):
                                           ["200", "400", "401"])
     assert entry["reference"] == next(
         str(p.relative_to(ROOT)) for p in (ROOT / "docs" / "contract").glob(f"{cid}-*.md"))
-    # Submitted with step 3's delivery: no approval date until the review.
-    assert "approved" not in entry and "not yet approved" in entry["decision"]
+    # Approved in the review of 23b99b6; submitted until then without a date.
+    assert entry["approved"] == "2026-10-27" and "review of 23b99b6" in entry["decision"]
 
 
 def test_the_two_meanings_differ_as_decided():
@@ -111,7 +111,7 @@ def test_the_effective_operation_is_the_frozen_one_with_the_two_responses():
             "content": PROBLEM,
             "x-turab-correction": {
                 "id": cid, "kind": "RESPONSE_ADDITION",
-                "decision": " ".join(entry["decision"].split()), "approved": "",
+                "decision": " ".join(entry["decision"].split()), "approved": "2026-10-27",
                 "code": entry["code"], "frozen-statuses": ["200", "400", "401"],
                 "reference": entry["reference"]}}
     assert _operation(effective) == expected

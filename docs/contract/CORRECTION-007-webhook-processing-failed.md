@@ -5,7 +5,7 @@
 | **Kind** | Response addition, through the corrections overlay (`response_additions`). It adds one error response, and grants nothing |
 | **Operation** | `postWebhooksWhatsapp` (POST `/webhooks/whatsapp`) |
 | **Decision** | Slice 7 plan §5.2 (`docs/gate/SLICE_7_PLAN.md`): adopted in the review of `4aed49b`. Its mechanism (`response_additions`, unique per (operation, HTTP status)) was decided in the review of `bf1fe3d` (G7-17 (vi)). Its meaning was narrowed in the review of `3dfb717`: the result of the processing is **not confirmed** to the sender, rather than "not processed" |
-| **Status of this text** | **SUBMITTED for approval with Slice 7 step 3's delivery, not yet approved.** The entry carries no `approved` date |
+| **Status of this text** | **APPROVED in the review of `23b99b6`** (2026-10-27), as delivered there, with Slice 7 step 3's closure. Submitted with the step's delivery; the entry carries its `approved` date since |
 | **Frozen package** | `openapi_v0.2.3.yaml`, unchanged. The correction is applied in `docs/api/openapi_effective_v0.2.3.yaml` |
 
 ## 1. The frozen text, and why it does not suffice

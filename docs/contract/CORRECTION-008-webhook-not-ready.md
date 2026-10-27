@@ -5,7 +5,7 @@
 | **Kind** | Response addition, through the corrections overlay (`response_additions`). It adds one error response, and grants nothing |
 | **Operation** | `postWebhooksWhatsapp` (POST `/webhooks/whatsapp`) |
 | **Decision** | Slice 7 plan G7-17 (ii) and (vi), decided in the review of `bf1fe3d`: "a missing or empty secret is not an authentication fault of the relay: its answer is 503, before any write, with the fixed code `WEBHOOK_NOT_READY`"; CORRECTION-008 "asks for a redelivery without claiming the event is recorded". **Widened in the review of `3dfb717`** to a T1 that raises after the request's checks passed, its description to "the event's acceptance could not be confirmed; deliver it again with the same identifier" |
-| **Status of this text** | **SUBMITTED for approval with Slice 7 step 3's delivery, not yet approved.** The entry carries no `approved` date |
+| **Status of this text** | **APPROVED in the review of `23b99b6`** (2026-10-27), as delivered there, with Slice 7 step 3's closure. Submitted with the step's delivery; the entry carries its `approved` date since |
 | **Frozen package** | `openapi_v0.2.3.yaml`, unchanged. The correction is applied in `docs/api/openapi_effective_v0.2.3.yaml` |
 
 ## 1. The frozen text, and why it does not suffice

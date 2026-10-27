@@ -23,7 +23,7 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    1d27c6b447db802fb230b82d6903cb31fc98f8c78e984192fb28ef7bd698dbb6
+#   CONTRACT_CORRECTIONS.yaml    91f30c7fbd37a0eec74d71b5cfd8b6e2c725cbad81f0c8ead69c35e02183f671
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
 # Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)
@@ -2072,9 +2072,9 @@ paths:
             kind: RESPONSE_ADDITION
             decision: 'Slice 7 plan §5.2 (docs/gate/SLICE_7_PLAN.md): adopted in the review of 4aed49b;
               its mechanism (response_additions) decided in the review of bf1fe3d; its meaning narrowed
-              to "the result of the processing is not confirmed" in the review of 3dfb717. The TEXT of
-              this entry is submitted for approval with step 3''s delivery, and is not yet approved.'
-            approved: ''
+              to "the result of the processing is not confirmed" in the review of 3dfb717. The text of
+              this entry approved in the review of 23b99b6, as delivered there.'
+            approved: '2026-10-27'
             code: WEBHOOK_PROCESSING_FAILED
             frozen-statuses:
             - '200'
@@ -2092,9 +2092,9 @@ paths:
             id: CORRECTION-008
             kind: RESPONSE_ADDITION
             decision: Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d; widened in the
-              review of 3dfb717 to a T1 that raised. The TEXT of this entry is submitted for approval
-              with step 3's delivery, and is not yet approved.
-            approved: ''
+              review of 3dfb717 to a T1 that raised. The text of this entry approved in the review of
+              23b99b6, as delivered there.
+            approved: '2026-10-27'
             code: WEBHOOK_NOT_READY
             frozen-statuses:
             - '200'

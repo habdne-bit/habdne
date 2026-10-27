@@ -20,8 +20,12 @@
 - the timeline (G7-8) and the confirmation link (G7-10), step 4;
 - the relay (R-1). **R-1 is UNMET: no real event may be received.**
 
-**Status: DELIVERED FOR REVIEW again,** with the commit that adds §9.
-**Not closed.**
+**Status: CLOSED at `23b99b6`** (review of `23b99b6`; `SLICE_7_PLAN.md`
+revision 16). CORRECTION-007's and CORRECTION-008's texts are APPROVED as
+delivered there; their entries carry `approved: "2026-10-27"` since. Step 4
+is authorized.
+- **What the reviewer did not do:** re-run the suite, the mutations or
+  PostgreSQL. The results are ours.
 - *History:* delivered at `34d6122`; NOT closed by the review of `34d6122`,
   for CORRECTION-007 §1's wording and an unbounded `int()` of
   `Content-Length`. §9 answers both, with the evidence on the resulting

@@ -1,26 +1,23 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 15**
+## Implementation plan — **revision 16**
 
-**Status: step 2 is CLOSED at `6d8815d`, and step 3 is AUTHORIZED** (review
-of `6d8815d`, recorded below). Step 1 is CLOSED at `7e8993d`. Slice 7 is not
-closed.
+**Status: step 3 is CLOSED at `23b99b6`, and step 4 is AUTHORIZED** (review
+of `23b99b6`, recorded below), within the plan's scope. Steps 1 and 2 are
+CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
 - **G7-17 is DECIDED** (review of `bf1fe3d`, recorded below), with a 503
   `WEBHOOK_NOT_READY` under a new CORRECTION-008.
-- **Step 3 is DELIVERED FOR REVIEW again, not closed**
-  (`SLICE_7_STEP3_DELIVERY.md`, §9). The review of `34d6122` (recorded below)
-  did not close it, for CORRECTION-007 §1's wording and an unbounded `int()`
-  of `Content-Length`; both are answered, and the evidence round is bound to
-  the resulting tree. CORRECTION-007's and CORRECTION-008's texts are
-  submitted, not approved.
+- **Step 3 is CLOSED at `23b99b6`** (`SLICE_7_STEP3_DELIVERY.md`).
+  CORRECTION-007's and CORRECTION-008's texts are APPROVED as delivered
+  there.
 - **The slice's code so far:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
     `postCommunicationThreadsThreadIdMessages` (`services/communication.py`,
     `api/routes/communication.py`), with CORRECTION-006, approved;
   - step 3's webhook, its recovery command and CORRECTION-007 and 008,
-    delivered for review (`services/webhooks.py`, `api/routes/webhooks.py`,
+    approved (`services/webhooks.py`, `api/routes/webhooks.py`,
     `db/ops/recover_webhook_events.py`).
 
   No timeline and no `interactions` row exist yet (step 4).
@@ -86,7 +83,32 @@ a recommendation. A recommendation is not a decision.
 | 12 | `bf1fe3d` | G7-17 added: seven points of step 3 put as decisions, each with a recommendation; no other change |
 | 13 | `e64ba93` | the review of `bf1fe3d` recorded: G7-17 decided, a 503 `WEBHOOK_NOT_READY` (CORRECTION-008) for a missing secret, `response_additions` unique per (operation, status), R-1 duty 5 extended to the 503 |
 | 14 | `5e152ff` | the review of `3dfb717` recorded: a T1 that raised is CORRECTION-008's 503, whose meaning is widened to "acceptance not confirmed"; CORRECTION-007's narrowed to "the processing's result not confirmed"; `archived_at` read; the stale statements corrected: the introduction (no webhook yet), "the interaction" among T2's writes (G7-2 (iv), its test 1, §3.1, §6.1), CORRECTION-007's meaning (G7-2 (v), §5.2), the 500 "for no operation" (§5.2), the two corrections of §7 (1) |
-| 15 | this revision | the review of `34d6122` recorded: T1 and T2, the 400 codes and `archived_at` accepted; CORRECTION-007 §1 and an unbounded `int()` of `Content-Length` to answer; both answered (`SLICE_7_STEP3_DELIVERY.md` §9) |
+| 15 | `23b99b6` | the review of `34d6122` recorded: T1 and T2, the 400 codes and `archived_at` accepted; CORRECTION-007 §1 and an unbounded `int()` of `Content-Length` to answer; both answered (`SLICE_7_STEP3_DELIVERY.md` §9) |
+| 16 | this revision | the review of `23b99b6` recorded: step 3 CLOSED, CORRECTION-007 and CORRECTION-008 approved, step 4 authorized; a pointer at G7-17 (vi) to CORRECTION-007's later meaning |
+
+**The review of `23b99b6`. Step 3 is CLOSED at `23b99b6`; CORRECTION-007
+and CORRECTION-008 are APPROVED as delivered there; step 4 is AUTHORIZED
+within the plan's scope.** Slice 7 stays open.
+- **What the reviewer read:** the diff from `34d6122`, the webhook's route,
+  CORRECTION-007's text, the `Content-Length` tests and their measurement
+  record.
+- **What the closure rests on:**
+  - the 500 describes an event stored **whose processing's result is not
+    confirmed to the sender**; the 503 does not claim the event's
+    acceptance is confirmed;
+  - the new comparison drops leading zeros before converting a number of at
+    most six digits; the tests cover the refusal before the body is read,
+    and a small size written with long zeros.
+- **What the reviewer did not do:** re-run the 3027 tests, the 68/68
+  mutations or the PostgreSQL gate. They are the implementing team's
+  results, bound to the tree.
+- **A documentary note, not blocking:** the decision table at G7-17 (vi)
+  still shortens the 500 to "processing failed". A pointer from that place
+  to the meaning later approved is added in this revision, without
+  rewriting the decision.
+- **Standing:** R-1 is a condition before any real event is received; K06
+  is UNPROVEN; the scope is SALE only. This closure is not a release
+  authorization.
 
 **The review of `34d6122`. Step 3 is NOT closed, and CORRECTION-007's text
 is not approved as it stood.**
@@ -165,7 +187,7 @@ recording of step 2's closure is correct.
 | (iii) the order of the checks | **(a):** the size, then the signature, then the envelope, then the keys of a known type, all before T1. The time must carry a zone. An unknown type is stored, then IGNORED, as the plan says. |
 | (iv) the codes | **(a):** the proposed IGNORED list, and `PROCESSING_FAILED` for FAILED, with no exception text. |
 | (v) the 200 | an empty body, for every case named. |
-| (vi) the contract correction | the `response_additions` mechanism with its proposed controls, **its uniqueness per pair (operation, HTTP status)** rather than one entry per operation. **CORRECTION-007** stays the 500, which means the event is recorded and its processing failed. **CORRECTION-008** is added, the 503, which asks for a redelivery without claiming the event is recorded. **R-1 must test the redelivery on 500, on 503 and on a timeout.** The two corrections' texts, and the resulting contract, are delivered with step 3. |
+| (vi) the contract correction | the `response_additions` mechanism with its proposed controls, **its uniqueness per pair (operation, HTTP status)** rather than one entry per operation. **CORRECTION-007** stays the 500, which means the event is recorded and its processing failed. *(Revision 16, a pointer only, the decision left as it was: the meaning later narrowed in the review of `3dfb717` and approved in the review of `23b99b6` is "the event is stored; the result of its processing is not confirmed to the sender"; see CORRECTION-007.)* **CORRECTION-008** is added, the 503, which asks for a redelivery without claiming the event is recorded. **R-1 must test the redelivery on 500, on 503 and on a timeout.** The two corrections' texts, and the resulting contract, are delivered with step 3. |
 | (vii) the audit | **(a).** The access auditor sends a record to the log stream, not to `audit_log`, so it can record a 400/401/503 refusal without breaking "nothing written to the database". **One record per answer**, with no body, signature or secret. The message's insert and the thread's actual move are audited by `audit_rows` with a NULL actor, without copying the content or auditing the webhook event twice. |
 
 - **Two tests asked for, pinning the two limits this decision changes:**

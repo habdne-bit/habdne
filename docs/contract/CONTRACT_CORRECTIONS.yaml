@@ -159,8 +159,9 @@ response_additions:
       Slice 7 plan §5.2 (docs/gate/SLICE_7_PLAN.md): adopted in the review of
       4aed49b; its mechanism (response_additions) decided in the review of
       bf1fe3d; its meaning narrowed to "the result of the processing is not
-      confirmed" in the review of 3dfb717. The TEXT of this entry is
-      submitted for approval with step 3's delivery, and is not yet approved.
+      confirmed" in the review of 3dfb717. The text of this entry approved in
+      the review of 23b99b6, as delivered there.
+    approved: "2026-10-27"
     operation_id: postWebhooksWhatsapp
     status: "500"
     code: WEBHOOK_PROCESSING_FAILED
@@ -184,9 +185,9 @@ response_additions:
   - id: CORRECTION-008
     decision: >-
       Slice 7 plan G7-17 (ii) and (vi), decided in the review of bf1fe3d;
-      widened in the review of 3dfb717 to a T1 that raised. The TEXT of this
-      entry is submitted for approval with step 3's delivery, and is not yet
-      approved.
+      widened in the review of 3dfb717 to a T1 that raised. The text of this
+      entry approved in the review of 23b99b6, as delivered there.
+    approved: "2026-10-27"
     operation_id: postWebhooksWhatsapp
     status: "503"
     code: WEBHOOK_NOT_READY
