@@ -332,6 +332,118 @@ def test_g7_15_a_declared_length_over_the_limit_is_refused_before_reading():
     assert asyncio.run(route._read_limited(Request())) is None
 
 
+# The review of 34d6122: a `Content-Length` too long for `int()`. CPython
+# refuses to convert more than 4300 digits, leading zeros included; uvicorn's
+# httptools parser delivers such a header to the application (measured:
+# `evidence/SLICE7-STEP3-CONTENT-LENGTH.txt`), where it raised, answering a
+# generic 500 with no access record.
+LONG = 5000
+
+
+@pytest.mark.parametrize("declared, over", [
+    ("9" * LONG, True),
+    ("0" * LONG + "65537", True),
+    ("1" + "0" * LONG, True),
+    ("0" * LONG + "2", False),
+    ("0" * LONG + "65536", False),
+    ("0" * LONG, False),
+    ("65536", False),
+    ("65537", True),
+    ("100000", True),
+    ("099999", True),
+    ("0", False),
+    ("", False),
+    ("\u00b2", False),
+    ("\u0661\u0662", False),
+    ("12a", False),
+    ("-1", False),
+    (" 2", False),
+    (None, False),
+], ids=lambda v: v if isinstance(v, bool) else
+    (repr(v) if v is None or len(v) <= 8 else f"{v[:2]}..{len(v)}chars..{v[-5:]}"))
+def test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion(declared,
+                                                                               over):
+    """A size is over the limit by its significant digits, never by `int()` of
+    the whole header; leading zeros do not make a small size large; a value
+    that is not ASCII decimal declares nothing (the count while reading
+    decides)."""
+    from turab.api.routes import webhooks as route
+
+    assert route.declared_over_limit(declared) is over
+
+
+def _asgi(engine, sink, raw, declared):
+    """One request straight through the ASGI app, its `Content-Length` header
+    exactly `declared`, as uvicorn hands it on. Returns the status, the body
+    and how many times the app asked for the request's body."""
+    import asyncio
+
+    from turab.app import create_app
+
+    app = create_app(engine=engine, auditor=AccessAuditor(sink))
+    reads, sent = [], []
+
+    async def receive():
+        reads.append(1)
+        return {"type": "http.request", "body": raw, "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+             "method": "POST", "scheme": "http", "path": "/webhooks/whatsapp",
+             "raw_path": b"/webhooks/whatsapp", "root_path": "", "query_string": b"",
+             "client": ("127.0.0.1", 1), "server": ("127.0.0.1", 80),
+             "headers": [(b"host", b"x"), (b"content-type", b"application/json"),
+                         (b"content-length", declared.encode("latin-1")),
+                         (b"x-turab-relay-signature", _sign(raw).encode())]}
+    asyncio.run(app(scope, receive, send))
+    start = next(m for m in sent if m["type"] == "http.response.start")
+    body = b"".join(m.get("body", b"") for m in sent if m["type"] == "http.response.body")
+    return start["status"], body, len(reads)
+
+
+@pytest.mark.parametrize("label, declared", [
+    ("nines", "9" * LONG),
+    ("zeros then over", "0" * LONG + "65537"),
+], ids=lambda v: v if len(v) <= 60 else "")
+def test_g7_15_an_overlong_declared_length_is_400_unread_and_writes_nothing(
+        engine, ids, sink, label, declared):
+    """The fault measured through httptools, now: 400 `WEBHOOK_BODY_TOO_LARGE`,
+    one access record, the body never read, nothing written."""
+    raw = _raw({"provider_event_id": _eid(), "event_type": "reaction", "payload": {}})
+    before = _counts(engine)
+    status, body, reads = _asgi(engine, sink, raw, declared)
+    assert (status, json.loads(body)["code"]) == (400, "WEBHOOK_BODY_TOO_LARGE")
+    assert reads == 0, "the body is not read"
+    assert _counts(engine) == before
+    assert [(r.reason_code, r.extra["http_status"]) for r in sink.records] == [
+        ("BODY_TOO_LARGE", 400)]
+
+
+@pytest.mark.parametrize("label, declared", [
+    ("its length written with 5000 leading zeros", "ZEROS"),
+    ("a non-ASCII digit", "\u00b2"),
+], ids=lambda v: v if len(v) <= 60 else "")
+def test_g7_15_a_small_body_under_an_odd_declared_length_is_processed(
+        client, engine, ids, sink, label, declared):
+    """A small size written long is not refused: the body is read, counted,
+    and the event processed. A value that is not ASCII decimal is ignored the
+    same way (no measured server delivers one: both uvicorn parsers refuse
+    it; the route does not rely on that)."""
+    _, thread_ref = _whatsapp(client, ids, engine)
+    envelope = _msg(thread_ref)
+    raw = _raw(envelope)
+    if declared == "ZEROS":
+        declared = "0" * LONG + str(len(raw))
+    sink.clear()
+    status, body, reads = _asgi(engine, sink, raw, declared)
+    assert (status, body) == (200, b""), body
+    assert reads >= 1
+    assert _event(engine, envelope["provider_event_id"])["status"] == "PROCESSED"
+    assert len(_messages(engine, envelope["payload"]["external_message_ref"])) == 1
+
+
 def test_iii_the_order_size_signature_envelope(client, engine, sink):
     """An oversized body with a wrong signature is 400 (size first); a body
     that is not JSON with a wrong signature is 401 (the signature before the

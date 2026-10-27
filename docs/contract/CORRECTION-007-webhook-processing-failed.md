@@ -21,16 +21,22 @@
       '401': {description: Request rejected, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
 ```
 
-- **Today the effective contract declares a `500` for no operation.**
+- **Before this correction, the effective contract declared a `500` for no
+  operation** (searched: no `'500'` in `openapi_effective_v0.2.3.yaml`, plan
+  §5.2).
 - **The case it leaves without an answer** (G7-2 (iv), (v)): T1 has
-  committed the event, and T2 did not process it. Either T2 ended FAILED,
-  with the failure recorded, or T2 was lost whole and the event kept its
-  status (RECEIVED, or FAILED from an earlier attempt).
+  committed the event, and **the result of its processing is not confirmed
+  to the sender.** Two outcomes lead there (§3):
+  - T2 ended FAILED: its processing raised, and the failure is recorded;
+  - T2 raised outside its savepoint (`PROCESSING_LOST`). Whether its COMMIT
+    took effect is then unknown: the event may keep its previous status
+    (RECEIVED, or FAILED from an earlier attempt), or be PROCESSED or
+    IGNORED with only the COMMIT's answer lost.
 - **Why 200 would be wrong.** A 200 tells the relay that nothing more is
-  needed. The event could then be recovered only by the operator command,
-  from the content-free payload, so **without its content** (G7-2 (v),
-  accepted limit). The relay's redelivery is the one recovery that keeps the
-  content (G7-9), and it needs a signal.
+  needed. An event left unprocessed could then be recovered only by the
+  operator command, from the content-free payload, so **without its
+  content** (G7-2 (v), accepted limit). The relay's redelivery is the one
+  recovery that keeps the content (G7-9), and it needs a signal.
 - **Why 400 or 401 would be wrong.** The request was valid and verified;
   the fault is TURAB's.
 - **Why the precedent did not settle it.** Slice 4's typed 500 for its

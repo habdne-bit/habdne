@@ -1170,14 +1170,17 @@ RULES: tuple[Rule, ...] = (
           "test_ii_the_secret_is_read_as_utf_8",
           "test_ii_the_signature_is_compared_in_constant_time")),
     Rule("S7-3 / G7-15 / G7-17 (iii)",
-         "Before T1, in order: a body over 64 KiB is 400 (on Content-Length and while "
-         "reading); the signature; an invalid envelope or a known type's missing or mistyped "
+         "Before T1, in order: a body over 64 KiB is 400 (on Content-Length, compared "
+         "without an unbounded conversion, and while reading); the signature; an invalid envelope or a known type's missing or mistyped "
          "key is 400, a time without a zone included; each writes nothing; an unknown type "
          "is stored, then IGNORED",
          ("test_g7_15_a_body_over_64_kib_is_400_and_one_of_64_kib_is_read",
           "test_g7_15_the_limit_holds_without_a_content_length",
           "test_g7_15_a_false_content_length_does_not_pass_the_limit",
           "test_g7_15_a_declared_length_over_the_limit_is_refused_before_reading",
+          "test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion",
+          "test_g7_15_an_overlong_declared_length_is_400_unread_and_writes_nothing",
+          "test_g7_15_a_small_body_under_an_odd_declared_length_is_processed",
           "test_iii_the_order_size_signature_envelope",
           "test_iii_an_invalid_envelope_is_400_writing_nothing",
           "test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400",

@@ -36,6 +36,7 @@ secret.
 from __future__ import annotations
 
 import logging
+import re
 
 from fastapi import APIRouter, Request, Response
 from fastapi.concurrency import run_in_threadpool
@@ -56,12 +57,31 @@ NOT_CONFIRMED = ("The event is stored; the result of its processing could not be
                  "confirmed. Deliver it again with the same provider_event_id.")
 
 
+#: ASCII digits only: `str.isdigit` also accepts digits `int` refuses ("²").
+_DECIMAL = re.compile(r"[0-9]+")
+
+
+def declared_over_limit(declared: str | None) -> bool:
+    """Whether `Content-Length` declares more than `BODY_LIMIT`, without an
+    unbounded `int()`: CPython refuses to convert a string of more than 4300
+    digits (`sys.get_int_max_str_digits`), leading zeros included, and
+    uvicorn's httptools parser delivers such a header to the application
+    (measured, the review of 34d6122). Leading zeros are dropped first, so a
+    small size written long is still small; past the limit's own number of
+    digits, the value is over it without being converted. A value that is
+    not an ASCII decimal declares nothing: the count while reading decides."""
+    if declared is None or _DECIMAL.fullmatch(declared) is None:
+        return False
+    significant = declared.lstrip("0")
+    if len(significant) > len(str(webhook_service.BODY_LIMIT)):
+        return True
+    return bool(significant) and int(significant) > webhook_service.BODY_LIMIT
+
+
 async def _read_limited(request: Request) -> bytes | None:
     """The raw body, or None past `BODY_LIMIT` (G7-15). `Content-Length` is
     checked first; the count while reading covers a missing or false one."""
-    declared = request.headers.get("content-length")
-    if declared is not None and declared.isdigit() and \
-            int(declared) > webhook_service.BODY_LIMIT:
+    if declared_over_limit(request.headers.get("content-length")):
         return None
     chunks, size = [], 0
     async for chunk in request.stream():

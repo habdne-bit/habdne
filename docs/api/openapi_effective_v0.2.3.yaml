@@ -23,7 +23,7 @@
 #
 # Source digests at generation time:
 #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
-#   CONTRACT_CORRECTIONS.yaml    493be979333ce68a15b8b91ddb730b75767e547cf5ad26d5e4de374344f70045
+#   CONTRACT_CORRECTIONS.yaml    1d27c6b447db802fb230b82d6903cb31fc98f8c78e984192fb28ef7bd698dbb6
 #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
 #
 # Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)

@@ -1,0 +1,64 @@
+TURAB — Slice 7 step 3: a Content-Length too long for int(), measured through HTTP
+====================================================================================
+Asked for in the review of 34d6122: measure, through HTTP or ASGI, whether a
+Content-Length that int() refuses reaches the webhook route, before fixing it.
+
+How: the app served by uvicorn (`--factory turab.app:create_app`), the
+project's server (`uvicorn[standard]` in pyproject.toml), once with each of
+its two HTTP parsers; raw requests over a socket, each with a body of 2 bytes
+(`{}`), a wrong signature and `Connection: close`; on the tree of 34d6122,
+before any fix; database turab_authz_test. The scripts are kept beside this
+record (SLICE7-STEP3-CONTENT-LENGTH.py, -SUPERSCRIPT.py).
+
+Python's own limit, measured in the same interpreter:
+  sys.get_int_max_str_digits() = 4300
+  int('9' * 5000)        -> ValueError: Exceeds the limit (4300 digits) ...
+  int('0' * 5000 + '1')  -> ValueError: ... value has 5001 digits  (leading
+                            zeros count toward the limit)
+
+Results (status line | start of the body):
+commit 34d6122; 2026-10-27 16:31:43 UTC; Python 3.12.3; uvicorn 0.54.0; httptools 0.9.0; h11 0.16.0
+== uvicorn --http httptools
+  Content-Length 9 x 5000 digits   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 0 x 5000 then 2   : HTTP/1.1 500 Internal Server Error | {"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"80dc5018686e40dab79a1227b009818b"}
+  Content-Length 0 x 4299 then 2   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"a068b354a589458b991601023fd01ac4","detail":"The relay signat
+  Content-Length 65537             : HTTP/1.1 400 Bad Request | {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_BODY_TOO_LARGE","trace_id":"ffeb6e53afe94746a3b207b1102c07fa","detail":"The body e
+  Content-Length 2 (true length)   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"8986410088c84f78b671eced98308f10","detail":"The relay signat
+  server log, lines naming an error:
+         1 ERROR:    Exception in ASGI application
+         2 ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit
+         1 WARNING:  Invalid HTTP request received.
+== uvicorn --http h11
+  Content-Length 9 x 5000 digits   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 0 x 5000 then 2   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 0 x 4299 then 2   : HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+  Content-Length 65537             : HTTP/1.1 400 Bad Request | {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_BODY_TOO_LARGE","trace_id":"080f344974754b6c91ff8cd4ebff52f6","detail":"The body e
+  Content-Length 2 (true length)   : HTTP/1.1 401 Unauthorized | {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"b1dbfe15a7c84c15bcece6a0e4162248","detail":"The relay signat
+  server log, lines naming an error:
+         3 WARNING:  Invalid HTTP request received.
+webhook_events rows: before 82, after 82
+== httptools
+  Content-Length b'\xb2' (latin-1 '²'): HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+== h11
+  Content-Length b'\xb2' (latin-1 '²'): HTTP/1.1 400 Bad Request | Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+
+Reading:
+  * httptools (the default parser of uvicorn[standard]): '9' x 5000 is
+    refused by the parser itself, before the application. '0' x 5000 + '2'
+    (a 2-byte body, declared with leading zeros) PASSES the parser, reaches
+    _read_limited, and int(declared) raises ValueError: the answer is the
+    generic 500 INTERNAL_ERROR, not the decided 400, and no webhook access
+    record is written (the generic handler answers). '0' x 4299 + '2' (4300
+    digits) converts, and is read normally.
+  * h11: refuses all three long values itself ("Invalid HTTP request
+    received"); none reaches the application.
+  * A non-ASCII digit (byte 0xB2, Latin-1 '²', which str.isdigit accepts and
+    int refuses): refused by both parsers; it does not reach the route
+    through these servers. The fix does not rely on that.
+  * Nothing was written: webhook_events held the same rows before and after.
+
+The fix (see the delivery note): `declared_over_limit` accepts ASCII decimal
+only, drops leading zeros, and decides "over" by the count of significant
+digits before any int(), which then converts at most six digits.

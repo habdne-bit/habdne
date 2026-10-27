@@ -171,9 +171,10 @@ response_additions:
       completes it once or replays it.
     frozen_statuses: ["200", "400", "401"]
     rationale: >-
-      The relay must know that a stored event was not processed, to redeliver
-      it with its content (G7-2 (v)). An answer of 200 would leave a FAILED
-      event recoverable only without its content.
+      The relay must know that the processing of a stored event is not
+      confirmed, to redeliver it with its content (G7-2 (v)); the event's
+      record then decides. An answer of 200 would leave an unprocessed event
+      recoverable only without its content.
     runtime_rule: >-
       Answered after T1 committed, in two cases: T2 ended FAILED (its
       processing raised; the failure recorded with PROCESSING_FAILED), or T2

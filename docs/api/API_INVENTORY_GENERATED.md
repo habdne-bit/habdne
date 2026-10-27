@@ -3,7 +3,7 @@
 **Do not edit.** Regenerate with `db/gate/generate_api_inventory.py`.
 
 - Source: `docs/api/openapi_effective_v0.2.3.yaml`
-- Source SHA-256: `1952130e9b7fefe5cc3c707b25a2b703c3bf8bdaa894d8503c590923919ca1b6`
+- Source SHA-256: `f55a231653f4b6b9e18cc924fdc5f9f89bff61182d4ee5750c036e70c57ba2b1`
 - Operations: 67 · role-annotated: 60 · unauthenticated: 6
 
 ## Unauthenticated operations
