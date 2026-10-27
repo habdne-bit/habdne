@@ -991,3 +991,11 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   aa97e9a811e
 docs/gate/evidence/SLICE7-STEP3-CONTENT-LENGTH.txt             add   3c82041e18e456fb1e6f95e37adf77f65423b2f4a0e460e31ac0a4adb4d414b3
 docs/gate/SLICE_7_PLAN.md                                      rev15 96a94d3d0056b246810e3ed75824716615712fe2cb11def60be8d2a8110055bd
 SLICE_7_PLAN.md changed revision: 14 -> 15 (review of 34d6122).
+--- Review of 23b99b6: Slice 7 step 3 CLOSED at 23b99b6; CORRECTION-007 and 008 approved; step 4 authorized; Slice 7 plan revision 16 ---
+docs/gate/SLICE_7_STEP3_DELIVERY.md                            add   dc72664bfb81824cf20ebda6f0cd5a1f19392ecf3138ebb4cca1d60a27ebaafc
+docs/contract/CORRECTION-007-webhook-processing-failed.md      add   39648a318a47f1b2c4a28b60cbb9906cd9c1021823d608d8dc154bab578c7e5d
+docs/contract/CORRECTION-008-webhook-not-ready.md              add   81c1d82ccc1d8b297ab67225616a0664b28e05f32f527b3ecc77edb7a99f1d64
+docs/contract/CONTRACT_CORRECTIONS.yaml                        ---   91f30c7fbd37a0eec74d71b5cfd8b6e2c725cbad81f0c8ead69c35e02183f671
+docs/api/openapi_effective_v0.2.3.yaml                         ---   5a0391b71218d40bc3204c60c97a2551a2114425bfb509a356590fbcbe975f43
+docs/gate/SLICE_7_PLAN.md                                      rev16 5c60933c4d249daa59210feae8de848f35da921ef3d7fae50a5ee15f99540525
+SLICE_7_PLAN.md changed revision: 15 -> 16 (review of 23b99b6).
