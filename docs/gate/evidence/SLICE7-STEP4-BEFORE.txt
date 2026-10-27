@@ -21,7 +21,7 @@ Reading of the failures (by their assertion):
   the two types refused 422 MESSAGE_TYPE_RESERVED where 201 is asserted;
   turab.services.message_interactions and the backfill script absent
      (ImportError, FileNotFoundError);
-  no  key on a timeline item.
+  no `message` key on a timeline item.
 
 Passed, as they must at the base too, both facts of Slice 1's timeline:
   test_vi_any_other_interaction_keeps_slice_1s_exact_keys
