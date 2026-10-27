@@ -1,0 +1,101 @@
+TURAB — Slice 7 step 4: its tests, run BEFORE its code exists
+=============================================================
+Recorded : 2026-10-27 23:47:09 UTC
+Base     : commit e1bdcbc (plan revision 18; no step 4 code: no message
+           interactions, no backfill, no timeline message key, the two G7-10
+           types still reserved), in an ISOLATED worktree, into which only
+           the new test file was copied.
+Tests    : tests/test_slice7_step4.py
+             sha256 123b0b546c65bbddc6772efbab18cec349e3cd83c89dd26edfdeebf9847b70b7
+Database : turab_s74_before, built by the suite's conftest (head 0008), dropped after.
+Server   : PostgreSQL 16.15
+Result   : 57 failed, 2 passed in 23.00s
+
+What this measures: the base writes no interaction for a message, has no
+backfill and no message key, and reserves PHONE_DECISION and
+CONFIRMATION_LINK, so every test of what step 4 adds fails. These are our
+runs.
+
+Reading of the failures (by their assertion):
+  no interaction for a message (an empty result, or 0 where 1 is asserted);
+  the two types refused 422 MESSAGE_TYPE_RESERVED where 201 is asserted;
+  turab.services.message_interactions and the backfill script absent
+     (ImportError, FileNotFoundError);
+  no  key on a timeline item.
+
+Passed, as they must at the base too, both facts of Slice 1's timeline:
+  test_vi_any_other_interaction_keeps_slice_1s_exact_keys
+  test_vi_a_customer_still_cannot_read_a_timeline
+
+Two measurements were made; this is the second. The first (2026-10-27),
+on an earlier text of the file, gave 53 failed, 6 passed: four of the six
+passed VACUOUSLY at the base, which writes no interaction at all (the three
+"writes no interaction" tests, and the inventory test, which counted the
+deliberate non-message rows). Each was given a positive precondition that
+the base fails (the first delivery, the redelivery, or the accepted message
+writes exactly one; the inventory excludes the deliberate rows).
+
+--- pytest -rfEp output (summary lines) ---
+__________ test_iv_a_failed_webhook_processing_leaves_no_interaction ___________
+    def test_iv_a_failed_webhook_processing_leaves_no_interaction(client, engine, ids,
+ERROR    turab.webhook:webhooks.py:382 webhook processing failed
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[WHATSAPP]
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[PHONE]
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[SMS]
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[EMAIL]
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[WEB]
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[IN_PERSON]
+FAILED tests/test_slice7_step4.py::test_i_an_outbound_message_writes_its_channels_interaction[OTHER]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[WHATSAPP]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[PHONE]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[SMS]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[EMAIL]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[WEB]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[IN_PERSON]
+FAILED tests/test_slice7_step4.py::test_i_an_internal_message_is_a_note_in_every_channel[OTHER]
+FAILED tests/test_slice7_step4.py::test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+FAILED tests/test_slice7_step4.py::test_iii_a_webhook_message_writes_an_inbound_interaction_with_no_operator
+FAILED tests/test_slice7_step4.py::test_iv_a_webhook_replay_and_an_ignored_event_write_no_interaction
+FAILED tests/test_slice7_step4.py::test_iv_a_failed_webhook_processing_leaves_no_interaction
+FAILED tests/test_slice7_step4.py::test_iv_a_refused_staff_message_writes_no_interaction
+FAILED tests/test_slice7_step4.py::test_iv_a_replayed_staff_command_writes_no_second_interaction
+FAILED tests/test_slice7_step4.py::test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+FAILED tests/test_slice7_step4.py::test_v_two_backfills_at_once_write_each_interaction_once
+FAILED tests/test_slice7_step4.py::test_v_a_backfill_concurrent_with_a_message_makes_no_duplicate
+FAILED tests/test_slice7_step4.py::test_v_the_backfill_script_prints_counts_only
+FAILED tests/test_slice7_step4.py::test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_ADMIN]
+FAILED tests/test_slice7_step4.py::test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_OPERATOR]
+FAILED tests/test_slice7_step4.py::test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_REVIEWER]
+FAILED tests/test_slice7_step4.py::test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_ADMIN]
+FAILED tests/test_slice7_step4.py::test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_OPERATOR]
+FAILED tests/test_slice7_step4.py::test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_REVIEWER]
+FAILED tests/test_slice7_step4.py::test_vi_archived_content_is_shown_to_every_role[ACC_ADMIN]
+FAILED tests/test_slice7_step4.py::test_vi_archived_content_is_shown_to_every_role[ACC_OPERATOR]
+FAILED tests/test_slice7_step4.py::test_vi_archived_content_is_shown_to_every_role[ACC_REVIEWER]
+FAILED tests/test_slice7_step4.py::test_vi_an_archived_message_without_media_shows_both_keys
+FAILED tests/test_slice7_step4.py::test_vi_the_delivery_status_is_read_live
+FAILED tests/test_slice7_step4.py::test_vii_mandatory_test_4_a_phone_decision_is_linked_to_a_later_written_confirmation
+FAILED tests/test_slice7_step4.py::test_vii_an_observation_at_the_decisions_time_is_accepted_and_links_may_repeat
+FAILED tests/test_slice7_step4.py::test_vii_a_links_metadata_must_be_exactly_its_two_uuids[absent-None]
+FAILED tests/test_slice7_step4.py::test_vii_a_links_metadata_must_be_exactly_its_two_uuids[empty-metadata1]
+FAILED tests/test_slice7_step4.py::test_vii_a_links_metadata_must_be_exactly_its_two_uuids[one key-metadata2]
+FAILED tests/test_slice7_step4.py::test_vii_a_links_metadata_must_be_exactly_its_two_uuids[an extra key-metadata3]
+FAILED tests/test_slice7_step4.py::test_vii_a_links_metadata_must_be_exactly_its_two_uuids[a decision not a uuid-metadata4]
+FAILED tests/test_slice7_step4.py::test_vii_a_links_metadata_must_be_exactly_its_two_uuids[an observation not a string-metadata5]
+FAILED tests/test_slice7_step4.py::test_vii_metadata_on_any_other_type_is_still_refused
+FAILED tests/test_slice7_step4.py::test_vii_a_phone_decision_and_a_link_are_internal_and_phone_only
+FAILED tests/test_slice7_step4.py::test_vii_the_decision_must_be_an_internal_phone_decision_of_this_thread
+FAILED tests/test_slice7_step4.py::test_viii_an_inbound_phone_decision_is_never_linkable
+FAILED tests/test_slice7_step4.py::test_vii_the_observation_must_be_linkable[missing]
+FAILED tests/test_slice7_step4.py::test_vii_the_observation_must_be_linkable[another kind]
+FAILED tests/test_slice7_step4.py::test_vii_the_observation_must_be_linkable[another party]
+FAILED tests/test_slice7_step4.py::test_vii_the_observation_must_be_linkable[no party]
+FAILED tests/test_slice7_step4.py::test_vii_the_observation_must_be_linkable[no time]
+FAILED tests/test_slice7_step4.py::test_vii_the_observation_must_be_linkable[before the decision]
+FAILED tests/test_slice7_step4.py::test_vii_a_link_with_content_needs_the_archive_consent
+FAILED tests/test_slice7_step4.py::test_vii_a_change_to_the_observation_in_flight_is_waited_for_then_seen
+FAILED tests/test_slice7_step4.py::test_vii_the_link_is_valid_at_its_writing_only
+FAILED tests/test_slice7_step4.py::test_ix_no_message_has_two_interactions_and_each_names_an_existing_message
+PASSED tests/test_slice7_step4.py::test_vi_any_other_interaction_keeps_slice_1s_exact_keys
+PASSED tests/test_slice7_step4.py::test_vi_a_customer_still_cannot_read_a_timeline
+57 failed, 2 passed, 1 warning in 23.00s

@@ -258,6 +258,10 @@ def test_iv_a_webhook_replay_and_an_ignored_event_write_no_interaction(client, e
     _, thread_ref = _whatsapp(client, ids, engine)
     envelope = _msg(thread_ref)
     assert _post(client, envelope).status_code == 200
+    [message] = _all(engine, "SELECT message_id FROM turab.communication_messages WHERE "
+                             "external_message_ref = :r",
+                     r=envelope["payload"]["external_message_ref"])
+    assert len(_interactions(engine, message["message_id"])) == 1, "the first wrote one"
     before = _counts(engine)["interactions"]
     for again in (envelope, _msg(_ref()), _status(f"wamid.{uuid.uuid4().hex}", "SENT")):
         assert _post(client, again).status_code == 200
@@ -287,6 +291,9 @@ def test_iv_a_failed_webhook_processing_leaves_no_interaction(client, engine, id
     before = _counts(engine)["interactions"]
     assert _post(client, envelope).status_code == 500
     assert _counts(engine)["interactions"] == before
+    monkeypatch.setattr(webhooks, "process", real)
+    assert _post(client, envelope).status_code == 200
+    assert _counts(engine)["interactions"] == before + 1, "the redelivery writes one"
 
 
 def test_iv_a_refused_staff_message_writes_no_interaction(client, engine, ids):
@@ -294,6 +301,8 @@ def test_iv_a_refused_staff_message_writes_no_interaction(client, engine, ids):
     _refused(engine, lambda k: _post_message(
         client, thread, {"direction": "OUTBOUND", "body_text": SECRET}, ids.ACC_OPERATOR, k),
         422, "CONTENT_NOT_ARCHIVABLE")
+    accepted = _sent(client, thread, {"direction": "OUTBOUND"}, ids.ACC_OPERATOR)
+    assert len(_interactions(engine, accepted)) == 1, "the same message, accepted, writes one"
 
 
 def test_iv_a_replayed_staff_command_writes_no_second_interaction(client, engine, ids):
@@ -772,7 +781,8 @@ def test_ix_no_message_has_two_interactions_and_each_names_an_existing_message(e
            AND NOT EXISTS (SELECT 1 FROM turab.communication_messages m
                             WHERE m.message_id::text = i.metadata->>'message_id')""")
     by_message = _one(engine, "SELECT count(*) FROM turab.interactions "
-                              "WHERE metadata ? 'message_id'")
+                              "WHERE metadata ? 'message_id' "
+                              "AND summary IS DISTINCT FROM 'NOT-A-MESSAGE-ROW'")
     dup = _one(engine, """
         SELECT count(*) FROM (SELECT metadata->>'message_id' FROM turab.interactions
                                WHERE metadata ? 'message_id'
