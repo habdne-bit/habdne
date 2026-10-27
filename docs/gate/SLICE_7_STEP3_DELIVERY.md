@@ -20,7 +20,12 @@
 - the timeline (G7-8) and the confirmation link (G7-10), step 4;
 - the relay (R-1). **R-1 is UNMET: no real event may be received.**
 
-**Status: DELIVERED FOR REVIEW** with the commit that adds this note. **Not closed.**
+**Status: DELIVERED FOR REVIEW again,** with the commit that adds §9.
+**Not closed.**
+- *History:* delivered at `34d6122`; NOT closed by the review of `34d6122`,
+  for CORRECTION-007 §1's wording and an unbounded `int()` of
+  `Content-Length`. §9 answers both, with the evidence on the resulting
+  tree.
 
 **Submitted for decision with this delivery:**
 1. **The texts of CORRECTION-007 and CORRECTION-008** (§4), and the
@@ -316,3 +321,124 @@ report ONE problem: the document is stale.
   on a timeout among them. **No real event before it.**
 - **K06 UNPROVEN;** the scope SALE only. **This is not a release
   authorization.**
+
+---
+
+## 9. Addendum: the review of `34d6122`
+
+**What the review did.**
+- **Accepted:** the handling of T1 and T2 as intended (the three tests: T1
+  failing before its COMMIT, T1's answer lost after it, T2's answer lost
+  after it; each redelivery without a second message); the two 400 codes;
+  the reading of `archived_at`.
+- **Did not re-run** the 3005 tests or the mutations: those results are
+  ours, as this note describes them.
+- **Did not close step 3,** and did not approve CORRECTION-007's text as it
+  stood, for two reasons, each answered below.
+
+### 9.1 CORRECTION-007 §1
+
+**What it said:** "T2 did not process it", and "the event kept its status".
+Neither holds for `PROCESSING_LOST`, which §3 of the same note admits may
+have committed.
+
+**What it says now** (`4e15815`):
+- "T1 has committed the event, and **the result of its processing is not
+  confirmed to the sender**", with its two outcomes: FAILED, recorded; and
+  `PROCESSING_LOST`, whose COMMIT may or may not have taken effect;
+- "**Before this correction,** the effective contract declared a `500` for
+  no operation";
+- the entry's `rationale` in `CONTRACT_CORRECTIONS.yaml` had the same
+  phrase ("a stored event was not processed"), and is corrected with it.
+  The effective contract changes by its header digest only.
+
+CORRECTION-008's text is unchanged: the review accepts its meaning.
+
+### 9.2 `Content-Length`, measured, then made safe
+
+**The fault the review found:** `_read_limited` checked `isdigit()`, then
+called `int(declared)`. CPython refuses to convert more than 4300 digits
+(`sys.get_int_max_str_digits()`), and raises `ValueError`.
+
+**Measured first, through HTTP** (`evidence/SLICE7-STEP3-CONTENT-LENGTH.txt`
+with its two scripts): the app under uvicorn 0.54, the project's server
+(`uvicorn[standard]`), with each of its two HTTP parsers; raw requests over
+a socket, on `34d6122`'s tree, before any fix.
+
+| `Content-Length` | httptools (the default) | h11 |
+|---|---|---|
+| `'9' × 5000` | refused by the parser: 400, "Invalid HTTP request received" | refused by the parser |
+| `'0' × 5000 + '2'` (a 2-byte body) | **reaches the route; `int()` raises: `500 INTERNAL_ERROR`, not the 400 decided, and no access record** | refused by the parser |
+| `'0' × 4299 + '2'` (4300 digits) | converted; the body read normally | refused by the parser |
+| `²` (byte 0xB2; `isdigit` accepts it, `int` refuses it) | refused by the parser | refused by the parser |
+
+- **Leading zeros count toward the limit:** `int('0' × 5000 + '1')` raises
+  too. So the fault is reached by a small size written long, not only by a
+  huge one.
+- **Nothing was written:** `webhook_events` held the same rows before and
+  after.
+- **A statement of §2 was therefore false when written:** "the route
+  answers no other 5xx". The test behind it reads the route's source; the
+  generic handler answered this 500 through the exception.
+
+**The fix** (`4e15815`): `declared_over_limit`, in the route.
+- ASCII decimal only (`[0-9]+`), so a digit `int` refuses is never passed to
+  it;
+- leading zeros dropped;
+- "over" decided by the number of significant digits (more than the
+  limit's own six) before any `int()`, which then converts at most six
+  digits;
+- a value that is not ASCII decimal declares nothing: the count while
+  reading decides, as for a missing header.
+
+**Measured again through HTTP after the fix,** same requests, at `4e15815`:
+under httptools, `'0' × 5000 + '2'` is read as the 2-byte body it declares
+and goes on to the signature check; no `ValueError` in the server's log;
+h11 unchanged.
+
+**Tests** (`tests/test_slice7_step3.py`):
+- the comparison as a table, 18 cases: values of 5000 digits and more over
+  and under the limit, the limit and one past it, zeros only, an empty
+  value, non-ASCII digits, signs, spaces, letters, none;
+- over ASGI, with the header exactly as uvicorn hands it on:
+  - an overlong value over the limit (nines; zeros then `65537`): **400
+    `WEBHOOK_BODY_TOO_LARGE`, the body never read, nothing written, one
+    access record `BODY_TOO_LARGE`**;
+  - a small body under its true length written with 5000 leading zeros, and
+    under a non-ASCII digit: read, and the event processed, one message.
+    No measured server delivers the second; the route does not rely on
+    that;
+- **each of the four route tests fails on `34d6122`'s route,** three with
+  the measured `ValueError` (checked by running them against that file).
+
+**Mutations added:** V17 (leading zeros counted), V18 (`isdigit` again), V19
+(a long value converted whole); V7 re-anchored on the new call. Each is
+killed.
+
+### 9.3 The evidence on the resulting tree
+
+Every row ran on a clean tree.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Suite (`record_test_run.py`) | **3027 passed, 0 failed, 0 errors, 0 skipped**; source fingerprint `9ddce632…24af`, the mutations' tree | `1c1ef5b` (run at `0ad35fb`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+| PostgreSQL gate | PASS: ALL DATABASE-LEVEL CONTRACT TESTS PASSED, 70 PASS notices; the effective contract current (10 entries); the same 67 operations | `0ad35fb` (run at `965a17e`) | `evidence/gate-run.txt` |
+| Authorization matrix | 212 rules; suite 3027/3027 | `965a17e` (run at `81e3a6e`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| Step 3 mutations | **68/68 fail, twice, identical**; source fingerprint `9ddce632…24af` | `81e3a6e` (run at `c4443df`) | `evidence/SLICE7-STEP3-MUTATIONS.txt`, `-REPEAT.txt` |
+| Before the fix | **173 failed, 1 passed**, at `e64ba93`, with the final test files | `c4443df` | `evidence/SLICE7-STEP3-BEFORE.txt` |
+| `Content-Length` through HTTP | before and after the fix | `4e15815`, `9e84241` | `evidence/SLICE7-STEP3-CONTENT-LENGTH.txt` |
+
+**The event store at the end of the suite run:** PROCESSED 60; IGNORED 23
+(`STATUS_TRANSITION_NOT_ACCEPTED` 13, `MESSAGE_REF_TAKEN` 5,
+`UNKNOWN_MESSAGE` 2, `UNKNOWN_THREAD` 2, `UNKNOWN_EVENT_TYPE` 1);
+**RECEIVED 1, FAILED 0.** The RECEIVED event is again the one
+`test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one`
+leaves on purpose: its thread's one other event is PROCESSED, and no message
+names it.
+
+The records of §5 to §7 above are those of `34d6122`'s tree; the files they
+name now hold this round's (git keeps the earlier ones).
+
+**Standing:** step 4 is not started; R-1 is a condition before any real
+event; K06 is UNPROVEN; the scope is SALE only. This is not a release
+authorization.

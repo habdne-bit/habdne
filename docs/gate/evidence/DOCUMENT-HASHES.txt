@@ -982,3 +982,12 @@ docs/api/openapi_effective_v0.2.3.yaml                         ---   1952130e9b7
 docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   e0bb35d64ce3a2747bc9d140cc82943929e5eebeb0ff5c005f6b639047f5a2fa
 docs/gate/SLICE_7_PLAN.md                                      rev14 27285ad6a7df74ce7983d387c205f256f673d963a948cb8bb60c49809717594e
 SLICE_7_PLAN.md changed revision: 13 -> 14 (review of 3dfb717).
+--- Review of 34d6122: CORRECTION-007 §1 corrected; Content-Length measured and made safe; step 3 delivered for review again; Slice 7 plan revision 15 ---
+docs/gate/SLICE_7_STEP3_DELIVERY.md                            add   0ba76e7390d4bbb5969162d4d975583937bb90dfb7aa25e9c4ce599342c62a67
+docs/contract/CORRECTION-007-webhook-processing-failed.md      add   6584e2b02a7aaec28593d9a4a1ebb30a21b4707013a2196110f0e90b10a1ed46
+docs/contract/CONTRACT_CORRECTIONS.yaml                        ---   1d27c6b447db802fb230b82d6903cb31fc98f8c78e984192fb28ef7bd698dbb6
+docs/api/openapi_effective_v0.2.3.yaml                         ---   f55a231653f4b6b9e18cc924fdc5f9f89bff61182d4ee5750c036e70c57ba2b1
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   aa97e9a811e7c3cbccda5955070d36ada41359e8cc50af5e2d77cf1454dc9007
+docs/gate/evidence/SLICE7-STEP3-CONTENT-LENGTH.txt             add   3c82041e18e456fb1e6f95e37adf77f65423b2f4a0e460e31ac0a4adb4d414b3
+docs/gate/SLICE_7_PLAN.md                                      rev15 96a94d3d0056b246810e3ed75824716615712fe2cb11def60be8d2a8110055bd
+SLICE_7_PLAN.md changed revision: 14 -> 15 (review of 34d6122).

@@ -1,5 +1,5 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 14**
+## Implementation plan — **revision 15**
 
 **Status: step 2 is CLOSED at `6d8815d`, and step 3 is AUTHORIZED** (review
 of `6d8815d`, recorded below). Step 1 is CLOSED at `7e8993d`. Slice 7 is not
@@ -8,11 +8,12 @@ closed.
   is met.
 - **G7-17 is DECIDED** (review of `bf1fe3d`, recorded below), with a 503
   `WEBHOOK_NOT_READY` under a new CORRECTION-008.
-- **Step 3 is DELIVERED FOR REVIEW, not closed**
-  (`SLICE_7_STEP3_DELIVERY.md`). The review of `3dfb717` (recorded below)
-  found a contractual blocker; it is answered in `5e152ff`, and the evidence
-  round is bound to the tree that holds the answer. CORRECTION-007's and
-  CORRECTION-008's texts are submitted, not approved.
+- **Step 3 is DELIVERED FOR REVIEW again, not closed**
+  (`SLICE_7_STEP3_DELIVERY.md`, §9). The review of `34d6122` (recorded below)
+  did not close it, for CORRECTION-007 §1's wording and an unbounded `int()`
+  of `Content-Length`; both are answered, and the evidence round is bound to
+  the resulting tree. CORRECTION-007's and CORRECTION-008's texts are
+  submitted, not approved.
 - **The slice's code so far:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
@@ -84,7 +85,35 @@ a recommendation. A recommendation is not a decision.
 | 11 | `af61400` | the review of `6d8815d` recorded: step 2 CLOSED, step 3 authorized (no real event before R-1); the two stale statements corrected |
 | 12 | `bf1fe3d` | G7-17 added: seven points of step 3 put as decisions, each with a recommendation; no other change |
 | 13 | `e64ba93` | the review of `bf1fe3d` recorded: G7-17 decided, a 503 `WEBHOOK_NOT_READY` (CORRECTION-008) for a missing secret, `response_additions` unique per (operation, status), R-1 duty 5 extended to the 503 |
-| 14 | this revision | the review of `3dfb717` recorded: a T1 that raised is CORRECTION-008's 503, whose meaning is widened to "acceptance not confirmed"; CORRECTION-007's narrowed to "the processing's result not confirmed"; `archived_at` read; the stale statements corrected: the introduction (no webhook yet), "the interaction" among T2's writes (G7-2 (iv), its test 1, §3.1, §6.1), CORRECTION-007's meaning (G7-2 (v), §5.2), the 500 "for no operation" (§5.2), the two corrections of §7 (1) |
+| 14 | `5e152ff` | the review of `3dfb717` recorded: a T1 that raised is CORRECTION-008's 503, whose meaning is widened to "acceptance not confirmed"; CORRECTION-007's narrowed to "the processing's result not confirmed"; `archived_at` read; the stale statements corrected: the introduction (no webhook yet), "the interaction" among T2's writes (G7-2 (iv), its test 1, §3.1, §6.1), CORRECTION-007's meaning (G7-2 (v), §5.2), the 500 "for no operation" (§5.2), the two corrections of §7 (1) |
+| 15 | this revision | the review of `34d6122` recorded: T1 and T2, the 400 codes and `archived_at` accepted; CORRECTION-007 §1 and an unbounded `int()` of `Content-Length` to answer; both answered (`SLICE_7_STEP3_DELIVERY.md` §9) |
+
+**The review of `34d6122`. Step 3 is NOT closed, and CORRECTION-007's text
+is not approved as it stood.**
+- **Accepted:** the handling of T1 and T2 as intended (the three tests, each
+  redelivery without a second message); the two 400 codes; the stated
+  reading of `archived_at`. The reviewer did not re-run the 3005 tests or
+  the mutations: they are the implementing team's results.
+- **Two reasons:**
+  1. **CORRECTION-007 §1** kept "T2 did not process it" and "the event kept
+     its status", false for `PROCESSING_LOST`, which §3 admits may have
+     committed. Correct the introduction to "the result of the processing is
+     not confirmed to the sender", and make "no operation has a 500" a
+     description of the contract before the correction. CORRECTION-008's
+     text is accepted in meaning: its 503 asserts neither that T1 is
+     recorded nor that it is not.
+  2. **`_read_limited`** checks that `Content-Length` is numeric, then calls
+     `int(declared)`. The reviewer showed that `int('9' * 5000)` raises
+     `ValueError` in the current Python, a documented CPython limit; such a
+     header, reaching the route, would bypass the decided 400 and its
+     record. **Measure first whether it reaches the route through HTTP or
+     ASGI;** then compare with 65536 without an unbounded conversion, and
+     test a 400 without reading the body or writing a row, and long leading
+     zeros, so a small size is not wrongly refused.
+- **Then:** the evidence for the resulting tree, and the delivery for
+  review.
+- **Standing:** step 4 not started; R-1 a condition before any real event;
+  K06 UNPROVEN; the scope SALE only.
 
 **The review of `3dfb717`. Step 3 is NOT delivered and NOT closed.** The
 numbers (119 tests, 64 mutations) are the implementing team's; the reviewer
