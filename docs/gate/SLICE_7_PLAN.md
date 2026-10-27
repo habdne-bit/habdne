@@ -1,8 +1,10 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 16**
+## Implementation plan — **revision 17**
 
 **Status: step 3 is CLOSED at `23b99b6`, and step 4 is AUTHORIZED** (review
-of `23b99b6`, recorded below), within the plan's scope. Steps 1 and 2 are
+of `23b99b6`, recorded below), within the plan's scope. **G7-18 (revision
+17) puts nine points of step 4 as decisions; no step 4 code is written before
+they are decided.** Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
@@ -84,7 +86,8 @@ a recommendation. A recommendation is not a decision.
 | 13 | `e64ba93` | the review of `bf1fe3d` recorded: G7-17 decided, a 503 `WEBHOOK_NOT_READY` (CORRECTION-008) for a missing secret, `response_additions` unique per (operation, status), R-1 duty 5 extended to the 503 |
 | 14 | `5e152ff` | the review of `3dfb717` recorded: a T1 that raised is CORRECTION-008's 503, whose meaning is widened to "acceptance not confirmed"; CORRECTION-007's narrowed to "the processing's result not confirmed"; `archived_at` read; the stale statements corrected: the introduction (no webhook yet), "the interaction" among T2's writes (G7-2 (iv), its test 1, §3.1, §6.1), CORRECTION-007's meaning (G7-2 (v), §5.2), the 500 "for no operation" (§5.2), the two corrections of §7 (1) |
 | 15 | `23b99b6` | the review of `34d6122` recorded: T1 and T2, the 400 codes and `archived_at` accepted; CORRECTION-007 §1 and an unbounded `int()` of `Content-Length` to answer; both answered (`SLICE_7_STEP3_DELIVERY.md` §9) |
-| 16 | this revision | the review of `23b99b6` recorded: step 3 CLOSED, CORRECTION-007 and CORRECTION-008 approved, step 4 authorized; a pointer at G7-17 (vi) to CORRECTION-007's later meaning |
+| 16 | `bc334f8` | the review of `23b99b6` recorded: step 3 CLOSED, CORRECTION-007 and CORRECTION-008 approved, step 4 authorized; a pointer at G7-17 (vi) to CORRECTION-007's later meaning |
+| 17 | this revision | G7-18 added: nine points of step 4 put as decisions, each with a recommendation; measured facts of the schema stated; no other change |
 
 **The review of `23b99b6`. Step 3 is CLOSED at `23b99b6`; CORRECTION-007
 and CORRECTION-008 are APPROVED as delivered there; step 4 is AUTHORIZED
@@ -1597,6 +1600,152 @@ event is IGNORED, and name one code (`STATUS_TRANSITION_NOT_ACCEPTED`); G7-2
 
 **Blocks:** step 3.
 
+### G7-18 · What step 4 needs and the plan does not decide (revision 17; found preparing step 4; NOT YET DECIDED)
+
+**Why this exists.** Preparing step 4 against G7-8 (a), G7-10 (a), G7-11,
+G7-17 (i) and the schema found nine points on which neither the sources nor
+G7-1 to G7-17 fix the behaviour. Each is put as a decision, with a
+recommendation; a recommendation is not a decision. **No step 4 code is
+written before they are decided.** The decided parts are not reopened: one
+`interactions` row per message in the message's transaction; the backfill
+of the earlier messages, once, with no duplicate on a re-run, and the
+statement that atomicity does not apply to them retroactively (G7-17 (i));
+the item's added key `message` and its content only when archived (G7-8
+(a)); the link as an append-only INTERNAL message (G7-10 (a)).
+
+**What was measured for it** (the suite's database, head `0008`):
+- `interactions` has no user trigger and no unique constraint;
+  `interaction_type` is `CALL, WHATSAPP, SMS, EMAIL, IN_PERSON, INFO_REQUEST,
+  VISIT, NEGOTIATION, STATUS_CHANGE, NOTE, OTHER`; `communication_channel` is
+  `WHATSAPP, PHONE, SMS, EMAIL, WEB, IN_PERSON, OTHER`: **WEB has no
+  interaction type of its own**;
+- `observations.observed_at` is **nullable**; `party_id` is nullable
+  (`ON DELETE SET NULL`); `trg_cited_observation_unchanged` protects an
+  observation cited by the tables it names, and **a message's metadata is
+  not one of them**;
+- the contract's `MessageCreate.metadata` is an open object, but G7-16
+  (iii) makes the staff command refuse any non-empty `metadata`;
+- `getPartiesPartyIdTimeline` is for ADMIN, OPERATOR **and REVIEWER**;
+- `services/timeline.py` withholds `interactions.metadata` at every
+  audience (Slice 1).
+
+**(i) The interaction's type.**
+- **(a) Recommended:** by direction, then channel. INTERNAL is `NOTE` in any
+  channel. Otherwise the thread's channel: WHATSAPP → `WHATSAPP`, PHONE →
+  `CALL`, SMS → `SMS`, EMAIL → `EMAIL`, IN_PERSON → `IN_PERSON`, WEB and
+  OTHER → `OTHER`. The interaction's `channel` is the thread's.
+- **(b)** `OTHER` for every message, the channel alone telling them apart.
+
+**(ii) The fixed `summary`.**
+- **(a) Recommended:** one fixed text per direction, naming no content and
+  no reference: "Inbound message", "Outbound message", "Internal note". The
+  channel is in its own column. `interactions.summary` is already withheld
+  from the audit rows (WITHHELD, review of `6c6e614`).
+- **(b)** No summary (NULL).
+
+**(iii) The interaction's other columns.**
+- **(a) Recommended:**
+  - `party_id`, `request_id`, `property_id`, `opportunity_id`, `thread_id`:
+    the thread's, read in the message's transaction (the links are frozen,
+    G7-12 (D); a party nulled by `ON DELETE SET NULL` gives an interaction
+    no timeline shows, as for any interaction);
+  - `occurred_at`: the message's; `operator_account_id`: the message's
+    `sent_by_account_id` (NULL for the webhook);
+  - `outcome_code`: NULL;
+  - `metadata`: exactly `{"message_id": "<uuid>"}`;
+  - audited by `audit_rows` with the message's actor and context.
+- **(b)** Only `party_id` and `thread_id`.
+
+**(iv) One interaction per message: where the guarantee lives.**
+- **(a) Recommended: the service, no migration.**
+  - The two writers of a message (the staff command, the webhook's T2)
+    write its interaction in the same transaction, and nothing else writes a
+    message.
+  - The backfill inserts for the messages that have none (`NOT EXISTS` on
+    `metadata->>'message_id'`), under a transaction-level advisory lock, so
+    two backfills cannot interleave. A message committed before the
+    backfill's statement already has its interaction; one not yet committed
+    is invisible to it, and brings its own.
+  - Tested: a re-run writes nothing; a backfill concurrent with a message
+    makes no duplicate; two backfills at once make no duplicate.
+  - **Its limit:** a statement outside the service (a superuser, K06) can
+    write a second row; no constraint refuses it.
+- **(b) A migration `0009`:** a unique partial index on
+  `((metadata->>'message_id'))` where the key exists. Stronger, and a
+  schema change with its own approval cycle.
+
+**(v) The backfill.**
+- **(a) Recommended:** `db/ops/backfill_message_interactions.py`, an
+  operator's script like the recovery command: one transaction, actor-less,
+  the audit context `backfillMessageInteractions`; it prints counts only.
+  - **Stated, as G7-17 (i) asks:** for the messages that existed before step
+    4, the interaction is written later, by the backfill, so the atomicity
+    of a message with its interaction does not hold for them; their
+    `created_at` is the backfill's time, their `occurred_at` the message's.
+  - Run in the tests on messages written without an interaction (the state
+    a pre-step-4 database is in).
+- **(b)** A migration that backfills. A data change inside a schema
+  migration, which `0008` did not do.
+
+**(vi) The timeline item's `message` key.**
+- **(a) Recommended:**
+  - present **only** on an item whose interaction names a message; every
+    other item keeps Slice 1's exact key set, unchanged;
+  - its keys: `message_id`, `direction`, `message_type`,
+    `delivery_status`, `occurred_at`, `content_archived`; and `body_text`
+    and `media_ref`, both, only when `content_archived` is true (each as
+    stored, possibly null);
+  - read live from `communication_messages`, so a later delivery status is
+    shown; `interactions.metadata` itself stays withheld;
+  - **REVIEWER reads it too:** the operation's roles are ADMIN, OPERATOR and
+    REVIEWER. Stated, not changed;
+  - the list stays audited once (R6.3c); no per-message access record;
+  - two exact key-set tests (R9.5): a message item, with and without
+    archived content; and an item of any other interaction, unchanged.
+- **(b)** `message` present on every item, null when none: one key set,
+  and a change to every item Slice 1 delivered.
+
+**(vii) G7-10's request: where the two ids go, and the refusals.**
+- **(a) Recommended:**
+  - `CONFIRMATION_LINK` carries `metadata: {"decision_message_id",
+    "observation_id"}`, exactly these two keys, each a uuid. Every other
+    type keeps G7-16 (iii): `metadata` absent or empty. The service stores
+    the two ids beside its own keys;
+  - `PHONE_DECISION` and `CONFIRMATION_LINK` are no longer reserved (G7-16
+    (v)), and each is accepted only INTERNAL, in a PHONE thread;
+  - the link's checks, the decision first: it exists, is `PHONE_DECISION`,
+    INTERNAL, and in the same thread; the observation exists, is of kind
+    `MESSAGE`, its `party_id` is the thread's party, its `observed_at` is
+    **not NULL** and not before the decision's `occurred_at`;
+  - the decision and the observation read `FOR SHARE` in the link's
+    transaction, so a change in flight is waited for, then seen;
+  - one typed 422 per rule, `field_errors` naming the field, never a value or
+    an id: `PHONE_DECISION_NOT_ACCEPTED` (not INTERNAL, or not a PHONE
+    thread), `CONFIRMATION_LINK_NOT_ACCEPTED` (the same for the link, or
+    its metadata's shape), `DECISION_NOT_LINKABLE` (missing, another type,
+    another thread), `OBSERVATION_NOT_LINKABLE` (missing, another kind,
+    another party, no time, or before the decision);
+  - several links may name one decision: each is its own append-only
+    record;
+  - **its limit:** the observation is not "cited" in the trigger's sense, so
+    after the link it can still change or be deleted by a path that allows
+    it; the checks hold at the link's writing. No legal value is claimed.
+- **(b)** A NULL `observed_at` accepted, the order then unchecked.
+
+**(viii) An inbound message of either type.**
+- **(a) Recommended:** unchanged from step 3. The webhook stores the type as
+  given; the meaning G7-10 gives belongs to an INTERNAL message only, so an
+  inbound `PHONE_DECISION` can never be linked (tested).
+- **(b)** The webhook IGNORES such a message (`MESSAGE_TYPE_RESERVED`). It
+  would change step 3's closed behaviour, and lose an inbound message.
+
+**(ix) The writers of `interactions`.**
+- **(a) Recommended:** as G7-8 states. STOP GATE E stays Slice 5's record,
+  stale; step 4's delivery inventories the writers by kind: Slice 5's
+  share, the staff message, the webhook's message, the backfill.
+
+**Blocks:** step 4.
+
 ### Open questions (not decisions)
 - **OQ7-1 · Retention:** of archived content, and its fate on revocation
   (J03, F7-6). The sources leave it to "pilot/legal review".
@@ -1973,7 +2122,7 @@ identical results, and are ours.
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
-| 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10 |
+| 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, to be decided** |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 
 Each step is delivered with its tests and its mutation record, and is
