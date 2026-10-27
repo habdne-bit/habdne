@@ -1,10 +1,10 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 17**
+## Implementation plan — **revision 18**
 
 **Status: step 3 is CLOSED at `23b99b6`, and step 4 is AUTHORIZED** (review
-of `23b99b6`, recorded below), within the plan's scope. **G7-18 (revision
-17) puts nine points of step 4 as decisions; no step 4 code is written before
-they are decided.** Steps 1 and 2 are
+of `23b99b6`, recorded below), within the plan's scope. **G7-18 is DECIDED** (review of `e18271a`,
+recorded below): the nine options (a), with limits. Step 4 is being
+implemented. Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
@@ -87,7 +87,34 @@ a recommendation. A recommendation is not a decision.
 | 14 | `5e152ff` | the review of `3dfb717` recorded: a T1 that raised is CORRECTION-008's 503, whose meaning is widened to "acceptance not confirmed"; CORRECTION-007's narrowed to "the processing's result not confirmed"; `archived_at` read; the stale statements corrected: the introduction (no webhook yet), "the interaction" among T2's writes (G7-2 (iv), its test 1, §3.1, §6.1), CORRECTION-007's meaning (G7-2 (v), §5.2), the 500 "for no operation" (§5.2), the two corrections of §7 (1) |
 | 15 | `23b99b6` | the review of `34d6122` recorded: T1 and T2, the 400 codes and `archived_at` accepted; CORRECTION-007 §1 and an unbounded `int()` of `Content-Length` to answer; both answered (`SLICE_7_STEP3_DELIVERY.md` §9) |
 | 16 | `bc334f8` | the review of `23b99b6` recorded: step 3 CLOSED, CORRECTION-007 and CORRECTION-008 approved, step 4 authorized; a pointer at G7-17 (vi) to CORRECTION-007's later meaning |
-| 17 | this revision | G7-18 added: nine points of step 4 put as decisions, each with a recommendation; measured facts of the schema stated; no other change |
+| 17 | `e18271a` | G7-18 added: nine points of step 4 put as decisions, each with a recommendation; measured facts of the schema stated; no other change |
+| 18 | this revision | the review of `e18271a` recorded: G7-18 decided, the nine options (a), with limits; no 0009; the link valid at its writing only |
+
+**The review of `e18271a`. G7-18 is DECIDED: the nine options (a), with the
+limits below. Step 4 may be implemented accordingly.** The diff since
+`334a2f0` is documentary. The reviewer did not re-run the database
+measurements or `bound`.
+
+| Point | Decision |
+|---|---|
+| (i) the interaction's type | `NOTE` for every INTERNAL; the other directions follow the thread's channel as in the table, with `OTHER` for WEB and OTHER. |
+| (ii) the summary | the three proposed fixed texts, with no body and no reference. |
+| (iii) the columns | the thread's links, the message's time, the actor, and `metadata.message_id` alone, as detailed. |
+| (iv) one interaction per message | guaranteed by the message writers and the backfill, **within the service's paths**. The backfill and its lock run under READ COMMITTED; its re-run and its concurrency are tested. **It is not described as a uniqueness constraint of the database; `0009` is not authorized by this decision.** |
+| (v) the backfill | the proposed operator's script, with the statement that a message's atomicity with its interaction does not apply retroactively to the earlier messages. |
+| (vi) the timeline | the `message` key on message items only, with the keys and the withholding specified. REVIEWER reads archived content within the operation's existing roles. The other items' keys stay as they are. |
+| (vii) the confirmation link | the `metadata` exception with its two ids for this type only; `observed_at = NULL` refused; the checks, locks and four 422 codes as proposed. **The link's validity is established at its writing only:** 0007's guard does not protect an observation a message names, so neither the observation's survival nor its stability afterwards is claimed, and the link has no legal value. |
+| (viii) an inbound message of either type | the delivered webhook's behaviour stays; an inbound message gains no meaning of a phone decision, and is not accepted as one to link. |
+| (ix) the writers' inventory | by kind in step 4's delivery; STOP GATE E stays the record of Slice 5's tree. |
+
+- **What step 4's tests must prove:** the exact keys of the item, and the
+  withholding of unarchived content, for each of the three roles; the
+  link's refusals before any write or idempotency key is consumed; the
+  backfill run concurrently and re-run. These are conditions of proof, not
+  a claim that the tests ran.
+- **Standing:** Slice 7 stays open; R-1 is a condition before any real
+  event; K06 is UNPROVEN; the scope is SALE only. This decision is not a
+  release authorization.
 
 **The review of `23b99b6`. Step 3 is CLOSED at `23b99b6`; CORRECTION-007
 and CORRECTION-008 are APPROVED as delivered there; step 4 is AUTHORIZED
@@ -1600,7 +1627,7 @@ event is IGNORED, and name one code (`STATUS_TRANSITION_NOT_ACCEPTED`); G7-2
 
 **Blocks:** step 3.
 
-### G7-18 · What step 4 needs and the plan does not decide (revision 17; found preparing step 4; NOT YET DECIDED)
+### G7-18 · What step 4 needs and the plan does not decide (revision 17; found preparing step 4; DECIDED in the review of `e18271a`: the nine options (a), with the limits of that review's table)
 
 **Why this exists.** Preparing step 4 against G7-8 (a), G7-10 (a), G7-11,
 G7-17 (i) and the schema found nine points on which neither the sources nor
@@ -2122,7 +2149,7 @@ identical results, and are ours.
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
-| 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, to be decided** |
+| 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, decided** (review of `e18271a`) |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
 
 Each step is delivered with its tests and its mutation record, and is

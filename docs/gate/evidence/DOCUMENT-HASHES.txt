@@ -1002,3 +1002,6 @@ SLICE_7_PLAN.md changed revision: 15 -> 16 (review of 23b99b6).
 --- Slice 7 plan revision 17: G7-18, nine points of step 4 put as decisions; no step 4 code ---
 docs/gate/SLICE_7_PLAN.md                                      rev17 d186b21620c3e91bc911540f8410dd329720c0c8c986b67d27b4c756b28cd127
 SLICE_7_PLAN.md changed revision: 16 -> 17 (G7-18 added).
+--- Review of e18271a: G7-18 decided; Slice 7 plan revision 18 ---
+docs/gate/SLICE_7_PLAN.md                                      rev18 3d8bdb3b057efaa849ec2e770f9f1f68b87ed324ee07b3eb1be1280f67d9fb43
+SLICE_7_PLAN.md changed revision: 17 -> 18 (review of e18271a).
