@@ -72,6 +72,23 @@ def validate_pagination(page: int, page_size: int) -> tuple[int, int]:
     return page, page_size
 
 
+#: G7-8 (a), G7-18 (vi): the keys of a message item's `message`, and the two
+#: added only when its content was archived (G7-9).
+_MESSAGE_FIELDS = ("message_id", "direction", "message_type", "delivery_status",
+                   "occurred_at", "content_archived")
+_CONTENT_FIELDS = ("body_text", "media_ref")
+#: A uuid, so a `message_id` written otherwise is never cast.
+_UUID = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+
+
+def _plain(value: Any) -> Any:
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return value
+
+
 def entry(row: Mapping[str, Any]) -> dict[str, Any]:
     """Render one interaction for a staff audience.
 
@@ -81,16 +98,23 @@ def entry(row: Mapping[str, Any]) -> dict[str, Any]:
     code, a copied identity document reference — would be serialized the day
     it starts being written. A field whose contents cannot be stated in
     advance cannot be released in advance.
+
+    **Slice 7 step 4 (G7-8 (a), G7-18 (vi), decided in the review of
+    e18271a)** widens the allow-list by one key, `message`, on the item of an
+    interaction that names a message, and on no other: every other item keeps
+    exactly the keys above. Its keys are `_MESSAGE_FIELDS`, read live from
+    `communication_messages` (a later delivery status shows), and
+    `body_text` and `media_ref` only when the message's content was archived
+    under the consent of G7-9. `interactions.metadata` stays withheld: the
+    message is joined by it, not shown from it. The operation's roles are
+    ADMIN, OPERATOR and REVIEWER, so a REVIEWER reads archived content too.
     """
-    out: dict[str, Any] = {}
-    for field in _ENTRY_FIELDS:
-        value = row[field]
-        if isinstance(value, uuid.UUID):
-            out[field] = str(value)
-        elif hasattr(value, "isoformat"):
-            out[field] = value.isoformat()
-        else:
-            out[field] = value
+    out: dict[str, Any] = {field: _plain(row[field]) for field in _ENTRY_FIELDS}
+    if row.get("m_message_id") is not None:
+        message = {field: _plain(row[f"m_{field}"]) for field in _MESSAGE_FIELDS}
+        if message["content_archived"]:
+            message.update({field: row[f"m_{field}"] for field in _CONTENT_FIELDS})
+        out["message"] = message
     return out
 
 
@@ -121,16 +145,26 @@ def read_party_timeline(
 
     rows = session.execute(
         text(
-            """
-            SELECT interaction_id, party_id,
-                   interaction_type::text AS interaction_type,
-                   channel::text AS channel,
-                   request_id, property_id, opportunity_id, thread_id,
-                   summary, outcome_code, occurred_at, operator_account_id,
-                   created_at
-              FROM turab.interactions
-             WHERE party_id = :party_id
-             ORDER BY occurred_at DESC, interaction_id
+            f"""
+            SELECT i.interaction_id, i.party_id,
+                   i.interaction_type::text AS interaction_type,
+                   i.channel::text AS channel,
+                   i.request_id, i.property_id, i.opportunity_id, i.thread_id,
+                   i.summary, i.outcome_code, i.occurred_at, i.operator_account_id,
+                   i.created_at,
+                   m.message_id AS m_message_id, m.direction::text AS m_direction,
+                   m.message_type AS m_message_type,
+                   m.delivery_status::text AS m_delivery_status,
+                   m.occurred_at AS m_occurred_at,
+                   COALESCE((m.metadata->>'content_archived')::boolean, false)
+                       AS m_content_archived,
+                   m.body_text AS m_body_text, m.media_ref AS m_media_ref
+              FROM turab.interactions i
+              LEFT JOIN turab.communication_messages m
+                ON m.message_id = CASE WHEN i.metadata->>'message_id' ~ '{_UUID}'
+                                       THEN (i.metadata->>'message_id')::uuid END
+             WHERE i.party_id = :party_id
+             ORDER BY i.occurred_at DESC, i.interaction_id
              LIMIT :limit OFFSET :offset
             """
         ),

@@ -77,14 +77,19 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import audit_rows
+from . import audit_rows, message_interactions
 
 #: The form `ck_whatsapp_thread_ref_scoped` (migration 0008, part E) enforces.
 SCOPED = re.compile(r"^[^:]+:[^:]+$")
 #: G7-4: the one provider defined, for WHATSAPP threads only.
 PROVIDER = "whatsapp"
 #: G7-16 (v): given their meaning by G7-10, in step 4.
-RESERVED_TYPES = ("PHONE_DECISION", "CONFIRMATION_LINK")
+#: G7-10, G7-18 (vii): the two types G7-10 gives a meaning; each accepted only
+#: INTERNAL, in a PHONE thread. Reserved until step 4 (G7-16 (v)).
+DECISION, LINK = "PHONE_DECISION", "CONFIRMATION_LINK"
+LINK_TYPES = (DECISION, LINK)
+#: G7-18 (vii): a CONFIRMATION_LINK's `metadata`, exactly.
+LINK_KEYS = ("decision_message_id", "observation_id")
 #: The unique index of migration 0008, part E, and the frozen identity key.
 THREAD_REF_INDEX = "ux_whatsapp_thread_ref"
 MESSAGE_REF_KEY = "communication_messages_provider_external_message_ref_key"
@@ -257,6 +262,8 @@ class PreparedMessage:
     delivery_status: str
     occurred_at: datetime
     content_archived: bool
+    #: G7-10: a CONFIRMATION_LINK's two ids, checked; empty otherwise.
+    link: Mapping[str, str] = None  # type: ignore[assignment]
 
 
 def check_message_body(*, direction: str, delivery_status: str | None,
@@ -269,13 +276,16 @@ def check_message_body(*, direction: str, delivery_status: str | None,
             "staff record OUTBOUND and INTERNAL messages; inbound ones come from the webhook",
             [_field("direction", "NOT_ACCEPTED", "INBOUND is not accepted here")])
     if metadata:
+        if message_type != LINK:
+            raise CommunicationRefused(
+                "MESSAGE_METADATA_NOT_ACCEPTED", "a staff message carries no metadata",
+                [_field("metadata", "NOT_ACCEPTED", "must be absent or empty")])
+    if message_type in LINK_TYPES and direction != "INTERNAL":
         raise CommunicationRefused(
-            "MESSAGE_METADATA_NOT_ACCEPTED", "a staff message carries no metadata",
-            [_field("metadata", "NOT_ACCEPTED", "must be absent or empty")])
-    if message_type in RESERVED_TYPES:
-        raise CommunicationRefused(
-            "MESSAGE_TYPE_RESERVED", "this message type is not yet accepted",
-            [_field("message_type", "RESERVED", "is reserved")])
+            f"{message_type}_NOT_ACCEPTED", "this message type is an INTERNAL message",
+            [_field("direction", "NOT_ACCEPTED", "must be INTERNAL")])
+    if message_type == LINK:
+        _link_ids(metadata)
     if direction == "INTERNAL" and delivery_status not in (None, "UNKNOWN"):
         raise CommunicationRefused(
             "DELIVERY_STATUS_NOT_ACCEPTED", "an INTERNAL message has no delivery status",
@@ -304,6 +314,64 @@ def _archive_consent_holds(session: Session, *, thread_id: uuid.UUID,
            FOR SHARE OF b, g"""), {"t": thread_id, "party": party_id}).first() is not None
 
 
+def _link_ids(metadata: Mapping[str, Any] | None) -> tuple[uuid.UUID, uuid.UUID]:
+    """G7-18 (vii): exactly `decision_message_id` and `observation_id`, each a
+    uuid. The detail names the keys, never a value."""
+    def refuse(field: str, reason: str) -> CommunicationRefused:
+        return CommunicationRefused(
+            "CONFIRMATION_LINK_NOT_ACCEPTED",
+            "a CONFIRMATION_LINK names exactly a decision_message_id and an "
+            "observation_id",
+            [_field(field, "NOT_ACCEPTED", reason)])
+
+    if not isinstance(metadata, Mapping) or set(metadata) != set(LINK_KEYS):
+        raise refuse("metadata", "must hold exactly decision_message_id and observation_id")
+    ids = []
+    for key in LINK_KEYS:
+        value = metadata[key]
+        try:
+            if not isinstance(value, str):
+                raise ValueError
+            ids.append(uuid.UUID(value))
+        except ValueError:
+            raise refuse(f"metadata.{key}", "must be a uuid") from None
+    return ids[0], ids[1]
+
+
+def _check_link(session: Session, *, thread_id: uuid.UUID, party_id: uuid.UUID | None,
+                metadata: Mapping[str, Any]) -> dict[str, str]:
+    """G7-10 (a), G7-18 (vii): the decision first, then the observation, each
+    read FOR SHARE, so a change in flight is waited for, then seen. Valid at
+    the link's writing only: a message's metadata is not a citation 0007's
+    guard protects, so the observation's later survival is not claimed."""
+    decision_id, observation_id = _link_ids(metadata)
+    decision = session.execute(text("""
+        SELECT thread_id, message_type, direction::text AS direction, occurred_at
+          FROM turab.communication_messages WHERE message_id = :m FOR SHARE"""),
+        {"m": decision_id}).mappings().first()
+    if (decision is None or decision["thread_id"] != thread_id
+            or decision["message_type"] != DECISION or decision["direction"] != "INTERNAL"):
+        raise CommunicationRefused(
+            "DECISION_NOT_LINKABLE",
+            "the decision must be an INTERNAL PHONE_DECISION of this thread",
+            [_field("metadata.decision_message_id", "NOT_LINKABLE",
+                    "names no PHONE_DECISION of this thread")])
+    observation = session.execute(text("""
+        SELECT kind::text AS kind, party_id, observed_at
+          FROM turab.observations WHERE observation_id = :o FOR SHARE"""),
+        {"o": observation_id}).mappings().first()
+    if (observation is None or observation["kind"] != "MESSAGE" or party_id is None
+            or observation["party_id"] != party_id or observation["observed_at"] is None
+            or observation["observed_at"] < decision["occurred_at"]):
+        raise CommunicationRefused(
+            "OBSERVATION_NOT_LINKABLE",
+            "the confirmation must be a MESSAGE observation of the thread's party, "
+            "observed at the decision's time or later",
+            [_field("metadata.observation_id", "NOT_LINKABLE",
+                    "names no linkable observation")])
+    return {"decision_message_id": str(decision_id), "observation_id": str(observation_id)}
+
+
 def prepare_message(session: Session, *, thread_id: uuid.UUID, direction: str,
                     delivery_status: str | None, metadata: Mapping[str, Any] | None,
                     message_type: str, external_message_ref: str | None,
@@ -321,6 +389,12 @@ def prepare_message(session: Session, *, thread_id: uuid.UUID, direction: str,
         # The route checked existence first, and 0008 refuses a thread's
         # DELETE; the same answer, kept in case it is reached.
         raise CommunicationRefused("OBJECT_NOT_AUTHORIZED", "not an available thread")
+    if message_type in LINK_TYPES and thread["channel"] != "PHONE":
+        raise CommunicationRefused(
+            f"{message_type}_NOT_ACCEPTED", "this message type belongs to a PHONE thread",
+            [_field("message_type", "NOT_ACCEPTED", "is accepted in a PHONE thread only")])
+    link = (_check_link(session, thread_id=thread_id, party_id=thread["party_id"],
+                        metadata=metadata) if message_type == LINK else {})
     provider = None
     if external_message_ref is not None:
         if thread["channel"] != "WHATSAPP":
@@ -344,7 +418,7 @@ def prepare_message(session: Session, *, thread_id: uuid.UUID, direction: str,
         media_ref=media_ref,
         delivery_status=(delivery_status or "UNKNOWN") if direction == "OUTBOUND"
         else "UNKNOWN",
-        occurred_at=occurred_at, content_archived=has_content)
+        occurred_at=occurred_at, content_archived=has_content, link=link)
 
 
 def _refuse_taken_message_ref(session: Session, ref: str) -> None:
@@ -378,7 +452,8 @@ def record_message(session: Session, prepared: PreparedMessage, *,
                  "mt": prepared.message_type, "body": prepared.body_text,
                  "media": prepared.media_ref, "ds": prepared.delivery_status,
                  "at": prepared.occurred_at, "acct": sent_by_account_id,
-                 "meta": json.dumps({"content_archived": prepared.content_archived})},
+                 "meta": json.dumps({"content_archived": prepared.content_archived,
+                                     **(prepared.link or {})})},
             ).mappings().one()
     except IntegrityError as exc:
         if _constraint(exc) != MESSAGE_REF_KEY:
@@ -397,5 +472,7 @@ def record_message(session: Session, prepared: PreparedMessage, *,
         audit_rows.write(session, "communication_threads", prepared.thread_id, "UPDATE",
                          before, audit_rows.row_json(session, "communication_threads",
                                                      prepared.thread_id))
+    # G7-8 (a), G7-18 (i)-(iv): its interaction, in the same transaction.
+    message_interactions.write(session, row["message_id"])
     return {"message_id": str(row["message_id"]),
             "delivery_status": row["delivery_status"]}

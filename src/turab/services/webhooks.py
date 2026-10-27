@@ -66,7 +66,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 
-from . import audit_rows
+from . import audit_rows, message_interactions
 from .communication import MESSAGE_REF_KEY, PROVIDER, _archive_consent_holds
 
 logger = logging.getLogger("turab.webhook")
@@ -269,6 +269,9 @@ def _process_message(session: Session, event_id: uuid.UUID, envelope: Envelope, 
         audit_rows.write(session, "communication_threads", thread["thread_id"], "UPDATE",
                          before, audit_rows.row_json(session, "communication_threads",
                                                      thread["thread_id"]))
+    # G7-8 (a), G7-18 (i)-(iv): its interaction, inside the savepoint, so a
+    # failure rolls it back with the message.
+    message_interactions.write(session, message)
     return "PROCESSED", None
 
 

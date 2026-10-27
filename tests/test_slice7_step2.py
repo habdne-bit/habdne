@@ -456,12 +456,26 @@ def test_iii_metadata_is_absent_or_empty_and_the_service_writes_its_own(client, 
 
 
 @pytest.mark.parametrize("message_type", ["PHONE_DECISION", "CONFIRMATION_LINK"])
-def test_v_the_types_g7_10_gives_a_meaning_are_reserved(client, engine, ids, message_type):
-    thread = _new_thread(client, ids, engine)
+def test_v_the_types_g7_10_gives_a_meaning_are_internal_phone_only(client, engine, ids,
+                                                                    message_type):
+    """G7-16 (v) reserved the two types until step 4. Since step 4 (G7-18 (vii),
+    decided in the review of e18271a) each is accepted only INTERNAL in a PHONE
+    thread: refused OUTBOUND, and in a thread of another channel, writing
+    nothing. Their acceptance is `tests/test_slice7_step4.py`'s."""
+    code = f"{message_type}_NOT_ACCEPTED"
+    metadata = ({"decision_message_id": str(uuid.uuid4()),
+                 "observation_id": str(uuid.uuid4())}
+                if message_type == "CONFIRMATION_LINK" else {})
+    phone = _new_thread(client, ids, engine)
     _refused(engine, lambda k: _message(
-        client, thread, {"direction": "INTERNAL", "occurred_at": AT,
-                         "message_type": message_type}, ids.ACC_OPERATOR, k),
-        422, "MESSAGE_TYPE_RESERVED")
+        client, phone, {"direction": "OUTBOUND", "occurred_at": AT,
+                        "message_type": message_type, "metadata": metadata},
+        ids.ACC_OPERATOR, k), 422, code)
+    sms = _new_thread(client, ids, engine, channel="SMS")
+    _refused(engine, lambda k: _message(
+        client, sms, {"direction": "INTERNAL", "occurred_at": AT,
+                      "message_type": message_type, "metadata": metadata},
+        ids.ACC_OPERATOR, k), 422, code)
 
 
 def test_v_any_other_type_is_free_text_and_text_is_the_default(client, engine, ids):

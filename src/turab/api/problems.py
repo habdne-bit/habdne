@@ -154,12 +154,22 @@ class ProblemCode(StrEnum):
     DIRECTION_NOT_ACCEPTED = "DIRECTION_NOT_ACCEPTED"
     DELIVERY_STATUS_NOT_ACCEPTED = "DELIVERY_STATUS_NOT_ACCEPTED"
     MESSAGE_METADATA_NOT_ACCEPTED = "MESSAGE_METADATA_NOT_ACCEPTED"
-    MESSAGE_TYPE_RESERVED = "MESSAGE_TYPE_RESERVED"
     EXTERNAL_REF_WITHOUT_PROVIDER = "EXTERNAL_REF_WITHOUT_PROVIDER"
     #: G7-4: "an INTERNAL message never carries a reference (422)"; the plan
     #: names no code, so this name is ours, submitted with step 2's delivery.
     INTERNAL_MESSAGE_REF_NOT_ACCEPTED = "INTERNAL_MESSAGE_REF_NOT_ACCEPTED"
     MESSAGE_REF_TAKEN = "MESSAGE_REF_TAKEN"
+    #: Slice 7 step 4, G7-10 and G7-18 (vii), decided in the review of e18271a.
+    #: 422; `field_errors` name a field, never a value or an id. A type of
+    #: G7-10 outside an INTERNAL message of a PHONE thread, or a link's
+    #: metadata not exactly its two uuids:
+    PHONE_DECISION_NOT_ACCEPTED = "PHONE_DECISION_NOT_ACCEPTED"
+    CONFIRMATION_LINK_NOT_ACCEPTED = "CONFIRMATION_LINK_NOT_ACCEPTED"
+    #: The decision is missing, of another type or direction, or of another
+    #: thread; the observation is missing, of another kind or party, has no
+    #: time, or is before the decision:
+    DECISION_NOT_LINKABLE = "DECISION_NOT_LINKABLE"
+    OBSERVATION_NOT_LINKABLE = "OBSERVATION_NOT_LINKABLE"
     CONTENT_NOT_ARCHIVABLE = "CONTENT_NOT_ARCHIVABLE"
     #: Slice 7 step 3, the webhook (G7-15, G7-17). None echoes the body, a
     #: reference or the signature. The body is larger than 64 KiB (G7-15), or
@@ -233,11 +243,14 @@ _CATALOGUE: dict[ProblemCode, tuple[int, str]] = {
     ProblemCode.DIRECTION_NOT_ACCEPTED: (422, "Direction not accepted"),
     ProblemCode.DELIVERY_STATUS_NOT_ACCEPTED: (422, "Delivery status not accepted"),
     ProblemCode.MESSAGE_METADATA_NOT_ACCEPTED: (422, "Message metadata not accepted"),
-    ProblemCode.MESSAGE_TYPE_RESERVED: (422, "Message type reserved"),
     ProblemCode.EXTERNAL_REF_WITHOUT_PROVIDER: (422, "External reference without provider"),
     ProblemCode.INTERNAL_MESSAGE_REF_NOT_ACCEPTED: (422,
                                                     "Internal message reference not accepted"),
     ProblemCode.MESSAGE_REF_TAKEN: (409, "Message reference taken"),
+    ProblemCode.PHONE_DECISION_NOT_ACCEPTED: (422, "Phone decision not accepted"),
+    ProblemCode.CONFIRMATION_LINK_NOT_ACCEPTED: (422, "Confirmation link not accepted"),
+    ProblemCode.DECISION_NOT_LINKABLE: (422, "Decision not linkable"),
+    ProblemCode.OBSERVATION_NOT_LINKABLE: (422, "Observation not linkable"),
     ProblemCode.CONTENT_NOT_ARCHIVABLE: (422, "Content not archivable"),
     ProblemCode.MATCHING_POLICY_NOT_ACTIVE: (500, "No active matching policy"),
     ProblemCode.MATCHING_POLICY_NOT_SUPPORTED: (500, "Matching policy not supported"),

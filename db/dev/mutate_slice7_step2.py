@@ -98,9 +98,11 @@ MUTATIONS = [
   "    if direction == \"INBOUND\":", "    if False:"),
  ("M2 metadata accepted", SVC,
   "    if metadata:", "    if False:"),
- ("M3 no message type reserved", SVC,
-  "RESERVED_TYPES = (\"PHONE_DECISION\", \"CONFIRMATION_LINK\")",
-  "RESERVED_TYPES = ()"),
+ # Since step 4 (G7-18 (vii)), the reservation of G7-16 (v) is replaced by the
+ # rule that the two types are INTERNAL only; M3 is re-anchored on that rule.
+ ("M3 a G7-10 type accepted outside INTERNAL", SVC,
+  "    if message_type in LINK_TYPES and direction != \"INTERNAL\":",
+  "    if False:"),
  ("M4 an INTERNAL message may state a status", SVC,
   "    if direction == \"INTERNAL\" and delivery_status not in (None, \"UNKNOWN\"):",
   "    if False:"),
@@ -143,9 +145,10 @@ MUTATIONS = [
  ("M20 the sender not recorded", SVC,
   "                 \"at\": prepared.occurred_at, \"acct\": sent_by_account_id,",
   "                 \"at\": prepared.occurred_at, \"acct\": None,"),
+ # Re-anchored in step 4: the line now also carries a CONFIRMATION_LINK's ids.
  ("M21 content_archived always false", SVC,
-  "                 \"meta\": json.dumps({\"content_archived\": prepared.content_archived})},",
-  "                 \"meta\": json.dumps({\"content_archived\": False})},"),
+  "                 \"meta\": json.dumps({\"content_archived\": prepared.content_archived,",
+  "                 \"meta\": json.dumps({\"content_archived\": False,"),
  ("M22 the message not audited", SVC,
   "    audit_rows.write(session, \"communication_messages\", row[\"message_id\"], \"INSERT\", "
   "None,",

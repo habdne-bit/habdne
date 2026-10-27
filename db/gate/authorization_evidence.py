@@ -1114,13 +1114,14 @@ RULES: tuple[Rule, ...] = (
           "test_g7_4_a_reference_recorded_after_the_check_is_the_same_409")),
     Rule("S7-2 / G7-16 (i), (ii), (iii), (v)",
          "A staff message is OUTBOUND or INTERNAL; an OUTBOUND keeps the status it states, an "
-         "INTERNAL states none but UNKNOWN; metadata is absent or empty; the types G7-10 "
-         "gives a meaning are reserved",
+         "INTERNAL states none but UNKNOWN; metadata is absent or empty (but a "
+         "CONFIRMATION_LINK's, since step 4); the types G7-10 gives a meaning are INTERNAL "
+         "and PHONE only (reserved until step 4)",
          ("test_i_inbound_is_refused",
           "test_ii_an_outbound_message_keeps_the_status_it_states",
           "test_ii_an_internal_message_states_no_status_but_unknown",
           "test_iii_metadata_is_absent_or_empty_and_the_service_writes_its_own",
-          "test_v_the_types_g7_10_gives_a_meaning_are_reserved",
+          "test_v_the_types_g7_10_gives_a_meaning_are_internal_phone_only",
           "test_v_any_other_type_is_free_text_and_text_is_the_default")),
     Rule("S7-2 / G7-9 / J03",
          "No content is stored without the archive consent of the thread's party, bound to "
@@ -1249,6 +1250,63 @@ RULES: tuple[Rule, ...] = (
          "archived_at alone refuses nothing: an archived thread is resolved by its reference "
          "and its consent checked as any other, its archived_at unchanged (0008 freezes it)",
          ("test_archived_at_alone_refuses_nothing",)),
+    # --- Slice 7, step 4: interactions, the backfill, the timeline, the link (G7-18) ----
+    Rule("S7-4 / G7-8 (a) / G7-18 (i)-(iii) / G7-11",
+         "Each message writes one interaction in its own transaction: NOTE for INTERNAL, "
+         "else by the thread's channel (OTHER for WEB and OTHER); the thread's links, the "
+         "message's time, the sender as operator, a fixed summary, metadata the message's "
+         "id alone; audited with the command's actor or none, the summary withheld",
+         ("test_i_an_outbound_message_writes_its_channels_interaction",
+          "test_i_an_internal_message_is_a_note_in_every_channel",
+          "test_iii_the_interaction_carries_the_threads_links_and_the_messages_time",
+          "test_iii_a_webhook_message_writes_an_inbound_interaction_with_no_operator")),
+    Rule("S7-4 / G7-18 (iv) / J01 / mandatory test 1",
+         "Within the service's paths, one interaction per message: a refused message, a "
+         "failed webhook processing, an IGNORED event and every replay write none; no "
+         "message has two. Not a database constraint",
+         ("test_iv_a_webhook_replay_and_an_ignored_event_write_no_interaction",
+          "test_iv_a_failed_webhook_processing_leaves_no_interaction",
+          "test_iv_a_refused_staff_message_writes_no_interaction",
+          "test_iv_a_replayed_staff_command_writes_no_second_interaction",
+          "test_ix_no_message_has_two_interactions_and_each_names_an_existing_message")),
+    Rule("S7-4 / G7-17 (i) / G7-18 (iv), (v)",
+         "The backfill writes one interaction per earlier message, actor-less, its "
+         "created_at its own time; a re-run writes none; two at once serialize on the "
+         "advisory lock; one concurrent with a message makes no duplicate; it prints "
+         "counts only",
+         ("test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none",
+          "test_v_two_backfills_at_once_write_each_interaction_once",
+          "test_v_a_backfill_concurrent_with_a_message_makes_no_duplicate",
+          "test_v_the_backfill_script_prints_counts_only")),
+    Rule("S7-4 / G7-8 (a) / G7-18 (vi) / G7-9 / R9.5",
+         "A message item carries one added key, message, with exact keys for ADMIN, "
+         "OPERATOR and REVIEWER; body_text and media_ref only when archived; every other "
+         "item keeps Slice 1's exact keys; interactions.metadata stays withheld; the "
+         "status is read live; a customer reads no timeline",
+         ("test_vi_an_unarchived_message_shows_no_content_to_any_role",
+          "test_vi_webhook_content_withheld_at_write_is_absent_for_every_role",
+          "test_vi_archived_content_is_shown_to_every_role",
+          "test_vi_an_archived_message_without_media_shows_both_keys",
+          "test_vi_any_other_interaction_keeps_slice_1s_exact_keys",
+          "test_vi_the_delivery_status_is_read_live",
+          "test_vi_a_customer_still_cannot_read_a_timeline")),
+    Rule("S7-4 / G7-10 / G7-18 (vii), (viii) / mandatory test 4",
+         "A phone decision is linked to a later written confirmation: INTERNAL, PHONE "
+         "only; the link's metadata exactly its two uuids; the decision an INTERNAL "
+         "PHONE_DECISION of the thread; the observation a MESSAGE of the thread's party, "
+         "timed, not before the decision; both read FOR SHARE; each refusal before any "
+         "write or key; an inbound decision never linkable; valid at its writing only",
+         ("test_vii_mandatory_test_4_a_phone_decision_is_linked_to_a_later_written_confirmation",
+          "test_vii_an_observation_at_the_decisions_time_is_accepted_and_links_may_repeat",
+          "test_vii_a_links_metadata_must_be_exactly_its_two_uuids",
+          "test_vii_metadata_on_any_other_type_is_still_refused",
+          "test_vii_a_phone_decision_and_a_link_are_internal_and_phone_only",
+          "test_vii_the_decision_must_be_an_internal_phone_decision_of_this_thread",
+          "test_viii_an_inbound_phone_decision_is_never_linkable",
+          "test_vii_the_observation_must_be_linkable",
+          "test_vii_a_link_with_content_needs_the_archive_consent",
+          "test_vii_a_change_to_the_observation_in_flight_is_waited_for_then_seen",
+          "test_vii_the_link_is_valid_at_its_writing_only")),
     Rule("S7-3 / G7-2 (v)",
          "The operator recovery command re-runs T2 on FAILED events and on RECEIVED ones "
          "older than 5 minutes, skips a held row, and prints counts only",

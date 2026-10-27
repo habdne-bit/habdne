@@ -1,0 +1,272 @@
+TURAB — Slice 7 step 4: interactions, the backfill, the timeline, the confirmation link
+============================================================
+Base commit       : e1bdcbc351bf61af617e8a564109a62f1c1df8d5
+Source fingerprint: b675c2696723266d0dd3db761cb44c2460308f8bc6b8d0473f00433f2dccf715
+Working tree      : DIRTY
+M db/dev/mutate_slice7_step2.py
+ M db/gate/authorization_evidence.py
+ M src/turab/api/problems.py
+ M src/turab/services/communication.py
+ M src/turab/services/timeline.py
+ M src/turab/services/webhooks.py
+ M tests/test_slice7_step2.py
+?? db/dev/mutate_slice7_step4.py
+?? db/ops/backfill_message_interactions.py
+?? src/turab/services/message_interactions.py
+?? tests/test_slice7_step4.py
+Recorded          : 2026-10-27 23:11:17 UTC
+Test file         : tests/test_slice7_step4.py
+
+=== baseline (no mutation) ===
+   59 passed, 1 warning in 17.26s
+== I1 an INTERNAL message typed by its channel [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   9 failed, 50 passed, 1 warning in 17.82s
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[EMAIL]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[IN_PERSON]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[OTHER]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[PHONE]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[SMS]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[WEB]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[WHATSAPP]
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   FAILED test_vii_mandatory_test_4_a_phone_decision_is_linked_to_a_later_written_confirmation
+   cause: AssertionError: assert 'CALL' == 'NOTE'
+   cause: AssertionError: assert ('CALL', 'PHO...nternal note') == ('NOTE', 'PHO...nternal note')
+   cause: AssertionError: assert ('EMAIL', 'EM...nternal note') == ('NOTE', 'EMA...nternal note')
+   cause: AssertionError: assert ('IN_PERSON',...nternal note') == ('NOTE', 'IN_...nternal note')
+   cause: AssertionError: assert ('OTHER', 'OT...nternal note') == ('NOTE', 'OTH...nternal note')
+   cause: AssertionError: assert ('OTHER', 'WE...nternal note') == ('NOTE', 'WEB...nternal note')
+== I2 a PHONE message typed OTHER [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   2 failed, 57 passed, 1 warning in 17.54s
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[PHONE]
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   cause: AssertionError: assert ('OTHER', 'Ou...9b822'), None) == ('CALL', 'Out...9b822'), None)
+   cause: AssertionError: assert ('OTHER', 'PH...ound message') == ('CALL', 'PHO...ound message')
+   cause: E   AssertionError: assert ('OTHER', 'Ou...9b822'), None) == ('CALL', 'Out...9b822'), None)
+   cause: E   AssertionError: assert ('OTHER', 'PH...ound message') == ('CALL', 'PHO...ound message')
+== I3 a WEB message typed WHATSAPP [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   1 failed, 58 passed, 1 warning in 18.08s
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[WEB]
+   cause: AssertionError: assert ('WHATSAPP', ...ound message') == ('OTHER', 'WE...ound message')
+   cause: E   AssertionError: assert ('WHATSAPP', ...ound message') == ('OTHER', 'WE...ound message')
+== I4 the summary of the wrong direction [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   8 failed, 51 passed, 1 warning in 17.16s
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[EMAIL]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[IN_PERSON]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[OTHER]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[PHONE]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[SMS]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[WEB]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[WHATSAPP]
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   cause: AssertionError: assert ('CALL', 'Inb...1af7e'), None) == ('CALL', 'Out...1af7e'), None)
+   cause: AssertionError: assert ('CALL', 'PHO...ound message') == ('CALL', 'PHO...ound message')
+   cause: AssertionError: assert ('EMAIL', 'EM...ound message') == ('EMAIL', 'EM...ound message')
+   cause: AssertionError: assert ('IN_PERSON',...ound message') == ('IN_PERSON',...ound message')
+   cause: AssertionError: assert ('OTHER', 'OT...ound message') == ('OTHER', 'OT...ound message')
+   cause: AssertionError: assert ('OTHER', 'WE...ound message') == ('OTHER', 'WE...ound message')
+== I5 the opportunity not copied [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   1 failed, 58 passed, 1 warning in 17.40s
+   FAILED test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+   cause: AssertionError: assert (UUID('f10000...077abd940a0')) == (UUID('f10000...077abd940a0'))
+   cause: E   AssertionError: assert (UUID('f10000...077abd940a0')) == (UUID('f10000...077abd940a0'))
+== I6 no operator [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   1 failed, 58 passed, 1 warning in 17.54s
+   FAILED test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+   cause: AssertionError: assert ({'message_id...}, None, None) == ({'message_id...00000000002'))
+   cause: E   AssertionError: assert ({'message_id...}, None, None) == ({'message_id...00000000002'))
+== I7 the metadata carries more than the id [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   1 failed, 58 passed, 1 warning in 17.56s
+   FAILED test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+   cause: AssertionError: assert ({'direction'...00000000002')) == ({'message_id...00000000002'))
+   cause: E   AssertionError: assert ({'direction'...00000000002')) == ({'message_id...00000000002'))
+== I8 the interaction's time is now [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   2 failed, 57 passed, 1 warning in 16.92s
+   FAILED test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   cause: AssertionError: assert '2026-10-27T2....483029+00:00' == '2026-10-25T09:00:00+00:00'
+   cause: AssertionError: assert '2026-10-27T2....994949+00:00' == '2026-10-25T09:00:00+00:00'
+   cause: E   AssertionError: assert '2026-10-27T2....483029+00:00' == '2026-10-25T09:00:00+00:00'
+   cause: E   AssertionError: assert '2026-10-27T2....994949+00:00' == '2026-10-25T09:00:00+00:00'
+== I9 the interaction not audited [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   3 failed, 56 passed, 1 warning in 16.69s
+   FAILED test_iii_a_webhook_message_writes_an_inbound_interaction_with_no_operator
+   FAILED test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== I10 the staff message writes no interaction [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   26 failed, 33 passed, 1 warning in 36.59s
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[EMAIL]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[IN_PERSON]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[OTHER]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[PHONE]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[SMS]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[WEB]
+   FAILED test_i_an_internal_message_is_a_note_in_every_channel[WHATSAPP]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[EMAIL]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[IN_PERSON]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[OTHER]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[PHONE]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[SMS]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[WEB]
+   FAILED test_i_an_outbound_message_writes_its_channels_interaction[WHATSAPP]
+   FAILED test_iii_the_interaction_carries_the_threads_links_and_the_messages_time
+   FAILED test_iv_a_replayed_staff_command_writes_no_second_interaction
+   FAILED test_v_a_backfill_concurrent_with_a_message_makes_no_duplicate
+   FAILED test_vi_an_archived_message_without_media_shows_both_keys
+   FAILED test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_ADMIN]
+   FAILED test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_OPERATOR]
+   FAILED test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_REVIEWER]
+   FAILED test_vi_archived_content_is_shown_to_every_role[ACC_ADMIN]
+   FAILED test_vi_archived_content_is_shown_to_every_role[ACC_OPERATOR]
+   FAILED test_vi_archived_content_is_shown_to_every_role[ACC_REVIEWER]
+   FAILED test_vi_the_delivery_status_is_read_live
+   FAILED test_vii_mandatory_test_4_a_phone_decision_is_linked_to_a_later_written_confirmation
+   cause: AssertionError: []
+   cause: AssertionError: assert 0 == 1
+   cause: E   AssertionError: []
+   cause: E   AssertionError: assert 0 == 1
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: E   assert False
+== I11 the webhook message writes no interaction [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   4 failed, 55 passed, 1 warning in 15.84s
+   FAILED test_iii_a_webhook_message_writes_an_inbound_interaction_with_no_operator
+   FAILED test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_ADMIN]
+   FAILED test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_OPERATOR]
+   FAILED test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_REVIEWER]
+   cause: AssertionError: []
+   cause: E   AssertionError: []
+   cause: E   assert (0 == 1)
+   cause: assert (0 == 1)
+== B1 no advisory lock [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   2 failed, 57 passed, 1 warning in 16.73s
+   FAILED test_ix_no_message_has_two_interactions_and_each_names_an_existing_message
+   FAILED test_v_two_backfills_at_once_write_each_interaction_once
+   cause: AssertionError: no message has two interactions
+   cause: AssertionError: the second waits
+   cause: E   AssertionError: no message has two interactions
+   cause: E   AssertionError: the second waits
+== B2 every message backfilled again [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   4 failed, 55 passed, 1 warning in 16.43s
+   FAILED test_ix_no_message_has_two_interactions_and_each_names_an_existing_message
+   FAILED test_v_a_backfill_concurrent_with_a_message_makes_no_duplicate
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   FAILED test_v_two_backfills_at_once_write_each_interaction_once
+   cause: AssertionError: a re-run writes nothing
+   cause: AssertionError: assert 2 == 1
+   cause: AssertionError: no message has two interactions
+   cause: E   AssertionError: a re-run writes nothing
+   cause: E   AssertionError: assert 2 == 1
+   cause: E   AssertionError: no message has two interactions
+== B3 the backfill reports nothing written [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 65786210e478b080 identical
+   2 failed, 57 passed, 1 warning in 15.67s
+   FAILED test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none
+   FAILED test_v_two_backfills_at_once_write_each_interaction_once
+   cause: E   assert (0 >= 3)
+   cause: E   assert 0 >= 2
+   cause: assert (0 >= 3)
+   cause: assert 0 >= 2
+== T1 unarchived content shown [src/turab/services/timeline.py, 1 site(s)]  restored: sha256 ce60fe0daabcdf9c identical
+   6 failed, 53 passed, 1 warning in 15.59s
+   FAILED test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_ADMIN]
+   FAILED test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_OPERATOR]
+   FAILED test_vi_an_unarchived_message_shows_no_content_to_any_role[ACC_REVIEWER]
+   FAILED test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_ADMIN]
+   FAILED test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_OPERATOR]
+   FAILED test_vi_webhook_content_withheld_at_write_is_absent_for_every_role[ACC_REVIEWER]
+   cause: AssertionError: assert (1 == 1 and {'body_text',...sage_id', ...} == {'content_arc...'occurred_at'}
+   cause: AssertionError: assert {'body_text',...sage_id', ...} == {'content_arc...'occurred_at'}
+   cause: E   AssertionError: assert (1 == 1 and {'body_text',...sage_id', ...} == {'content_arc...'occurred_at'}
+   cause: E   AssertionError: assert {'body_text',...sage_id', ...} == {'content_arc...'occurred_at'}
+== T2 a message key on every item [src/turab/services/timeline.py, 1 site(s)]  restored: sha256 ce60fe0daabcdf9c identical
+   1 failed, 58 passed, 1 warning in 16.18s
+   FAILED test_vi_any_other_interaction_keeps_slice_1s_exact_keys
+   cause: AssertionError: assert {'channel', '...rred_at', ...} == {'channel', '...ount_id', ...}
+   cause: E   AssertionError: assert {'channel', '...rred_at', ...} == {'channel', '...ount_id', ...}
+== T3 the status not read live [src/turab/services/timeline.py, 1 site(s)]  restored: sha256 ce60fe0daabcdf9c identical
+   1 failed, 58 passed, 1 warning in 16.34s
+   FAILED test_vi_the_delivery_status_is_read_live
+   cause: AssertionError: assert 'UNKNOWN' == 'SENT'
+   cause: E   AssertionError: assert 'UNKNOWN' == 'SENT'
+== T4 a message_id not a uuid cast [src/turab/services/timeline.py, 1 site(s)]  restored: sha256 ce60fe0daabcdf9c identical
+   1 failed, 58 passed, 1 warning in 15.32s
+   FAILED test_vi_any_other_interaction_keeps_slice_1s_exact_keys
+   cause: E   psycopg.errors.InvalidTextRepresentation: invalid input syntax for type uuid: "not-a-uuid"
+   cause: E   sqlalchemy.exc.DataError: (psycopg.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "not-a-uuid"
+   cause: sqlalchemy.exc.DataError: (psycopg.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "not-a-uuid"
+== L1 metadata accepted on any type [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 15.65s
+   FAILED test_vii_metadata_on_any_other_type_is_still_refused
+   cause: AssertionError: {"message_id":"b076b3b5-0b89-44cd-aabf-21006880e1b7","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"b076b3b5-0b89-44cd-aabf-21006880e1b7","delivery_status":"UNKNOWN"}
+== L2 a PHONE thread not required [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 16.11s
+   FAILED test_vii_a_phone_decision_and_a_link_are_internal_and_phone_only
+   cause: AssertionError: {"message_id":"3fd00b41-2cf0-4e20-ae57-a29a4ce9a350","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"3fd00b41-2cf0-4e20-ae57-a29a4ce9a350","delivery_status":"UNKNOWN"}
+== L3 an extra metadata key accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 15.82s
+   FAILED test_vii_a_links_metadata_must_be_exactly_its_two_uuids[an
+   cause: AssertionError: {"message_id":"ff69e40f-1780-46cb-aeb2-d5cc29de64ea","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"ff69e40f-1780-46cb-aeb2-d5cc29de64ea","delivery_status":"UNKNOWN"}
+== L4 a decision of another thread [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 14.74s
+   FAILED test_vii_the_decision_must_be_an_internal_phone_decision_of_this_thread
+   cause: AssertionError: {"message_id":"afdf8c22-6623-40ab-a482-11c38655e27f","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"afdf8c22-6623-40ab-a482-11c38655e27f","delivery_status":"UNKNOWN"}
+== L5 a decision of another type [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 14.47s
+   FAILED test_vii_the_decision_must_be_an_internal_phone_decision_of_this_thread
+   cause: AssertionError: {"message_id":"58c2f668-dcf4-4426-838f-073865805f76","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"58c2f668-dcf4-4426-838f-073865805f76","delivery_status":"UNKNOWN"}
+== L6 a decision of another direction [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 14.62s
+   FAILED test_vii_the_decision_must_be_an_internal_phone_decision_of_this_thread
+   cause: AssertionError: {"message_id":"8ea74699-de4a-45ae-882c-d233311b5dfc","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"8ea74699-de4a-45ae-882c-d233311b5dfc","delivery_status":"UNKNOWN"}
+== L7 an observation of another kind [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 15.71s
+   FAILED test_vii_the_observation_must_be_linkable[another
+   cause: AssertionError: {"message_id":"e4ede372-cfb5-4f4a-95a3-9b876bf06ca7","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"e4ede372-cfb5-4f4a-95a3-9b876bf06ca7","delivery_status":"UNKNOWN"}
+== L8 an observation of another party [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   2 failed, 57 passed, 1 warning in 14.85s
+   FAILED test_vii_the_observation_must_be_linkable[another
+   FAILED test_vii_the_observation_must_be_linkable[no
+   cause: AssertionError: {"message_id":"262223da-c8ff-412d-b455-571c3eb12a4e","delivery_status":"UNKNOWN"}
+   cause: AssertionError: {"message_id":"2ae11bf5-9b0b-42e1-885a-5bea23613db2","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"262223da-c8ff-412d-b455-571c3eb12a4e","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"2ae11bf5-9b0b-42e1-885a-5bea23613db2","delivery_status":"UNKNOWN"}
+== L9 an observation before the decision [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   2 failed, 57 passed, 1 warning in 14.76s
+   FAILED test_vii_a_change_to_the_observation_in_flight_is_waited_for_then_seen
+   FAILED test_vii_the_observation_must_be_linkable[before
+   cause: AssertionError: {"message_id":"b6b2a46c-fe0f-4b45-ab88-6db09f6659c1","delivery_status":"UNKNOWN"}
+   cause: E   AssertionError: {"message_id":"b6b2a46c-fe0f-4b45-ab88-6db09f6659c1","delivery_status":"UNKNOWN"}
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== L10 an observation at the decision's time refused [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 14.41s
+   FAILED test_vii_an_observation_at_the_decisions_time_is_accepted_and_links_may_repeat
+   cause: HTTP 422 field error: names no linkable observation
+== L11 the observation not locked [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   1 failed, 58 passed, 1 warning in 14.86s
+   FAILED test_vii_a_change_to_the_observation_in_flight_is_waited_for_then_seen
+   cause: AssertionError: the link waits for the observation
+   cause: E   AssertionError: the link waits for the observation
+== L12 the link's ids not stored [src/turab/services/communication.py, 1 site(s)]  restored: sha256 48be37fa6c255e85 identical
+   2 failed, 57 passed, 1 warning in 14.71s
+   FAILED test_vii_mandatory_test_4_a_phone_decision_is_linked_to_a_later_written_confirmation
+   FAILED test_vii_the_link_is_valid_at_its_writing_only
+   cause: AssertionError: assert {'content_archived': False} == {'content_arc...a4685958d2b0'}
+   cause: E   AssertionError: assert {'content_archived': False} == {'content_arc...a4685958d2b0'}
+   cause: E   assert None == '1805af21-ed95-454c-8ca0-ccaf9bf2c406'
+   cause: assert None == '1805af21-ed95-454c-8ca0-ccaf9bf2c406'
+== L13 a link refusal answered 409 [src/turab/api/problems.py, 1 site(s)]  restored: sha256 a10843962d23ea48 identical
+   2 failed, 57 passed, 1 warning in 15.18s
+   FAILED test_vii_the_decision_must_be_an_internal_phone_decision_of_this_thread
+   FAILED test_viii_an_inbound_phone_decision_is_never_linkable
+   cause: HTTP 409 field error: names no PHONE_DECISION of this thread
+
+SURVIVING MUTATIONS: none
