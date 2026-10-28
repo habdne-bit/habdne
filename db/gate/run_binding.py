@@ -30,6 +30,7 @@ whatever else it says.
 from __future__ import annotations
 
 import hashlib
+import os
 import pathlib
 import re
 import sys
@@ -117,13 +118,25 @@ WHAT THIS DOES AND DOES NOT SAY
 """
 
 
+def test_database() -> tuple[str, str]:
+    """(name, host) of the suite's database, as `tests/conftest.py` reads them."""
+    return (os.environ.get("TURAB_TEST_DB", "turab_authz_test"),
+            os.environ.get("PGHOST", "127.0.0.1"))
+
+
 def provenance_text(*, recorded: str, commit: str, source_fingerprint: str,
-                    report: pathlib.Path, report_name: str) -> str:
+                    report: pathlib.Path, report_name: str,
+                    database: tuple[str, str] | None = None) -> str:
+    """`database` is (name, host) of the database the suite ran on; Slice 7's
+    event-store sample is bound to it (review of 8dd7921). Earlier records,
+    written without it, stay readable."""
     stamp, took = suite_stamp(report)
+    where = f"Test database: {database[0]} on host {database[1]}\n" if database else ""
     return (INTRO + "\n"
             f"Recorded    : {recorded}\n"
             f"Commit      : {commit}\n"
             "Working tree: clean when the suite started; unchanged when it ended\n"
+            + where +
             "Source fingerprint (db/dev/source_fingerprint.py):\n"
             f"              {source_fingerprint}\n"
             f"Report      : {report_name}\n"
@@ -144,9 +157,17 @@ _FIELDS = {
 }
 
 
+#: Read when present; not required by `check`, which binds every slice's run.
+_OPTIONAL = {"database": r"^Test database: (\S+) on host (\S+)$"}
+
+
 def read_provenance(text: str) -> dict:
     """The recorded fields; a field that is absent is absent from the result."""
     found: dict = {}
+    for key, pattern in _OPTIONAL.items():
+        m = re.search(pattern, text, re.M)
+        if m:
+            found[key] = m.groups()
     for key, pattern in _FIELDS.items():
         m = re.search(pattern, text, re.M)
         if m:

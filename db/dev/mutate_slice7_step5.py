@@ -41,7 +41,15 @@ hidden):
   differ is reported as such, not hidden.
 
 Only `tests/test_slice7_step5.py` is run, so a kill is this file's, not an
-earlier step's. Run in one part. See `mutation_runner.py`.
+earlier step's.
+
+Part 2, E (review of 8dd7921): the closure evidence's own refusals: the
+sample bound to the database the run's record names, no skipped case, and
+the recorder running the suite on the database it records. Killed by
+`tests/test_slice7_evidence.py`, which runs the tools on a copy of the tree.
+
+Run in two parts, one per test file; each part prints its own header. See
+`mutation_runner.py`.
 """
 import sys
 
@@ -53,6 +61,10 @@ SVC = "src/turab/services/communication.py"
 INTER = "src/turab/services/message_interactions.py"
 IDEM = "src/turab/services/idempotency.py"
 TESTS = "tests/test_slice7_step5.py"
+GEN = "db/gate/slice7_evidence.py"
+TOOL = "db/gate/slice7_event_store_counts.py"
+RECORDER = "db/gate/record_test_run.py"
+EVIDENCE_TESTS = "tests/test_slice7_evidence.py"
 
 MUTATIONS = [
  # --- W: mandatory test 1 (J01, S42) ------------------------------------------------------
@@ -102,18 +114,51 @@ MUTATIONS = [
 ]
 
 
+#: Part 2 (review of 8dd7921): the closure evidence's own refusals, killed by
+#: `tests/test_slice7_evidence.py`.
+EVIDENCE_MUTATIONS = [
+ ("E1 the sample's database and host not compared", GEN,
+  "                \"database\": database, \"host\": host}", "                }"),
+ ("E2 a record naming no database accepted by the generator", GEN,
+  "    if database is None:\n        problems.append(",
+  "    if False:\n        problems.append("),
+ ("E3 a skipped case accepted by the generator", GEN,
+  "        if cases.skipped:", "        if False:"),
+ ("E4 the tool samples the environment's database", TOOL,
+  "    database, host = recorded[\"database\"]\n",
+  "    database, host = run_binding.test_database()\n"),
+ ("E5 the environment not compared by the tool", TOOL,
+  "        if os.environ.get(var) not in (None, value):", "        if False:"),
+ ("E6 a record naming no database accepted by the tool", TOOL,
+  "    if \"database\" not in recorded:\n        return [",
+  "    if False:\n        return ["),
+ ("E7 a skipped case accepted by the tool", TOOL,
+  "    return [f\"the run skipped {skipped} cases; Slice 7's evidence requires none\"] "
+  "if skipped else []",
+  "    return []"),
+ ("E8 the suite not run on the recorded database", RECORDER,
+  "cwd=ROOT, env=env).returncode", "cwd=ROOT).returncode"),
+ ("E9 the record names no database", RECORDER,
+  "report_name=REPORT.as_posix(), database=database))", "report_name=REPORT.as_posix()))"),
+]
+
+
 def _check_anchors() -> None:
     """Each anchor names ONE site: the runner replaces every occurrence. Run
     before a run, never on import."""
-    for name, rel, old, _new in MUTATIONS:
+    for name, rel, old, _new in MUTATIONS + EVIDENCE_MUTATIONS:
         count = (ROOT / rel).read_text().count(old)
         assert count == 1, (name, count)
-    labels = [m[0].split()[0] for m in MUTATIONS]
+    labels = [m[0].split()[0] for m in MUTATIONS + EVIDENCE_MUTATIONS]
     assert len(set(labels)) == len(labels)
 
 
 if __name__ == "__main__":
     _check_anchors()
+    only = tuple(sys.argv[1:])
     survivors = run("TURAB — Slice 7 step 5: the mandatory and red-team tests end to end",
-                    TESTS, MUTATIONS, tuple(sys.argv[1:]))
+                    TESTS, MUTATIONS, only)
+    print()
+    survivors += run("TURAB — Slice 7 step 5: the closure evidence's refusals (review of "
+                     "8dd7921)", EVIDENCE_TESTS, EVIDENCE_MUTATIONS, only)
     sys.exit(1 if survivors else 0)

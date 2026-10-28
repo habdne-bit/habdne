@@ -8,10 +8,22 @@ which names two gaps of the earlier steps' tests to close here:
 - K05's "another body on the key is 409" was not tested for either staff
   command (`test_k05_*`).
 
-Every business row is made over HTTP (the staff commands, the webhook, the
-observation command, the timeline); SQL is used only to read, and where the
-plan's proof is a refusal by the schema itself (`0008`'s frozen links and
-RESTRICT keys, the NULL-provider CHECK), which no HTTP path can reach.
+**What goes over HTTP:** the operations each test proves (the two staff
+commands, the webhook, the observation command, the timeline), and the
+matching run and the review that make the SALE opportunity.
+
+**What does not** (corrected in the review of 8dd7921, which found the
+earlier wording, "every business row is made over HTTP", wider than the
+tests): the rows the tests start from are set up directly in SQL, namely the
+fixture accounts and parties `tests/conftest.py` loads, and, through the
+helpers of `tests/test_slice7_step2.py`:
+- `_party`: a party;
+- `_archive_consent`: a consent grant and its thread binding;
+- `_sale_world`: the request, its criterion, the property with its
+  attributes, and the offer (by `tests/test_slice4_step7.py`'s helpers).
+SQL also reads the results, and probes the schema's own refusals (`0008`'s
+frozen links and RESTRICT keys, the NULL-provider CHECK), which no HTTP path
+can reach.
 
 **What is not claimed.** The relay's signature proves the relay's origin, not
 Meta's; R-1 is UNMET. The guards of `0008` are trigger- and constraint-level,
@@ -253,8 +265,9 @@ def test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted
 
 def test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline(
         client, engine, ids):
-    """Every row over HTTP, then read back through the timeline: the decision,
-    the observation, the link, each as a NOTE interaction of the party."""
+    """The decision, the observation and the link over HTTP, then read back
+    through the timeline, the decision and the link each as a NOTE interaction
+    of the party. The party itself is set up in SQL (`_party`)."""
     party = _party(engine)
     thread = _new_thread(client, ids, engine, party=party)
     decision = _ok(_message(client, thread, {"direction": "INTERNAL", "occurred_at": AT,

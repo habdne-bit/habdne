@@ -11,6 +11,10 @@ writer, and one checker (`run_binding.check`), which read the same fields.
 - The record states what the report holds: its digest and its counted cases,
   failing ones included. A failing run is recorded as failing, and the
   check refuses it.
+- The record names the database the suite ran on (review of 8dd7921): the
+  name and host are resolved once, as `tests/conftest.py` reads them, and
+  set in the suite's own environment, so the record cannot name another.
+  Slice 7's event-store sample is bound to it.
 
 Usage (PG* variables as for the suite):
   .venv/bin/python db/gate/record_test_run.py
@@ -19,10 +23,12 @@ Exit status: pytest's, or 2 if the tree was dirty or changed during the run.
 from __future__ import annotations
 
 import datetime as dt
+import os
 import subprocess
 import sys
 
-from run_binding import PROVENANCE, REPORT, ROOT, counted, fingerprint, provenance_text
+from run_binding import (PROVENANCE, REPORT, ROOT, counted, fingerprint, provenance_text,
+                         test_database)
 
 
 def _git(*args: str) -> str:
@@ -37,8 +43,10 @@ def main() -> int:
     commit = _git("rev-parse", "HEAD").strip()
     before = fingerprint(ROOT)
     recorded = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    database = test_database()
+    env = {**os.environ, "TURAB_TEST_DB": database[0], "PGHOST": database[1]}
     status = subprocess.run([sys.executable, "-m", "pytest", "-q",
-                             f"--junitxml={REPORT.as_posix()}"], cwd=ROOT).returncode
+                             f"--junitxml={REPORT.as_posix()}"], cwd=ROOT, env=env).returncode
     changed = [line[3:] for line in _git("status", "--porcelain").splitlines()
                if line[3:] != REPORT.as_posix()]
     if changed or fingerprint(ROOT) != before or _git("rev-parse", "HEAD").strip() != commit:
@@ -46,8 +54,9 @@ def main() -> int:
         return 2
     (ROOT / PROVENANCE).write_text(provenance_text(
         recorded=recorded, commit=commit, source_fingerprint=before,
-        report=ROOT / REPORT, report_name=REPORT.as_posix()))
-    print(f"wrote {PROVENANCE}: {counted(ROOT / REPORT)}")
+        report=ROOT / REPORT, report_name=REPORT.as_posix(), database=database))
+    print(f"wrote {PROVENANCE}: {counted(ROOT / REPORT)}, database {database[0]} "
+          f"on host {database[1]}")
     return status
 
 

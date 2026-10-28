@@ -9,14 +9,17 @@ report: by default the one committed with the clean-tree run,
 `docs/gate/evidence/junit-run.xml`. Before any provenance is claimed,
 `run_binding.check` must find the report's digest and counts to be the
 recorded ones, no failed case, and the current tree's source fingerprint to
-be the run's and the gate run's.
+be the run's and the gate run's. **This generator also requires no skipped
+case,** which `run_binding.check` does not refuse (review of 8dd7921).
 
 **G7-19, as decided:**
 - (i) the event store's counts come from
   `docs/gate/evidence/SLICE7-EVENT-STORE-COUNTS.txt`, written by
   `slice7_event_store_counts.py` right after the run. The generator refuses
   it unless its run identifier, commit, source fingerprint and report sha256
-  are the bound run's. They are shown as "a sample measured right after the
+  are the bound run's, and its database and host are the ones the run's
+  record names (`Test database`, written by `record_test_run.py`; review of
+  8dd7921). They are shown as "a sample measured right after the
   run": never PASS;
 - (ii) the writes to the four tables, by `INSERT`, `UPDATE` and `DELETE`,
   computed from the application's statements under `src/`, and each
@@ -249,6 +252,7 @@ COUNT_FIELDS = {
     "fingerprint": r"^Source fingerprint: ([0-9a-f]{64})$",
     "report_sha256": r"^Report sha256     : ([0-9a-f]{64})$",
     "database": r"^Test database     : (\S+)$",
+    "host": r"^Test host         : (\S+)$",
 }
 STATUSES = ("RECEIVED", "PROCESSED", "IGNORED", "FAILED")
 
@@ -356,9 +360,14 @@ def _counts(recorded: dict, provenance: str, problems: list[str]) -> list[str]:
     fields = {k: (m.group(1).strip() if (m := re.search(p, text, re.M)) else None)
               for k, p in COUNT_FIELDS.items()}
     run_at = re.search(r"^Recorded    : (.+)$", provenance, re.M)
+    database, host = recorded.get("database") or (None, None)
+    if database is None:
+        problems.append("the run's record names no test database: the sample cannot be "
+                        "bound to the database the suite ran on")
     expected = {"run_recorded": run_at.group(1).strip() if run_at else None,
                 "commit": recorded.get("commit"), "fingerprint": recorded.get("fingerprint"),
-                "report_sha256": recorded.get("report_sha256")}
+                "report_sha256": recorded.get("report_sha256"),
+                "database": database, "host": host}
     for key, value in expected.items():
         if fields.get(key) != value:
             problems.append(f"the event store's sample names {key} {fields.get(key)!r}, "
@@ -373,7 +382,8 @@ def _counts(recorded: dict, provenance: str, problems: list[str]) -> list[str]:
     if len(tail) != 2:
         problems.append("the event store's sample has no FAILED by error_text")
     return [f"- **Sampled at** {fields['sampled']}, from the test database "
-            f"`{fields['database']}`, for the run recorded at {fields['run_recorded']} "
+            f"`{fields['database']}` on host `{fields['host']}`, the one the run's record "
+            f"names, for the run recorded at {fields['run_recorded']} "
             f"(commit `{fields['commit']}`, source fingerprint `{fields['fingerprint']}`, "
             f"report sha256 `{fields['report_sha256']}`), "
             f"from `{COUNTS.relative_to(ROOT)}`.", "",
@@ -405,12 +415,17 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
         problems += binding
         provenance = (ROOT / run_binding.PROVENANCE).read_text()
         cases = run_binding.counted(junit)
+        if cases.skipped:
+            problems.append(f"the run skipped {cases.skipped} cases; Slice 7's evidence "
+                            "requires none")
         out += [f"- The JUnit run is recorded at commit `{recorded.get('commit')}`, source "
                 f"fingerprint `{recorded.get('fingerprint')}`, report sha256 "
-                f"`{recorded.get('report_sha256')}` "
-                "(`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).",
+                f"`{recorded.get('report_sha256')}`, test database "
+                + ("`{}` on host `{}`".format(*recorded["database"]) if "database" in recorded
+                   else "**NOT RECORDED**")
+                + " (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).",
                 f"- Counted in the report: {cases.tests} test cases, {cases.failures} "
-                f"failures, {cases.errors} errors, {cases.skipped} skipped.",
+                f"failures, {cases.errors} errors, {cases.skipped} skipped (none is required).",
                 "- Binding (`db/gate/run_binding.py`): "
                 + ("the report's digest and counts are the recorded ones, and the current "
                    "tree's source fingerprint is the run's and the gate run's."
@@ -422,8 +437,18 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
     out += ["- Tests are named `module::name`.",
             "- These are our runs; nobody else has re-run them.", "",
             "## 1. The four mandatory tests (plan §6.1)", "",
-            "The end-to-end test (`test_slice7_step5`, every business row made over HTTP) "
-            "is listed first; the earlier steps' tests follow.", "",
+            "The end-to-end tests (`test_slice7_step5`) are listed first; the earlier "
+            "steps' tests follow. **What goes over HTTP:** the operations each test "
+            "proves (the two staff commands, the webhook, the observation command, the "
+            "timeline), and the run and the review that make the SALE opportunity. "
+            "**What does not:** the rows they start from are set up directly in SQL: "
+            "the fixture accounts and parties `tests/conftest.py` loads; and, through "
+            "the helpers of `tests/test_slice7_step2.py`, `_party` (a party), "
+            "`_archive_consent` (a consent grant and its thread binding) and "
+            "`_sale_world` (the request, its criterion, the property with its "
+            "attributes, and the offer, by `tests/test_slice4_step7.py`'s helpers). SQL "
+            "also reads the results, and probes the schema's own refusals (`0008`), "
+            "which no HTTP path reaches.", "",
             "| # | Handoff wording | Test | Status |", "|---|---|---|---|"]
     for num, wording, tests in MANDATORY:
         for name in tests:
