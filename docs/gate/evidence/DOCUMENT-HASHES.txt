@@ -1037,3 +1037,8 @@ docs/gate/SLICE_7_STEP5_DELIVERY.md                            add   9667e56f7f7
 docs/gate/SLICE_7_EVIDENCE.md                                  add   099bc1e6b1a2e41054ccef7562a5af403b09907f92c9de88107f1bbf82b02bdf
 docs/gate/SLICE_7_PLAN.md                                      rev24 95bbb2735cd094f89ca0a66521bd817f6a0ccab8226872c11997e597ffa79381
 SLICE_7_PLAN.md changed revision: 23 -> 24 (review of 84280c0).
+--- Review of 4b72ad5: Slice 7 step 5 CLOSED at 4b72ad5; the slice's closure record prepared for review (the slice stays open); Slice 7 plan revision 25 ---
+docs/gate/SLICE_7_CLOSURE.md                                   add   164fbfdb54b73af1656d6d05aae4eb99923847cd04420a328d85f43fd2d1a8bd
+docs/gate/SLICE_7_STEP5_DELIVERY.md                            add   b9b742c0a56a21c6d32176975417f375de360e2867eefb611b69db68e3d059c1
+docs/gate/SLICE_7_PLAN.md                                      rev25 6b95f294b9b94e3a2f4618707bcfce1b184393936e7be1d56dc7f931781144bd
+SLICE_7_PLAN.md changed revision: 24 -> 25 (review of 4b72ad5).

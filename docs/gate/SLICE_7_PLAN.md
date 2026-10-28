@@ -1,13 +1,13 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 24**
+## Implementation plan — **revision 25**
 
 **Status: step 4 is CLOSED at `2f968f4`, and step 5 is AUTHORIZED** (review
 of `2f968f4`, recorded below), within the approved plan. Step 3 is CLOSED at
 `23b99b6`. **G7-19 is DECIDED** (review of `d04d5c8`, recorded below). **Step 5
-is DELIVERED for review and NOT closed** (`SLICE_7_STEP5_DELIVERY.md`): the
-reviews of `8dd7921` and `84280c0`, recorded below, asked for changes to the
-closure evidence's binding; they are made, and the round is bound to the
-resulting tree (that note's §8.4). **G7-18 is DECIDED** (review of `e18271a`,
+is CLOSED at `4b72ad5`** (review of `4b72ad5`, recorded below;
+`SLICE_7_STEP5_DELIVERY.md`). **Slice 7 is NOT closed:** its closure record,
+`SLICE_7_CLOSURE.md`, is prepared for review, and the slice stays open until
+that review. **G7-18 is DECIDED** (review of `e18271a`,
 recorded below): the nine options (a), with limits. **Step 4 is CLOSED
 at `2f968f4`** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
@@ -100,7 +100,27 @@ a recommendation. A recommendation is not a decision.
 | 21 | `d04d5c8` | G7-19 added: three points of step 5 put as decisions (the event store's counts, the decided writes, what is never PASS); two test gaps stated; no other change |
 | 22 | `c4953e3` | the review of `d04d5c8` recorded: G7-19 decided, direction (a) in the three points, specified |
 | 23 | `84280c0` | the review of `8dd7921` recorded; step 5 delivered (not closed) with its answer, its mutation records and the evidence round |
-| 24 | this revision | the review of `84280c0` recorded; step 5 delivered again (not closed): the sample bound to the connection's destination and the server reached |
+| 24 | `4b72ad5` | the review of `84280c0` recorded; step 5 delivered again (not closed): the sample bound to the connection's destination and the server reached |
+| 25 | this revision | the review of `4b72ad5` recorded: step 5 CLOSED; the slice's closure record prepared for review; the slice stays open |
+
+**The review of `4b72ad5`. Step 5 is CLOSED at `4b72ad5`; Slice 7's closure
+record may be prepared for review. The slice stays open until that record is
+reviewed.**
+- **What the reviewer checked:** the code and the published records: the
+  recorder fixes the connection's destination and records the server's
+  identity; the sample tool compares that identity before counting; the
+  generated evidence shows the counts as a measurement, not PASS. The two
+  mutation records each list 33 mutations, none surviving.
+- **What it did not do:** re-run the suite (3173/3173), the gate, `bound` or
+  `--check`; they are the team's runs. The binding does not prove the test
+  database was not dropped and recreated between the run and the sample, as
+  the delivery note states.
+- **The closure record:** `SLICE_7_CLOSURE.md`, prepared for review: the
+  limits as given, the steps and their reviews, the acceptance conditions
+  (§7) each with the record that holds it, and the evidence. It proposes no
+  new decision.
+- **Standing:** R-1 unmet before any real event; K06 UNPROVEN; SALE only;
+  not a release authorization.
 
 **The review of `84280c0`. Step 5 is NOT closed.** The three fixes of the
 review of `8dd7921` are there; the team's record states 3152 tests without
@@ -2338,7 +2358,7 @@ identical results, and are ours.
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, decided** (review of `e18271a`) |
-| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all; **G7-19, decided** (review of `d04d5c8`); **DELIVERED, not closed** (reviews of `8dd7921` and `84280c0` answered; `SLICE_7_STEP5_DELIVERY.md`) |
+| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all; **G7-19, decided** (review of `d04d5c8`); **CLOSED at `4b72ad5`** (review of `4b72ad5`; `SLICE_7_STEP5_DELIVERY.md`); the slice's closure record prepared for review (`SLICE_7_CLOSURE.md`) |
 
 Each step is delivered with its tests and its mutation record, and is
 reviewed before the next begins. A defect found in a step is measured before

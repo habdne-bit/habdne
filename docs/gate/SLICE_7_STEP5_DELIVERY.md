@@ -18,8 +18,21 @@
 - a migration, or an HTTP operation;
 - the relay (R-1). **R-1 is UNMET: no real event may be received.**
 
-**Status: DELIVERED for review, NOT CLOSED** (reviews of `8dd7921` and
-`84280c0` answered). Slice 7 is not closed.
+**Status: CLOSED at `4b72ad5`** (review of `4b72ad5`; `SLICE_7_PLAN.md`
+revision 25). Slice 7 is **not** closed: its closure record,
+`SLICE_7_CLOSURE.md`, is prepared for review.
+- **What the reviewer checked:** the recorder fixing the connection's
+  destination and recording the server's identity; the sample tool comparing
+  that identity before counting; the generated evidence showing the counts as
+  a measurement, not PASS; and the two mutation records, each listing 33
+  mutations with none surviving.
+- **What the reviewer did not do:** re-run the suite (3173/3173), the gate,
+  `bound` or `--check`. The results are ours. The binding does not prove the
+  test database was not dropped and recreated between the run and the sample
+  (§8.5).
+- *History:* delivered at `84280c0`, after the review of `8dd7921`; NOT
+  closed by the review of `84280c0` (the connection's port and host address);
+  §8 answers it.
 - **What the reviewer did not do:** re-run the suite, the mutations or the
   gate. The results are ours.
 
