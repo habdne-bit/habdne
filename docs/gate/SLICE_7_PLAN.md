@@ -1,10 +1,12 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 18**
+## Implementation plan — **revision 19**
 
 **Status: step 3 is CLOSED at `23b99b6`, and step 4 is AUTHORIZED** (review
 of `23b99b6`, recorded below), within the plan's scope. **G7-18 is DECIDED** (review of `e18271a`,
 recorded below): the nine options (a), with limits. **Step 4 is DELIVERED
-FOR REVIEW, not closed** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
+FOR REVIEW again, not closed** (`SLICE_7_STEP4_DELIVERY.md` §10): the review of
+`a659587` (recorded below) found R-S7-4-01, the backfill's isolation;
+measured, fixed and measured again. Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
@@ -89,7 +91,33 @@ a recommendation. A recommendation is not a decision.
 | 15 | `23b99b6` | the review of `34d6122` recorded: T1 and T2, the 400 codes and `archived_at` accepted; CORRECTION-007 §1 and an unbounded `int()` of `Content-Length` to answer; both answered (`SLICE_7_STEP3_DELIVERY.md` §9) |
 | 16 | `bc334f8` | the review of `23b99b6` recorded: step 3 CLOSED, CORRECTION-007 and CORRECTION-008 approved, step 4 authorized; a pointer at G7-17 (vi) to CORRECTION-007's later meaning |
 | 17 | `e18271a` | G7-18 added: nine points of step 4 put as decisions, each with a recommendation; measured facts of the schema stated; no other change |
-| 18 | this revision | the review of `e18271a` recorded: G7-18 decided, the nine options (a), with limits; no 0009; the link valid at its writing only |
+| 18 | `e1bdcbc` | the review of `e18271a` recorded: G7-18 decided, the nine options (a), with limits; no 0009; the link valid at its writing only |
+| 19 | this revision | the review of `a659587` recorded: step 4 not closed; R-S7-4-01 (the backfill's isolation) and the stale introduction of `services/communication.py`; both answered (`SLICE_7_STEP4_DELIVERY.md` §10) |
+
+**The review of `a659587`. Step 4 is delivered and NOT closed.** The
+reviewer read the diff, the code and the delivery note; the recorded results
+(3088/3088, 31/31 twice, the gate) are the implementing team's, not re-run.
+- **Accepted:** the four 422 codes; the removal of `MESSAGE_TYPE_RESERVED`;
+  the maintenance of step 2's and Slice 5's tests, within the limits the
+  note states.
+- **The blocker, R-S7-4-01, the backfill's isolation.** The backfill says
+  READ COMMITTED, but its script connects at the server's default, and
+  `audited_transaction` sets no level for it; no test checks the level it
+  runs under. Under REPEATABLE READ, a second backfill could keep a
+  snapshot from before its lock wait, not see the first's interactions,
+  and, with no unique constraint, write them again. The reviewer states
+  this as inferred from the code, not measured; PostgreSQL 16 documents
+  that READ COMMITTED takes a snapshot per statement and REPEATABLE READ one
+  per transaction. **Asked:** measure the concurrent order under REPEATABLE
+  READ first; then make the backfill impose READ COMMITTED, or refuse
+  explicitly to run otherwise, with a test of the actual level and of a
+  re-run without duplicates.
+- **Also:** correct the introduction of `services/communication.py`, which
+  still says the two types are reserved and that `metadata` holds
+  `content_archived` only.
+- **Then:** the evidence round bound to the resulting tree's fingerprint.
+- **Standing:** step 5 awaits the review of the answer; R-1 is a condition
+  before any real event; K06 is UNPROVEN; the scope is SALE only.
 
 **The review of `e18271a`. G7-18 is DECIDED: the nine options (a), with the
 limits below. Step 4 may be implemented accordingly.** The diff since

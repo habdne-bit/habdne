@@ -15,8 +15,12 @@
   command;
 - the relay (R-1). **R-1 is UNMET: no real event may be received.**
 
-**Status: DELIVERED FOR REVIEW** with the commit that adds this note. **Not
-closed.**
+**Status: DELIVERED FOR REVIEW again,** with the commit that adds §10.
+**Not closed.**
+- *History:* delivered at `a659587`; NOT closed by the review of `a659587`,
+  for R-S7-4-01 (the backfill's isolation) and the stale introduction of
+  `services/communication.py`. §10 answers both, with the evidence on the
+  resulting tree.
 
 **Submitted for decision with this delivery:**
 1. **Four codes the plan names** (G7-18 (vii)), with their statuses, and the
@@ -285,3 +289,107 @@ Every row ran on a clean tree, with source fingerprint `d06a9ac1…a9b6`.
 - **R-1:** the relay and its seven duties. **No real event before it.**
 - **K06 UNPROVEN;** the scope SALE only. **This is not a release
   authorization.**
+
+---
+
+## 10. Addendum: the review of `a659587` and R-S7-4-01
+
+**What the review did.**
+- **Accepted:** the four 422 codes; the removal of `MESSAGE_TYPE_RESERVED`;
+  the maintenance of step 2's and Slice 5's tests, within the limits §4
+  states. The reviewer did not re-run the results: they are ours.
+- **Did not close step 4,** for two reasons, each answered below.
+
+### 10.1 R-S7-4-01: the backfill's isolation
+
+**The reviewer's reading, stated as inferred, not measured:** the backfill
+said READ COMMITTED, but its script opened a connection at the server's
+default, and `audited_transaction` set no level. On a connection defaulting
+to REPEATABLE READ, the second of two backfills could keep a snapshot from
+before it waited for the lock, not see the first's interactions, and, with
+no unique constraint, write them again.
+
+**Measured first, before any fix** (`fe9267f`;
+`evidence/SLICE7-STEP4-R-S7-4-01.txt` with its script): a scratch database
+at head; backfill A held inside its first write, holding the advisory
+lock; backfill B started and blocked on the lock (witness:
+`pg_blocking_pids`); A released. Two runs, identical:
+
+| Connection's default | B wrote | Messages with two interactions |
+|---|---|---|
+| `read committed` (the server's, and the suite's) | 0 | 0 |
+| `repeatable read` | 5 | **5 of 5** |
+
+- **The reviewer's reasoning holds.** B's snapshot is taken by its
+  transaction's first statement, `audited_transaction`'s `set_config`,
+  before the lock.
+- **Why the delivered tests passed:** the suite's connections default to
+  READ COMMITTED; nothing in the code imposed it. §1.2's "READ COMMITTED"
+  described the environment, not the code.
+
+**The fix** (`f075ab8`):
+- `audited_transaction` accepts `isolation="READ COMMITTED"` (beside
+  REPEATABLE READ); the backfill passes it, so `SET TRANSACTION ISOLATION
+  LEVEL READ COMMITTED` is its transaction's first statement, whatever the
+  connection's default;
+- the backfill then reads the level it actually runs under, and refuses to
+  write under any other (`BackfillIsolationRefused`), so a later change that
+  stopped imposing it would fail loudly rather than duplicate.
+
+**Measured again after the fix,** same order: under a REPEATABLE READ
+default, both backfills ran READ COMMITTED; B waited, wrote nothing; no
+message had two interactions. Two runs, identical. (The script now reads
+each level as its transaction opens; it first read it inside the first
+write, which a backfill that writes nothing never reaches.)
+
+**Tests** (`tests/test_slice7_step4.py`), each on a connection whose default
+is REPEATABLE READ (checked by the first):
+- `test_v_the_backfill_runs_read_committed_whatever_the_connections_default`;
+- `test_v_two_backfills_on_a_repeatable_read_default_write_each_interaction_once`,
+  with the witness, then a re-run writing nothing;
+- `test_v_the_backfill_refuses_to_write_under_another_level` (the level's
+  imposition simulated away): refused, nothing written.
+
+**Each fails on `a659587`'s backfill:** the first reads `repeatable read`, the
+second's B writes 3 again, the third finds no refusal.
+
+**Mutations added:** B4 (the level not imposed), B5 (the level not checked);
+each killed.
+
+**An observation, not changed:** step 3's webhook T2 and its recovery command
+also open their transactions at the connection's default. Their correctness
+rests on other mechanisms (the claim's row lock, and the messages' unique
+reference), and they were not measured here.
+
+### 10.2 The introduction of `services/communication.py`
+
+It said the two G7-10 types were reserved, and that a message's `metadata`
+held `content_archived` only. Corrected to the code: a `CONFIRMATION_LINK`'s
+metadata is its two checked ids beside `content_archived`; the two types
+are INTERNAL and PHONE only (reserved until step 4); the link's checks, its
+interaction, and its limit (valid at its writing only) are stated.
+
+### 10.3 The evidence on the resulting tree
+
+Every row ran on a clean tree, with source fingerprint `49886794…6f29`.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Suite (`record_test_run.py`) | **3091 passed, 0 failed, 0 errors, 0 skipped** | `874cf75` (run at `928e979`) | `evidence/TEST-RUN-PROVENANCE.txt`; `run_binding.py`: `bound` |
+| PostgreSQL gate | PASS: ALL DATABASE-LEVEL CONTRACT TESTS PASSED; the same 67 operations | `928e979` (run at `900b924`) | `evidence/gate-run.txt` |
+| Authorization matrix | 217 rules; suite 3091/3091 | `900b924` (run at `a419638`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| Step 4 mutations | **33/33 fail, twice, identical** | `a419638` (run at `f075ab8`) | `evidence/SLICE7-STEP4-MUTATIONS.txt`, `-REPEAT.txt` |
+| R-S7-4-01, before and after the fix | as §10.1 | `fe9267f`, `f075ab8` | `evidence/SLICE7-STEP4-R-S7-4-01.txt` |
+
+- **Not rerun on this tree:** step 2's and step 3's mutation scripts. The fix
+  changes step 2's service in its introduction only, and `session.py`,
+  which neither script mutates; their last runs are on `5ef657b` (§7).
+- **The interactions at the end of the suite run:** 186 messages, 185 with
+  exactly one interaction, one with none (the decision a test inserts
+  directly by SQL, as in §8), **none with two**.
+- §7 and §8 above are the records of `a659587`'s tree; the files they name
+  now hold this round's (git keeps the earlier ones).
+
+**Standing:** step 5 does not start before the review; R-1 is a condition
+before any real event; K06 is UNPROVEN; the scope is SALE only. This is not a
+release authorization.

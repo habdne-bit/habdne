@@ -1011,3 +1011,9 @@ docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   4216cab56ec
 docs/gate/evidence/SLICE7-STEP4-BEFORE.txt                     add   109acf9ad8cf5a6d89e119830e30b24a4cf2d24b819d0c0b21f27fe3df8c0703
 docs/gate/SLICE_7_PLAN.md                                      rev18 6c2828ea611ff2f56aa10ede8979c8f20c6bb3a2441e7eb85940a717a68309a4
 SLICE_7_PLAN.md: revision 18, its status updated for step 4's delivery.
+--- Review of a659587: R-S7-4-01 measured, fixed, measured again; step 4 delivered for review again; Slice 7 plan revision 19 ---
+docs/gate/SLICE_7_STEP4_DELIVERY.md                            add   d5bd3436dfaf666dc45b5d7185fe47e90971e26a8dbeef8539b57ad485a07f16
+docs/gate/evidence/SLICE7-STEP4-R-S7-4-01.txt                  add   41c3eb58f9bdd670c72b18f654c200a5f6ce082c12222eb0e7623446df6837eb
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   ca6c713eaa18f3978523f050c8a83d1df6e51a0fd06be97753ca9d07d44c5809
+docs/gate/SLICE_7_PLAN.md                                      rev19 860f359ed61774a66ba26d3d226e0dbfbc1fa85939887dc9d7bcd6519bd77de3
+SLICE_7_PLAN.md changed revision: 18 -> 19 (review of a659587).
