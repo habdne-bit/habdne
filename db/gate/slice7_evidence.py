@@ -17,9 +17,10 @@ case,** which `run_binding.check` does not refuse (review of 8dd7921).
   `docs/gate/evidence/SLICE7-EVENT-STORE-COUNTS.txt`, written by
   `slice7_event_store_counts.py` right after the run. The generator refuses
   it unless its run identifier, commit, source fingerprint and report sha256
-  are the bound run's, and its database and host are the ones the run's
-  record names (`Test database`, written by `record_test_run.py`; review of
-  8dd7921). They are shown as "a sample measured right after the
+  are the bound run's, and its database, host, whole destination and the
+  server it reached are the ones the run's record names (`Test database`,
+  `Test destination`, `Test server`, written by `record_test_run.py`; reviews
+  of 8dd7921 and 84280c0). They are shown as "a sample measured right after the
   run": never PASS;
 - (ii) the writes to the four tables, by `INSERT`, `UPDATE` and `DELETE`,
   computed from the application's statements under `src/`, and each
@@ -253,6 +254,8 @@ COUNT_FIELDS = {
     "report_sha256": r"^Report sha256     : ([0-9a-f]{64})$",
     "database": r"^Test database     : (\S+)$",
     "host": r"^Test host         : (\S+)$",
+    "destination": r"^Test destination  : (.+)$",
+    "server": r"^Server reached    : (.+)$",
 }
 STATUSES = ("RECEIVED", "PROCESSED", "IGNORED", "FAILED")
 
@@ -364,10 +367,18 @@ def _counts(recorded: dict, provenance: str, problems: list[str]) -> list[str]:
     if database is None:
         problems.append("the run's record names no test database: the sample cannot be "
                         "bound to the database the suite ran on")
+    for key in ("destination", "server"):
+        if key not in recorded:
+            problems.append(f"the run's record names no test {key}: the sample cannot be "
+                            "bound to where the suite's connections went")
+    destination = (run_binding.destination_line(recorded["destination"])
+                   if "destination" in recorded else None)
+    server = run_binding.server_line(recorded["server"]) if "server" in recorded else None
     expected = {"run_recorded": run_at.group(1).strip() if run_at else None,
                 "commit": recorded.get("commit"), "fingerprint": recorded.get("fingerprint"),
                 "report_sha256": recorded.get("report_sha256"),
-                "database": database, "host": host}
+                "database": database, "host": host, "destination": destination,
+                "server": server}
     for key, value in expected.items():
         if fields.get(key) != value:
             problems.append(f"the event store's sample names {key} {fields.get(key)!r}, "
@@ -382,8 +393,9 @@ def _counts(recorded: dict, provenance: str, problems: list[str]) -> list[str]:
     if len(tail) != 2:
         problems.append("the event store's sample has no FAILED by error_text")
     return [f"- **Sampled at** {fields['sampled']}, from the test database "
-            f"`{fields['database']}` on host `{fields['host']}`, the one the run's record "
-            f"names, for the run recorded at {fields['run_recorded']} "
+            f"`{fields['database']}` on host `{fields['host']}` (destination "
+            f"`{fields['destination']}`; server reached `{fields['server']}`), the ones the "
+            f"run's record names, for the run recorded at {fields['run_recorded']} "
             f"(commit `{fields['commit']}`, source fingerprint `{fields['fingerprint']}`, "
             f"report sha256 `{fields['report_sha256']}`), "
             f"from `{COUNTS.relative_to(ROOT)}`.", "",
@@ -423,6 +435,10 @@ def render(results: dict[str, str], junit: pathlib.Path) -> tuple[str, list[str]
                 f"`{recorded.get('report_sha256')}`, test database "
                 + ("`{}` on host `{}`".format(*recorded["database"]) if "database" in recorded
                    else "**NOT RECORDED**")
+                + (f", destination `{run_binding.destination_line(recorded['destination'])}`"
+                   if "destination" in recorded else ", destination **NOT RECORDED**")
+                + (f", server reached `{run_binding.server_line(recorded['server'])}`"
+                   if "server" in recorded else ", server **NOT RECORDED**")
                 + " (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).",
                 f"- Counted in the report: {cases.tests} test cases, {cases.failures} "
                 f"failures, {cases.errors} errors, {cases.skipped} skipped (none is required).",

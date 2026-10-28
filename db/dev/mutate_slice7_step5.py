@@ -43,10 +43,20 @@ hidden):
 Only `tests/test_slice7_step5.py` is run, so a kill is this file's, not an
 earlier step's.
 
-Part 2, E (review of 8dd7921): the closure evidence's own refusals: the
-sample bound to the database the run's record names, no skipped case, and
-the recorder running the suite on the database it records. Killed by
-`tests/test_slice7_evidence.py`, which runs the tools on a copy of the tree.
+Part 2, E (reviews of 8dd7921 and 84280c0): the closure evidence's own
+refusals: the sample bound to where the suite's connections went (database,
+host, host address, port; no service) and to the server they reached (the
+cluster's system identifier, address, port, database); no skipped case; the
+recorder running the suite on the destination it records, and identifying
+the server. Killed by `tests/test_slice7_evidence.py`, which runs the tools on
+a copy of the tree. Not mutated in part 2, each with its reason:
+- the generator's comparison of the sample's database and host lines: the
+  destination line it also compares names both, so removing it alone is
+  equivalent (E1 removes the destination's);
+- the recorder's removal of `PGHOSTADDR` from the suite's environment when
+  none is set (`destination_env`): the destination is read from that same
+  environment, so a `PGHOSTADDR` left there is either the recorded one or
+  empty; removing the removal alone is equivalent.
 
 Run in two parts, one per test file; each part prints its own header. See
 `mutation_runner.py`.
@@ -64,6 +74,7 @@ TESTS = "tests/test_slice7_step5.py"
 GEN = "db/gate/slice7_evidence.py"
 TOOL = "db/gate/slice7_event_store_counts.py"
 RECORDER = "db/gate/record_test_run.py"
+BINDING = "db/gate/run_binding.py"
 EVIDENCE_TESTS = "tests/test_slice7_evidence.py"
 
 MUTATIONS = [
@@ -117,29 +128,59 @@ MUTATIONS = [
 #: Part 2 (review of 8dd7921): the closure evidence's own refusals, killed by
 #: `tests/test_slice7_evidence.py`.
 EVIDENCE_MUTATIONS = [
- ("E1 the sample's database and host not compared", GEN,
-  "                \"database\": database, \"host\": host}", "                }"),
- ("E2 a record naming no database accepted by the generator", GEN,
-  "    if database is None:\n        problems.append(",
-  "    if False:\n        problems.append("),
- ("E3 a skipped case accepted by the generator", GEN,
+ # --- the generator --------------------------------------------------------------------
+ ("E1 the sample's destination not compared", GEN,
+  "                \"database\": database, \"host\": host, \"destination\": destination,",
+  "                \"database\": database, \"host\": host,"),
+ ("E2 the sample's server not compared", GEN,
+  "                \"server\": server}", "                }"),
+ ("E3 a record naming no destination or server accepted by the generator", GEN,
+  "        if key not in recorded:\n            problems.append(f\"the run's record names no test {key}",
+  "        if False:\n            problems.append(f\"the run's record names no test {key}"),
+ ("E4 a skipped case accepted by the generator", GEN,
   "        if cases.skipped:", "        if False:"),
- ("E4 the tool samples the environment's database", TOOL,
-  "    database, host = recorded[\"database\"]\n",
-  "    database, host = run_binding.test_database()\n"),
- ("E5 the environment not compared by the tool", TOOL,
+ # --- the sample tool ------------------------------------------------------------------
+ ("E5 the tool samples the environment's destination", TOOL,
+  "    with run_binding.connect(destination) as conn:",
+  "    with run_binding.connect(run_binding.test_destination()) as conn:"),
+ ("E6 the environment's destination not compared by the tool", TOOL,
   "        if os.environ.get(var) not in (None, value):", "        if False:"),
- ("E6 a record naming no database accepted by the tool", TOOL,
-  "    if \"database\" not in recorded:\n        return [",
-  "    if False:\n        return ["),
- ("E7 a skipped case accepted by the tool", TOOL,
+ ("E7 a service not refused by the tool", TOOL,
+  "        if os.environ.get(var):\n            problems.append(f\"{var} is set: a service",
+  "        if False:\n            problems.append(f\"{var} is set: a service"),
+ ("E8 a record naming no destination accepted by the tool", TOOL,
+  "    if missing:\n        return [f\"the run's record names no test",
+  "    if False:\n        return [f\"the run's record names no test"),
+ ("E9 the server reached not compared before counting", TOOL,
+  "        if reached != server:", "        if False:"),
+ ("E10 a skipped case accepted by the tool", TOOL,
   "    return [f\"the run skipped {skipped} cases; Slice 7's evidence requires none\"] "
   "if skipped else []",
   "    return []"),
- ("E8 the suite not run on the recorded database", RECORDER,
-  "cwd=ROOT, env=env).returncode", "cwd=ROOT).returncode"),
- ("E9 the record names no database", RECORDER,
-  "report_name=REPORT.as_posix(), database=database))", "report_name=REPORT.as_posix()))"),
+ # --- run_binding ----------------------------------------------------------------------
+ ("E11 the connection names the database only", BINDING,
+  "    params = {k: dest.get(k, \"\") for k in DESTINATION_VARS}",
+  "    params = {\"dbname\": dest[\"dbname\"]}"),
+ ("E17 an empty destination parameter left to the environment", BINDING,
+  "    params = {k: dest.get(k, \"\") for k in DESTINATION_VARS}",
+  "    params = {k: v for k, v in dest.items() if v}"),
+ ("E18 a connection made while a service is set", BINDING,
+  "    if service:\n        raise ServiceSet(", "    if False:\n        raise ServiceSet("),
+ ("E12 the server's identity not the cluster's", BINDING,
+  "        SELECT (SELECT system_identifier FROM pg_control_system())::text,",
+  "        SELECT '1'::text,"),
+ # --- the recorder ---------------------------------------------------------------------
+ ("E13 the suite not run on the recorded destination", RECORDER,
+  "env=destination_env(destination)).returncode", "env=None).returncode"),
+ ("E14 a service not refused by the recorder", RECORDER,
+  "    if service:\n", "    if False:\n"),
+ ("E15 the record names no destination or server", RECORDER,
+  "report_name=REPORT.as_posix(), destination=destination,\n        server=server))",
+  "report_name=REPORT.as_posix()))"),
+ ("E16 the server not identified by the recorder", RECORDER,
+  "            server = server_identity(conn)",
+  "            server = {\"system_identifier\": \"0\", \"address\": \"-\", \"port\": \"-\", "
+  "\"database\": \"-\"}"),
 ]
 
 

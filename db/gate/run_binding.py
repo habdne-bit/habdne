@@ -118,20 +118,95 @@ WHAT THIS DOES AND DOES NOT SAY
 """
 
 
-def test_database() -> tuple[str, str]:
-    """(name, host) of the suite's database, as `tests/conftest.py` reads them."""
-    return (os.environ.get("TURAB_TEST_DB", "turab_authz_test"),
-            os.environ.get("PGHOST", "127.0.0.1"))
+#: The environment variables that choose where a connection goes when the
+#: connection itself does not say: libpq reads them for every parameter left
+#: unset (PostgreSQL 16, "Environment Variables"). The suite's URL names a host
+#: and a database only, so its port and host address come from here.
+DESTINATION_VARS = {"dbname": "TURAB_TEST_DB", "host": "PGHOST", "hostaddr": "PGHOSTADDR",
+                    "port": "PGPORT"}
+#: A service names host, port and more from a file this record cannot bind.
+SERVICE_VARS = ("PGSERVICE",)
+
+
+def test_destination() -> dict[str, str]:
+    """Where the suite's connections go: the database `tests/conftest.py` names,
+    and the host, host address and port libpq takes from the environment, with
+    libpq's own defaults. An empty `hostaddr` means none is set."""
+    return {"dbname": os.environ.get("TURAB_TEST_DB", "turab_authz_test"),
+            "host": os.environ.get("PGHOST", "127.0.0.1"),
+            "hostaddr": os.environ.get("PGHOSTADDR", ""),
+            "port": os.environ.get("PGPORT", "5432")}
+
+
+def destination_env(dest: dict[str, str]) -> dict[str, str]:
+    """The environment that sends every connection the suite makes to `dest`,
+    and nowhere else: each variable set, `PGHOSTADDR` removed when none, no
+    service."""
+    env = {k: v for k, v in os.environ.items()
+           if k not in SERVICE_VARS and k != "PGHOSTADDR"}
+    env.update({DESTINATION_VARS[k]: v for k, v in dest.items() if v})
+    return env
+
+
+class ServiceSet(RuntimeError):
+    pass
+
+
+def connect(dest: dict[str, str]):
+    """A connection to `dest`, every destination parameter explicit, empty ones
+    too. libpq fills a parameter from its environment variable only when the
+    connection leaves it unset; an explicit empty `hostaddr` means none, and
+    keeps a `PGHOSTADDR` in the environment from redirecting it (measured in
+    the review of 84280c0). A service cannot be neutralised this way (an empty
+    one is looked up by name), so a connection is refused while one is set."""
+    service = [v for v in SERVICE_VARS if os.environ.get(v)]
+    if service:
+        raise ServiceSet(f"{', '.join(service)} is set: a service file could redirect "
+                         "the connection")
+    import psycopg
+
+    params = {k: dest.get(k, "") for k in DESTINATION_VARS}
+    return psycopg.connect(user=os.environ.get("PGUSER", "turab"),
+                           password=os.environ.get("PGPASSWORD", "turab"), **params)
+
+
+def server_identity(conn) -> dict[str, str]:
+    """The server a connection actually reached: its cluster's system
+    identifier (unique to each cluster), the address and port it answered on,
+    and the database."""
+    sid, addr, port, db = conn.execute("""
+        SELECT (SELECT system_identifier FROM pg_control_system())::text,
+               coalesce(host(inet_server_addr()), 'local-socket'),
+               coalesce(inet_server_port()::text, 'local-socket'),
+               current_database()""").fetchone()
+    return {"system_identifier": sid, "address": addr, "port": port, "database": db}
+
+
+def destination_line(dest: dict[str, str]) -> str:
+    return (f"host={dest['host']} hostaddr={dest['hostaddr'] or '-'} port={dest['port']} "
+            f"dbname={dest['dbname']}")
+
+
+def server_line(server: dict[str, str]) -> str:
+    return (f"system_identifier={server['system_identifier']} address={server['address']} "
+            f"port={server['port']} database={server['database']}")
 
 
 def provenance_text(*, recorded: str, commit: str, source_fingerprint: str,
                     report: pathlib.Path, report_name: str,
-                    database: tuple[str, str] | None = None) -> str:
-    """`database` is (name, host) of the database the suite ran on; Slice 7's
-    event-store sample is bound to it (review of 8dd7921). Earlier records,
-    written without it, stay readable."""
+                    destination: dict[str, str] | None = None,
+                    server: dict[str, str] | None = None) -> str:
+    """`destination` is where the suite's connections went (every parameter
+    set in its environment), and `server` the identity of the server reached
+    there; Slice 7's event-store sample is bound to both (reviews of 8dd7921
+    and 84280c0). Earlier records, written without them, stay readable."""
     stamp, took = suite_stamp(report)
-    where = f"Test database: {database[0]} on host {database[1]}\n" if database else ""
+    where = ""
+    if destination:
+        where += (f"Test database: {destination['dbname']} on host {destination['host']}\n"
+                  f"Test destination: {destination_line(destination)}\n")
+    if server:
+        where += f"Test server : {server_line(server)}\n"
     return (INTRO + "\n"
             f"Recorded    : {recorded}\n"
             f"Commit      : {commit}\n"
@@ -158,7 +233,15 @@ _FIELDS = {
 
 
 #: Read when present; not required by `check`, which binds every slice's run.
-_OPTIONAL = {"database": r"^Test database: (\S+) on host (\S+)$"}
+_OPTIONAL = {"database": r"^Test database: (\S+) on host (\S+)$",
+             "destination": r"^Test destination: (.+)$",
+             "server": r"^Test server : (.+)$"}
+
+
+def parse_line(line: str) -> dict[str, str]:
+    """`key=value` pairs; `-` stands for an empty value."""
+    pairs = dict(part.split("=", 1) for part in line.split())
+    return {k: ("" if v == "-" else v) for k, v in pairs.items()}
 
 
 def read_provenance(text: str) -> dict:
@@ -167,7 +250,7 @@ def read_provenance(text: str) -> dict:
     for key, pattern in _OPTIONAL.items():
         m = re.search(pattern, text, re.M)
         if m:
-            found[key] = m.groups()
+            found[key] = m.groups() if key == "database" else parse_line(m.group(1))
     for key, pattern in _FIELDS.items():
         m = re.search(pattern, text, re.M)
         if m:
