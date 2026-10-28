@@ -1005,3 +1005,9 @@ SLICE_7_PLAN.md changed revision: 16 -> 17 (G7-18 added).
 --- Review of e18271a: G7-18 decided; Slice 7 plan revision 18 ---
 docs/gate/SLICE_7_PLAN.md                                      rev18 3d8bdb3b057efaa849ec2e770f9f1f68b87ed324ee07b3eb1be1280f67d9fb43
 SLICE_7_PLAN.md changed revision: 17 -> 18 (review of e18271a).
+--- Slice 7 step 4 delivered for review; Slice 7 plan revision 18 (status) ---
+docs/gate/SLICE_7_STEP4_DELIVERY.md                            add   724229a206dfaf38630b6a9985ccdbfd6c8799160e12f045db655b172cb5c497
+docs/gate/AUTHORIZATION_EVIDENCE_MATRIX.md                     ---   4216cab56ec18b0cfba368dfdfb0022d11720d5ff11d7d5dd9a03e810fcee55f
+docs/gate/evidence/SLICE7-STEP4-BEFORE.txt                     add   109acf9ad8cf5a6d89e119830e30b24a4cf2d24b819d0c0b21f27fe3df8c0703
+docs/gate/SLICE_7_PLAN.md                                      rev18 6c2828ea611ff2f56aa10ede8979c8f20c6bb3a2441e7eb85940a717a68309a4
+SLICE_7_PLAN.md: revision 18, its status updated for step 4's delivery.

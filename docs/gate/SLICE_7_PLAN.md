@@ -3,8 +3,8 @@
 
 **Status: step 3 is CLOSED at `23b99b6`, and step 4 is AUTHORIZED** (review
 of `23b99b6`, recorded below), within the plan's scope. **G7-18 is DECIDED** (review of `e18271a`,
-recorded below): the nine options (a), with limits. Step 4 is being
-implemented. Steps 1 and 2 are
+recorded below): the nine options (a), with limits. **Step 4 is DELIVERED
+FOR REVIEW, not closed** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
@@ -20,9 +20,10 @@ CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
     `api/routes/communication.py`), with CORRECTION-006, approved;
   - step 3's webhook, its recovery command and CORRECTION-007 and 008,
     approved (`services/webhooks.py`, `api/routes/webhooks.py`,
-    `db/ops/recover_webhook_events.py`).
-
-  No timeline and no `interactions` row exist yet (step 4).
+    `db/ops/recover_webhook_events.py`);
+  - step 4's message interactions, their backfill, the timeline's `message`
+    and the confirmation link (`services/message_interactions.py`,
+    `db/ops/backfill_message_interactions.py`), delivered for review.
 - **The review of step 1's progress report** (after `dc35b50`; recorded
   below) did not close step 1. It set what the delivery must show.
 - **What the review of `4aed49b` did** (recorded below):
