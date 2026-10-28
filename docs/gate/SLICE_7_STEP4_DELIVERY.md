@@ -15,8 +15,10 @@
   command;
 - the relay (R-1). **R-1 is UNMET: no real event may be received.**
 
-**Status: DELIVERED FOR REVIEW again,** with the commit that adds §10.
-**Not closed.**
+**Status: CLOSED at `2f968f4`** (review of `2f968f4`; `SLICE_7_PLAN.md`
+revision 20). Step 5 is authorized.
+- **What the reviewer did not do:** re-run the suite, the mutations or the
+  gate. The results are ours.
 - *History:* delivered at `a659587`; NOT closed by the review of `a659587`,
   for R-S7-4-01 (the backfill's isolation) and the stale introduction of
   `services/communication.py`. §10 answers both, with the evidence on the

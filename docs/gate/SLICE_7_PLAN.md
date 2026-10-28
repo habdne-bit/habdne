@@ -1,12 +1,11 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 19**
+## Implementation plan — **revision 20**
 
-**Status: step 3 is CLOSED at `23b99b6`, and step 4 is AUTHORIZED** (review
-of `23b99b6`, recorded below), within the plan's scope. **G7-18 is DECIDED** (review of `e18271a`,
-recorded below): the nine options (a), with limits. **Step 4 is DELIVERED
-FOR REVIEW again, not closed** (`SLICE_7_STEP4_DELIVERY.md` §10): the review of
-`a659587` (recorded below) found R-S7-4-01, the backfill's isolation;
-measured, fixed and measured again. Steps 1 and 2 are
+**Status: step 4 is CLOSED at `2f968f4`, and step 5 is AUTHORIZED** (review
+of `2f968f4`, recorded below), within the approved plan. Step 3 is CLOSED at
+`23b99b6`. **G7-18 is DECIDED** (review of `e18271a`,
+recorded below): the nine options (a), with limits. **Step 4 is CLOSED
+at `2f968f4`** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
 - **Step 3's authorization does not allow receiving real events** before R-1
   is met.
@@ -25,7 +24,7 @@ CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
     `db/ops/recover_webhook_events.py`);
   - step 4's message interactions, their backfill, the timeline's `message`
     and the confirmation link (`services/message_interactions.py`,
-    `db/ops/backfill_message_interactions.py`), delivered for review.
+    `db/ops/backfill_message_interactions.py`), closed.
 - **The review of step 1's progress report** (after `dc35b50`; recorded
   below) did not close step 1. It set what the delivery must show.
 - **What the review of `4aed49b` did** (recorded below):
@@ -92,7 +91,28 @@ a recommendation. A recommendation is not a decision.
 | 16 | `bc334f8` | the review of `23b99b6` recorded: step 3 CLOSED, CORRECTION-007 and CORRECTION-008 approved, step 4 authorized; a pointer at G7-17 (vi) to CORRECTION-007's later meaning |
 | 17 | `e18271a` | G7-18 added: nine points of step 4 put as decisions, each with a recommendation; measured facts of the schema stated; no other change |
 | 18 | `e1bdcbc` | the review of `e18271a` recorded: G7-18 decided, the nine options (a), with limits; no 0009; the link valid at its writing only |
-| 19 | this revision | the review of `a659587` recorded: step 4 not closed; R-S7-4-01 (the backfill's isolation) and the stale introduction of `services/communication.py`; both answered (`SLICE_7_STEP4_DELIVERY.md` §10) |
+| 19 | `2f968f4` | the review of `a659587` recorded: step 4 not closed; R-S7-4-01 (the backfill's isolation) and the stale introduction of `services/communication.py`; both answered (`SLICE_7_STEP4_DELIVERY.md` §10) |
+| 20 | this revision | the review of `2f968f4` recorded: step 4 CLOSED; step 5 authorized |
+
+**The review of `2f968f4`. Step 4 is CLOSED at `2f968f4`; step 5 is
+AUTHORIZED within the approved plan.** Slice 7 stays open.
+- **What the reviewer read:** R-S7-4-01's measurement, which shows the
+  duplication under REPEATABLE READ before the fix; the code, where
+  `audited_transaction` sets the isolation before the transaction's
+  statements and the backfill imposes READ COMMITTED, then checks the
+  actual level before writing; the tests (a connection defaulting to
+  REPEATABLE READ, the second backfill's wait, the re-run, the refusal when
+  the imposition is absent); the corrected introduction of
+  `communication.py`.
+- **What the reviewer checked:** the commits after the fix at `f075ab8`
+  change nothing in `src`, `tests` or `db`.
+- **What the reviewer did not do:** re-run the 3091 tests, the 33/33
+  mutations or the gate. The results are the implementing team's.
+- **The decision's limits stand:** one interaction per message within the
+  service's paths and the backfill; a confirmation link valid at its
+  writing only.
+- **Standing:** R-1 is a condition before any real event; K06 is UNPROVEN;
+  the scope is SALE only. This is not a release authorization.
 
 **The review of `a659587`. Step 4 is delivered and NOT closed.** The
 reviewer read the diff, the code and the delivery note; the recorded results
