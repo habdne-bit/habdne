@@ -1334,6 +1334,36 @@ RULES: tuple[Rule, ...] = (
           "test_the_loader_refuses_what_is_not_one_added_error_response",
           "test_the_loader_refuses_a_status_the_operation_already_declares",
           "test_the_loader_refuses_a_package_whose_statuses_changed")),
+    # --- Slice 7, step 5: the mandatory and red-team tests end to end (G7-19) ------------
+    Rule("S7-5 / §6.1 / J01 / S42 / mandatory test 1",
+         "Over HTTP, one signed envelope delivered twice, eight times at once, or again "
+         "after a FAILED processing makes one event, one message and one interaction",
+         ("test_mandatory_1_the_same_envelope_twice_makes_one_event_one_message_one_interaction",
+          "test_mandatory_1_concurrent_deliveries_make_one_event_one_message_one_interaction",
+          "test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once")),
+    Rule("S7-5 / §6.1 / J02 / mandatory test 2",
+         "Over HTTP, a provider reference recorded in one thread is IGNORED by the webhook "
+         "and 409 for staff in another, writing nothing and no key; a reference without a "
+         "provider is refused by the service and by 0008 (constraint level, not K06)",
+         ("test_mandatory_2_staff_first_then_the_webhook_into_another_thread_writes_nothing",
+          "test_mandatory_2_the_webhook_first_then_staff_into_another_thread_is_409",
+          "test_mandatory_2_the_null_provider_path_is_refused_by_the_service_and_by_0008")),
+    Rule("S7-5 / §6.1 / mandatory test 3",
+         "Over HTTP, the seller's thread naming the buyer's SALE opportunity is accepted, an "
+         "inconsistent link refused writing nothing, the links frozen (trigger level)",
+         ("test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen",)),
+    Rule("S7-5 / §6.1 / mandatory test 4",
+         "Over HTTP, a phone decision, a later written confirmation and their link, each "
+         "read back through the timeline as a NOTE",
+         ("test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline",)),
+    Rule("S7-5 / §6.2 / J03 / S41 / K05",
+         "Content reaches a message and the timeline only under the archive consent, never "
+         "the event store; an unsigned or missigned delivery writes nothing (the relay's "
+         "origin, not Meta's); each staff POST replays and refuses another body on its key",
+         ("test_j03_content_reaches_the_timeline_only_under_the_consent",
+          "test_s41_an_unsigned_or_missigned_delivery_writes_nothing",
+          "test_k05_the_thread_command_replays_and_refuses_another_body_on_its_key",
+          "test_k05_the_message_command_replays_and_refuses_another_body_on_its_key")),
 )
 
 
