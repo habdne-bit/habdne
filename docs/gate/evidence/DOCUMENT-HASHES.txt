@@ -1049,3 +1049,7 @@ docs/gate/SLICE_7_PLAN.md                                      rev26 ef747eb305f
 SLICE_7_PLAN.md changed revision: 25 -> 26 (review of 40338be).
 --- Slice 7 plan revision 26's commit named (912d4fd) ---
 docs/gate/SLICE_7_PLAN.md                                      rev26 e83c5278d2c0a4871e8ba5bd717b0ecd6fe27cabb26361c61a9c095e61909ad8
+--- Review of abee0f9: Slice 7 CLOSED at abee0f9, SALE only, with the limits of §1 of the closure record; not a release authorization; Slice 7 plan revision 27 ---
+docs/gate/SLICE_7_CLOSURE.md                                   add   2622ed88b5ec4e8f289e82272cb38f7b7f2ed1235e6d682816e2d8241aadaf1a
+docs/gate/SLICE_7_PLAN.md                                      rev27 caa4b00933337633628f5999f74ead30d530e5042a5e5b97aeab8d9e2fecbe4d
+SLICE_7_PLAN.md changed revision: 26 -> 27 (review of abee0f9).

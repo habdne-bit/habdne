@@ -1,13 +1,10 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 26**
+## Implementation plan — **revision 27**
 
-**Status: step 5 is CLOSED at `4b72ad5`** (review of `4b72ad5`, recorded
-below; `SLICE_7_STEP5_DELIVERY.md`). Steps 1 to 4 are CLOSED at `7e8993d`,
-`6d8815d`, `23b99b6` and `2f968f4`. **Slice 7 is NOT closed.** Its closure
-record, `SLICE_7_CLOSURE.md`, is prepared for review. The review of `40338be`
-(recorded below) did not close the slice, because this plan's statements of
-status contradicted that record; they are corrected in revision 26. The slice
-stays open until its record is reviewed.
+**Status: Slice 7 is CLOSED at `abee0f9`, within the SALE scope only, with
+the limits of §1 of `SLICE_7_CLOSURE.md`** (review of `abee0f9`, recorded
+below). **This is not a release authorization.** Steps 1 to 5 are CLOSED at
+`7e8993d`, `6d8815d`, `23b99b6`, `2f968f4` and `4b72ad5`.
 - **No real event may be received before R-1 is met.** No authorization of
   this slice allowed it.
 - **The decisions,** each recorded below:
@@ -97,6 +94,19 @@ recommendation is not a decision.
 | 24 | `4b72ad5` | the review of `84280c0` recorded; step 5 delivered again (not closed): the sample bound to the connection's destination and the server reached |
 | 25 | `40338be` | the review of `4b72ad5` recorded: step 5 CLOSED; the slice's closure record prepared for review; the slice stays open |
 | 26 | `912d4fd` | the review of `40338be` recorded: the statements of status corrected (step 5 closed; the approval of `0008`'s text and step 1's closure; §8 records steps 3 and 4 closed); revision 25's commit named; no decision |
+| 27 | the commit that adds this revision | the review of `abee0f9` recorded: Slice 7 CLOSED at `abee0f9`, SALE only, with the limits of §1 of the closure record; not a release authorization |
+
+**The review of `abee0f9`. Slice 7 is CLOSED at `abee0f9`, in the SALE scope
+only, with the limits of §1 of `SLICE_7_CLOSURE.md`.**
+- **What the reviewer checked:** this plan at revision 26: the contradictions
+  of status are gone, and `0008`'s approval and steps 1–5's closure are
+  recorded. The diff since `40338be` is documentary only.
+- **What it did not do:** re-run the results of 3173/3173, the mutations, the
+  gate, `bound` or `--check`; they stay the implementing team's.
+- **The decision may be recorded in the documents:** `SLICE_7_CLOSURE.md`
+  (§0.1, §5), this revision, the README.
+- **Standing:** R-1 stays a condition before any real event; K06 is
+  UNPROVEN; the closure is not a release authorization.
 
 **The review of `40338be`. Slice 7 is NOT closed.** The closure record and the
 diff since `4b72ad5` were reviewed: the changes are documentary, and the
@@ -983,8 +993,10 @@ F7-5). G7-2 decides how TURAB meets them.
   (review of `2f968f4`);
 - G7-19 was decided (review of `d04d5c8`); step 5 was closed at `4b72ad5`
   (review of `4b72ad5`);
-- the slice's closure record, `SLICE_7_CLOSURE.md`, is prepared for review.
-  **Slice 7 is not closed** (review of `40338be`).
+- the slice's closure record, `SLICE_7_CLOSURE.md`, was prepared for
+  review; the review of `40338be` did not close the slice;
+- **Slice 7 was CLOSED at `abee0f9`,** SALE only, with the limits of §1 of
+  the closure record (review of `abee0f9`).
 
 
 ### G7-1 · Scope

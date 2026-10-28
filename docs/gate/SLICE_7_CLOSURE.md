@@ -2,12 +2,10 @@
 
 **Slice 7 — Communication / WhatsApp Record**
 
-**Status: PREPARED for review. Slice 7 is NOT closed.** The review of
-`4b72ad5` closed step 5 and asked for this record (§0). The review of
-`40338be` did not close the slice: the plan's statements of status
-contradicted this record, and are corrected in its revision 26. **The slice
-stays open until this record is reviewed.** **This is not a release
-authorization.**
+**Status: Slice 7 is CLOSED at `abee0f9`, within the SALE scope only, with
+the limits of §1.** The review of `abee0f9` closed the slice (§0.1). **This is
+the closure of the slice. It is not a release authorization.** R-1 stays a
+condition before any real event, and K06 stays UNPROVEN.
 
 **The scope:** the approved scope, **SALE only** (G4-5R open).
 
@@ -15,7 +13,8 @@ authorization.**
 
 **Plan:** `docs/gate/SLICE_7_PLAN.md`, revision 24 at `4b72ad5`; revision 25
 (`40338be`) records the closure of step 5 and this record's preparation;
-revision 26 corrects the plan's statements of status (review of `40338be`).
+revision 26 (`912d4fd`, named at `abee0f9`) corrects the plan's statements of
+status (review of `40338be`); revision 27 records the closure.
 
 The decisions in this record are the reviewer's. It states them, and their
 limits, as they were given, and adds no claim of its own. Where it maps an
@@ -24,7 +23,36 @@ it; it does not re-judge it.
 
 ---
 
-## 0. The decision of the review of `4b72ad5`
+## 0. The decisions
+
+### 0.1 The closing decision (review of `abee0f9`)
+
+> I close Slice 7 at `abee0f9`, in the SALE scope only, and with the limits of
+> §1 of the closure record. […] The results of 3173/3173, the mutations, the
+> gate, `bound` and `--check` stay the implementing team's results; I did not
+> re-run them. The closing decision may be recorded in the documents. R-1
+> stays a condition before any real event, and K06 is unproven; this closure
+> is not a release authorization.
+> (The review of `abee0f9`; translated from the Arabic: "أُغلق الشريحة 7 عند
+> `abee0f9`، في نطاق SALE فقط، وبحدود §1 من سجل الإغلاق. […] نتائج 3173/3173
+> والطفرات والبوابة و`bound` و`--check` تبقى نتائج فريق التنفيذ؛ لم أُعد
+> تشغيلها. يمكن تسجيل قرار الإغلاق في الوثائق. يبقى R-1 شرطًا قبل أي حدث حقيقي،
+> وK06 غير مثبتة، ولا يُعدّ هذا الإغلاق إجازة إصدار.")
+
+**What the review checked itself:** the plan at revision 26, whose
+contradictions of status are gone, recording `0008`'s approval and steps 1–5
+closed; and the diff since `40338be`, documentary only.
+
+**What it did not do, as it states:** re-run the suite (3173/3173), the
+mutations, the gate, `bound` or `--check`. These are the team's runs.
+
+### 0.2 The review of `40338be`
+
+Slice 7 not closed: the plan, at revision 25, contradicted this record in its
+statements of status. Corrected in revision 26 (`SLICE_7_PLAN.md`, the review
+of `40338be`).
+
+### 0.3 The decision of the review of `4b72ad5`
 
 > I accept the closure of step 5 at `4b72ad5`. […] The decision to close
 > step 5 may be recorded, and Slice 7's closure record prepared for review.
@@ -130,8 +158,8 @@ it; it does not re-judge it.
 ## 4. The evidence the slice rests on
 
 **The evidence of the tree with source fingerprint `7cd994f1…0762`**, the
-tree of `4b72ad5`. The commits between the evidence round and `4b72ad5`
-touch `docs/` only.
+tree of `4b72ad5` and of `abee0f9`. The commits between the evidence round
+and `abee0f9` touch `docs/` and `README.md` only.
 
 | Evidence | Result | Record |
 |---|---|---|
@@ -146,13 +174,12 @@ touch `docs/` only.
 **These results are ours.** The reviewer did not re-run them independently
 (§0).
 
-## 5. Asked of the review of this record
+## 5. The decision on this record
 
-- **whether Slice 7 is closed, and at which commit,** within the SALE scope
-  only, with the limits of §1;
-- nothing else: no new decision is proposed here.
+**Slice 7 is CLOSED at `abee0f9`,** within the SALE scope only, with the
+limits of §1 (§0.1). No other decision was asked or made.
 
-## 6. Next, whatever the decision
+## 6. Next
 
 - **R-1 before any real event:** the relay, and its seven duties tested.
 - **K06's remedy** stays an independent condition before any release gate.
