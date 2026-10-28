@@ -1,9 +1,10 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 20**
+## Implementation plan — **revision 21**
 
 **Status: step 4 is CLOSED at `2f968f4`, and step 5 is AUTHORIZED** (review
 of `2f968f4`, recorded below), within the approved plan. Step 3 is CLOSED at
-`23b99b6`. **G7-18 is DECIDED** (review of `e18271a`,
+`23b99b6`. **G7-19 (revision 21) puts three points of step 5 as decisions;
+no step 5 code is written before they are decided.** **G7-18 is DECIDED** (review of `e18271a`,
 recorded below): the nine options (a), with limits. **Step 4 is CLOSED
 at `2f968f4`** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
@@ -92,7 +93,8 @@ a recommendation. A recommendation is not a decision.
 | 17 | `e18271a` | G7-18 added: nine points of step 4 put as decisions, each with a recommendation; measured facts of the schema stated; no other change |
 | 18 | `e1bdcbc` | the review of `e18271a` recorded: G7-18 decided, the nine options (a), with limits; no 0009; the link valid at its writing only |
 | 19 | `2f968f4` | the review of `a659587` recorded: step 4 not closed; R-S7-4-01 (the backfill's isolation) and the stale introduction of `services/communication.py`; both answered (`SLICE_7_STEP4_DELIVERY.md` §10) |
-| 20 | this revision | the review of `2f968f4` recorded: step 4 CLOSED; step 5 authorized |
+| 20 | `ef9e248` | the review of `2f968f4` recorded: step 4 CLOSED; step 5 authorized |
+| 21 | this revision | G7-19 added: three points of step 5 put as decisions (the event store's counts, the decided writes, what is never PASS); two test gaps stated; no other change |
 
 **The review of `2f968f4`. Step 4 is CLOSED at `2f968f4`; step 5 is
 AUTHORIZED within the approved plan.** Slice 7 stays open.
@@ -1822,6 +1824,74 @@ the item's added key `message` and its content only when archived (G7-8
 
 **Blocks:** step 4.
 
+### G7-19 · What step 5 needs and the plan does not decide (revision 21; found preparing step 5; NOT YET DECIDED)
+
+**Why this exists.** §6.4 asks for a generated `SLICE_7_EVIDENCE.md` "as
+Slice 6's", bound to a clean-tree run. Slice 6's generator takes every status
+from the bound JUnit report and computes the writes from the source. Three
+points have no precedent there, and are put as decisions with a
+recommendation; a recommendation is not a decision. **No step 5 code is
+written before they are decided.** Not reopened: §6.1-§6.4, the
+mandatory and red-team mapping, R-1 UNMET, STOP GATE E as Slice 5's record.
+
+**Found while preparing it, and to be added in step 5 without a decision**
+(gaps of the existing tests against §6.1 and §6.2):
+- mandatory test 1's concurrent delivery checks one event and one message,
+  not one interaction;
+- K05's "another body on the key is 409" is not tested for either staff
+  command (their replays are).
+
+**(i) The event store's RECEIVED and FAILED counts "at the end of the run".**
+They live in the suite's database, not in the report or the source.
+- **(a) Recommended:**
+  - a script, `db/gate/slice7_event_store_counts.py`, run right after
+    `record_test_run.py` on the suite's database, writes
+    `evidence/SLICE7-EVENT-STORE-COUNTS.txt`: the count of each
+    `processing_status` (and FAILED's `error_text`), the run's commit and
+    source fingerprint read from `TEST-RUN-PROVENANCE.txt`, and nothing
+    else (no id, no reference, no payload);
+  - the generator refuses unless that file names the bound run's
+    fingerprint, and shows its counts as **measured**, never as PASS;
+  - **stated:** these are the suite's test events. A RECEIVED left by the
+    recovery test is there by design (younger than 5 minutes). **No real
+    event exists** (R-1).
+- **(b)** The generator queries the database itself. Its result would then
+  depend on the database's state when it runs, not on the bound run.
+
+**(ii) The writes "exactly those decided, by kind" (§7 (9)).** Computed from
+the source, as Slice 6's; the generator refuses any other.
+- **(a) Recommended, the decided set:**
+
+  | Table | INSERT | UPDATE | DELETE |
+  |---|---|---|---|
+  | `communication_threads` | `communication.py` | `communication.py`, `webhooks.py`: `last_message_at` only | none |
+  | `communication_messages` | `communication.py`, `webhooks.py` | `webhooks.py`: `delivery_status` only | none |
+  | `webhook_events` | `webhooks.py` | `webhooks.py`: the processing fields only | none |
+  | `interactions` | `opportunity_commands.py` (Slice 5), `message_interactions.py` | none | none |
+
+  The trigger-level refusals of `0008` (frozen links, append-only rows, the
+  event's transitions) are listed as trigger-level, never as K06.
+- **(b)** Tables only, without the columns of each UPDATE.
+
+**(iii) What is never PASS.**
+- **(a) Recommended:** listed as limits, each with what holds it:
+  - **R-1 UNMET;** the relay's signature proves the relay's origin, not
+    Meta's (G7-2 (ii), as worded there);
+  - **K06 UNPROVEN** (EN-02);
+  - **retention not claimed** (OQ7-1);
+  - **one interaction per message within the service's paths,** not a
+    database constraint (G7-18 (iv));
+  - **a confirmation link valid at its writing only,** with no legal value
+    (G7-18 (vii));
+  - **the recovery command's content-less recovery** (G7-2 (v));
+  - Slice 6's carried limits: SALE only (G4-5R open), K06, and its two
+    stated limits (§5 of `SLICE_6_EVIDENCE.md`);
+  - `SLICE_6_EVIDENCE.md` and STOP GATE E stay their slices' records, stale;
+    this generator does not depend on them.
+- **(b)** The same, without Slice 6's limits.
+
+**Blocks:** step 5.
+
 ### Open questions (not decisions)
 - **OQ7-1 · Retention:** of archived content, and its fate on revocation
   (J03, F7-6). The sources leave it to "pilot/legal review".
@@ -2199,7 +2269,7 @@ identical results, and are ours.
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, decided** (review of `e18271a`) |
-| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all |
+| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all; **G7-19, to be decided** |
 
 Each step is delivered with its tests and its mutation record, and is
 reviewed before the next begins. A defect found in a step is measured before
