@@ -24,10 +24,21 @@ uniqueness constraint of the database** (no `0009`, review of e18271a): a
 statement outside the service could write a second row.
 
 **The backfill** (G7-18 (v)): `backfill`, run by
-`db/ops/backfill_message_interactions.py`. One transaction, READ COMMITTED,
-actor-less, under a transaction-level advisory lock taken by its first
-statement: a second backfill waits for the first to end, then its next
-statement reads what the first committed. A message committed before the
+`db/ops/backfill_message_interactions.py`. One transaction, actor-less,
+under a transaction-level advisory lock: a second backfill waits for the
+first to end, then its next statement reads what the first committed.
+
+**Its isolation is imposed, then checked (R-S7-4-01, review of a659587).**
+That "next statement reads what the first committed" holds under READ
+COMMITTED only, where each statement takes its own snapshot (PostgreSQL 16
+§13.2.1). Under REPEATABLE READ the snapshot is the transaction's first
+statement's (§13.2.2), taken before the lock is waited for: measured, two
+backfills then wrote every interaction twice
+(`evidence/SLICE7-STEP4-R-S7-4-01.txt`). So the transaction's first statement
+is `SET TRANSACTION ISOLATION LEVEL READ COMMITTED` (`audited_transaction`'s
+`isolation`), whatever the connection's default; and the backfill reads the
+level it actually runs under, and refuses to write under any other
+(`BackfillIsolationRefused`). A message committed before the
 backfill's selection already has its interaction; one not yet committed is
 invisible to it and brings its own. **For the messages that existed before
 step 4, the atomicity of a message with its interaction does not hold
@@ -58,6 +69,13 @@ SUMMARY_BY_DIRECTION = {
 BACKFILL = "backfillMessageInteractions"
 #: The advisory lock's key: one backfill at a time (G7-18 (iv)).
 BACKFILL_LOCK = 7_018_004
+#: R-S7-4-01: the only level under which the lock and the selection agree.
+BACKFILL_ISOLATION = "READ COMMITTED"
+
+
+class BackfillIsolationRefused(RuntimeError):
+    """The backfill found itself under another isolation level than READ
+    COMMITTED, and wrote nothing (R-S7-4-01)."""
 
 
 def interaction_type(direction: str, channel: str) -> str:
@@ -100,7 +118,11 @@ def backfill(session: Session, trace_id: str) -> int:
     from ..db.session import audited_transaction
 
     with audited_transaction(session, None, {"operation": BACKFILL, "trace_id": trace_id},
-                             require_actor=False) as s:
+                             require_actor=False, isolation=BACKFILL_ISOLATION) as s:
+        level = s.execute(text("SELECT current_setting('transaction_isolation')")).scalar_one()
+        if level != BACKFILL_ISOLATION.lower():
+            raise BackfillIsolationRefused(
+                f"the backfill runs under {BACKFILL_ISOLATION} only, not {level}")
         s.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": BACKFILL_LOCK})
         missing = s.execute(text("""
             SELECT m.message_id FROM turab.communication_messages m

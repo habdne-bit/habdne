@@ -1273,11 +1273,15 @@ RULES: tuple[Rule, ...] = (
          "The backfill writes one interaction per earlier message, actor-less, its "
          "created_at its own time; a re-run writes none; two at once serialize on the "
          "advisory lock; one concurrent with a message makes no duplicate; it prints "
-         "counts only",
+         "counts only; it runs READ COMMITTED whatever the connection's default, and "
+         "refuses to write under another level (R-S7-4-01)",
          ("test_v_the_backfill_writes_one_interaction_per_earlier_message_and_a_rerun_none",
           "test_v_two_backfills_at_once_write_each_interaction_once",
           "test_v_a_backfill_concurrent_with_a_message_makes_no_duplicate",
-          "test_v_the_backfill_script_prints_counts_only")),
+          "test_v_the_backfill_script_prints_counts_only",
+          "test_v_the_backfill_runs_read_committed_whatever_the_connections_default",
+          "test_v_two_backfills_on_a_repeatable_read_default_write_each_interaction_once",
+          "test_v_the_backfill_refuses_to_write_under_another_level")),
     Rule("S7-4 / G7-8 (a) / G7-18 (vi) / G7-9 / R9.5",
          "A message item carries one added key, message, with exact keys for ADMIN, "
          "OPERATOR and REVIEWER; body_text and media_ref only when archived; every other "

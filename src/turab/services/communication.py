@@ -1,10 +1,11 @@
-"""Communication record: the staff thread and the staff message (Slice 7, step 2).
+"""Communication record: the staff thread and the staff message (Slice 7, steps 2 and 4).
 
 Ref: the contract's `postCommunicationThreads` and
 `postCommunicationThreadsThreadIdMessages` (ADMIN, OPERATOR; Idempotency-Key),
 the former narrowed by CORRECTION-006; `API_CONTRACTS_v0.2.md` §4.12;
 `docs/gate/SLICE_7_PLAN.md` revision 8: G7-3, G7-4, G7-6, G7-7, G7-9, G7-11,
-G7-16 (decided in the review of 0f423d2); migration `0008`.
+G7-16 (decided in the review of 0f423d2); migration `0008`. Since step 4:
+G7-8 (a), G7-10 (a), G7-18 (decided in the review of e18271a).
 
 **Every refusal comes before any write.** `prepare_thread` and
 `prepare_message` run before the idempotency claim (G4-15 D6) and only read
@@ -28,12 +29,16 @@ seller, cannot change before the thread commits.
 
 **The message (G7-4, G7-9, G7-16).** In this order:
 1. the body alone: INBOUND refused (G7-16 (i)); `metadata` empty or absent
-   (iii); `PHONE_DECISION` and `CONFIRMATION_LINK` reserved for step 4 (v); an
-   INTERNAL message states no delivery status but UNKNOWN (ii) and carries no
-   reference (G7-4);
+   (iii), except a `CONFIRMATION_LINK`'s, which is exactly its
+   `decision_message_id` and `observation_id`, each a uuid (G7-18 (vii));
+   `PHONE_DECISION` and `CONFIRMATION_LINK` INTERNAL only (G7-18 (vii); until
+   step 4 they were reserved, G7-16 (v)); an INTERNAL message states no
+   delivery status but UNKNOWN (ii) and carries no reference (G7-4);
 2. **the thread, `FOR UPDATE`, as the FIRST statement on it** (G7-16 (iv)): two
    messages on one thread serialize here, so `last_message_at` moves to the
-   later of the two whatever their order of commit;
+   later of the two whatever their order of commit; the two G7-10 types need
+   a PHONE thread, and a `CONFIRMATION_LINK`'s decision and observation are
+   checked, each read `FOR SHARE` (G7-10 (a), G7-18 (vii), `_check_link`);
 3. a reference needs a WHATSAPP thread, whose provider is `whatsapp`, set
    here (G7-4); a reference already recorded is 409 MESSAGE_REF_TAKEN;
 4. content (`body_text` or `media_ref`) needs the archive consent of the
@@ -60,9 +65,15 @@ Measured through both commands (R-S7-2-01, review of f7e5297;
 the binding table had no foreign key to the thread and that a binding in
 flight was not waited for; that was wrong.
 
-**What a message never writes (G7-9, G7-11).** `metadata` holds
-`content_archived` only, written here. The audit row withholds `body_text`
-and `media_ref`. No content reaches a log or a refusal.
+**What a message writes (G7-9, G7-11, G7-18).** `metadata` holds
+`content_archived`, written here, and for a `CONFIRMATION_LINK` its two
+checked ids; nothing else. Its interaction is written in the same
+transaction (`message_interactions.write`, G7-8 (a)). The audit row withholds
+`body_text` and `media_ref`. No content reaches a log or a refusal.
+
+**A link is valid at its writing only** (review of e18271a): 0007's guard does
+not protect an observation a message's metadata names, so its later survival
+or stability is not claimed, and the link has no legal value.
 """
 from __future__ import annotations
 
@@ -83,7 +94,6 @@ from . import audit_rows, message_interactions
 SCOPED = re.compile(r"^[^:]+:[^:]+$")
 #: G7-4: the one provider defined, for WHATSAPP threads only.
 PROVIDER = "whatsapp"
-#: G7-16 (v): given their meaning by G7-10, in step 4.
 #: G7-10, G7-18 (vii): the two types G7-10 gives a meaning; each accepted only
 #: INTERNAL, in a PHONE thread. Reserved until step 4 (G7-16 (v)).
 DECISION, LINK = "PHONE_DECISION", "CONFIRMATION_LINK"

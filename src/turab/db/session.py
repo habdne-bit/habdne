@@ -36,7 +36,7 @@ def session_factory(engine: Engine) -> sessionmaker[Session]:
 
 #: The isolation levels a command may ask for. Closed, because the value is
 #: written into SQL.
-_ISOLATIONS = frozenset({None, "REPEATABLE READ"})
+_ISOLATIONS = frozenset({None, "REPEATABLE READ", "READ COMMITTED"})
 
 
 class MissingAuditActor(RuntimeError):
@@ -63,6 +63,13 @@ def audited_transaction(
     the transaction's FIRST statement, as `SET TRANSACTION` requires. The
     matching run uses it (Slice 4 plan §3.3, measured D7). The default stays
     the server's, Read Committed, for every other command.
+
+    `isolation="READ COMMITTED"` imposes Read Committed whatever the
+    connection's default, for work whose correctness rests on each statement
+    seeing what others committed before it (§13.2.1). The message backfill
+    uses it (R-S7-4-01, review of a659587): under a Repeatable Read default
+    its snapshot, taken by `set_config` below, predated its advisory lock,
+    and two backfills wrote every interaction twice (measured).
     """
     if isolation not in _ISOLATIONS:
         raise ValueError(f"isolation must be one of {sorted(i for i in _ISOLATIONS if i)}")

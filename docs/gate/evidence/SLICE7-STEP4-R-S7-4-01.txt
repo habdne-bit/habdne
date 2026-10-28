@@ -47,3 +47,34 @@ Reading:
     READ COMMITTED; nothing in the code imposed it. The docstring's
     "READ COMMITTED" was a statement about the environment, not a property
     of the code.
+
+AFTER THE FIX (the backfill imposes READ COMMITTED as its first statement, then
+checks it), the same order, the script reading each level as its transaction
+opens. Tree: the working tree of the fix, committed with this record. Two runs,
+identical but for their run id. The first:
+
+run 0fa7d763
+default_transaction_isolation = read committed
+  level_A                   : read committed
+  level_B                   : read committed
+  B_waited_for_A            : True
+  A_wrote                   : 5
+  B_wrote                   : 0
+  messages                  : 5
+  interactions_for_them     : 5
+  messages_with_two_or_more : 0
+default_transaction_isolation = repeatable read
+  level_A                   : read committed
+  level_B                   : read committed
+  B_waited_for_A            : True
+  A_wrote                   : 5
+  B_wrote                   : 0
+  messages                  : 5
+  interactions_for_them     : 5
+  messages_with_two_or_more : 0
+
+Reading, after the fix: under a REPEATABLE READ default, both backfills run
+READ COMMITTED; B waits for A, then sees A's five interactions and writes
+none. No message has two. (The script was changed for this run in one way:
+it reads the level as each transaction opens, where it first read it inside
+the first write, which a backfill that writes nothing never reaches.)

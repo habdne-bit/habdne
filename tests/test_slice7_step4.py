@@ -438,6 +438,137 @@ def test_v_a_backfill_concurrent_with_a_message_makes_no_duplicate(client, engin
     assert len(_interactions(engine, held["message"])) == 1
 
 
+# R-S7-4-01 (review of a659587): the backfill's isolation, imposed and checked.
+# Measured before the fix (`evidence/SLICE7-STEP4-R-S7-4-01.txt`): on a
+# connection defaulting to REPEATABLE READ, two backfills wrote every
+# interaction twice. These run on such a connection.
+
+def _repeatable_read_engine(engine):
+    from sqlalchemy import create_engine
+
+    return create_engine(engine.url, connect_args={
+        "options": "-c default_transaction_isolation=repeatable\\ read"})
+
+
+def _levels(monkeypatch):
+    """The isolation level of each backfill's transaction, read as it opens."""
+    import contextlib
+
+    from sqlalchemy import text
+
+    from turab.db import session as db_session
+
+    real = db_session.audited_transaction
+    seen: list = []
+
+    @contextlib.contextmanager
+    def observed(sess, *a, **kw):
+        with real(sess, *a, **kw) as s:
+            seen.append(s.execute(text(
+                "SELECT current_setting('transaction_isolation')")).scalar_one())
+            yield s
+
+    monkeypatch.setattr(db_session, "audited_transaction", observed)
+    return seen
+
+
+def test_v_the_backfill_runs_read_committed_whatever_the_connections_default(
+        client, engine, ids, monkeypatch):
+    rr = _repeatable_read_engine(engine)
+    try:
+        with rr.connect() as c:
+            from sqlalchemy import text
+            assert c.execute(text("SHOW default_transaction_isolation")).scalar_one() == \
+                "repeatable read", "the connection's default is REPEATABLE READ"
+        thread = _new_thread(client, ids, engine, channel="PHONE")
+        message = _bare_message(engine, thread)
+        seen = _levels(monkeypatch)
+        assert _run_backfill(rr) >= 1
+        assert seen == ["read committed"]
+        assert len(_interactions(engine, message)) == 1
+    finally:
+        rr.dispose()
+
+
+def test_v_two_backfills_on_a_repeatable_read_default_write_each_interaction_once(
+        client, engine, ids, monkeypatch):
+    """The measured fault, as a test: B starts its transaction while A holds
+    the lock (witness), on REPEATABLE READ connections; B writes nothing, no
+    message has two interactions, and a re-run writes none."""
+    from sqlalchemy import text
+
+    svc = _svc()
+    rr = _repeatable_read_engine(engine)
+    try:
+        thread = _new_thread(client, ids, engine, channel="PHONE")
+        messages = [_bare_message(engine, thread) for _ in range(3)]
+        real = svc.write
+        holding, release = threading.Event(), threading.Event()
+        pid: dict = {}
+
+        def slow(session, message_id):
+            if not holding.is_set():
+                pid["first"] = session.execute(text("SELECT pg_backend_pid()")).scalar_one()
+                holding.set()
+                assert release.wait(20)
+            return real(session, message_id)
+
+        monkeypatch.setattr(svc, "write", slow)
+        seen = _levels(monkeypatch)
+        out: dict = {}
+        first = threading.Thread(target=lambda: out.setdefault("first", _run_backfill(rr)))
+        first.start()
+        try:
+            assert holding.wait(20)
+            second = threading.Thread(
+                target=lambda: out.setdefault("second", _run_backfill(rr, "second")))
+            second.start()
+            assert _wait_until_blocked(engine, pid["first"], second), "the second waits"
+        finally:
+            release.set()
+            first.join(20)
+        second.join(20)
+        assert out["first"] >= 3 and out["second"] == 0
+        assert seen == ["read committed", "read committed"]
+        for message in messages:
+            assert len(_interactions(engine, message)) == 1
+        monkeypatch.setattr(svc, "write", real)
+        assert _run_backfill(rr) == 0, "a re-run writes nothing"
+    finally:
+        rr.dispose()
+
+
+def test_v_the_backfill_refuses_to_write_under_another_level(client, engine, ids,
+                                                           monkeypatch):
+    """If the level were not imposed (simulated: `audited_transaction` made to
+    drop its `isolation`), the backfill on a REPEATABLE READ connection
+    refuses, and writes nothing."""
+    import contextlib
+
+    from turab.db import session as db_session
+
+    svc = _svc()
+    real = db_session.audited_transaction
+
+    @contextlib.contextmanager
+    def ignoring(sess, *a, isolation=None, **kw):
+        with real(sess, *a, **kw) as s:
+            yield s
+
+    monkeypatch.setattr(db_session, "audited_transaction", ignoring)
+    rr = _repeatable_read_engine(engine)
+    try:
+        thread = _new_thread(client, ids, engine, channel="PHONE")
+        message = _bare_message(engine, thread)
+        before = _counts(engine)
+        with pytest.raises(svc.BackfillIsolationRefused, match="repeatable read"):
+            _run_backfill(rr)
+        assert _counts(engine) == before
+        assert _interactions(engine, message) == []
+    finally:
+        rr.dispose()
+
+
 def test_v_the_backfill_script_prints_counts_only(engine, capsys, monkeypatch):
     import importlib.util
     import pathlib

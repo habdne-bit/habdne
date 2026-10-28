@@ -9,6 +9,10 @@ in one transaction, actor-less (audit context `backfillMessageInteractions`),
 under a transaction-level advisory lock: a second run waits for the first,
 then finds nothing left to write. A re-run writes nothing.
 
+Its transaction is READ COMMITTED whatever the connection's default, and it
+refuses to write under any other level (R-S7-4-01, review of a659587: under
+REPEATABLE READ two runs wrote every interaction twice, measured).
+
 **Stated, as the review of bf1fe3d asks:** for the messages that existed
 before step 4, the atomicity of a message with its interaction does not hold
 retroactively. Their interaction is written later, by this script: its

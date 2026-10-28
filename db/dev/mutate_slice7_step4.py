@@ -72,6 +72,12 @@ MUTATIONS = [
   "                    WHERE false)"),
  ("B3 the backfill reports nothing written", INTER,
   "        return len(missing)", "        return 0"),
+ # R-S7-4-01 (review of a659587): the isolation imposed, then checked.
+ ("B4 the backfill's isolation not imposed", INTER,
+  "                             require_actor=False, isolation=BACKFILL_ISOLATION) as s:",
+  "                             require_actor=False) as s:"),
+ ("B5 the backfill's isolation not checked", INTER,
+  "        if level != BACKFILL_ISOLATION.lower():", "        if False:"),
  # --- T: the timeline --------------------------------------------------------------------
  ("T1 unarchived content shown", TL,
   "        if message[\"content_archived\"]:", "        if True:"),

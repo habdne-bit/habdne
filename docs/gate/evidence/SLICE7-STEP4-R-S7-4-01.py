@@ -14,7 +14,7 @@ whose connections take it as `default_transaction_isolation`:
    `pg_blocking_pids`);
 4. A is released and commits; B proceeds.
 It prints, per default: the isolation level each backfill actually ran
-under (read inside it), what each wrote, and how many of the N messages end
+under (read as its transaction opens), what each wrote, and how many of the N messages end
 with more than one interaction. Prints counts and levels only.
 """
 from __future__ import annotations
@@ -58,8 +58,6 @@ def measure(default: str) -> dict:
 
     def write(session, message_id):
         name = threading.current_thread().name
-        seen.setdefault(name, session.execute(
-            text("SELECT current_setting('transaction_isolation')")).scalar_one())
         if name == "A" and not held.is_set():
             seen["pid_A"] = session.execute(text("SELECT pg_backend_pid()")).scalar_one()
             held.set()
@@ -67,6 +65,21 @@ def measure(default: str) -> dict:
         return real(session, message_id)
 
     mi.write = write
+    # The level each backfill's transaction runs under, read as soon as it is
+    # open: before the lock, so a backfill that writes nothing reports it too.
+    import contextlib
+
+    from turab.db import session as db_session
+    real_tx = db_session.audited_transaction
+
+    @contextlib.contextmanager
+    def observed(sess, *a, **kw):
+        with real_tx(sess, *a, **kw) as s:
+            seen[threading.current_thread().name] = s.execute(
+                text("SELECT current_setting('transaction_isolation')")).scalar_one()
+            yield s
+
+    db_session.audited_transaction = observed
     out: dict = {}
 
     def run(name):
@@ -93,6 +106,7 @@ def measure(default: str) -> dict:
     a.join(30)
     b.join(30)
     mi.write = real
+    db_session.audited_transaction = real_tx
     with engine.connect() as c:
         dup = c.execute(text("""
             SELECT count(*) FROM (
