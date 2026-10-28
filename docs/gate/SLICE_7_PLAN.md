@@ -94,7 +94,7 @@ recommendation is not a decision.
 | 24 | `4b72ad5` | the review of `84280c0` recorded; step 5 delivered again (not closed): the sample bound to the connection's destination and the server reached |
 | 25 | `40338be` | the review of `4b72ad5` recorded: step 5 CLOSED; the slice's closure record prepared for review; the slice stays open |
 | 26 | `912d4fd` | the review of `40338be` recorded: the statements of status corrected (step 5 closed; the approval of `0008`'s text and step 1's closure; §8 records steps 3 and 4 closed); revision 25's commit named; no decision |
-| 27 | the commit that adds this revision | the review of `abee0f9` recorded: Slice 7 CLOSED at `abee0f9`, SALE only, with the limits of §1 of the closure record; not a release authorization |
+| 27 | `069d373` | the review of `abee0f9` recorded: Slice 7 CLOSED at `abee0f9`, SALE only, with the limits of §1 of the closure record; not a release authorization |
 
 **The review of `abee0f9`. Slice 7 is CLOSED at `abee0f9`, in the SALE scope
 only, with the limits of §1 of `SLICE_7_CLOSURE.md`.**
