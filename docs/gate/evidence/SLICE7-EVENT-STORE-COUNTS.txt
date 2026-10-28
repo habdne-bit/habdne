@@ -2,13 +2,15 @@ TURAB — Slice 7: the event store, a sample measured right after the run
 ========================================================================
 Written by db/gate/slice7_event_store_counts.py (plan §6.4, G7-19 (i)).
 
-Sampled at        : 2026-10-28 13:15:27 UTC
-Run recorded at   : 2026-10-28 13:03:40 UTC
-Run commit        : 88fb6dc5d767697afb9218a827d93b1c7c62908b
-Source fingerprint: 481f5ec5108e3ef8bd3edc555c6ac7521541530c565156415b635fbaffa2c6ed
-Report sha256     : 02832f0b1e56b1cc44af7df5f424199fe787827c014555c77104b697d5204cc5
+Sampled at        : 2026-10-28 16:45:12 UTC
+Run recorded at   : 2026-10-28 16:31:48 UTC
+Run commit        : 50ad5c2c882cc62b40496d91d14d09cecefdc29e
+Source fingerprint: 7cd994f16f0ec9a81f7d1d7312adc330178fde416941aa521740b166d8310762
+Report sha256     : df600574ae6189f3eb3865932a4097d882246c1bfff1cd4bc846dcc2b325e401
 Test database     : turab_authz_test
 Test host         : 127.0.0.1
+Test destination  : host=127.0.0.1 hostaddr=- port=5432 dbname=turab_authz_test
+Server reached    : system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_authz_test
 
 webhook_events, by processing_status:
   RECEIVED   1

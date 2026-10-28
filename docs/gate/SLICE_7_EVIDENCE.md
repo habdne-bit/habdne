@@ -4,8 +4,8 @@
 
 > Slice 7, Communication / WhatsApp Record (plan §6.4, G7-19). **Not a STOP GATE.** **R-1 is UNMET: no real event may be received.** **K06 UNPROVEN.** **SALE only.** The limits of §6 are never PASS.
 
-- The JUnit run is recorded at commit `88fb6dc5d767697afb9218a827d93b1c7c62908b`, source fingerprint `481f5ec5108e3ef8bd3edc555c6ac7521541530c565156415b635fbaffa2c6ed`, report sha256 `02832f0b1e56b1cc44af7df5f424199fe787827c014555c77104b697d5204cc5`, test database `turab_authz_test` on host `127.0.0.1` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
-- Counted in the report: 3152 test cases, 0 failures, 0 errors, 0 skipped (none is required).
+- The JUnit run is recorded at commit `50ad5c2c882cc62b40496d91d14d09cecefdc29e`, source fingerprint `7cd994f16f0ec9a81f7d1d7312adc330178fde416941aa521740b166d8310762`, report sha256 `df600574ae6189f3eb3865932a4097d882246c1bfff1cd4bc846dcc2b325e401`, test database `turab_authz_test` on host `127.0.0.1`, destination `host=127.0.0.1 hostaddr=- port=5432 dbname=turab_authz_test`, server reached `system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_authz_test` (`docs/gate/evidence/TEST-RUN-PROVENANCE.txt`).
+- Counted in the report: 3173 test cases, 0 failures, 0 errors, 0 skipped (none is required).
 - Binding (`db/gate/run_binding.py`): the report's digest and counts are the recorded ones, and the current tree's source fingerprint is the run's and the gate run's.
 - Tests are named `module::name`.
 - These are our runs; nobody else has re-run them.
@@ -169,7 +169,7 @@ An inventory of the application's statements under `src/`, read by this generato
 
 ## 6. The event store: a sample measured right after the run (G7-19 (i))
 
-- **Sampled at** 2026-10-28 13:15:27 UTC, from the test database `turab_authz_test` on host `127.0.0.1`, the one the run's record names, for the run recorded at 2026-10-28 13:03:40 UTC (commit `88fb6dc5d767697afb9218a827d93b1c7c62908b`, source fingerprint `481f5ec5108e3ef8bd3edc555c6ac7521541530c565156415b635fbaffa2c6ed`, report sha256 `02832f0b1e56b1cc44af7df5f424199fe787827c014555c77104b697d5204cc5`), from `docs/gate/evidence/SLICE7-EVENT-STORE-COUNTS.txt`.
+- **Sampled at** 2026-10-28 16:45:12 UTC, from the test database `turab_authz_test` on host `127.0.0.1` (destination `host=127.0.0.1 hostaddr=- port=5432 dbname=turab_authz_test`; server reached `system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_authz_test`), the ones the run's record names, for the run recorded at 2026-10-28 16:31:48 UTC (commit `50ad5c2c882cc62b40496d91d14d09cecefdc29e`, source fingerprint `7cd994f16f0ec9a81f7d1d7312adc330178fde416941aa521740b166d8310762`, report sha256 `df600574ae6189f3eb3865932a4097d882246c1bfff1cd4bc846dcc2b325e401`), from `docs/gate/evidence/SLICE7-EVENT-STORE-COUNTS.txt`.
 
 | `processing_status` | Count |
 |---|---|
