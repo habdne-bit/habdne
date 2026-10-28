@@ -1,0 +1,152 @@
+TURAB — Slice 7 step 5: the mandatory and red-team tests end to end
+============================================================
+Base commit       : fd1d57018a225f3e61429fa55de6939d0a61686e
+Source fingerprint: 0fbf60e4387a15f40d9e5611a859b321ce66f5fd992fc213a7c01e5864cc71eb
+Working tree      : CLEAN
+Recorded          : 2026-10-28 12:12:52 UTC
+Test file         : tests/test_slice7_step5.py
+
+=== baseline (no mutation) ===
+   12 passed, 1 warning in 8.46s
+== W2 the webhook message writes no interaction [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   4 failed, 8 passed, 1 warning in 8.05s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   FAILED test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once
+   FAILED test_mandatory_1_concurrent_deliveries_make_one_event_one_message_one_interaction
+   FAILED test_mandatory_1_the_same_envelope_twice_makes_one_event_one_message_one_interaction
+   cause: AssertionError: assert (1 == 1 and 0 == 1)
+   cause: AssertionError: assert set() == {None, 'SECRET-BODY-5e75'}
+   cause: E   AssertionError: assert (1 == 1 and 0 == 1)
+   cause: E   AssertionError: assert set() == {None, 'SECRET-BODY-5e75'}
+== W3 no rollback to the savepoint [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 8.18s
+   FAILED test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once
+   cause: AssertionError: assert ['RECEIVED'] == ['FAILED']
+   cause: E   AssertionError: assert ['RECEIVED'] == ['FAILED']
+== W4 the failure not recorded [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 7.93s
+   FAILED test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once
+   cause: AssertionError: assert ['RECEIVED'] == ['FAILED']
+   cause: E   AssertionError: assert ['RECEIVED'] == ['FAILED']
+== D2 a reference accepted in any channel [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 8.17s
+   FAILED test_mandatory_2_the_null_provider_path_is_refused_by_the_service_and_by_0008
+   cause: E   psycopg.errors.RaiseException: communication_messages: provider whatsapp outside a WHATSAPP thread
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: provider whatsapp outside a WHATSAPP thread
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: provider whatsapp outside a WHATSAPP thread
+== L1 rule 1: the seller refused [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.97s
+   FAILED test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen
+   cause: HTTP 422 field error: is neither the opportunity's buyer nor its seller
+== L2 rule 1: any party accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 8.15s
+   FAILED test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== C1 an INTERNAL message typed by its channel [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 a5b6f19024b59ef3 identical
+   1 failed, 11 passed, 1 warning in 8.77s
+   FAILED test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline
+   cause: E   assert False
+   cause: assert False
+== C2 the observation required before the decision [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.96s
+   FAILED test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline
+   cause: HTTP 422 field error: names no linkable observation
+== C3 the staff message writes no interaction [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.31s
+   FAILED test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline
+   cause: AssertionError: assert set() == {'12660c75-53...d59a06506dfd'}
+   cause: E   AssertionError: assert set() == {'12660c75-53...d59a06506dfd'}
+== J1 the content archived without the consent [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 8.48s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   cause: AssertionError: the message holds no content without the consent
+   cause: E   AssertionError: the message holds no content without the consent
+== J2 the content kept when the consent does not hold [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 8.57s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   cause: AssertionError: the message holds no content without the consent
+   cause: E   AssertionError: the message holds no content without the consent
+== J3 the event keeps every key of the payload [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 8.19s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   cause: E   assert (2 == 2 and False)
+   cause: assert (2 == 2 and False)
+== K1 another body on the key replayed [src/turab/services/idempotency.py, 1 site(s)]  restored: sha256 7713eec75175d5dd identical
+   2 failed, 10 passed, 1 warning in 9.36s
+   FAILED test_k05_the_message_command_replays_and_refuses_another_body_on_its_key
+   FAILED test_k05_the_thread_command_replays_and_refuses_another_body_on_its_key
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== S1 any well-formed signature accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 9.35s
+   FAILED test_s41_an_unsigned_or_missigned_delivery_writes_nothing
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== S2 the signature not checked [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   1 failed, 11 passed, 1 warning in 8.86s
+   FAILED test_s41_an_unsigned_or_missigned_delivery_writes_nothing
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+SURVIVING MUTATIONS: none
+
+TURAB — Slice 7 step 5: the closure evidence's refusals (review of 8dd7921)
+============================================================
+Base commit       : fd1d57018a225f3e61429fa55de6939d0a61686e
+Source fingerprint: 0fbf60e4387a15f40d9e5611a859b321ce66f5fd992fc213a7c01e5864cc71eb
+Working tree      : CLEAN
+Recorded          : 2026-10-28 12:15:36 UTC
+Test file         : tests/test_slice7_evidence.py
+
+=== baseline (no mutation) ===
+   47 passed in 62.00s (0:01:01)
+== E1 the sample's database and host not compared [db/gate/slice7_evidence.py, 1 site(s)]  restored: sha256 b64d4bb456e6a728 identical
+   2 failed, 45 passed in 63.01s (0:01:03)
+   FAILED test_s7_a_sample_of_another_database_is_refused[database-turab_other_db]
+   FAILED test_s7_a_sample_of_another_database_is_refused[host-10.0.0.9]
+   cause: AssertionError: assert (0 == 1)
+   cause: E   AssertionError: assert (0 == 1)
+== E2 a record naming no database accepted by the generator [db/gate/slice7_evidence.py, 1 site(s)]  restored: sha256 b64d4bb456e6a728 identical
+   1 failed, 46 passed in 66.44s (0:01:06)
+   FAILED test_s7_a_run_record_naming_no_database_is_refused
+   cause: E   assert (1 == 1 and "the run's record names no test database" in "PROBLEM: the event store's sample names database 'turab_authz_test', not the bound run's None\nPROBLE
+   cause: assert (1 == 1 and "the run's record names no test database" in "PROBLEM: the event store's sample names database 'turab_authz_test', not the bound run's None\nPROBLEM: t
+== E3 a skipped case accepted by the generator [db/gate/slice7_evidence.py, 1 site(s)]  restored: sha256 b64d4bb456e6a728 identical
+   1 failed, 46 passed in 64.18s (0:01:04)
+   FAILED test_s7_a_skipped_case_is_refused_by_the_generator
+   cause: E   assert (1 == 1 and "the run skipped 1 cases; Slice 7's evidence requires none" in "PROBLEM: the report's totals say tests=82 failures=0 errors=0 skipped=0 but its cas
+   cause: assert (1 == 1 and "the run skipped 1 cases; Slice 7's evidence requires none" in "PROBLEM: the report's totals say tests=82 failures=0 errors=0 skipped=0 but its cases a
+== E4 the tool samples the environment's database [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   1 failed, 46 passed in 59.96s
+   FAILED test_s7_the_sample_tool_connects_to_the_recorded_database_not_the_default
+   cause: AssertionError: assert (0 != 0)
+   cause: E   AssertionError: assert (0 != 0)
+== E5 the environment not compared by the tool [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   2 failed, 45 passed in 68.64s (0:01:08)
+   FAILED test_s7_the_sample_tool_refuses_an_environment_naming_another_database[env0-TURAB_TEST_DB
+   FAILED test_s7_the_sample_tool_refuses_an_environment_naming_another_database[env1-PGHOST
+   cause: AssertionError: assert (0 == 1)
+   cause: E   AssertionError: assert (0 == 1)
+== E6 a record naming no database accepted by the tool [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   1 failed, 46 passed in 69.80s (0:01:09)
+   FAILED test_s7_the_sample_tool_refuses_a_record_naming_no_database
+   cause: E   assert (1 == 1 and "the run's record names no test database" in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-233/test_s7_the_sample_tool_re
+   cause: assert (1 == 1 and "the run's record names no test database" in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-233/test_s7_the_sample_tool_refuse
+== E7 a skipped case accepted by the tool [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   1 failed, 46 passed in 75.83s (0:01:15)
+   FAILED test_s7_the_sample_tool_refuses_a_skipped_case
+   cause: AssertionError: assert (0 == 1)
+   cause: E   AssertionError: assert (0 == 1)
+== E8 the suite not run on the recorded database [db/gate/record_test_run.py, 1 site(s)]  restored: sha256 5d9c16d3f204030a identical
+   1 failed, 46 passed in 75.96s (0:01:15)
+   FAILED test_s7_the_recorder_runs_the_suite_on_the_database_it_records
+   cause: E   TypeError: 'NoneType' object is not subscriptable
+   cause: TypeError: 'NoneType' object is not subscriptable
+== E9 the record names no database [db/gate/record_test_run.py, 1 site(s)]  restored: sha256 5d9c16d3f204030a identical
+   1 failed, 46 passed in 59.98s
+   FAILED test_s7_the_recorder_runs_the_suite_on_the_database_it_records
+   cause: E   KeyError: 'database'
+   cause: KeyError: 'database'
+
+SURVIVING MUTATIONS: none

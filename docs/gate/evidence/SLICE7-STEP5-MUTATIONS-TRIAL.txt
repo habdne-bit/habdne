@@ -1,0 +1,101 @@
+TURAB — Slice 7 step 5: the mandatory and red-team tests end to end
+============================================================
+Base commit       : c4953e352af8af7b80f34f1fa87361e4f9f08416
+Source fingerprint: 60bf2b8021c36b29221e0957f788015b68b2651ec548cf275f188c1b298e9360
+Working tree      : DIRTY
+?? db/dev/mutate_slice7_step5.py
+?? db/gate/slice7_event_store_counts.py
+?? db/gate/slice7_evidence.py
+?? docs/gate/SLICE_7_EVIDENCE.md
+?? tests/test_slice7_evidence.py
+?? tests/test_slice7_step5.py
+Recorded          : 2026-10-28 11:21:36 UTC
+Test file         : tests/test_slice7_step5.py
+
+=== baseline (no mutation) ===
+   12 passed, 1 warning in 9.55s
+== W1 a replay of a final event taken as new [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   12 passed, 1 warning in 9.97s
+== W2 the webhook message writes no interaction [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   4 failed, 8 passed, 1 warning in 8.20s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   FAILED test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once
+   FAILED test_mandatory_1_concurrent_deliveries_make_one_event_one_message_one_interaction
+   FAILED test_mandatory_1_the_same_envelope_twice_makes_one_event_one_message_one_interaction
+   cause: AssertionError: assert (1 == 1 and 0 == 1)
+   cause: AssertionError: assert set() == {None, 'SECRET-BODY-5e75'}
+   cause: E   AssertionError: assert (1 == 1 and 0 == 1)
+   cause: E   AssertionError: assert set() == {None, 'SECRET-BODY-5e75'}
+== W3 no rollback to the savepoint [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 9.35s
+   FAILED test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once
+   cause: AssertionError: assert ['RECEIVED'] == ['FAILED']
+   cause: E   AssertionError: assert ['RECEIVED'] == ['FAILED']
+== W4 the failure not recorded [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 9.18s
+   FAILED test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once
+   cause: AssertionError: assert ['RECEIVED'] == ['FAILED']
+   cause: E   AssertionError: assert ['RECEIVED'] == ['FAILED']
+== D1 the reference's 23505 a failure, not IGNORED [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   12 passed, 1 warning in 10.50s
+== D2 a reference accepted in any channel [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 8.04s
+   FAILED test_mandatory_2_the_null_provider_path_is_refused_by_the_service_and_by_0008
+   cause: E   psycopg.errors.RaiseException: communication_messages: provider whatsapp outside a WHATSAPP thread
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: provider whatsapp outside a WHATSAPP thread
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) communication_messages: provider whatsapp outside a WHATSAPP thread
+== L1 rule 1: the seller refused [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.66s
+   FAILED test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen
+   cause: HTTP 422 field error: is neither the opportunity's buyer nor its seller
+== L2 rule 1: any party accepted [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.40s
+   FAILED test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== C1 an INTERNAL message typed by its channel [src/turab/services/message_interactions.py, 1 site(s)]  restored: sha256 a5b6f19024b59ef3 identical
+   1 failed, 11 passed, 1 warning in 7.62s
+   FAILED test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline
+   cause: E   assert False
+   cause: assert False
+== C2 the observation required before the decision [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.50s
+   FAILED test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline
+   cause: HTTP 422 field error: names no linkable observation
+== C3 the staff message writes no interaction [src/turab/services/communication.py, 1 site(s)]  restored: sha256 5b09cc6297bac84a identical
+   1 failed, 11 passed, 1 warning in 7.64s
+   FAILED test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline
+   cause: AssertionError: assert set() == {'2be03388-6e...d25ef27ab3b3'}
+   cause: E   AssertionError: assert set() == {'2be03388-6e...d25ef27ab3b3'}
+== C4 a message key on every item [src/turab/services/timeline.py, 1 site(s)]  restored: sha256 ce60fe0daabcdf9c identical
+   12 passed, 1 warning in 8.41s
+== J1 the content archived without the consent [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 7.18s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   cause: AssertionError: assert {'SECRET-BODY-5e75'} == {None, 'SECRET-BODY-5e75'}
+   cause: E   AssertionError: assert {'SECRET-BODY-5e75'} == {None, 'SECRET-BODY-5e75'}
+== J2 the content kept when the consent does not hold [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   12 passed, 1 warning in 7.26s
+== J3 the event keeps every key of the payload [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 8.67s
+   FAILED test_j03_content_reaches_the_timeline_only_under_the_consent
+   cause: E   assert (2 == 2 and False)
+   cause: assert (2 == 2 and False)
+== K1 another body on the key replayed [src/turab/services/idempotency.py, 1 site(s)]  restored: sha256 7713eec75175d5dd identical
+   2 failed, 10 passed, 1 warning in 7.71s
+   FAILED test_k05_the_message_command_replays_and_refuses_another_body_on_its_key
+   FAILED test_k05_the_thread_command_replays_and_refuses_another_body_on_its_key
+   cause: E   KeyError: 'code'
+   cause: KeyError: 'code'
+== S1 any well-formed signature accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 11 passed, 1 warning in 8.08s
+   FAILED test_s41_an_unsigned_or_missigned_delivery_writes_nothing
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== S2 the signature not checked [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   1 failed, 11 passed, 1 warning in 7.88s
+   FAILED test_s41_an_unsigned_or_missigned_delivery_writes_nothing
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+SURVIVING MUTATIONS: W1 a replay of a final event taken as new, D1 the reference's 23505 a failure, not IGNORED, C4 a message key on every item, J2 the content kept when the consent does not hold

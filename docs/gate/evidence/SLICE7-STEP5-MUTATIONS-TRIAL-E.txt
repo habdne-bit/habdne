@@ -1,0 +1,86 @@
+TURAB — Slice 7 step 5: the mandatory and red-team tests end to end
+============================================================
+Base commit       : 8dd792179d461f7c168e173453fd6d088f2f0e64
+Source fingerprint: 0fbf60e4387a15f40d9e5611a859b321ce66f5fd992fc213a7c01e5864cc71eb
+Working tree      : DIRTY
+M db/dev/mutate_slice7_step5.py
+ M db/gate/record_test_run.py
+ M db/gate/run_binding.py
+ M db/gate/slice7_event_store_counts.py
+ M db/gate/slice7_evidence.py
+ M tests/test_slice7_evidence.py
+ M tests/test_slice7_step5.py
+Recorded          : 2026-10-28 11:49:11 UTC
+Test file         : tests/test_slice7_step5.py
+
+=== baseline (no mutation) ===
+   12 passed, 1 warning in 8.57s
+
+SURVIVING MUTATIONS: none
+
+TURAB — Slice 7 step 5: the closure evidence's refusals (review of 8dd7921)
+============================================================
+Base commit       : 8dd792179d461f7c168e173453fd6d088f2f0e64
+Source fingerprint: 0fbf60e4387a15f40d9e5611a859b321ce66f5fd992fc213a7c01e5864cc71eb
+Working tree      : DIRTY
+M db/dev/mutate_slice7_step5.py
+ M db/gate/record_test_run.py
+ M db/gate/run_binding.py
+ M db/gate/slice7_event_store_counts.py
+ M db/gate/slice7_evidence.py
+ M tests/test_slice7_evidence.py
+ M tests/test_slice7_step5.py
+Recorded          : 2026-10-28 11:49:22 UTC
+Test file         : tests/test_slice7_evidence.py
+
+=== baseline (no mutation) ===
+   47 passed in 70.55s (0:01:10)
+== E1 the sample's database and host not compared [db/gate/slice7_evidence.py, 1 site(s)]  restored: sha256 b64d4bb456e6a728 identical
+   2 failed, 45 passed in 61.59s (0:01:01)
+   FAILED test_s7_a_sample_of_another_database_is_refused[database-turab_other_db]
+   FAILED test_s7_a_sample_of_another_database_is_refused[host-10.0.0.9]
+   cause: AssertionError: assert (0 == 1)
+   cause: E   AssertionError: assert (0 == 1)
+== E2 a record naming no database accepted by the generator [db/gate/slice7_evidence.py, 1 site(s)]  restored: sha256 b64d4bb456e6a728 identical
+   1 failed, 46 passed in 56.17s
+   FAILED test_s7_a_run_record_naming_no_database_is_refused
+   cause: E   assert (1 == 1 and "the run's record names no test database" in "PROBLEM: the event store's sample names database 'turab_authz_test', not the bound run's None\nPROBLE
+   cause: assert (1 == 1 and "the run's record names no test database" in "PROBLEM: the event store's sample names database 'turab_authz_test', not the bound run's None\nPROBLEM: t
+== E3 a skipped case accepted by the generator [db/gate/slice7_evidence.py, 1 site(s)]  restored: sha256 b64d4bb456e6a728 identical
+   1 failed, 46 passed in 65.93s (0:01:05)
+   FAILED test_s7_a_skipped_case_is_refused_by_the_generator
+   cause: E   assert (1 == 1 and "the run skipped 1 cases; Slice 7's evidence requires none" in "PROBLEM: the report's totals say tests=82 failures=0 errors=0 skipped=0 but its cas
+   cause: assert (1 == 1 and "the run skipped 1 cases; Slice 7's evidence requires none" in "PROBLEM: the report's totals say tests=82 failures=0 errors=0 skipped=0 but its cases a
+== E4 the tool samples the environment's database [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   1 failed, 46 passed in 55.90s
+   FAILED test_s7_the_sample_tool_connects_to_the_recorded_database_not_the_default
+   cause: AssertionError: assert (0 != 0)
+   cause: E   AssertionError: assert (0 != 0)
+== E5 the environment not compared by the tool [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   2 failed, 45 passed in 58.00s
+   FAILED test_s7_the_sample_tool_refuses_an_environment_naming_another_database[env0-TURAB_TEST_DB
+   FAILED test_s7_the_sample_tool_refuses_an_environment_naming_another_database[env1-PGHOST
+   cause: AssertionError: assert (0 == 1)
+   cause: E   AssertionError: assert (0 == 1)
+== E6 a record naming no database accepted by the tool [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   1 failed, 46 passed in 63.44s (0:01:03)
+   FAILED test_s7_the_sample_tool_refuses_a_record_naming_no_database
+   cause: E   assert (1 == 1 and "the run's record names no test database" in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-222/test_s7_the_sample_tool_re
+   cause: assert (1 == 1 and "the run's record names no test database" in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-222/test_s7_the_sample_tool_refuse
+== E7 a skipped case accepted by the tool [db/gate/slice7_event_store_counts.py, 1 site(s)]  restored: sha256 e9beab1e6b139f59 identical
+   1 failed, 46 passed in 60.69s (0:01:00)
+   FAILED test_s7_the_sample_tool_refuses_a_skipped_case
+   cause: AssertionError: assert (0 == 1)
+   cause: E   AssertionError: assert (0 == 1)
+== E8 the suite not run on the recorded database [db/gate/record_test_run.py, 1 site(s)]  restored: sha256 5d9c16d3f204030a identical
+   1 failed, 46 passed in 61.85s (0:01:01)
+   FAILED test_s7_the_recorder_runs_the_suite_on_the_database_it_records
+   cause: E   TypeError: 'NoneType' object is not subscriptable
+   cause: TypeError: 'NoneType' object is not subscriptable
+== E9 the record names no database [db/gate/record_test_run.py, 1 site(s)]  restored: sha256 5d9c16d3f204030a identical
+   1 failed, 46 passed in 68.63s (0:01:08)
+   FAILED test_s7_the_recorder_runs_the_suite_on_the_database_it_records
+   cause: E   KeyError: 'database'
+   cause: KeyError: 'database'
+
+SURVIVING MUTATIONS: none
