@@ -1353,8 +1353,9 @@ RULES: tuple[Rule, ...] = (
          "inconsistent link refused writing nothing, the links frozen (trigger level)",
          ("test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen",)),
     Rule("S7-5 / §6.1 / mandatory test 4",
-         "Over HTTP, a phone decision, a later written confirmation and their link, each "
-         "read back through the timeline as a NOTE",
+         "Over HTTP, a phone decision, a later written confirmation (the observation "
+         "command) and their link; the decision and the link read back through the "
+         "timeline, each as a NOTE (the party is set up in SQL)",
          ("test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline",)),
     Rule("S7-5 / §6.2 / J03 / S41 / K05",
          "Content reaches a message and the timeline only under the archive consent, never "
