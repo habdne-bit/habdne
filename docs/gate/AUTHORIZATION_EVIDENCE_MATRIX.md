@@ -3,9 +3,9 @@
 **Generated** by `db/gate/authorization_evidence.py` from `reports/junit.xml`.
 **Do not edit.** The status column is a real test result, not an assertion.
 
-- Rules and invariants covered: **217**
-- Distinct tests cited: **744**
-- Suite total: **3091/3091** test cases passing (1672 distinct test functions)
+- Rules and invariants covered: **222**
+- Distinct tests cited: **756**
+- Suite total: **3152/3152** test cases passing (1711 distinct test functions)
 
 A rule whose mapping matches no test is reported **UNPROVEN** and fails the
 check: an evidence matrix that can silently lose its evidence is worse than no
@@ -230,6 +230,11 @@ matrix, because it reads as assurance.
 | `S7-3 / G7-2 (v)` | The operator recovery command re-runs T2 on FAILED events and on RECEIVED ones older than 5 minutes, skips a held row, and prints counts only | `test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one`<br>`test_recovery_skips_a_row_another_processor_holds`<br>`test_t2_on_a_final_event_is_final_and_writes_nothing`<br>`test_the_recovery_script_prints_counts_only` | PASS |
 | `S7-3 / G7-11 / G7-17 (vii)` | The webhook's message insert and the thread's actual move are audited with a NULL actor, the content withheld; the event is not audited twice; one access record per answer | `test_vii_the_message_and_the_thread_move_are_audited_with_a_null_actor`<br>`test_vii_a_thread_not_moved_is_not_audited`<br>`test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record` | PASS |
 | `S7-3 / CORRECTION-007 / CORRECTION-008 / G7-17 (vi)` | The two added responses are exactly the entries', annotated, the frozen operation unchanged; each code is a ProblemCode of its status; the loader refuses what is not one error response added to one (operation, status) | `test_the_effective_operation_is_the_frozen_one_with_the_two_responses`<br>`test_each_code_is_a_problem_code_of_the_entrys_status`<br>`test_the_loader_refuses_what_is_not_one_added_error_response`<br>`test_the_loader_refuses_a_status_the_operation_already_declares`<br>`test_the_loader_refuses_a_package_whose_statuses_changed` | PASS |
+| `S7-5 / §6.1 / J01 / S42 / mandatory test 1` | Over HTTP, one signed envelope delivered twice, eight times at once, or again after a FAILED processing makes one event, one message and one interaction | `test_mandatory_1_the_same_envelope_twice_makes_one_event_one_message_one_interaction`<br>`test_mandatory_1_concurrent_deliveries_make_one_event_one_message_one_interaction`<br>`test_mandatory_1_a_failed_event_is_completed_by_the_redelivery_once` | PASS |
+| `S7-5 / §6.1 / J02 / mandatory test 2` | Over HTTP, a provider reference recorded in one thread is IGNORED by the webhook and 409 for staff in another, writing nothing and no key; a reference without a provider is refused by the service and by 0008 (constraint level, not K06) | `test_mandatory_2_staff_first_then_the_webhook_into_another_thread_writes_nothing`<br>`test_mandatory_2_the_webhook_first_then_staff_into_another_thread_is_409`<br>`test_mandatory_2_the_null_provider_path_is_refused_by_the_service_and_by_0008` | PASS |
+| `S7-5 / §6.1 / mandatory test 3` | Over HTTP, the seller's thread naming the buyer's SALE opportunity is accepted, an inconsistent link refused writing nothing, the links frozen (trigger level) | `test_mandatory_3_the_sellers_thread_about_the_buyers_opportunity_is_accepted_and_frozen` | PASS |
+| `S7-5 / §6.1 / mandatory test 4` | Over HTTP, a phone decision, a later written confirmation (the observation command) and their link; the decision and the link read back through the timeline, each as a NOTE (the party is set up in SQL) | `test_mandatory_4_over_http_the_decision_the_confirmation_the_link_and_the_timeline` | PASS |
+| `S7-5 / §6.2 / J03 / S41 / K05` | Content reaches a message and the timeline only under the archive consent, never the event store; an unsigned or missigned delivery writes nothing (the relay's origin, not Meta's); each staff POST replays and refuses another body on its key | `test_j03_content_reaches_the_timeline_only_under_the_consent`<br>`test_s41_an_unsigned_or_missigned_delivery_writes_nothing`<br>`test_k05_the_thread_command_replays_and_refuses_another_body_on_its_key`<br>`test_k05_the_message_command_replays_and_refuses_another_body_on_its_key` | PASS |
 
 ## Reading this table
 
