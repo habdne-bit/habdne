@@ -1,0 +1,672 @@
+TURAB — Slice 7 step 3: the WhatsApp webhook
+============================================================
+Base commit       : 5ef657b43e83688737c2ee1a3d164f7f9e1a170f
+Source fingerprint: d06a9ac131cdacf442122c9e2ccfd3f30130e0f9ff6e7f3d6b219dd8ff02a9b6
+Working tree      : CLEAN
+Recorded          : 2026-10-28 00:44:09 UTC
+Test file         : tests/test_slice7_step3.py
+Deselected        : test_mandatory_test_1_concurrent_deliveries_make_one_message
+
+=== baseline (no mutation) ===
+   144 passed, 1 deselected, 1 warning in 37.69s
+== V1 any well-formed signature accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   7 failed, 137 passed, 1 deselected, 1 warning in 38.42s
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[of
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[under
+   FAILED test_ii_the_signature_is_compared_in_constant_time
+   FAILED test_ii_the_signature_is_over_the_raw_bytes
+   FAILED test_iii_the_order_size_signature_envelope
+   FAILED test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+   FAILED test_the_webhook_stays_in_the_closed_public_list_and_reads_no_bearer
+   cause: AssertionError: assert 200 == 401
+   cause: AssertionError: {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_ENVELOPE_NOT_VALID","trace_id":"adf8d869c5514dae83adac70aa7ff16a","detail":"
+   cause: E   AssertionError: assert 200 == 401
+   cause: E   AssertionError: {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_ENVELOPE_NOT_VALID","trace_id":"adf8d869c5514dae83adac70aa7ff16a","detai
+   cause: E   assert 200 == 401
+   cause: E   assert True is False
+== V2 a signature found inside the header accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.01s
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[with
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== V3 the HMAC over a re-encoded body, not the raw bytes [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   6 failed, 138 passed, 1 deselected, 1 warning in 37.14s
+   FAILED test_ii_the_signature_is_compared_in_constant_time
+   FAILED test_ii_the_signature_is_over_the_raw_bytes
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[not
+   FAILED test_iii_the_order_size_signature_envelope
+   FAILED test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+   cause: E   StopIteration: 0
+   cause: E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 23: invalid start byte
+   cause: E   assert 200 == 401
+   cause: E   assert False is True
+   cause: E   json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 342 (char 341)
+   cause: E   json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+== V4 an empty secret accepted as a secret [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 37.45s
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[]
+   cause: AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"06d6aec98b64408ca4b4a10ec48f43bc","detail":"The relay 
+   cause: E   AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"06d6aec98b64408ca4b4a10ec48f43bc","detail":"The re
+== V5 the secret not read as UTF-8 [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 39.00s
+   FAILED test_ii_the_secret_is_read_as_utf_8
+   cause: AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"a21adc92bd334b7aadd989ff2ee374dd","detail":"The relay 
+   cause: E   AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"a21adc92bd334b7aadd989ff2ee374dd","detail":"The re
+== V6 the limit one byte larger [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   6 failed, 138 passed, 1 deselected, 1 warning in 36.57s
+   FAILED test_g7_15_a_body_over_64_kib_is_400_and_one_of_64_kib_is_read
+   FAILED test_g7_15_a_declared_length_over_the_limit_is_refused_before_reading
+   FAILED test_g7_15_an_overlong_declared_length_is_400_unread_and_writes_nothing[zeros
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion['65537'-True]
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion[00..5005chars..65537-True]
+   FAILED test_iii_the_order_size_signature_envelope
+   cause: AssertionError: assert False is True
+   cause: AssertionError: the body is read
+   cause: AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"bd299eaed8d840f7a822ff2d6bd77efb","detail":"The relay 
+   cause: E   AssertionError: assert False is True
+   cause: E   AssertionError: the body is read
+   cause: E   AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"bd299eaed8d840f7a822ff2d6bd77efb","detail":"The re
+== V7 Content-Length not checked before reading [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   3 failed, 141 passed, 1 deselected, 1 warning in 37.17s
+   FAILED test_g7_15_a_declared_length_over_the_limit_is_refused_before_reading
+   FAILED test_g7_15_an_overlong_declared_length_is_400_unread_and_writes_nothing[nines-]
+   FAILED test_g7_15_an_overlong_declared_length_is_400_unread_and_writes_nothing[zeros
+   cause: AssertionError: the body is read
+   cause: E   AssertionError: the body is read
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== V17 leading zeros counted as significant [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   4 failed, 140 passed, 1 deselected, 1 warning in 36.06s
+   FAILED test_g7_15_a_small_body_under_an_odd_declared_length_is_processed[its
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion[00..5000chars..00000-False]
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion[00..5001chars..00002-False]
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion[00..5005chars..65536-False]
+   cause: AssertionError: assert True is False
+   cause: AssertionError: b'{"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_BODY_TOO_LARGE","trace_id":"720a4ad29bc7474786a2a104957dbe19","detail":"Th
+   cause: E   AssertionError: assert True is False
+   cause: E   AssertionError: b'{"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_BODY_TOO_LARGE","trace_id":"720a4ad29bc7474786a2a104957dbe19","detail"
+== V18 any Unicode digit taken as decimal [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.83s
+   FAILED test_g7_15_a_small_body_under_an_odd_declared_length_is_processed[a
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion['\xb2'-False]
+   cause: E   ValueError: invalid literal for int() with base 10: '²'
+   cause: ValueError: invalid literal for int() with base 10: '²'
+== V19 a long value converted whole [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   3 failed, 141 passed, 1 deselected, 1 warning in 36.18s
+   FAILED test_g7_15_an_overlong_declared_length_is_400_unread_and_writes_nothing[nines-]
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion[10..5001chars..00000-True]
+   FAILED test_g7_15_the_declared_length_is_compared_without_an_unbounded_conversion[99..5000chars..99999-True]
+   cause: E   ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5000 digits; use sys.set_int_max_str_digits() to increase the limit
+   cause: E   ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit
+   cause: ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5000 digits; use sys.set_int_max_str_digits() to increase the limit
+   cause: ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit
+== V8 the body not counted while reading [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.39s
+   FAILED test_g7_15_a_false_content_length_does_not_pass_the_limit
+   FAILED test_g7_15_the_limit_holds_without_a_content_length
+   cause: AssertionError: assert (401, 'UNAUTHENTICATED') == (400, 'WEBHOO...DY_TOO_LARGE')
+   cause: AssertionError: assert b'                                                                                                                    ...                          
+   cause: E   AssertionError: assert (401, 'UNAUTHENTICATED') == (400, 'WEBHOO...DY_TOO_LARGE')
+   cause: E   AssertionError: assert b'                                                                                                                    ...                      
+== V9 the secret not checked [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   3 failed, 141 passed, 1 deselected, 1 warning in 35.11s
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[None]
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[]
+   FAILED test_ii_the_503_comes_after_the_size_and_before_the_signature
+   cause: AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"e9499f173a014e999329005de270beb6","detail":"The relay 
+   cause: E   AssertionError: {"type":"about:blank","title":"Not authenticated","status":401,"code":"UNAUTHENTICATED","trace_id":"e9499f173a014e999329005de270beb6","detail":"The re
+   cause: E   TypeError: key: expected bytes or bytearray, but got 'NoneType'
+   cause: TypeError: key: expected bytes or bytearray, but got 'NoneType'
+== V10 the signature not checked [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   13 failed, 131 passed, 1 deselected, 1 warning in 35.68s
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[another
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[bare
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[empty-]
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[missing-None]
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[of
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[too
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[under
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[upper-case
+   FAILED test_ii_s41_a_missing_or_wrong_signature_is_401_writing_nothing[with
+   FAILED test_ii_the_signature_is_over_the_raw_bytes
+   FAILED test_iii_the_order_size_signature_envelope
+   FAILED test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+   FAILED test_the_webhook_stays_in_the_closed_public_list_and_reads_no_bearer
+   cause: AssertionError: assert 200 == 401
+   cause: AssertionError: {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_ENVELOPE_NOT_VALID","trace_id":"dca467ae4b1a4e46a979865a021091bb","detail":"
+   cause: E   AssertionError: assert 200 == 401
+   cause: E   AssertionError: {"type":"about:blank","title":"Request rejected","status":400,"code":"WEBHOOK_ENVELOPE_NOT_VALID","trace_id":"dca467ae4b1a4e46a979865a021091bb","detai
+   cause: E   assert 200 == 401
+   cause: E   assert [200, 200, 200, 400, 400] == [200, 200, 401, 400, 400]
+== V11 an empty provider_event_id accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 35.29s
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[an
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== V12 a non-string event_type accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.56s
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[a
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[no
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== V13 a known type's keys not checked [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   13 failed, 131 passed, 1 deselected, 1 warning in 36.01s
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-external_message_ref-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-external_message_ref-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-message_type-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-message_type-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-thread_ref-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-thread_ref-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-external_message_ref-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-external_message_ref-value11]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-value13]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-None]
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"443c45748e3845dd8934e3fcc54da86a",
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"6498dc68027b40fbae9d27a38fdd3b18",
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"cd7cd05465e44ce994dda80f116e2c62",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"443c45748e3845dd8934e3fcc54da8
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"6498dc68027b40fbae9d27a38fdd3b
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"cd7cd05465e44ce994dda80f116e2c
+== V14 a time without a zone accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.38s
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25T10:00:00]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-2026-10-25T10:00:00]
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== V15 a status outside the six accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.95s
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-BOUNCED]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-read]
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== V16 content of another type accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.14s
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-body_text-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-media_ref-value25]
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== E1 the event keeps every key of the payload [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.99s
+   FAILED test_g7_9_1_the_event_store_holds_the_allow_list_only
+   FAILED test_iii_an_unknown_type_is_stored_then_ignored
+   cause: AssertionError: assert {'anything': ...eaction', ...} == {'provider_ev...media': False}
+   cause: AssertionError: assert {'has_body': ...a': True, ...} == {'provider_ev...40c7380', ...}
+   cause: E   AssertionError: assert {'anything': ...eaction', ...} == {'provider_ev...media': False}
+   cause: E   AssertionError: assert {'has_body': ...a': True, ...} == {'provider_ev...40c7380', ...}
+== E2 has_body never set [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.73s
+   FAILED test_g7_9_1_the_event_store_holds_the_allow_list_only
+   FAILED test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content
+   cause: AssertionError: assert {'has_body': ...e76e23f', ...} == {'provider_ev...e76e23f', ...}
+   cause: E   AssertionError: assert {'has_body': ...e76e23f', ...} == {'provider_ev...e76e23f', ...}
+   cause: E   KeyError: 'content_withheld_reason'
+   cause: KeyError: 'content_withheld_reason'
+== M1 the thread not locked before the insert [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 35.49s
+   FAILED test_g7_16_iv_a_webhook_holding_the_thread_makes_a_new_binding_wait
+   cause: AssertionError: the binding waits
+   cause: E   AssertionError: the binding waits
+== M2 a thread of any channel resolved [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.16s
+   FAILED test_g7_3_a_thread_ref_of_no_whatsapp_thread_is_ignored
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"4cb5fc5b4ec34bca908e4ae55ae2df7b",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"4cb5fc5b4ec34bca908e4ae55ae2df
+== M3 an unknown thread_ref processed [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.06s
+   FAILED test_g7_3_a_thread_ref_of_no_whatsapp_thread_is_ignored
+   cause: AssertionError: assert ('PROCESSED', None) == ('IGNORED', 'UNKNOWN_THREAD')
+   cause: E   AssertionError: assert ('PROCESSED', None) == ('IGNORED', 'UNKNOWN_THREAD')
+== M4 the content archived without the consent [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   7 failed, 137 passed, 1 deselected, 1 warning in 54.68s
+   FAILED test_archived_at_alone_refuses_nothing
+   FAILED test_g7_16_iv_a_webhook_holding_the_thread_makes_a_new_binding_wait
+   FAILED test_g7_4_a_reference_recorded_after_the_check_is_the_same_ignored
+   FAILED test_g7_9_a_message_without_the_archive_consent_is_stored_without_content
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[binding_revoked]
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[bound_to_another_thread]
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[revoked]
+   cause: AssertionError: assert ('PROCESSED', None) == ('IGNORED', '...GE_REF_TAKEN')
+   cause: AssertionError: assert (UUID('7d9540...T-MEDIA-a91f') == (UUID('7d9540...', None, None)
+   cause: E   AssertionError: assert ('PROCESSED', None) == ('IGNORED', '...GE_REF_TAKEN')
+   cause: E   AssertionError: assert (UUID('7d9540...T-MEDIA-a91f') == (UUID('7d9540...', None, None)
+   cause: E   KeyError: 'content_withheld_reason'
+   cause: E   RuntimeError: cannot join thread before it is started
+== M5 the reference's 23505 a failure, not IGNORED [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.14s
+   FAILED test_g7_4_a_reference_recorded_after_the_check_is_the_same_ignored
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"4e62fb1e6e674b4d9760df47e8ff3eb2",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"4e62fb1e6e674b4d9760df47e8ff3e
+== M6 the content kept when the consent does not hold [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   6 failed, 138 passed, 1 deselected, 1 warning in 36.30s
+   FAILED test_archived_at_alone_refuses_nothing
+   FAILED test_g7_16_iv_a_webhook_holding_the_thread_makes_a_new_binding_wait
+   FAILED test_g7_9_a_message_without_the_archive_consent_is_stored_without_content
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[binding_revoked]
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[bound_to_another_thread]
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[revoked]
+   cause: AssertionError: assert ('SECRET-BODY...HIVE_CONSENT') == (None, 'NO_ARCHIVE_CONSENT')
+   cause: AssertionError: assert (UUID('cdcbda...T-MEDIA-a91f') == (UUID('cdcbda...', None, None)
+   cause: AssertionError: assert (UUID('ce7e03...HIVE_CONSENT') == (UUID('ce7e03...HIVE_CONSENT')
+   cause: E   AssertionError: assert ('SECRET-BODY...HIVE_CONSENT') == (None, 'NO_ARCHIVE_CONSENT')
+   cause: E   AssertionError: assert (UUID('cdcbda...T-MEDIA-a91f') == (UUID('cdcbda...', None, None)
+   cause: E   AssertionError: assert (UUID('ce7e03...HIVE_CONSENT') == (UUID('ce7e03...HIVE_CONSENT')
+== M7 the recovery's withheld reason not written [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.13s
+   FAILED test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content
+   cause: E   KeyError: 'content_withheld_reason'
+   cause: KeyError: 'content_withheld_reason'
+== M8 the message stored OUTBOUND [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 37.04s
+   FAILED test_g7_3_a_message_is_an_inbound_message_of_its_whatsapp_thread
+   FAILED test_g7_9_a_message_without_the_archive_consent_is_stored_without_content
+   cause: AssertionError: assert (UUID('37f1db...', None, None) == (UUID('37f1db...', None, None)
+   cause: AssertionError: assert (UUID('54d110...NKNOWN', None) == (UUID('54d110...NKNOWN', None)
+   cause: E   AssertionError: assert (UUID('37f1db...', None, None) == (UUID('37f1db...', None, None)
+   cause: E   AssertionError: assert (UUID('54d110...NKNOWN', None) == (UUID('54d110...NKNOWN', None)
+== M9 the message's insert not audited [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 38.45s
+   FAILED test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content
+   FAILED test_vii_the_message_and_the_thread_move_are_audited_with_a_null_actor
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== M10 the thread moved to an earlier time [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 38.39s
+   FAILED test_g7_16_iv_the_thread_moves_to_the_later_time_only
+   FAILED test_vii_a_thread_not_moved_is_not_audited
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"593e862e88f9469ab9e44402107f26e2",
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"8b139e8f7ddd4201a755cdd662dcf3d3",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"593e862e88f9469ab9e44402107f26
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"8b139e8f7ddd4201a755cdd662dcf3
+== M11 a thread not moved is audited [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 37.64s
+   FAILED test_vii_a_thread_not_moved_is_not_audited
+   cause: E   assert 2 == 1
+   cause: assert 2 == 1
+== M12 the message's webhook_event_id not written [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   4 failed, 140 passed, 1 deselected, 1 warning in 37.91s
+   FAILED test_a_message_without_content_carries_no_withheld_reason
+   FAILED test_g7_9_a_message_without_the_archive_consent_is_stored_without_content
+   FAILED test_g7_9_with_the_archive_consent_the_content_is_archived
+   FAILED test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500
+   cause: AssertionError: assert {'content_arc...HIVE_CONSENT'} == {'content_arc...52d5feeacfff'}
+   cause: AssertionError: assert {'content_archived': True} == {'content_arc...d2d072f13dd2'}
+   cause: AssertionError: assert {'content_archived'} == {'content_arc...ook_event_id'}
+   cause: E   AssertionError: assert {'content_arc...HIVE_CONSENT'} == {'content_arc...52d5feeacfff'}
+   cause: E   AssertionError: assert {'content_archived': True} == {'content_arc...d2d072f13dd2'}
+   cause: E   AssertionError: assert {'content_archived'} == {'content_arc...ook_event_id'}
+== S1 UNKNOWN to FAILED accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.91s
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-FAILED]
+   FAILED test_g7_5_the_table_is_the_triggers
+   cause: AssertionError: ('UNKNOWN', 'FAILED')
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"0544ffdaf63448adad22dc75f4442a95",
+   cause: E   AssertionError: ('UNKNOWN', 'FAILED')
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"0544ffdaf63448adad22dc75f4442a
+== S2 DELIVERED to FAILED accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.81s
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-FAILED]
+   FAILED test_g7_5_the_table_is_the_triggers
+   cause: AssertionError: ('DELIVERED', 'FAILED')
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"b062153f613b46a39f4d44dca0e91dec",
+   cause: E   AssertionError: ('DELIVERED', 'FAILED')
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"b062153f613b46a39f4d44dca0e91d
+== S3 the same status accepted [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 37.37s
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[QUEUED-QUEUED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-READ]
+   cause: AssertionError: assert ('PROCESSED', None) == ('IGNORED', '...NOT_ACCEPTED')
+   cause: E   AssertionError: assert ('PROCESSED', None) == ('IGNORED', '...NOT_ACCEPTED')
+== S4 a status for no message processed [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 38.70s
+   FAILED test_g7_5_a_status_for_no_recorded_message_is_ignored
+   FAILED test_s42_a_replay_of_an_ignored_event_writes_nothing
+   cause: AssertionError: assert 'PROCESSED' == 'IGNORED'
+   cause: AssertionError: assert ('PROCESSED', None) == ('IGNORED', 'UNKNOWN_MESSAGE')
+   cause: E   AssertionError: assert 'PROCESSED' == 'IGNORED'
+   cause: E   AssertionError: assert ('PROCESSED', None) == ('IGNORED', 'UNKNOWN_MESSAGE')
+== S5 the message not locked before the check [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.07s
+   FAILED test_g7_5_a_status_change_in_flight_is_waited_for_then_seen
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"cd02981e299d49e68ab7e6d3bb4935e2",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"cd02981e299d49e68ab7e6d3bb4935
+== S6 a status change not audited [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   10 failed, 134 passed, 1 deselected, 1 warning in 36.41s
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[DELIVERED-READ]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-FAILED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-READ]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-SENT]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[SENT-DELIVERED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[SENT-FAILED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-DELIVERED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-QUEUED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-READ]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-SENT]
+   cause: E   assert (0 == 1)
+   cause: assert (0 == 1)
+== S7 an unknown type processed [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 35.24s
+   FAILED test_iii_an_unknown_type_is_stored_then_ignored
+   cause: AssertionError: assert ('reaction', ...CESSED', None) == ('reaction', ...N_EVENT_TYPE')
+   cause: E   AssertionError: assert ('reaction', ...CESSED', None) == ('reaction', ...N_EVENT_TYPE')
+== T1 the fixed code not written [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   20 failed, 124 passed, 1 deselected, 1 warning in 36.00s
+   FAILED test_g7_3_a_thread_ref_of_no_whatsapp_thread_is_ignored
+   FAILED test_g7_4_a_reference_recorded_after_the_check_is_the_same_ignored
+   FAILED test_g7_4_mandatory_test_2_a_recorded_reference_is_ignored_in_any_thread
+   FAILED test_g7_5_a_status_change_in_flight_is_waited_for_then_seen
+   FAILED test_g7_5_a_status_for_no_recorded_message_is_ignored
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-SENT]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[FAILED-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[FAILED-READ]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[QUEUED-QUEUED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-READ]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-SENT]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[SENT-QUEUED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[SENT-UNKNOWN]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-UNKNOWN]
+   FAILED test_iii_an_unknown_type_is_stored_then_ignored
+   FAILED test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500
+   FAILED test_iv_1_a_python_exception_in_processing_is_failed_likewise
+   cause: AssertionError: assert ('FAILED', None) == ('FAILED', 'P...SSING_FAILED')
+   cause: AssertionError: assert ('IGNORED', None) == ('IGNORED', '...GE_REF_TAKEN')
+   cause: AssertionError: assert ('IGNORED', None) == ('IGNORED', '...NOT_ACCEPTED')
+   cause: AssertionError: assert ('IGNORED', None) == ('IGNORED', 'UNKNOWN_MESSAGE')
+   cause: AssertionError: assert ('IGNORED', None) == ('IGNORED', 'UNKNOWN_THREAD')
+   cause: AssertionError: assert ('reaction', 'IGNORED', None) == ('reaction', ...N_EVENT_TYPE')
+== T2 a replay of a final event taken as new [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   4 failed, 140 passed, 1 deselected, 1 warning in 34.34s
+   FAILED test_iv_t2_whose_commit_answer_is_lost_is_500_then_a_redelivery_is_a_replay
+   FAILED test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+   FAILED test_s42_a_replay_of_a_completed_event_is_200_and_writes_nothing
+   FAILED test_s42_a_replay_of_an_ignored_event_writes_nothing
+   cause: AssertionError: assert ('FINAL', UUI...b62dba1c113')) == ('REPLAYED', ...b62dba1c113'))
+   cause: AssertionError: assert ['FINAL'] == ['REPLAYED']
+   cause: AssertionError: assert ['PROCESSED',...DY_TOO_LARGE'] == ['PROCESSED',...DY_TOO_LARGE']
+   cause: E   AssertionError: assert ('FINAL', UUI...b62dba1c113')) == ('REPLAYED', ...b62dba1c113'))
+   cause: E   AssertionError: assert ['FINAL'] == ['REPLAYED']
+   cause: E   AssertionError: assert ['PROCESSED',...DY_TOO_LARGE'] == ['PROCESSED',...DY_TOO_LARGE']
+== T3 the claim takes a final event [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.23s
+   FAILED test_recovery_skips_a_row_another_processor_holds
+   FAILED test_t2_on_a_final_event_is_final_and_writes_nothing
+   cause: E   psycopg.errors.RaiseException: webhook_events: a PROCESSED event is final
+   cause: E   sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) webhook_events: a PROCESSED event is final
+   cause: sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) webhook_events: a PROCESSED event is final
+== T4 55P03 not mapped to in flight [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 35.32s
+   FAILED test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"cbe852e6dde44e5d81bad03f6a247324",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"cbe852e6dde44e5d81bad03f6a2473
+== T5 no rollback to the savepoint [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 36.89s
+   FAILED test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500
+   FAILED test_iv_1_a_python_exception_in_processing_is_failed_likewise
+   cause: AssertionError: assert ('RECEIVED', None) == ('FAILED', 'P...SSING_FAILED')
+   cause: AssertionError: assert [{'message_id...NBOUND', ...}] == []
+   cause: E   AssertionError: assert ('RECEIVED', None) == ('FAILED', 'P...SSING_FAILED')
+   cause: E   AssertionError: assert [{'message_id...NBOUND', ...}] == []
+== T6 the failure not recorded [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   4 failed, 140 passed, 1 deselected, 1 warning in 37.16s
+   FAILED test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500
+   FAILED test_iv_1_a_python_exception_in_processing_is_failed_likewise
+   FAILED test_iv_3_a_failure_of_the_status_update_loses_t2_whole
+   FAILED test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one
+   cause: AssertionError: assert 'RECEIVED' == 'FAILED'
+   cause: AssertionError: assert ('RECEIVED', None) == ('FAILED', 'P...SSING_FAILED')
+   cause: AssertionError: assert 0 >= 1
+   cause: E   AssertionError: assert 'RECEIVED' == 'FAILED'
+   cause: E   AssertionError: assert ('RECEIVED', None) == ('FAILED', 'P...SSING_FAILED')
+   cause: E   AssertionError: assert 0 >= 1
+== T7 the recovery takes a fresh RECEIVED event [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.72s
+   FAILED test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one
+   cause: AssertionError: a RECEIVED event younger than 5 minutes is not stuck
+   cause: E   AssertionError: a RECEIVED event younger than 5 minutes is not stuck
+== T8 the recovery passes over FAILED events [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 36.97s
+   FAILED test_recovery_completes_a_failed_event_and_skips_a_fresh_received_one
+   cause: AssertionError: assert 0 >= 1
+   cause: E   AssertionError: assert 0 >= 1
+== T9 the recovery forgets that content existed [src/turab/services/webhooks.py, 1 site(s)]  restored: sha256 d481ea9df9fa2ada identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 33.54s
+   FAILED test_iv_2_a_stop_after_t1_is_completed_by_the_recovery_without_content
+   cause: E   KeyError: 'content_withheld_reason'
+   cause: KeyError: 'content_withheld_reason'
+== R1 an invalid envelope answered 422 [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   39 failed, 105 passed, 1 deselected, 1 warning in 34.60s
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-body_text-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-external_message_ref-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-external_message_ref-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-media_ref-value25]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-message_type-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-message_type-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25T10:00:00]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25T10:00Z]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-10-25]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-2026-13-25T10:00:00Z]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-20261025T100000Z]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-occurred_at-yesterday]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-thread_ref-7]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[message-thread_ref-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-external_message_ref-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-external_message_ref-value11]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-2026-10-25T10:00:00]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-occurred_at-value13]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-BOUNCED]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-None]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-read]
+   FAILED test_iii_a_known_type_with_a_missing_or_mistyped_key_is_400[status-status-value12]
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[a
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[an
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[no
+   FAILED test_iii_an_invalid_envelope_is_400_writing_nothing[not
+   FAILED test_iii_the_order_size_signature_envelope
+   FAILED test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"07932bd7e8694b4f872fc3ecd66e8624","detail":"a status
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"0f90c491574d42c69dc67cfd4d00f10f","detail":"a messag
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"10c1d7b52eab4356865af41d4d16c8fa","detail":"provider
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"1493bc1b957b448a86b364e63b238135","detail":"a messag
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"19cf283684894993be59003bfdab8509","detail":"media_re
+   cause: AssertionError: {"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","trace_id":"19f9bca283ff4d169a9d28e8c4cbc455","detail":"a messag
+== R2 a T1 that raised answered as CORRECTION-007 [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.59s
+   FAILED test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it
+   FAILED test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"87da0d46fe1f453ab8cda26e3e7ab535",
+   cause: AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"d113c5784e7049e3aa908ffe9351fc42",
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"87da0d46fe1f453ab8cda26e3e7ab5
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook event not processed","status":500,"code":"WEBHOOK_PROCESSING_FAILED","trace_id":"d113c5784e7049e3aa908ffe9351fc
+== R9 the 503 of a T1 that raised claims it stored [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.62s
+   FAILED test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it
+   FAILED test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once
+   cause: AssertionError: assert ('stored' not in 'The event i...er_event_id.'
+   cause: E   AssertionError: assert ('stored' not in 'The event i...er_event_id.'
+== R3 a replay of an IGNORED event processed again [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   1 failed, 143 passed, 1 deselected, 1 warning in 35.97s
+   FAILED test_s42_a_replay_of_an_ignored_event_writes_nothing
+   cause: AssertionError: assert ['FINAL'] == ['REPLAYED']
+   cause: E   AssertionError: assert ['FINAL'] == ['REPLAYED']
+== R4 a T2 lost whole answered 200 [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   2 failed, 142 passed, 1 deselected, 1 warning in 35.15s
+   FAILED test_iv_3_a_failure_of_the_status_update_loses_t2_whole
+   FAILED test_iv_t2_whose_commit_answer_is_lost_is_500_then_a_redelivery_is_a_replay
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== R5 the 200 carries a body [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   61 failed, 83 passed, 1 deselected, 1 warning in 36.34s
+   FAILED test_a_message_without_content_carries_no_withheld_reason
+   FAILED test_archived_at_alone_refuses_nothing
+   FAILED test_g7_15_a_body_over_64_kib_is_400_and_one_of_64_kib_is_read
+   FAILED test_g7_15_a_small_body_under_an_odd_declared_length_is_processed[a
+   FAILED test_g7_15_a_small_body_under_an_odd_declared_length_is_processed[its
+   FAILED test_g7_16_iv_a_webhook_holding_the_thread_makes_a_new_binding_wait
+   FAILED test_g7_16_iv_the_thread_is_locked_before_the_message_is_inserted
+   FAILED test_g7_16_iv_the_thread_moves_to_the_later_time_only
+   FAILED test_g7_3_a_message_is_an_inbound_message_of_its_whatsapp_thread
+   FAILED test_g7_3_a_thread_ref_of_no_whatsapp_thread_is_ignored
+   FAILED test_g7_4_a_reference_recorded_after_the_check_is_the_same_ignored
+   FAILED test_g7_4_mandatory_test_2_a_recorded_reference_is_ignored_in_any_thread
+   FAILED test_g7_5_a_status_change_in_flight_is_waited_for_then_seen
+   FAILED test_g7_5_a_status_for_no_recorded_message_is_ignored
+   FAILED test_g7_5_a_webhook_message_takes_its_statuses
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[DELIVERED-READ]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-FAILED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-READ]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[QUEUED-SENT]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[SENT-DELIVERED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[SENT-FAILED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-DELIVERED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-QUEUED]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-READ]
+   FAILED test_g7_5_an_accepted_transition_updates_the_message_and_is_audited[UNKNOWN-SENT]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[DELIVERED-SENT]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[FAILED-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[FAILED-READ]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[QUEUED-QUEUED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-READ]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[READ-SENT]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[SENT-QUEUED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[SENT-UNKNOWN]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-FAILED]
+   FAILED test_g7_5_another_transition_is_ignored_and_writes_nothing[UNKNOWN-UNKNOWN]
+   FAILED test_g7_9_1_the_event_store_holds_the_allow_list_only
+   FAILED test_g7_9_a_message_without_the_archive_consent_is_stored_without_content
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[binding_revoked]
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[bound_to_another_thread]
+   FAILED test_g7_9_a_webhook_content_under_a_consent_that_does_not_hold_is_withheld[revoked]
+   FAILED test_g7_9_with_the_archive_consent_the_content_is_archived
+   FAILED test_ii_the_secret_is_read_as_utf_8
+   FAILED test_ii_the_signature_is_over_the_raw_bytes
+   FAILED test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25T10:00:00-00:00]
+   FAILED test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25T10:00:00.123456+01:00]
+   FAILED test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25T10:00:00Z]
+   FAILED test_iii_an_rfc_3339_instant_with_a_zone_is_accepted[2026-10-25t10:00:00z]
+   FAILED test_iii_an_unknown_type_is_stored_then_ignored
+   FAILED test_iv_1_a_failure_in_processing_is_failed_with_its_code_and_answers_500
+   FAILED test_iv_2_a_stop_after_t1_is_completed_by_a_redelivery
+   FAILED test_iv_3_a_failure_of_the_status_update_loses_t2_whole
+   FAILED test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing
+   FAILED test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it
+   FAILED test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once
+   FAILED test_s42_a_replay_of_a_completed_event_is_200_and_writes_nothing
+   FAILED test_s42_a_replay_of_an_ignored_event_writes_nothing
+   FAILED test_the_webhook_stays_in_the_closed_public_list_and_reads_no_bearer
+   FAILED test_vii_a_thread_not_moved_is_not_audited
+   FAILED test_vii_the_message_and_the_thread_move_are_audited_with_a_null_actor
+   cause: AssertionError: G7-17 (v): the 200 has no body
+   cause: AssertionError: b'{"outcome":"PROCESSED"}'
+   cause: E   AssertionError: G7-17 (v): the 200 has no body
+   cause: E   AssertionError: b'{"outcome":"PROCESSED"}'
+== R6 a processed answer not recorded [src/turab/api/routes/webhooks.py, 1 site(s)]  restored: sha256 7b015e4d19c83a51 identical
+   4 failed, 140 passed, 1 deselected, 1 warning in 35.97s
+   FAILED test_g7_3_a_message_is_an_inbound_message_of_its_whatsapp_thread
+   FAILED test_iii_an_unknown_type_is_stored_then_ignored
+   FAILED test_iv_4_a_replay_while_t2_holds_the_claim_is_200_and_writes_nothing
+   FAILED test_j03_nothing_of_the_body_reaches_a_log_or_an_access_record
+   cause: AssertionError: assert ['REPLAYED', ...DY_TOO_LARGE'] == ['PROCESSED',...DY_TOO_LARGE']
+   cause: AssertionError: assert [] == ['IN_FLIGHT']
+   cause: E   AssertionError: assert ['REPLAYED', ...DY_TOO_LARGE'] == ['PROCESSED',...DY_TOO_LARGE']
+   cause: E   AssertionError: assert [] == ['IN_FLIGHT']
+   cause: E   ValueError: not enough values to unpack (expected 1, got 0)
+   cause: ValueError: not enough values to unpack (expected 1, got 0)
+== R7 a refusal recorded as allowed [src/turab/auth/audit.py, 1 site(s)]  restored: sha256 be4319a9729ea78a identical
+   3 failed, 141 passed, 1 deselected, 1 warning in 36.79s
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[None]
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[]
+   FAILED test_ii_the_503_comes_after_the_size_and_before_the_signature
+   cause: AssertionError: assert (<AccessEvent...None, 'ALLOW') == (<AccessEvent... None, 'DENY')
+   cause: E   AssertionError: assert (<AccessEvent...None, 'ALLOW') == (<AccessEvent... None, 'DENY')
+== R8 the 503's code a 500 [src/turab/api/problems.py, 1 site(s)]  restored: sha256 a10843962d23ea48 identical
+   5 failed, 139 passed, 1 deselected, 1 warning in 35.45s
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[None]
+   FAILED test_ii_a_missing_or_empty_secret_is_503_with_no_event_row[]
+   FAILED test_ii_the_503_comes_after_the_size_and_before_the_signature
+   FAILED test_iv_t1_failing_before_its_commit_is_503_then_a_redelivery_completes_it
+   FAILED test_iv_t1_whose_commit_answer_is_lost_is_503_then_a_redelivery_completes_it_once
+   cause: AssertionError: {"type":"about:blank","title":"Webhook not ready","status":500,"code":"WEBHOOK_NOT_READY","trace_id":"00ce82d97150402e95552a9598e24ec0","detail":"The even
+   cause: AssertionError: {"type":"about:blank","title":"Webhook not ready","status":500,"code":"WEBHOOK_NOT_READY","trace_id":"0236f886e4024d54866fe8079299075a","detail":"The even
+   cause: AssertionError: {"type":"about:blank","title":"Webhook not ready","status":500,"code":"WEBHOOK_NOT_READY","trace_id":"24366c8fb690485b9441ce6bafd9fa99","detail":"The even
+   cause: AssertionError: {"type":"about:blank","title":"Webhook not ready","status":500,"code":"WEBHOOK_NOT_READY","trace_id":"532383d9d1574b4d817e9faa32f67fb1","detail":"The even
+   cause: AssertionError: {"type":"about:blank","title":"Webhook not ready","status":500,"code":"WEBHOOK_NOT_READY","trace_id":"d54979a4ddee4bfca765fdb80fe15417","detail":"The even
+   cause: E   AssertionError: {"type":"about:blank","title":"Webhook not ready","status":500,"code":"WEBHOOK_NOT_READY","trace_id":"00ce82d97150402e95552a9598e24ec0","detail":"The 
+
+SURVIVING MUTATIONS: none
+
+TURAB — Slice 7 step 3: CORRECTION-007 and CORRECTION-008, the response_additions loader
+============================================================
+Base commit       : 5ef657b43e83688737c2ee1a3d164f7f9e1a170f
+Source fingerprint: d06a9ac131cdacf442122c9e2ccfd3f30130e0f9ff6e7f3d6b219dd8ff02a9b6
+Working tree      : CLEAN
+Recorded          : 2026-10-28 01:28:04 UTC
+Test file         : tests/test_correction_007_008.py
+
+=== baseline (no mutation) ===
+   29 passed in 3.81s
+== L1 an unknown key accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   2 failed, 27 passed in 1.71s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[a
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[an
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L2 an id of another section accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 6.71s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[an
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L3 an addition without a decision accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 1.70s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[no
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L4 any status accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   2 failed, 27 passed in 1.76s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[a
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L5 a second addition of a pair accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 1.73s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[the
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L6 a declared status re-added [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 1.78s
+   FAILED test_the_loader_refuses_a_status_the_operation_already_declares
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L7 stale frozen statuses accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   3 failed, 26 passed in 1.82s
+   FAILED test_the_loader_refuses_a_package_whose_statuses_changed
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[no
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[stale
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L8 a code of any form accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 1.90s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[a
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L9 a blank description accepted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 1.82s
+   FAILED test_the_loader_refuses_what_is_not_one_added_error_response[an
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== L10 the added response not a problem [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 972a0dfdced81fc6 identical
+   1 failed, 28 passed in 1.80s
+   FAILED test_the_effective_operation_is_the_frozen_one_with_the_two_responses
+   cause: AssertionError: assert {'description...-10-27', ...}} == {'description...-10-27', ...}}
+   cause: E   AssertionError: assert {'description...-10-27', ...}} == {'description...-10-27', ...}}
+
+SURVIVING MUTATIONS: none
