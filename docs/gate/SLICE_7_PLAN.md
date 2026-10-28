@@ -1,10 +1,10 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 21**
+## Implementation plan — **revision 22**
 
 **Status: step 4 is CLOSED at `2f968f4`, and step 5 is AUTHORIZED** (review
 of `2f968f4`, recorded below), within the approved plan. Step 3 is CLOSED at
-`23b99b6`. **G7-19 (revision 21) puts three points of step 5 as decisions;
-no step 5 code is written before they are decided.** **G7-18 is DECIDED** (review of `e18271a`,
+`23b99b6`. **G7-19 is DECIDED** (review of `d04d5c8`, recorded below); step 5 is
+being implemented. **G7-18 is DECIDED** (review of `e18271a`,
 recorded below): the nine options (a), with limits. **Step 4 is CLOSED
 at `2f968f4`** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
 CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
@@ -94,7 +94,30 @@ a recommendation. A recommendation is not a decision.
 | 18 | `e1bdcbc` | the review of `e18271a` recorded: G7-18 decided, the nine options (a), with limits; no 0009; the link valid at its writing only |
 | 19 | `2f968f4` | the review of `a659587` recorded: step 4 not closed; R-S7-4-01 (the backfill's isolation) and the stale introduction of `services/communication.py`; both answered (`SLICE_7_STEP4_DELIVERY.md` §10) |
 | 20 | `ef9e248` | the review of `2f968f4` recorded: step 4 CLOSED; step 5 authorized |
-| 21 | this revision | G7-19 added: three points of step 5 put as decisions (the event store's counts, the decided writes, what is never PASS); two test gaps stated; no other change |
+| 21 | `d04d5c8` | G7-19 added: three points of step 5 put as decisions (the event store's counts, the decided writes, what is never PASS); two test gaps stated; no other change |
+| 22 | this revision | the review of `d04d5c8` recorded: G7-19 decided, direction (a) in the three points, specified |
+
+**The review of `d04d5c8`. G7-19 is DECIDED: direction (a) in the three
+points, specified below; step 5 may be implemented accordingly.** The diff
+since `2f968f4` is documentary. The reviewer checked the writes' inventory
+against the services' code.
+
+| Point | Decision |
+|---|---|
+| (i) the event counters | the separate script, after the suite's run passes. It keeps the sample's time, the run's identifier, the source fingerprint, **the JUnit report's digest** and the test database's name, beside the counts only; the generator refuses any that does not match the bound run's record. The counts are shown under the heading **"a sample measured right after the run"**: not PASS, and not a claim that they were taken at the last test's moment. No event id, reference or content is kept. |
+| (ii) the writes' inventory | the table by `INSERT`, `UPDATE` and `DELETE` as proposed, refusing a writer or an updated column not decided. `webhook_events`' columns are named: `processing_status`, `processed_at` and `error_text`; the other updates are `last_message_at` for threads and `delivery_status` for messages only. The evidence distinguishes **the module that holds the INSERT** from the staff commands, the webhook and the backfill script that call it. It is an inventory of the application's statements the generator reads, **not a general guarantee against a superuser's writes**. |
+| (iii) the evidence's limits | every limit of (a) listed, none given PASS: R-1 and Meta's verification, K06, retention, step 4's two limits, the content-less recovery, Slice 6's carried limits and the SALE scope. Slice 5's and Slice 6's evidence stay attributed to their trees; Slice 7's generator does not depend on them. |
+
+- **A wording corrected:** "no real event exists" is not inferred from the
+  test database's counters, nor from R-1 being unmet. The evidence says the
+  sample is **from the run's test database**, and that **no reception of a
+  real event, and no proof of Meta's path, is claimed**.
+- **The two test gaps** (mandatory test 1's interaction; K05's other body)
+  are closed within step 5.
+- These are decisions on how the evidence is built; the reviewer ran no
+  measurement or test.
+- **Standing:** R-1 is a condition before any real event; K06 is UNPROVEN;
+  the scope is SALE only; no release authorization.
 
 **The review of `2f968f4`. Step 4 is CLOSED at `2f968f4`; step 5 is
 AUTHORIZED within the approved plan.** Slice 7 stays open.
@@ -1824,7 +1847,7 @@ the item's added key `message` and its content only when archived (G7-8
 
 **Blocks:** step 4.
 
-### G7-19 · What step 5 needs and the plan does not decide (revision 21; found preparing step 5; NOT YET DECIDED)
+### G7-19 · What step 5 needs and the plan does not decide (revision 21; found preparing step 5; DECIDED in the review of `d04d5c8`: direction (a) in the three points, as that review's table specifies)
 
 **Why this exists.** §6.4 asks for a generated `SLICE_7_EVIDENCE.md` "as
 Slice 6's", bound to a clean-tree run. Slice 6's generator takes every status
@@ -2269,7 +2292,7 @@ identical results, and are ours.
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
 | 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
 | 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, decided** (review of `e18271a`) |
-| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all; **G7-19, to be decided** |
+| 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all; **G7-19, decided** (review of `d04d5c8`) |
 
 Each step is delivered with its tests and its mutation record, and is
 reviewed before the next begins. A defect found in a step is measured before
