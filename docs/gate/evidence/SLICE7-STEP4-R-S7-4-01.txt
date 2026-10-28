@@ -1,0 +1,49 @@
+TURAB — R-S7-4-01 (review of a659587): two concurrent backfills, by isolation level
+=====================================================================================
+Asked for: measure the concurrent order under REPEATABLE READ first, before any fix.
+
+Tree     : a659587 (step 4 as delivered), unchanged.
+Database : turab_r_s7_4_01, a scratch database built by `alembic upgrade head`
+           (0008); the suite's database untouched. Server default:
+           default_transaction_isolation = read committed.
+Script   : SLICE7-STEP4-R-S7-4-01.py, beside this record. Each level on its own
+           engine, whose connections take it as default_transaction_isolation
+           (libpq `options`). Backfill A is held inside its first write, holding
+           the advisory lock; backfill B starts and blocks on the lock (witness:
+           pg_blocking_pids); A is released. "level" is read inside each
+           backfill's write; a backfill that writes nothing reports None.
+Runs     : two, identical but for their run id. The first:
+
+run f348ee83
+default_transaction_isolation = read committed
+  level_A                   : read committed
+  level_B                   : None
+  B_waited_for_A            : True
+  A_wrote                   : 5
+  B_wrote                   : 0
+  messages                  : 5
+  interactions_for_them     : 5
+  messages_with_two_or_more : 0
+default_transaction_isolation = repeatable read
+  level_A                   : repeatable read
+  level_B                   : repeatable read
+  B_waited_for_A            : True
+  A_wrote                   : 5
+  B_wrote                   : 5
+  messages                  : 5
+  interactions_for_them     : 10
+  messages_with_two_or_more : 5
+
+Reading:
+  * Under READ COMMITTED (the server's default, and the suite's), B waits,
+    then its selection, a later statement, sees what A committed: it writes
+    nothing. No duplicate.
+  * Under REPEATABLE READ, B's snapshot is taken by the transaction's first
+    statement, audited_transaction's set_config, before the advisory lock.
+    After waiting, B's selection still reads that snapshot, does not see A's
+    five interactions, and writes all five again: every message ends with
+    two. The reviewer's reasoning holds, measured.
+  * The delivered tests passed because the suite's connections default to
+    READ COMMITTED; nothing in the code imposed it. The docstring's
+    "READ COMMITTED" was a statement about the environment, not a property
+    of the code.
