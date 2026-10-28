@@ -1,0 +1,64 @@
+TURAB — Slice 7 step 5: the mandatory and red-team tests end to end
+============================================================
+Base commit       : 84280c076fc662cdc2b0440ea4e206b37ebaacdf
+Source fingerprint: 7cd994f16f0ec9a81f7d1d7312adc330178fde416941aa521740b166d8310762
+Working tree      : DIRTY
+M db/dev/mutate_slice7_step5.py
+ M db/gate/record_test_run.py
+ M db/gate/run_binding.py
+ M db/gate/slice7_event_store_counts.py
+ M db/gate/slice7_evidence.py
+ M tests/test_slice7_evidence.py
+Recorded          : 2026-10-28 15:07:01 UTC
+Test file         : tests/test_slice7_step5.py
+
+=== baseline (no mutation) ===
+   12 passed, 1 warning in 9.16s
+
+SURVIVING MUTATIONS: none
+
+TURAB — Slice 7 step 5: the closure evidence's refusals (review of 8dd7921)
+============================================================
+Base commit       : 84280c076fc662cdc2b0440ea4e206b37ebaacdf
+Source fingerprint: 7cd994f16f0ec9a81f7d1d7312adc330178fde416941aa521740b166d8310762
+Working tree      : DIRTY
+M db/dev/mutate_slice7_step5.py
+ M db/gate/record_test_run.py
+ M db/gate/run_binding.py
+ M db/gate/slice7_event_store_counts.py
+ M db/gate/slice7_evidence.py
+ M tests/test_slice7_evidence.py
+Recorded          : 2026-10-28 15:07:13 UTC
+Test file         : tests/test_slice7_evidence.py
+
+=== baseline (no mutation) ===
+   68 passed in 83.63s (0:01:23)
+== E11 the connection names the database only [db/gate/run_binding.py, 1 site(s)]  restored: sha256 3c01c0ade47ecb98 identical
+   9 failed, 59 passed in 74.96s (0:01:14)
+   FAILED test_s7_the_connection_is_not_redirected_by_an_environment_host_address
+   FAILED test_s7_the_sample_tool_connects_to_the_recorded_destination_not_the_default[destination0-turab_absent_db_s7]
+   FAILED test_s7_the_sample_tool_connects_to_the_recorded_destination_not_the_default[destination1-port
+   FAILED test_s7_the_sample_tool_connects_to_the_recorded_destination_not_the_default[destination2-"127.0.0.2",
+   FAILED test_s7_the_sample_tool_refuses_a_server_that_is_not_the_runs[database-turab_other]
+   FAILED test_s7_the_sample_tool_refuses_a_server_that_is_not_the_runs[port-5433]
+   FAILED test_s7_the_sample_tool_refuses_a_server_that_is_not_the_runs[system_identifier-7000000000000000002]
+   FAILED test_s7_the_sample_tool_samples_the_recorded_destination_and_the_generator_accepts_it
+   FAILED test_s7_the_server_identity_is_the_clusters_own
+   cause: E   assert (1 != 0 and '"127.0.0.2", port 5432 failed' in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-271/test_s7_the_sample_tool_connec2/tree
+   cause: E   assert (1 != 0 and 'port 1 failed' in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-271/test_s7_the_sample_tool_connec1/tree/db/ga... to ser
+   cause: E   assert (1 != 0 and 'turab_absent_db_s7' in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-271/test_s7_the_sample_tool_connec0/tree/db/ga... t
+   cause: E   psycopg.OperationalError: connection failed: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  Peer authentication failed for user "t
+   cause: assert (1 != 0 and '"127.0.0.2", port 5432 failed' in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-271/test_s7_the_sample_tool_connec2/tree/db/
+   cause: assert (1 != 0 and 'port 1 failed' in 'Traceback (most recent call last):\n  File "/tmp/pytest-of-root/pytest-271/test_s7_the_sample_tool_connec1/tree/db/ga... to server 
+== E17 an empty destination parameter left to the environment [db/gate/run_binding.py, 1 site(s)]  restored: sha256 3c01c0ade47ecb98 identical
+   1 failed, 67 passed in 75.88s (0:01:15)
+   FAILED test_s7_the_connection_is_not_redirected_by_an_environment_host_address
+   cause: E   psycopg.OperationalError: connection failed: connection to server at "127.0.0.2", port 5432 failed: Connection refused
+   cause: psycopg.OperationalError: connection failed: connection to server at "127.0.0.2", port 5432 failed: Connection refused
+== E18 a connection made while a service is set [db/gate/run_binding.py, 1 site(s)]  restored: sha256 3c01c0ade47ecb98 identical
+   1 failed, 67 passed in 82.78s (0:01:22)
+   FAILED test_s7_no_connection_is_made_while_a_service_is_set
+   cause: E   psycopg.OperationalError: connection is bad: definition of service "elsewhere" not found
+   cause: psycopg.OperationalError: connection is bad: definition of service "elsewhere" not found
+
+SURVIVING MUTATIONS: none
