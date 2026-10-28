@@ -5,8 +5,11 @@
 - **G7-19 decided** in the review of `d04d5c8` (plan revision 22): direction
   (a) in its three points, as specified there.
 - **The review of `8dd7921`:** step 5 not closed. It asked for three changes
-  on the tree before the official round. §2 answers them; the mutation runs
-  and the evidence round below are on the resulting tree.
+  on the tree before the official round. §2 answers them.
+- **The review of `84280c0`:** step 5 not closed. The database's name and
+  `PGHOST` did not bind the connection's port or host address. §8 answers it,
+  with the mutation runs and the evidence round on the resulting tree. **§8.4
+  is the current round; §4's and §5's results are the earlier tree's.**
 
 **What this step does not contain:**
 - **product code:** nothing under `src/` changes. The step adds tests, two
@@ -15,7 +18,8 @@
 - a migration, or an HTTP operation;
 - the relay (R-1). **R-1 is UNMET: no real event may be received.**
 
-**Status: DELIVERED for review, NOT CLOSED.** Slice 7 is not closed.
+**Status: DELIVERED for review, NOT CLOSED** (reviews of `8dd7921` and
+`84280c0` answered). Slice 7 is not closed.
 - **What the reviewer did not do:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -25,7 +29,11 @@
 - `fd1d570`: the review of `8dd7921` answered (§2);
 - `94769e0`: the mutation records (§4);
 - `5095d11`: one matrix rule's text corrected (§3.4);
-- `b61c4bb`, `88fb6dc`, `436d4ca`: the evidence round (§5).
+- `b61c4bb`, `88fb6dc`, `436d4ca`: the evidence round (§5);
+- `84280c0`: this note, plan revision 23 (reviewed);
+- `101df75`: the review of `84280c0` answered (§8);
+- `2874380`: the mutation records on that tree (§8.3);
+- `b97bede`, `50ad5c2`, `01b1708`: the evidence round on that tree (§8.4).
 
 ---
 
@@ -273,3 +281,128 @@ records, and `--check` reports them stale on this tree:
 - **R-1:** the relay and its seven duties. **No real event before it.**
 - **K06 UNPROVEN;** the scope SALE only. **This is not a release
   authorization.**
+
+---
+
+## 8. Addendum: the review of `84280c0`, the connection's destination
+
+### 8.1 What was wrong
+
+The sample was bound to the database's name and `PGHOST`, not to where a
+connection goes. libpq takes every parameter a connection leaves unset from
+its environment variable (PostgreSQL 16, "Environment Variables"); the
+suite's URL (`tests/conftest.py`) and its `dropdb`, `createdb` and `psql`
+calls name a host and a database only, so their port and host address came
+from `PGPORT` and `PGHOSTADDR`. The sample tool's connection named neither
+either. With the name and host recorded and matching, a changed `PGPORT` or
+`PGHOSTADDR` would have sent the sample to another server. A `PGSERVICE`
+could do the same through a service file.
+
+### 8.2 What changed (`101df75`)
+
+**Two bindings:**
+- **the destination**: `record_test_run.py` resolves the database, host,
+  host address and port once, with libpq's defaults, and sets them whole in
+  the suite's environment (`PGHOSTADDR` removed when none). It refuses to
+  run while `PGSERVICE` is set. The record states them:
+  `Test destination: host=… hostaddr=… port=… dbname=…`;
+- **the server reached**: after the suite, a connection with the same
+  parameters reads the cluster's system identifier
+  (`pg_control_system()`, unique to each cluster), the address and port that
+  answered (`inet_server_addr()`, `inet_server_port()`) and the database.
+  The record states them: `Test server : system_identifier=… address=…
+  port=… database=…`. If they cannot be read, there is no record.
+
+**The connection** (`run_binding.connect`) sends every destination parameter
+explicitly, **empty ones too**, and refuses to connect while a service is set.
+- **Measured:** with `PGHOSTADDR=127.0.0.2` in the environment, a
+  connection that left `hostaddr` unset went to `127.0.0.2`, and one that
+  sent `hostaddr=''` reached `127.0.0.1`.
+- **Why a service is refused rather than overridden:** an explicit empty
+  `service` is looked up as a service named "". It cannot be neutralised
+  this way.
+
+**The sample tool:**
+- **before connecting**, it refuses:
+  - a `TURAB_TEST_DB`, `PGHOST`, `PGHOSTADDR` or `PGPORT` naming another
+    value (a `PGHOSTADDR` set where the run had none is another);
+  - a `PGSERVICE`;
+  - a record without the destination or the server;
+- it then connects with the recorded values;
+- **before counting**, it compares the server reached with the recorded
+  one. If they differ, it counts nothing and writes nothing.
+
+**The generator** refuses a sample whose destination or server is not the
+record's.
+
+### 8.3 Tests and mutations
+
+`tests/test_slice7_evidence.py`, 68 tests. The ones this review asked for:
+
+| Refusal or binding | Test | Mutation |
+|---|---|---|
+| another `TURAB_TEST_DB`, `PGHOST`, **`PGPORT`**, **`PGHOSTADDR`**, or a `PGSERVICE`, refused **before connecting** (the record names an unreachable port, so a refusal after a connection attempt would name the failure instead) | `test_s7_the_sample_tool_refuses_another_destination_before_connecting` | E6, E7 |
+| the recorded database, port and host address used, not libpq's defaults (each unreachable here, so the tool fails naming it) | `test_s7_the_sample_tool_connects_to_the_recorded_destination_not_the_default` | E5, E11 |
+| a server reached that is not the run's (system identifier, port or database): nothing counted | `test_s7_the_sample_tool_refuses_a_server_that_is_not_the_runs` | E9 |
+| an environment `PGHOSTADDR` does not redirect a connection with none | `test_s7_the_connection_is_not_redirected_by_an_environment_host_address` | E17 |
+| no connection while a service is set | `test_s7_no_connection_is_made_while_a_service_is_set` | E18 |
+| the identity is the cluster's own | `test_s7_the_server_identity_is_the_clusters_own` | E12 |
+| the generator compares the destination and the server; refuses a record without them | `test_s7_a_sample_of_another_destination_or_server_is_refused`, `test_s7_a_run_record_naming_no_destination_or_server_is_refused` | E1, E2, E3 |
+| the recorder runs the suite on the destination it records, with no host address when none, refuses a service, writes no record without the identity | `test_s7_the_recorder_*` (four) | E13, E14, E15, E16 |
+
+**Two trial runs, outside the record:**
+- `SLICE7-STEP5-MUTATIONS-TRIAL-E2.txt`, E1–E16: all killed. **E6 took 206
+  seconds against about 80** for the others, and we looked into why. With the
+  environment check removed, the tool's connection, which then left an empty
+  `hostaddr` unset, went to the test's `PGHOSTADDR` and waited on it. The
+  check before connecting already refused that case, but the connection's
+  claim that no variable could redirect it was not true. The fix and its
+  measurement are in §8.2;
+- `-TRIAL-E3.txt`: E11, E17 and E18 after the fix, all killed.
+
+**The official runs at `101df75`, clean tree:** **33/33 killed in each** (15
+by `tests/test_slice7_step5.py`, 18 by `tests/test_slice7_evidence.py`), with
+identical outcomes: `SLICE7-STEP5-MUTATIONS.txt` and `-REPEAT.txt`. The pair
+at `fd1d570` (24/24) is kept as `-AT-fd1d570.txt` and `-AT-fd1d570-REPEAT.txt`.
+
+**Not mutated, with reasons** (stated in the script):
+- the generator's comparison of the database and host lines, which the
+  destination line also names;
+- the recorder's removal of an unset `PGHOSTADDR`, which leaves only the
+  recorded value or an empty one.
+
+### 8.4 The evidence round on this tree
+
+Every row ran on a clean tree with source fingerprint `7cd994f1…0762`. The
+mutation tree (`101df75`) and this one differ in no source file: the
+commits between them touch `docs/` only.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Authorization matrix | **222 rules**; suite **3173/3173** | `b97bede` (run at `2874380`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | **PASS**: all database-level contract tests passed; the same 67 operations | `50ad5c2` (run at `b97bede`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **3173 passed, 0 failed, 0 errors, 0 skipped** | `01b1708` (run at `50ad5c2`) | `evidence/TEST-RUN-PROVENANCE.txt`; **`bound`** |
+| The destination (recorded) | `host=127.0.0.1 hostaddr=- port=5432 dbname=turab_authz_test` | `01b1708` | the same |
+| The server reached (recorded) | `system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_authz_test` | `01b1708` | the same |
+| The event-store sample | the same destination and server, found before counting; RECEIVED 1, PROCESSED 74, IGNORED 26, FAILED 0; **never PASS** | `01b1708` | `evidence/SLICE7-EVENT-STORE-COUNTS.txt` |
+| Closure evidence | generated; `--check` passes after the commit | `01b1708` | `SLICE_7_EVIDENCE.md` |
+| Mutations | 33/33, twice, identical | `2874380` (run at `101df75`) | §8.3 |
+
+- **The sample's timing:** the run was recorded at 16:31:48 UTC, when it
+  started, and took 12 min 4 s, so it ended about 16:43:52. The sample was
+  taken at 16:45:12, about 80 seconds after the end.
+- **The interactions at the end of the run** (read after the round, not part
+  of any record): 196 messages; 195 with exactly one interaction; one with
+  none, the same SQL-inserted `PHONE_DECISION` as in §5; none with two.
+
+### 8.5 What this binding does not say
+
+- **It binds the sample to the server the run's connections reached, by the
+  cluster's system identifier, and to the database by its name there.** It
+  does not prove the database was not dropped and recreated between the run
+  and the sample. The sample stays "a sample measured right after the run".
+- **The address and port are the server's view** of the connection
+  (`inet_server_addr()`, `inet_server_port()`). A Unix-socket connection
+  would show `local-socket`. This round used TCP.
+- **R-1 UNMET; K06 UNPROVEN; SALE only.** These results are ours; nobody
+  else has re-run them.

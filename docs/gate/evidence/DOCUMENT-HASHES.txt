@@ -1032,3 +1032,8 @@ docs/gate/SLICE_7_STEP5_DELIVERY.md                            add   43b431f61a1
 docs/gate/SLICE_7_EVIDENCE.md                                  add   8fa94196d1fb7cf1335b1a9a5ded7918f1aedb1f8cdecee3f55792958d251147
 docs/gate/SLICE_7_PLAN.md                                      rev23 c51bcddeb6d7a93eaef1087026e7f03d14dbcfa50b8719085ee10e1a23aca619
 SLICE_7_PLAN.md changed revision: 22 -> 23 (review of 8dd7921; step 5 delivered).
+--- Review of 84280c0: the sample bound to the connection's destination and the server reached; step 5 delivered again; Slice 7 plan revision 24 ---
+docs/gate/SLICE_7_STEP5_DELIVERY.md                            add   9667e56f7f7df7e0f9754bba56f3796aa8722f97a332ef275de3cdc7b6c7e08c
+docs/gate/SLICE_7_EVIDENCE.md                                  add   099bc1e6b1a2e41054ccef7562a5af403b09907f92c9de88107f1bbf82b02bdf
+docs/gate/SLICE_7_PLAN.md                                      rev24 95bbb2735cd094f89ca0a66521bd817f6a0ccab8226872c11997e597ffa79381
+SLICE_7_PLAN.md changed revision: 23 -> 24 (review of 84280c0).
