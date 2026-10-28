@@ -1,66 +1,60 @@
 # Slice 7 — Communication / WhatsApp Record
-## Implementation plan — **revision 25**
+## Implementation plan — **revision 26**
 
-**Status: step 4 is CLOSED at `2f968f4`, and step 5 is AUTHORIZED** (review
-of `2f968f4`, recorded below), within the approved plan. Step 3 is CLOSED at
-`23b99b6`. **G7-19 is DECIDED** (review of `d04d5c8`, recorded below). **Step 5
-is CLOSED at `4b72ad5`** (review of `4b72ad5`, recorded below;
-`SLICE_7_STEP5_DELIVERY.md`). **Slice 7 is NOT closed:** its closure record,
-`SLICE_7_CLOSURE.md`, is prepared for review, and the slice stays open until
-that review. **G7-18 is DECIDED** (review of `e18271a`,
-recorded below): the nine options (a), with limits. **Step 4 is CLOSED
-at `2f968f4`** (`SLICE_7_STEP4_DELIVERY.md`). Steps 1 and 2 are
-CLOSED at `7e8993d` and `6d8815d`. Slice 7 is not closed.
-- **Step 3's authorization does not allow receiving real events** before R-1
-  is met.
-- **G7-17 is DECIDED** (review of `bf1fe3d`, recorded below), with a 503
-  `WEBHOOK_NOT_READY` under a new CORRECTION-008.
-- **Step 3 is CLOSED at `23b99b6`** (`SLICE_7_STEP3_DELIVERY.md`).
-  CORRECTION-007's and CORRECTION-008's texts are APPROVED as delivered
-  there.
-- **The slice's code so far:**
+**Status: step 5 is CLOSED at `4b72ad5`** (review of `4b72ad5`, recorded
+below; `SLICE_7_STEP5_DELIVERY.md`). Steps 1 to 4 are CLOSED at `7e8993d`,
+`6d8815d`, `23b99b6` and `2f968f4`. **Slice 7 is NOT closed.** Its closure
+record, `SLICE_7_CLOSURE.md`, is prepared for review. The review of `40338be`
+(recorded below) did not close the slice, because this plan's statements of
+status contradicted that record; they are corrected in revision 26. The slice
+stays open until its record is reviewed.
+- **No real event may be received before R-1 is met.** No authorization of
+  this slice allowed it.
+- **The decisions,** each recorded below:
+  - in the review of `4aed49b`: D2 (G7-12 (D)), CORRECTION-007, (a2) with
+    R-1, and G7-4's provider rule decided; the other directions approved as
+    the plan's basis (§5, the status table);
+  - G7-16 in the review of `0f423d2`;
+  - G7-17 in the review of `bf1fe3d`, with a 503 `WEBHOOK_NOT_READY` under
+    CORRECTION-008;
+  - G7-18 in the review of `e18271a`: the nine options (a), with limits;
+  - G7-19 in the review of `d04d5c8`.
+- **The contract's corrections:** CORRECTION-006, -007 and -008, approved.
+- **The slice's code:**
   - step 1's migration `0008`, with its tests and mutation script;
   - step 2's two staff commands, `postCommunicationThreads` and
     `postCommunicationThreadsThreadIdMessages` (`services/communication.py`,
-    `api/routes/communication.py`), with CORRECTION-006, approved;
-  - step 3's webhook, its recovery command and CORRECTION-007 and 008,
-    approved (`services/webhooks.py`, `api/routes/webhooks.py`,
+    `api/routes/communication.py`), with CORRECTION-006;
+  - step 3's webhook, its recovery command and CORRECTION-007 and 008
+    (`services/webhooks.py`, `api/routes/webhooks.py`,
     `db/ops/recover_webhook_events.py`);
   - step 4's message interactions, their backfill, the timeline's `message`
     and the confirmation link (`services/message_interactions.py`,
-    `db/ops/backfill_message_interactions.py`), closed.
-- **The review of step 1's progress report** (after `dc35b50`; recorded
-  below) did not close step 1. It set what the delivery must show.
-- **What the review of `4aed49b` did** (recorded below):
-  - **decided** D2 (G7-12 (D)), CORRECTION-007, (a2) with R-1 a condition
-    before any real event, and G7-4's provider rule;
-  - **approved the directions** of the other recommended options, G7-8 (a),
-    G7-9 (a) and G7-15 among them;
-  - **did not approve the text of `0008`,** nor the start of step 1, because
-    of two gaps in it: the thread reference's identity, and UNKNOWN →
-    FAILED. Both are settled here, and the resulting text is §5.1, in full.
-- **What the review of `58a0067` did** (recorded below):
-  - accepted step 0 as measurement documented by the implementing team;
-  - accepted the directions of G7-8 (a) and G7-9 (a), their limits to be
-    proven by the implementation's tests;
-  - asked for four points to be settled, and for the proposed text of
-    `0008`. Both are this revision (§5.1, §5.2).
-- **What the review of `dcebe46` did:**
-  - accepted revision 1 as a basis for review and measurement;
-  - authorized step 0's measurements (M1–M8), which are delivered here;
-  - asked for five gaps to be settled in the plan's text before it is put
-    up for approval (recorded below).
-- **Not yet approved:**
-  - the text of migration `0008` (§5.1), and with it the start of step 1.
-    **That text has not been executed:** it is first run in step 1, with
-    its tests, once approved;
-  - the decisions are approved as directions (§5, the status table). The
-    review of `4aed49b` states: "This is an approval of the directions, not
-    of the defective migration text".
+    `db/ops/backfill_message_interactions.py`);
+  - step 5's end-to-end tests, the event-store sample and the closure
+    evidence's generator (`tests/test_slice7_step5.py`,
+    `db/gate/slice7_event_store_counts.py`, `db/gate/slice7_evidence.py`).
+- **How the plan was approved** (history; each review is recorded below):
+  - the review of `dcebe46` accepted revision 1 as a basis for review and
+    measurement, authorized step 0's measurements (M1–M8), and asked for
+    five gaps to be settled before approval;
+  - the review of `58a0067` accepted step 0 as measurement documented by the
+    implementing team, accepted the directions of G7-8 (a) and G7-9 (a), and
+    asked for four points to be settled and for `0008`'s proposed text. Both
+    were settled in revision 3 (§5.1, §5.2);
+  - the review of `4aed49b` made the decisions above, and did not yet approve
+    the text of `0008` or the start of step 1, because of two gaps: the
+    thread reference's identity, and UNKNOWN → FAILED. Both were settled in
+    revision 4;
+  - the review of `38281ab` approved the text of `0008` (parts E, A, B, C,
+    D2) and authorized step 1. That text was first executed in step 1,
+    CLOSED at `7e8993d`;
+  - the review of step 1's progress report (after `dc35b50`) did not close
+    step 1; it set what the delivery must show.
 
-**What this revision does not decide.** Every choice that is not already
-fixed by a source is put to the reviewer as a decision (§5), with options and
-a recommendation. A recommendation is not a decision.
+**How this plan decides.** Every choice not fixed by a source was put to the
+reviewer as a decision (§5), with options and a recommendation. A
+recommendation is not a decision.
 
 **What it rests on:**
 - **The sources** (§0.1, §3).
@@ -101,7 +95,31 @@ a recommendation. A recommendation is not a decision.
 | 22 | `c4953e3` | the review of `d04d5c8` recorded: G7-19 decided, direction (a) in the three points, specified |
 | 23 | `84280c0` | the review of `8dd7921` recorded; step 5 delivered (not closed) with its answer, its mutation records and the evidence round |
 | 24 | `4b72ad5` | the review of `84280c0` recorded; step 5 delivered again (not closed): the sample bound to the connection's destination and the server reached |
-| 25 | this revision | the review of `4b72ad5` recorded: step 5 CLOSED; the slice's closure record prepared for review; the slice stays open |
+| 25 | `40338be` | the review of `4b72ad5` recorded: step 5 CLOSED; the slice's closure record prepared for review; the slice stays open |
+| 26 | the commit that adds this revision | the review of `40338be` recorded: the statements of status corrected (step 5 closed; the approval of `0008`'s text and step 1's closure; §8 records steps 3 and 4 closed); revision 25's commit named; no decision |
+
+**The review of `40338be`. Slice 7 is NOT closed.** The closure record and the
+diff since `4b72ad5` were reviewed: the changes are documentary, and the
+record keeps the limits of R-1, K06 and SALE and attributes the runs' results
+to the team. The slice is not closed because this plan, at revision 25,
+contradicted the record in its statements of status:
+
+| # | Where | Asked |
+|---|---|---|
+| 1 | the introduction said step 5 was "AUTHORIZED", then that it was closed | state the status once, as the record does |
+| 2 | "Not yet approved" said `0008`'s text and the start of step 1 were not approved, while the record documents their approval and step 1's closure | correct it |
+| 3 | §8 did not record steps 3 and 4 closed; revision 25's row read "this revision" instead of `40338be` | record them; name the commit |
+
+- **Also:** the repeated statement in step 5's note of what the reviewer did
+  not re-run may be removed. The plan's hash is to be updated.
+- **No re-run asked:** the correction is documentary. `bound` and `--check`
+  stay the team's results; the reviewer did not re-run them.
+- **Answered in revision 26:** the introduction states the status once,
+  with the approval history in the past tense; "Not yet approved" removed;
+  §8 records steps 3 and 4 closed; revision 25's row names `40338be`; step 5's
+  note keeps one statement of what was not re-run.
+- **Standing:** R-1 unmet before any real event; K06 UNPROVEN; SALE only;
+  not a release authorization.
 
 **The review of `4b72ad5`. Step 5 is CLOSED at `4b72ad5`; Slice 7's closure
 record may be prepared for review. The slice stays open until that record is
@@ -956,6 +974,17 @@ F7-5). G7-2 decides how TURAB meets them.
 - G7-16 (i–vi) was put as decisions (revision 7) and **DECIDED as
   recommended**, and CORRECTION-006's reading approved (review of
   `0f423d2`). The path's unknown thread follows RFC-001 R5.3b (revision 8).
+- CORRECTION-006's text was approved (review of `f7e5297`); step 2 was
+  closed at `6d8815d` (review of `6d8815d`);
+- G7-17 was decided, with CORRECTION-008 (review of `bf1fe3d`);
+- step 3 was closed at `23b99b6`, CORRECTION-007's and CORRECTION-008's
+  texts approved (review of `23b99b6`);
+- G7-18 was decided (review of `e18271a`); step 4 was closed at `2f968f4`
+  (review of `2f968f4`);
+- G7-19 was decided (review of `d04d5c8`); step 5 was closed at `4b72ad5`
+  (review of `4b72ad5`);
+- the slice's closure record, `SLICE_7_CLOSURE.md`, is prepared for review.
+  **Slice 7 is not closed** (review of `40338be`).
 
 
 ### G7-1 · Scope
@@ -2356,8 +2385,8 @@ identical results, and are ours.
 | 0 | the measurements M1–M8 | **done** (authorized in the review of `dcebe46`) |
 | 1 | migration `0008` (parts E, A, B, C, D2); tests, mutations | **CLOSED at `7e8993d`** (review of `7e8993d`; `SLICE_7_STEP1_DELIVERY.md`) |
 | 2 | threads, the link invariant, staff messages, identity and consent rules; CORRECTION-006 if decided | G7-4, G7-6, G7-7, G7-9, G7-11; **G7-16** (i–vi) and CORRECTION-006's reading, **decided** (review of `0f423d2`); **CLOSED at `6d8815d`** (review of `6d8815d`; `SLICE_7_STEP2_DELIVERY.md`) |
-| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`) |
-| 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, decided** (review of `e18271a`) |
+| 3 | CORRECTION-007 written; the webhook: body limit, verification, the content-free event store, the transactions and their failure record, resolution, statuses, replay and the recovery command | G7-2, G7-3, G7-5, G7-9, G7-15; CORRECTION-007; **authorized** (review of `6d8815d`); no real event before R-1; **G7-17 decided** (review of `bf1fe3d`); **CLOSED at `23b99b6`** (review of `23b99b6`; `SLICE_7_STEP3_DELIVERY.md`; CORRECTION-007 and -008 approved) |
+| 4 | the timeline (G7-8) and the confirmation link (G7-10) | G7-8, G7-10; G7-17 (i); **G7-18, decided** (review of `e18271a`); **CLOSED at `2f968f4`** (review of `2f968f4`; `SLICE_7_STEP4_DELIVERY.md`) |
 | 5 | the mandatory and red-team tests end to end, mutations, the closure evidence | all; **G7-19, decided** (review of `d04d5c8`); **CLOSED at `4b72ad5`** (review of `4b72ad5`; `SLICE_7_STEP5_DELIVERY.md`); the slice's closure record prepared for review (`SLICE_7_CLOSURE.md`) |
 
 Each step is delivered with its tests and its mutation record, and is

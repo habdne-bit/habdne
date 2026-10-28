@@ -1042,3 +1042,8 @@ docs/gate/SLICE_7_CLOSURE.md                                   add   164fbfdb54b
 docs/gate/SLICE_7_STEP5_DELIVERY.md                            add   b9b742c0a56a21c6d32176975417f375de360e2867eefb611b69db68e3d059c1
 docs/gate/SLICE_7_PLAN.md                                      rev25 6b95f294b9b94e3a2f4618707bcfce1b184393936e7be1d56dc7f931781144bd
 SLICE_7_PLAN.md changed revision: 24 -> 25 (review of 4b72ad5).
+--- Review of 40338be: the plan's statements of status corrected; Slice 7 plan revision 26; the slice stays open ---
+docs/gate/SLICE_7_CLOSURE.md                                   add   0c2f4949df195e78ced1cb9f07b2e789fc69b7c20de0082e85110d58a06621e9
+docs/gate/SLICE_7_STEP5_DELIVERY.md                            add   3eba7950a7d64692a141b3100946fd2d8f136775dc2672c5ae2f8e3f55b84865
+docs/gate/SLICE_7_PLAN.md                                      rev26 ef747eb305f9d3b78fb0c332f77800c68a9ea87c8f17caf9d2824f0f1b6698d6
+SLICE_7_PLAN.md changed revision: 25 -> 26 (review of 40338be).

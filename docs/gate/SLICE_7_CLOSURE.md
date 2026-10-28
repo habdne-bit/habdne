@@ -3,8 +3,10 @@
 **Slice 7 — Communication / WhatsApp Record**
 
 **Status: PREPARED for review. Slice 7 is NOT closed.** The review of
-`4b72ad5` closed step 5 and asked for this record (§0). **The slice stays
-open until this record is reviewed.** **This is not a release
+`4b72ad5` closed step 5 and asked for this record (§0). The review of
+`40338be` did not close the slice: the plan's statements of status
+contradicted this record, and are corrected in its revision 26. **The slice
+stays open until this record is reviewed.** **This is not a release
 authorization.**
 
 **The scope:** the approved scope, **SALE only** (G4-5R open).
@@ -12,7 +14,8 @@ authorization.**
 **Baseline:** Developer Handoff v1.0.3, technical pack v0.2.3, frozen.
 
 **Plan:** `docs/gate/SLICE_7_PLAN.md`, revision 24 at `4b72ad5`; revision 25
-records the closure of step 5 and this record's preparation.
+(`40338be`) records the closure of step 5 and this record's preparation;
+revision 26 corrects the plan's statements of status (review of `40338be`).
 
 The decisions in this record are the reviewer's. It states them, and their
 limits, as they were given, and adds no claim of its own. Where it maps an
