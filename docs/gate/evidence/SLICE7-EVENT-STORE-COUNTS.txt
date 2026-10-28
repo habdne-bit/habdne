@@ -1,0 +1,26 @@
+TURAB — Slice 7: the event store, a sample measured right after the run
+========================================================================
+Written by db/gate/slice7_event_store_counts.py (plan §6.4, G7-19 (i)).
+
+Sampled at        : 2026-10-28 13:15:27 UTC
+Run recorded at   : 2026-10-28 13:03:40 UTC
+Run commit        : 88fb6dc5d767697afb9218a827d93b1c7c62908b
+Source fingerprint: 481f5ec5108e3ef8bd3edc555c6ac7521541530c565156415b635fbaffa2c6ed
+Report sha256     : 02832f0b1e56b1cc44af7df5f424199fe787827c014555c77104b697d5204cc5
+Test database     : turab_authz_test
+Test host         : 127.0.0.1
+
+webhook_events, by processing_status:
+  RECEIVED   1
+  PROCESSED  74
+  IGNORED    26
+  FAILED     0
+FAILED, by error_text:
+  (none)
+
+WHAT THIS IS AND IS NOT
+  * A sample measured right after the run, from the run's test database. Not
+    the state at the moment of the last test, and never a PASS.
+  * The suite's test events. No reception of a real event, and no proof of
+    Meta's path, is claimed (R-1).
+  * Counts only: no event id, no reference, no payload.
