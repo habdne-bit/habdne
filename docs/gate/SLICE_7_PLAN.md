@@ -96,7 +96,7 @@ recommendation is not a decision.
 | 23 | `84280c0` | the review of `8dd7921` recorded; step 5 delivered (not closed) with its answer, its mutation records and the evidence round |
 | 24 | `4b72ad5` | the review of `84280c0` recorded; step 5 delivered again (not closed): the sample bound to the connection's destination and the server reached |
 | 25 | `40338be` | the review of `4b72ad5` recorded: step 5 CLOSED; the slice's closure record prepared for review; the slice stays open |
-| 26 | the commit that adds this revision | the review of `40338be` recorded: the statements of status corrected (step 5 closed; the approval of `0008`'s text and step 1's closure; §8 records steps 3 and 4 closed); revision 25's commit named; no decision |
+| 26 | `912d4fd` | the review of `40338be` recorded: the statements of status corrected (step 5 closed; the approval of `0008`'s text and step 1's closure; §8 records steps 3 and 4 closed); revision 25's commit named; no decision |
 
 **The review of `40338be`. Slice 7 is NOT closed.** The closure record and the
 diff since `4b72ad5` were reviewed: the changes are documentary, and the
