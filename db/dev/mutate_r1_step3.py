@@ -3,17 +3,27 @@ which weakening.
 
     .venv/bin/python db/dev/mutate_r1_step3.py [D1 A1 ...] > /outside/the/tree.txt
 
-Plan: `docs/gate/R1_RELAY_PLAN.md`, revision 7; step 3 authorized in the
-review of `da3d778`. Each mutation weakens ONE rule:
+Plan: `docs/gate/R1_RELAY_PLAN.md`, revision 8; step 3 authorized in the
+review of `da3d778`; T, V and U added after the review of `c480474`. Each
+mutation weakens ONE rule:
 - D: duty 5, the delivery to TURAB (R1-D2), the stop at the first element
   not completed, and the HTTP client's settings;
 - A: §5.1's answers and R1-D3's alert; the counts;
-- F: failing closed: no key, a refused key, no TURAB URL (R1-T4.4).
+- F: failing closed: no key, a refused key, no TURAB URL (R1-T4.4);
+- T: the deadline is the relay's whole limit, not HTTPX's own default;
+- V: TURAB's certificate verified;
+- U: TURAB's URL, §5.6 (R1-Q2).
 
 Not mutated, each with its reason:
 - the 504 and 502 codes themselves: §5.1 asks only "not 200"; a mutation to
   another non-200 code is not a weakening;
-- the content-type header: TURAB's route does not read it.
+- the content-type header: TURAB's route does not read it;
+- in `url_refusal`, the comparison of `urllib`'s and `httpx`'s readings
+  (scheme, host, port): no input found reaches it once the earlier rules
+  hold (the characters, the scheme, `@`, `?` and `#`, `%` in the host), so
+  removing it changes no outcome a test can see. It stays as a guard
+  against a parser difference not found;
+- the default-port normalisation: removing it refuses more, not less.
 
 Only `tests/test_r1_step3.py` is run. Run in one part. See
 `mutation_runner.py`.
@@ -38,8 +48,8 @@ MUTATIONS = [
  ("D5 no answer taken as completed", FORWARD,
   "        return NO_ANSWER, None", "        return COMPLETED, None"),
  ("D6 a redirect followed", FORWARD,
-  "                                 follow_redirects=False) as client:",
-  "                                 follow_redirects=True) as client:"),
+  "                                 follow_redirects=False, verify=True,",
+  "                                 follow_redirects=True, verify=True,"),
  ("D7 the environment's proxy used", FORWARD,
   "    async with httpx.AsyncClient(transport=transport, trust_env=False,",
   "    async with httpx.AsyncClient(transport=transport, trust_env=True,"),
@@ -70,6 +80,37 @@ MUTATIONS = [
  ("F2 no TURAB URL not refused before sending", FORWARD,
   "    if not url:\n        alert(\"TURAB_URL_NOT_CONFIGURED\", trace)",
   "    if url is None:\n        alert(\"TURAB_URL_NOT_CONFIGURED\", trace)"),
+ # --- T: the deadline ---------------------------------------------------------------------
+ ("T1 HTTPX's timeout left at its 5 s default", FORWARD,
+  "                                 timeout=httpx.Timeout(timeout)) as client:",
+  "                                 ) as client:"),
+ ("T2 HTTPX's timeout shorter than the limit", FORWARD,
+  "                                 timeout=httpx.Timeout(timeout)) as client:",
+  "                                 timeout=httpx.Timeout(timeout / 2)) as client:"),
+ # --- V: TURAB's certificate --------------------------------------------------------------
+ ("V1 TURAB's certificate not verified", FORWARD,
+  "                                 follow_redirects=False, verify=True,",
+  "                                 follow_redirects=False, verify=False,"),
+ # --- U: TURAB's URL (§5.6) ---------------------------------------------------------------
+ ("U1 the URL not checked", FORWARD,
+  "    refusal = url_refusal(url)", "    refusal = None"),
+ ("U2 http allowed for any host", FORWARD,
+  "    if scheme == \"http\" and not _loopback(host):", "    if False:"),
+ ("U3 a name taken as loopback", FORWARD,
+  "    if scheme == \"http\" and not _loopback(host):",
+  "    if scheme == \"http\" and not (_loopback(host) or host == \"localhost\"):"),
+ ("U4 credentials allowed", FORWARD,
+  "    if \"@\" in parts.netloc:", "    if False:"),
+ ("U5 a query allowed", FORWARD,
+  "    if \"?\" in url or \"#\" in url:", "    if \"#\" in url:"),
+ ("U6 a fragment allowed", FORWARD,
+  "    if \"?\" in url or \"#\" in url:", "    if \"?\" in url:"),
+ ("U7 any scheme allowed", FORWARD,
+  "    if scheme not in (\"https\", \"http\"):", "    if False:"),
+ ("U8 any character allowed", FORWARD,
+  "    if _URL_CHARACTERS.fullmatch(url) is None:", "    if False:"),
+ ("U9 an escaped host allowed", FORWARD,
+  "    if \"%\" in parts.netloc:", "    if False:"),
 ]
 
 

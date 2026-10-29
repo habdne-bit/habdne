@@ -1,20 +1,25 @@
 """Duty 5 and §5.1's answers: each FORWARD element sent to TURAB, signed, in
 document order; Meta's answer decided from TURAB's.
 
-Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 7) §3 duty 5, §5.1 (each
+Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 8) §3 duty 5, §5.1 (each
 class, and the answer to Meta), R1-D2 (synchronous, a timeout per envelope),
-R1-D3 (TURAB's 400 or 401: not 200, and an alert). Step 3, authorized in the
-review of `da3d778`.
+R1-D3 (TURAB's 400 or 401: not 200, and an alert), §5.6 (R1-Q2, TURAB's
+URL). Step 3, authorized in the review of `da3d778`; corrected after the
+review of `c480474`.
 
 **A verified POST** (duty 2 passed), in this order:
 1. the relay's key (`transform.signing_key`) and TURAB's URL: either
-   missing, or the key refused, is 503 and **nothing is sent** (R1-T4.4);
+   missing, the key refused, or **the URL refused by §5.6** (`url_refusal`),
+   is 503 and **nothing is sent** (R1-T4.4);
 2. every element classed (`transform.elements`), and counted by its class
    and reason. **An ISOLATED element raises an alert** (its fixed reason,
    never a value of the notification);
 3. each FORWARD envelope POSTed to TURAB with `X-Turab-Relay-Signature`
    over its exact bytes, **one at a time, in document order**, each under
-   its own deadline (R1-D2);
+   its own deadline (R1-D2). **The deadline is the whole limit:** HTTPX's
+   own timeout, 5 s by default without network activity, is set to the
+   same limit, so it never ends an envelope before the relay's limit does
+   (the review of `c480474`);
 4. **the first envelope TURAB does not answer 200 stops the delivery:** the
    elements after it are not sent in this attempt, and Meta's answer is not
    200, so Meta redelivers the POST whole (M7). On that redelivery, the
@@ -50,16 +55,27 @@ routing it to an operator is the deployment's, not claimed here. The
 logger, never a body or a header; TURAB's URL carries no secret.
 
 **The HTTP client:** `httpx`, with `trust_env=False` (no proxy, `.netrc`
-or certificate file taken from the environment) and no redirect followed
-(a 3xx is "any other status"). TLS to TURAB is verified as `httpx` does by
-default when the URL is `https`; the plan does not decide the scheme.
+or certificate file taken from the environment), no redirect followed (a
+3xx is "any other status"), and **TURAB's certificate verified**
+(`verify=True`: the `certifi` roots, with the host name checked).
+
+**TURAB's URL (§5.6, R1-Q2, decided in the review of `c480474`):** `https`
+for every address that is not loopback; `http` only on a loopback address
+written as an IP literal (`127.0.0.0/8`, `::1`), not a name a resolver
+could point elsewhere; no credentials, query or fragment; printable ASCII
+only, no escape in the host, read the same by `urllib` and by `httpx`
+(scheme, host and port compared; a default port counts as none). Refused
+before anything is sent; the alert names the fixed reason, never the URL.
 """
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import logging
 import os
+import re
 from collections import Counter
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -75,6 +91,47 @@ TIMEOUT_SECONDS = 10.0
 RETRYABLE = (500, 503)
 COMPLETED, NOT_COMPLETED, NO_ANSWER, REFUSED = (
     "COMPLETED", "NOT_COMPLETED", "NO_ANSWER", "REFUSED")
+
+
+#: §5.6: printable ASCII, no space and no backslash, which parsers read
+#: differently.
+_URL_CHARACTERS = re.compile(r"[!-\[\]-~]+")
+_DEFAULT_PORT = {"https": 443, "http": 80}
+
+
+def _loopback(host: str) -> bool:
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def url_refusal(url: str) -> str | None:
+    """§5.6: None when TURAB's URL may be used; otherwise the fixed reason."""
+    if _URL_CHARACTERS.fullmatch(url) is None:
+        return "MALFORMED"
+    parts = urlsplit(url)
+    scheme = parts.scheme.lower()
+    if scheme not in ("https", "http"):
+        return "SCHEME"
+    if "@" in parts.netloc:
+        return "CREDENTIALS"
+    if "?" in url or "#" in url:
+        return "QUERY"
+    if "%" in parts.netloc:
+        return "MALFORMED"   # an escaped host: `urllib` and `httpx` read it differently
+    try:
+        host, port = parts.hostname, parts.port
+        parsed = httpx.URL(url)
+    except (ValueError, httpx.InvalidURL):
+        return "MALFORMED"
+    if port == _DEFAULT_PORT[scheme]:
+        port = None   # `httpx` drops a default port; `urllib` keeps it
+    if not host or (parsed.scheme, parsed.host, parsed.port) != (scheme, host, port):
+        return "MALFORMED"
+    if scheme == "http" and not _loopback(host):
+        return "UNENCRYPTED"
+    return None
 
 
 def alert(reason: str, trace: str) -> None:
@@ -111,6 +168,10 @@ async def post(raw: bytes, *, counts: Counter, trace: str, timeout: float = TIME
     if not url:
         alert("TURAB_URL_NOT_CONFIGURED", trace)
         return meta.Answer(503, "TURAB_URL_NOT_CONFIGURED")
+    refusal = url_refusal(url)
+    if refusal is not None:
+        alert(f"TURAB_URL_NOT_ALLOWED {refusal}", trace)
+        return meta.Answer(503, "TURAB_URL_NOT_ALLOWED")
     elements = transform.elements(raw)
     for element in elements:
         counts[(element.cls, element.reason)] += 1
@@ -118,7 +179,8 @@ async def post(raw: bytes, *, counts: Counter, trace: str, timeout: float = TIME
             alert(f"ISOLATED {element.reason}", trace)
     failed: meta.Answer | None = None
     async with httpx.AsyncClient(transport=transport, trust_env=False,
-                                 follow_redirects=False) as client:
+                                 follow_redirects=False, verify=True,
+                                 timeout=httpx.Timeout(timeout)) as client:
         for element in elements:
             if element.cls != transform.FORWARD:
                 continue

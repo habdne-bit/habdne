@@ -1117,3 +1117,5 @@ docs/gate/R1_STEP2_DELIVERY.md                                 ptrs  516bcf09871
 docs/gate/R1_RELAY_PLAN.md                                     rev8  39b6e8336a87645ef8ec84e929ffe15739d82f90bd97cc8562998a2f37d194ac
 --- R-1 plan revision 8's commit named (598526c) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev8  8d58b87751ec8bb3bd02b4a255713681f01be751b055dd4386e79d77cd65a8e7
+--- R-1 step 3 correction (review of c480474): before record ---
+docs/gate/evidence/R1-STEP3-CORRECTIONS-BEFORE.txt             new   dc53714e51f41d38c372d4b56516d9e2e494b34470eeed8acc52818d92b8c632

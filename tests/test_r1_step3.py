@@ -40,7 +40,7 @@ from turab_relay import forward, meta, transform
 APP_SECRET = "meta-app-secret-r1-step3"
 TOKEN = "verify-token-r1-step3"
 KEY = "relay-key-r1-step3"
-URL = "http://turab.test/webhooks/whatsapp"
+URL = "https://turab.test/webhooks/whatsapp"
 PATH = relay_app.PATH
 TIMEOUT = 0.3
 TURAB_BODY = b"TURAB-ANSWER-BODY-r1s3"
@@ -330,11 +330,12 @@ def test_no_log_holds_content_an_envelope_a_signature_a_key_or_turabs_answer(
 # --- R1-T5.6: TURAB's real application and test database ---------------------------------------
 
 @contextlib.contextmanager
-def _served(app):
+def _served(app, **tls):
     """`app` behind uvicorn on the loopback interface; yields its port."""
     import uvicorn
 
-    config = uvicorn.Config(app, log_level="critical", access_log=False, lifespan="on")
+    config = uvicorn.Config(app, log_level="critical", access_log=False, lifespan="on",
+                            **tls)
     server = uvicorn.Server(config)
     sock = socket.socket()
     sock.bind(("127.0.0.1", 0))
@@ -552,3 +553,210 @@ def test_r1_t5_7_turabs_401_against_its_real_application(real, engine, ids, monk
     assert _from_meta(real, raw).status_code == 502
     assert _footprint(engine) == before
     assert [a.split(" trace=")[0] for a in _alerts(caplog)] == ["alert TURAB_REFUSED 401"]
+
+
+# --- the review of `c480474`, 1: the effective deadline ---------------------------------------
+
+@contextlib.contextmanager
+def _answering_after(delay: float):
+    """A real HTTP server on the loopback interface that reads the whole
+    request, waits `delay` seconds without a byte, then answers 200. Yields
+    its URL and the number of requests it read whole."""
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(8)
+    read: list[int] = []
+    stop = threading.Event()
+
+    def serve(conn):
+        with conn:
+            data = b""
+            while b"\r\n\r\n" not in data:
+                chunk = conn.recv(65536)
+                if not chunk:
+                    return
+                data += chunk
+            head, body = data.split(b"\r\n\r\n", 1)
+            length = next(int(line.split(b":")[1]) for line in head.split(b"\r\n")
+                          if line.lower().startswith(b"content-length:"))
+            while len(body) < length:
+                body += conn.recv(65536)
+            read.append(1)
+            if stop.wait(delay):
+                return
+            conn.sendall(b"HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n")
+
+    def accept():
+        while not stop.is_set():
+            try:
+                conn, _ = listener.accept()
+            except OSError:
+                return
+            threading.Thread(target=serve, args=(conn,), daemon=True).start()
+
+    threading.Thread(target=accept, daemon=True).start()
+    try:
+        yield f"http://127.0.0.1:{listener.getsockname()[1]}/webhooks/whatsapp", read
+    finally:
+        stop.set()
+        listener.close()
+
+
+def _one_message():
+    return _notification(messages=[_message(wamid="w1")])
+
+
+def test_an_answer_after_5_s_and_before_the_10_s_limit_is_completed(monkeypatch):
+    """HTTPX's own default timeout is 5 s without network activity. The
+    relay's limit is the whole one: a TURAB silent for 6 s, under the
+    default 10 s, is completed."""
+    with _answering_after(6.0) as (url, read):
+        monkeypatch.setenv(forward.TURAB_URL_VARIABLE, url)
+        with TestClient(_relay(timeout=forward.TIMEOUT_SECONDS)) as client:
+            started = time.monotonic()
+            r = _from_meta(client, _one_message())
+            elapsed = time.monotonic() - started
+    assert r.status_code == 200, f"{r.status_code} after {elapsed:.2f} s"
+    assert 6.0 <= elapsed < forward.TIMEOUT_SECONDS
+    assert read == [1]
+
+
+@pytest.mark.parametrize("delay, status", [(1.0, 200), (3.0, 504)])
+def test_the_configured_limit_is_the_deadline_either_side(monkeypatch, delay, status):
+    """A limit of 2 s: an answer after 1 s is completed; after 3 s, 504 at
+    the limit, not before it."""
+    with _answering_after(delay) as (url, _read):
+        monkeypatch.setenv(forward.TURAB_URL_VARIABLE, url)
+        with TestClient(_relay(timeout=2.0)) as client:
+            started = time.monotonic()
+            r = _from_meta(client, _one_message())
+            elapsed = time.monotonic() - started
+    assert r.status_code == status
+    if status == 504:
+        assert 2.0 <= elapsed < 3.0, f"504 after {elapsed:.2f} s"
+
+
+# --- the review of `c480474`, 2: TURAB's URL (R1-Q2, §5.6) -------------------------------------
+
+ALLOWED = [
+    "https://turab.example/webhooks/whatsapp",
+    "https://turab.example:8443/webhooks/whatsapp",
+    "https://127.0.0.1/webhooks/whatsapp",
+    "http://127.0.0.1:8000/webhooks/whatsapp",
+    "http://127.9.9.9:8000/webhooks/whatsapp",
+    "http://[::1]:8000/webhooks/whatsapp",
+    "https://turab.example:443/webhooks/whatsapp",
+    "http://127.0.0.1:80/webhooks/whatsapp",
+    "HTTPS://TURAB.example/webhooks/whatsapp",
+]
+REFUSED = [
+    ("http://turab.example/webhooks/whatsapp", "UNENCRYPTED"),
+    ("http://10.0.0.5/webhooks/whatsapp", "UNENCRYPTED"),
+    ("http://localhost:8000/webhooks/whatsapp", "UNENCRYPTED"),
+    ("http://127.0.0.1.turab.example/webhooks/whatsapp", "UNENCRYPTED"),
+    ("HTTP://turab.example/webhooks/whatsapp", "UNENCRYPTED"),
+    # Loopback only as a plain IP literal: other spellings a resolver or a
+    # library might still read as loopback are refused.
+    ("http://127.1/webhooks/whatsapp", "UNENCRYPTED"),
+    ("http://0x7f.1/webhooks/whatsapp", "UNENCRYPTED"),
+    ("http://2130706433/webhooks/whatsapp", "UNENCRYPTED"),
+    ("http://[::ffff:127.0.0.1]/webhooks/whatsapp", "UNENCRYPTED"),
+    ("ftp://turab.example/webhooks/whatsapp", "SCHEME"),
+    ("ws://127.0.0.1/webhooks/whatsapp", "SCHEME"),
+    ("turab.example/webhooks/whatsapp", "SCHEME"),
+    ("https://relay:SECRET-PASSWORD-r1s3@turab.example/webhooks/whatsapp", "CREDENTIALS"),
+    ("https://relay@turab.example/webhooks/whatsapp", "CREDENTIALS"),
+    ("http://127.0.0.1:8000@turab.example/webhooks/whatsapp", "CREDENTIALS"),
+    ("https://turab.example/webhooks/whatsapp?token=SECRET-QUERY-r1s3", "QUERY"),
+    ("https://turab.example/webhooks/whatsapp?", "QUERY"),
+    ("https://turab.example/webhooks/whatsapp#part", "QUERY"),
+    ("https:///webhooks/whatsapp", "MALFORMED"),
+    ("https://turab.example:99999/webhooks/whatsapp", "MALFORMED"),
+    ("https://turab.example/webhooks/what sapp", "MALFORMED"),
+    ("https://turab.example\\@127.0.0.1/webhooks/whatsapp", "MALFORMED"),
+    ("https://turab.\u00e9xample/webhooks/whatsapp", "MALFORMED"),
+    ("https://turab%2Eexample/webhooks/whatsapp", "MALFORMED"),
+    ("https://turab%2eexample/webhooks/whatsapp", "MALFORMED"),
+    ("http://127%2E0.0.1/webhooks/whatsapp", "MALFORMED"),
+]
+
+
+@pytest.mark.parametrize("url", ALLOWED)
+def test_r1_q2_an_allowed_url(url):
+    assert forward.url_refusal(url) is None
+
+
+@pytest.mark.parametrize("url, reason", REFUSED)
+def test_r1_q2_a_refused_url_and_its_reason(url, reason):
+    assert forward.url_refusal(url) == reason
+
+
+@pytest.mark.parametrize("url, reason", REFUSED)
+def test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url(relay, turab, caplog, monkeypatch,
+                                                           url, reason):
+    """Refused before any content is sent: 503, one alert with the fixed
+    reason, nothing reaching TURAB, and the URL in no log."""
+    caplog.set_level(logging.DEBUG)
+    monkeypatch.setenv(forward.TURAB_URL_VARIABLE, url)
+    raw = _batch()[0]
+    r = _from_meta(relay, raw)
+    assert r.status_code == 503
+    assert turab.received == []
+    assert [a.split(" trace=")[0] for a in _alerts(caplog)] == [
+        f"alert TURAB_URL_NOT_ALLOWED {reason}"]
+    text = "\n".join(rec.getMessage() + " " + repr(rec.__dict__) for rec in caplog.records)
+    for needle in (url, "SECRET-PASSWORD-r1s3", "SECRET-QUERY-r1s3"):
+        assert needle not in text
+    _no_secret_in_logs(caplog, raw)
+
+
+from tests.test_r1_step1 import pki  # noqa: E402,F401  (the step 1 test PKI, module scope)
+
+
+class _Reached:
+    def __init__(self):
+        self.count = 0
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "lifespan":
+            while True:
+                message = await receive()
+                if message["type"] == "lifespan.startup":
+                    await send({"type": "lifespan.startup.complete"})
+                elif message["type"] == "lifespan.shutdown":
+                    await send({"type": "lifespan.shutdown.complete"})
+                    return
+        self.count += 1
+        await send({"type": "http.response.start", "status": 200,
+                    "headers": [(b"content-length", b"0")]})
+        await send({"type": "http.response.body", "body": b""})
+
+
+def test_r1_q2_turabs_certificate_is_verified(pki, monkeypatch):
+    """A TURAB on `https` whose certificate a test CA issued, outside the
+    default roots: the handshake fails, no request reaches it, 504."""
+    reached = _Reached()
+    with _served(reached, ssl_certfile=str(pki / "server.pem"),
+                 ssl_keyfile=str(pki / "server.key")) as port:
+        monkeypatch.setenv(forward.TURAB_URL_VARIABLE,
+                           f"https://127.0.0.1:{port}/webhooks/whatsapp")
+        with TestClient(_relay(timeout=5)) as client:
+            assert _from_meta(client, _one_message()).status_code == 504
+    assert reached.count == 0
+
+
+def test_r1_q2_a_trusted_https_turab_is_delivered(pki, monkeypatch):
+    """The same TURAB, its test CA trusted: the envelope is delivered."""
+    import ssl
+
+    reached = _Reached()
+    context = ssl.create_default_context(cafile=str(pki / "server-ca.pem"))
+    with _served(reached, ssl_certfile=str(pki / "server.pem"),
+                 ssl_keyfile=str(pki / "server.key")) as port:
+        monkeypatch.setenv(forward.TURAB_URL_VARIABLE,
+                           f"https://127.0.0.1:{port}/webhooks/whatsapp")
+        transport = httpx.AsyncHTTPTransport(verify=context)
+        with TestClient(_relay(transport=transport, timeout=5)) as client:
+            assert _from_meta(client, _one_message()).status_code == 200
+    assert reached.count == 1
+

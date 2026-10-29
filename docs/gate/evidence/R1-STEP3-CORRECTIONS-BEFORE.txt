@@ -1,0 +1,81 @@
+TURAB — R-1 step 3: the review of c480474's two points, BEFORE the correction
+
+HEAD:                        2e31160a3453139b53ce8f6b4c1a884eb92246aa
+relay/turab_relay/forward.py, as at c480474 (unchanged since):
+  sha256 now      201105b418cea3b8b867442a324ac5971fc51643df247fc7a2a3f6db477d4620
+  sha256 c480474  201105b418cea3b8b867442a324ac5971fc51643df247fc7a2a3f6db477d4620
+The tree's only change: the new tests in tests/test_r1_step3.py (and the double's URL
+set to https, which §5.6 allows):
+   M tests/test_r1_step3.py
+  ?? docs/gate/evidence/R1-STEP3-CORRECTIONS-BEFORE.txt
+httpx's own default, in the installed source:
+  246:DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)  (httpx 0.28.1)
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider -rA tests/test_r1_step3.py -k '<the new tests>'
+Run at: 2026-10-29T19:45:10Z
+------------------------------------------------------------------------
+  cause: AssertionError: 504 after 5.06 s
+  cause: assert 504 == 200
+  cause: AttributeError: module 'turab_relay.forward' has no attribute 'url_refusal'
+  cause: assert 200 == 503
+PASSED tests/test_r1_step3.py::test_the_configured_limit_is_the_deadline_either_side[1.0-200]
+PASSED tests/test_r1_step3.py::test_the_configured_limit_is_the_deadline_either_side[3.0-504]
+PASSED tests/test_r1_step3.py::test_r1_q2_turabs_certificate_is_verified
+PASSED tests/test_r1_step3.py::test_r1_q2_a_trusted_https_turab_is_delivered
+FAILED tests/test_r1_step3.py::test_an_answer_after_5_s_and_before_the_10_s_limit_is_completed
+FAILED tests/test_r1_step3.py::test_r1_q2_an_allowed_url[https://turab.example/webhooks/whatsapp]
+FAILED tests/test_r1_step3.py::test_r1_q2_an_allowed_url[https://turab.example:8443/webhooks/whatsapp]
+FAILED tests/test_r1_step3.py::test_r1_q2_an_allowed_url[https://127.0.0.1/webhooks/whatsapp]
+FAILED tests/test_r1_step3.py::test_r1_q2_an_allowed_url[http://127.0.0.1:8000/webhooks/whatsapp]
+FAILED tests/test_r1_step3.py::test_r1_q2_an_allowed_url[http://127.9.9.9:8000/webhooks/whatsapp]
+FAILED tests/test_r1_step3.py::test_r1_q2_an_allowed_url[http://[::1]:8000/webhooks/whatsapp]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://turab.example/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://10.0.0.5/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://127.0.0.1.turab.example/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[HTTP://turab.example/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[ftp://turab.example/webhooks/whatsapp-SCHEME]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[ws://127.0.0.1/webhooks/whatsapp-SCHEME]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[turab.example/webhooks/whatsapp-SCHEME]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://relay:SECRET-PASSWORD-r1s3@turab.example/webhooks/whatsapp-CREDENTIALS]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://relay@turab.example/webhooks/whatsapp-CREDENTIALS]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://127.0.0.1:8000@turab.example/webhooks/whatsapp-CREDENTIALS]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/whatsapp?token=SECRET-QUERY-r1s3-QUERY]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/whatsapp?-QUERY]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/whatsapp#part-QUERY]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https:///webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.example:99999/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/what sapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.example\\@127.0.0.1/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://turab.\xe9xample/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://turab.example/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://10.0.0.5/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.0.0.1.turab.example/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[HTTP://turab.example/webhooks/whatsapp-UNENCRYPTED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[ftp://turab.example/webhooks/whatsapp-SCHEME]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[ws://127.0.0.1/webhooks/whatsapp-SCHEME]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[turab.example/webhooks/whatsapp-SCHEME]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://relay:SECRET-PASSWORD-r1s3@turab.example/webhooks/whatsapp-CREDENTIALS]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://relay@turab.example/webhooks/whatsapp-CREDENTIALS]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.0.0.1:8000@turab.example/webhooks/whatsapp-CREDENTIALS]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp?token=SECRET-QUERY-r1s3-QUERY]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp?-QUERY]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp#part-QUERY]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https:///webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example:99999/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/what sapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example\\@127.0.0.1/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.\xe9xample/webhooks/whatsapp-MALFORMED]
+45 failed, 4 passed, 33 deselected, 1 warning in 42.60s
+------------------------------------------------------------------------
+Reading:
+- The deadline: TURAB silent for 6 s got 504 after about 5 s, under the stated 10 s
+  limit: httpx's own 5 s timeout, not the relay's, decided. The 2 s limit passes
+  either side (it is under httpx's default).
+- TURAB's URL: every external http URL, a URL with credentials, a query or a
+  fragment was used: the relay answered 200 having sent the envelopes (the double
+  received them), where §5.6 asks for 503 and nothing sent. The rule itself
+  (forward.url_refusal) does not exist yet: AttributeError.
+- TURAB's certificate: already verified, by httpx's default (verify=True, the
+  certifi roots under trust_env=False); the correction makes it explicit.
