@@ -51,7 +51,7 @@ does not touch it. The next slice's plan follows the review of this one.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `1d00f41` | first plan, planning only |
-| 6 | the commit that adds this revision | the review of `ced7df7` recorded: step 2 not closed (document order inside one `value`); R1-T3.3 made explicit; the undocumented status's reading accepted |
+| 6 | `e1f8138` | the review of `ced7df7` recorded: step 2 not closed (document order inside one `value`); R1-T3.3 made explicit; the undocumented status's reading accepted |
 | 5 | `a562c25` | the review of `e9fac51` recorded: step 1 CLOSED; step 2 authorized |
 | 4 | `00134ee` | the review of `8c64c64` recorded: step 1 not closed (the fingerprint did not cover `pyproject.toml`); the access-log condition decided (§5.5), in §4's order and §7 |
 | 3 | `c601c25` | the review of `3d8b593` recorded: revision 2 adopted; step 1 authorized; R1-Q1 decided (a), §5.4 and R1-T7.2 set to it, with an OVERSIZE class in §5.1; R1-D8's reading accepted; §5.1's checks made explicit per element kind; R1-T1.5's count bounded to the requests that reach the comparison |

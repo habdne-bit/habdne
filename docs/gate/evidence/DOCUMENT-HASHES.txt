@@ -1084,3 +1084,5 @@ docs/gate/R1_RELAY_PLAN.md                                     rev5  6f5564c9200
 docs/gate/R1_STEP2_DELIVERY.md                                 add   4c241379760fe67deb9f0bce9539f0b512a1144abfa9562d234dadf4c795ca36
 --- R-1 plan revision 6 (the review of ced7df7) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev6  15fb1d092dea4fbd03411c1f0978e9245838fd34e9410855ed4c1c5f16b8c030
+--- R-1 plan revision 6's commit named (e1f8138) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev6  b70298641cab3d8d536f91eb727643928f688eef63b3c8ae01508d1a8e6cce47
