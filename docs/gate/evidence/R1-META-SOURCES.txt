@@ -91,3 +91,145 @@ EXCERPTS (verbatim from the extracted text of the page named)
 The divergence E8/E12 (7 days, WhatsApp pages) and E16 (36 hours, the
 general Graph API page) is Meta's. The R-1 plan relies on the WhatsApp
 pages, which are specific to the product, and states both.
+
+
+SECOND RETRIEVAL (for the R-1 plan, revision 2)
+===============================================
+Retrieved: 2026-10-29, through this environment's HTTPS proxy, each page in
+Meta's Markdown form (`<page>.md`), one request a second. sha256 of the bytes
+received; the excerpts are quoted after HTML-unescaping, which the pages need
+(their code blocks are HTML-escaped).
+[text]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/text.md
+  sha256: 2282df97883680d41c27004f34d90af10fa8c79f078a84f5129852c2900b13a1
+[image]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/image.md
+  sha256: 2480753aefa54258096769d64e8fea17c87569fb48050a50e80da36356a04aed
+[audio]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/audio.md
+  sha256: d66c40615e745a0d61641f3645f9fb3bb8172376808a30f6e91c5cfd89ade44f
+[video]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/video.md
+  sha256: 6883bce8d52869ef38b499f1e1a76bd184241002e9e3d09dee464268fd085d5f
+[document]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/document.md
+  sha256: 35aecb3414fdc7015623ddd79ad884235429366e9a376bcd297701d2e40f34b2
+[sticker]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/sticker.md
+  sha256: 1fedad577c4899504a2ad1e681ab2aac92550adc9c65399460c3d9d014ab2ded
+[location]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/location.md
+  sha256: fe0057e083bec5665634016d1bcf18bd24993b9211006c6b4d61f58da142ce03
+[contacts]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/contacts.md
+  sha256: b093e1ec9ce1abc37c991dd8c8e152c781352201f45b8d763561d47a142bc7c9
+[interactive]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/interactive.md
+  sha256: 3418a4efe65b2c005bd1ccf196422492dc98b18e51577f4cb362ba15b81f0aea
+[button]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/button.md
+  sha256: ecd99c55860e96e02182a3e4a2c79d0c2cc31e5b3d4075e7b487c5dcbed7049a
+[reaction]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/reaction.md
+  sha256: a236950a6aaac02fbe149cefe2e24e23f626c5b94b8253a75a2ace43055f072f
+[order]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/order.md
+  sha256: 12d331249610179308f181cf7c1cd69d85dc77d40abba411d96ab44da7f898d7
+[system]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/system.md
+  sha256: 9f1567ec38a80f7d122d964c6398b383fe74cab640564f708494553f5e447d7a
+[unsupported]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/unsupported.md
+  sha256: 3179f9c758f0a99e7ba801863b756505e51c3724e6521bd6f9ec7a2812dda7c4
+[edit]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/edit.md
+  sha256: c5806eb8b986591d5fc4705bec15f9ae15f1941ae965be8fd5c0d6d36f64efad
+[revoke]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/revoke.md
+  sha256: aef441eb31e3042fb6b5632d4b977555888e6764c396b26c4ea958313d8b9c76
+[group]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/group.md
+  sha256: 6377e381355f0968d2cdcc4af6b2e102b072cebb0b8de30d05070286fd131b8b
+[errors]
+  url   : https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/errors.md
+  sha256: 34957a67bd357f6445b7bdbfc206c07ee95f17ae2b7f8cfc0a392e19e48aa206
+
+EXCERPTS (second retrieval; the last four from the first retrieval's pages)
+  E28 [text]
+      "type": "text"
+  E29 [text]
+      "body": "<MESSAGE_TEXT_BODY>"
+  E30 [image]
+      "type": "image"
+  E31 [image]
+      "caption": "<MEDIA_ASSET_CAPTION>"
+  E32 [image]
+      "id": "<MEDIA_ASSET_ID>"
+  E33 [audio]
+      "type": "audio"
+  E34 [audio]
+      "voice": <IS_VOICE_RECORDING?>
+  E35 [video]
+      "type": "video"
+  E36 [video]
+      "caption": "<MEDIA_ASSET_CAPTION>"
+  E37 [document]
+      "type": "document"
+  E38 [document]
+      "caption": "<MEDIA_ASSET_CAPTION>"
+  E39 [document]
+      "filename": "<MEDIA_ASSET_FILENAME>"
+  E40 [sticker]
+      "type": "sticker"
+  E41 [location]
+      "type": "location"
+  E42 [contacts]
+      "type": "contacts"
+  E43 [interactive]
+      "type": "interactive"
+  E44 [button]
+      "type": "button"
+  E45 [reaction]
+      "type": "reaction"
+  E46 [order]
+      "type": "order"
+  E47 [system]
+      "type": "system"
+  E48 [unsupported]
+      "type": "unsupported"
+  E49 [edit]
+      "type": "edit"
+  E50 [revoke]
+      "type": "revoke"
+  E51 [group]
+      "group_id": "<GROUP_ID>"
+  E52 [wa-ref-status (first retrieval)]
+      "recipient_type": "group"
+  E53 [graph-webhooks-getting-started (first retrieval)]
+      Configure your server or load balancer to trust the Meta outbound API CA certificate (meta-outbound-api-ca-2025-12.pem).
+  E54 [graph-webhooks-getting-started (first retrieval)]
+      Verify the client certificate against the CA certificate
+  E55 [graph-webhooks-getting-started (first retrieval)]
+      Verify the common name (client.webhooks.fbclientcerts.com) of the client certificate
+  E56 [audio] (inside the `audio` object of the page's syntax block)
+      "id": "<MEDIA_ASSET_ID>"
+  E57 [video] (inside the `video` object of the page's syntax block)
+      "id": "<MEDIA_ASSET_ID>"
+  E58 [document] (inside the `document` object of the page's syntax block)
+      "id": "<MEDIA_ASSET_ID>"
+  E59 [sticker] (inside the `sticker` object of the page's syntax block)
+      "id": "<MEDIA_ASSET_ID>"
+
+
+PYTHON'S DOCUMENTATION (for R1-T1.5 and R1-T2.8)
+===============================================
+Retrieved: 2026-10-29. https://docs.python.org/3.12/library/hmac.html, status 200,
+sha256 27640cd9a44f8e5f15ffbf7705b4d2729b4a7bf1161ac248d9ac39216f279752. The repository's
+interpreter is Python 3.12.3. Excerpts on `hmac.compare_digest(a, b)`, verbatim from
+the extracted text (its spacing is the extraction's):
+  P1
+      This function uses an approach designed to prevent timing analysis by avoiding content-based short circuiting behaviour, making it appropriate for cryptography.
+  P2
+      a and b must both be of the same type: either str (ASCII only, as e.g. returned by HMAC.hexdigest() ), or a bytes-like object .
+  P3
+      If a and b are of different lengths, or if an error occurs, a timing attack could theoretically reveal information about the types and lengths of a and b —but not their values.

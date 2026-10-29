@@ -1058,3 +1058,6 @@ docs/gate/SLICE_7_PLAN.md                                      rev27 be8035ebdad
 --- R-1 plan revision 1 (planning only), put up for review; Meta's documentation retrieved ---
 docs/gate/R1_RELAY_PLAN.md                                     rev1  c5470a6701eba53b85d9cd09e9a5ebf7427e83b0653a243d0704f7b18f25ba12
 docs/gate/evidence/R1-META-SOURCES.txt                         add   89eb13ade13ade403bb0e52645822ee882fb63431d846e4392be47800d91df94
+--- Review of 1d00f41: R-1 plan revision 2 (planning only); decisions adopted with specifications; Meta's type pages retrieved ---
+docs/gate/R1_RELAY_PLAN.md                                     rev2  ba99fa9468dfe7ca884ed4a7c53d0d77e4f9531c4ae93927d49b3d21f8224902
+docs/gate/evidence/R1-META-SOURCES.txt                         add   87ccd76fd27b6b853e16c44ba29f08b7b06fe31e25807ae027ad314761a85380

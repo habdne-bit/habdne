@@ -1,12 +1,15 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 1** (planning only)
+## Plan — **revision 2** (planning only)
 
-**Status: PLANNING ONLY, put up for review.** This document authorizes
-nothing.
-- **No code** is written under it.
-- **No relay** is built or deployed.
-- **No secret, verify token or Meta app setting** is created.
-- **No real event** is received. R-1 stays **UNMET**: **no real event may be
+**Status: PLANNING ONLY, put up for a second review.**
+- **Revision 1 was accepted as the basis for implementation** in the review
+  of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
+  with binding specifications (§5).
+- **Step 1 is NOT authorized.** It may begin only after the review of this
+  revision.
+- **No code** is written under this plan. **No relay** is built or
+  deployed. **No secret, verify token or Meta app setting** is created.
+  **No real event** is received. R-1 stays **UNMET**: **no real event may be
   received** before it is met and reviewed (§4).
 
 **What R-1 is.** The review of `4aed49b` decided (a2) for Meta's boundary
@@ -30,256 +33,457 @@ nothing.
 - the scope: **SALE only** (G4-5R open).
 
 **K06 stays an independent condition before the release gate.** This plan
-does not touch it.
+does not touch it. The next slice's plan follows the review of this one.
 
-The next slice's plan follows the review of this one.
+**Revision history**
+
+| rev | commit | what changed |
+|---|---|---|
+| 1 | `1d00f41` | first plan, planning only |
+| 2 | the commit that adds this revision | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
+
+---
+
+## The review of `1d00f41`
+
+**Revision 1 is accepted as the basis for implementation. Step 1 is not
+authorized before a second review of the points below.** The diff since
+`b52bd58` is documentary only.
+
+**The decisions R1-D1 to R1-D15:** the recommended options are adopted,
+with these binding specifications:
+
+| # | Specification |
+|---|---|
+| 1 | **R1-D8 and batches.** The sender's identifier is taken from `messages[].from`. If `contacts[].wa_id` is present, it must match; its absence alone does not refuse the message. An element whose two identifiers differ is isolated, counted and alerted on, **without forwarding its content**. The plan must state that dropping an element classified this way does not make a batch holding valid elements be redelivered whole, while a failure to deliver a valid element to TURAB keeps Meta's answer not 200, under R1-D2 |
+| 2 | **R1-D10.** mTLS means verifying the client certificate, its chain of trust and the decided identity, not checking the CN's text alone. It is proven by refusal tests for an untrusted or a mismatched certificate |
+| 3 | **R1-D14.** The operational barrier with the count check is accepted, but it is presented as a **configuration state measured at closure**. The absence of a `messages` subscription blocks that field's events only: B4 may not be described as blocking every real event if the app subscribes other fields. Meta's documentation does not by itself prove the state of the app's configuration or of TURAB's environment |
+
+**Two acceptance conditions corrected:**
+- **R1-T1.5:** two different tokens are refused by both `compare_digest` and
+  `==`, so that test does not kill the mutation described. The use of the
+  constant-time comparison is to be proven by checking the call path, or by
+  a tool that observes it, with the behavioural accept and refuse tests kept;
+- **R1-T7.1 and R1-T7.2:** the sources record states no maximum per field of
+  the envelope. Name the limits that have a basis; test the serialized
+  bytes' size at 64 KiB and above it, including UTF-8, escaped characters
+  and a batch of several elements. No undocumented limit is attributed to
+  Meta.
+
+**What the reviewer did not verify:** the five Meta pages were not
+re-fetched. Direct access returned 429 or a sign-in page. **The excerpts'
+match with the pages remains our recorded check, not an independent
+verification.**
+
+**Asked:** revision 2 of this plan only, with these decisions and **R1-D6's
+specific mapping table**. Step 1 may begin after its review.
+
+**Standing:** R-1 UNMET, no real events; K06 an independent condition before
+the release gate; SALE only.
+
+**Answered in this revision:** §5.1 (the batch rule, R1-D8), §5.2 (R1-D10),
+§4 (R1-D14, the barriers as measured state), §5.3 (R1-D6's table), §3
+(R1-T1.5, R1-T2.8, R1-T7), §5.4 (R1-Q1).
 
 ---
 
 ## 0. Sources
 
-1. **Slice 7 plan** (`SLICE_7_PLAN.md`, revision 27): G7-2 (ii) (the relay's
-   four duties, the envelope mapping, the header, R-1's seven duties), G7-3,
+1. **Slice 7 plan** (`SLICE_7_PLAN.md`, revision 27): G7-2 (ii), G7-3,
    G7-5, G7-15, §3.9.
 2. **TURAB's code at `b52bd58`**, read for the boundary the relay must meet:
-   - `services/webhooks.py`: `BODY_LIMIT`, `SIGNATURE_HEADER`,
-     `REQUIRED_KEYS`, `STATUSES`, `_ORDER`, `_accepted`;
-   - `services/communication.py`: `SCOPED`, the pattern a WHATSAPP
-     `thread_ref` must match (`^[^:]+:[^:]+$`).
-3. **Meta's official documentation, retrieved for this plan:**
-   `evidence/R1-META-SOURCES.txt` holds each page's URL, its final URL, its
-   status and sha256, and **27 excerpts quoted verbatim** (E1–E27). Each
-   excerpt was checked against the extracted text before it was written.
-   - **This settles the limit of Slice 7's §3.9.** That section rested on the
-     reviewer's citation, because this environment could not resolve
-     `developers.facebook.com` then. The three facts it cited are now
-     confirmed from the pages themselves: the GET (E1–E4), the
-     `X-Hub-Signature-256` (E5, E6), and `object` with `entry[].changes[]`
-     (E18, E24–E26).
-   - **Meta's pages change.** The plan cites the excerpts as retrieved; a
-     later reader compares them against the live pages.
+   - `services/webhooks.py`: `BODY_LIMIT` (64 × 1024), `SIGNATURE_HEADER`,
+     `REQUIRED_KEYS`, `STATUSES`, `_ORDER`, `_accepted`, `verify`,
+     `parse_envelope`;
+   - `api/routes/webhooks.py`: the body is refused when `size >
+     BODY_LIMIT`, so **65 536 bytes pass and 65 537 do not**;
+   - `services/communication.py`: `SCOPED` (`^[^:]+:[^:]+$`), and the
+     internal types `PHONE_DECISION` and `CONFIRMATION_LINK`;
+   - the contract: `message_type` is a string, default `TEXT`; the column is
+     `message_type text NOT NULL DEFAULT 'TEXT'`, with no check.
+3. **Meta's official documentation:** `evidence/R1-META-SOURCES.txt`.
+   - **First retrieval** (for revision 1): five pages, E1–E27.
+   - **Second retrieval** (2026-10-29, for this revision): the eighteen
+     message-type reference pages in Meta's Markdown form, E28–E59; and
+     three mTLS excerpts from the first retrieval's Graph API page,
+     E53–E55.
+   - Each page's sha256 is recorded, and **each excerpt was checked against
+     the page's extracted text before it was written.** As the review of
+     `1d00f41` states, that check is ours: the reviewer could not re-fetch
+     the pages (429, or a sign-in page).
+4. **Python's documentation** for `hmac.compare_digest` (P1–P3, same
+   record): its constant-time approach (P1); `str` arguments must be ASCII,
+   otherwise bytes (P2); and, for arguments of different lengths, a timing
+   attack could reveal their types and lengths, not their values (P3).
 
 ## 1. What Meta requires, verified
 
 | # | Requirement | Excerpt | Consequence for the relay |
 |---|---|---|---|
-| M1 | A valid TLS certificate; self-signed not supported | E10 | the relay's public endpoint is HTTPS with a CA-issued certificate |
+| M1 | A valid TLS certificate; self-signed not supported | E10 | HTTPS with a CA-issued certificate |
 | M2 | Setting or editing the Callback URL or Verify token makes Meta send a GET with `hub.mode`, `hub.challenge`, `hub.verify_token` | E1 | duty 1 |
 | M3 | The GET is valid when `hub.verify_token` equals the stored string; answer 200 with `hub.challenge`; otherwise anything but 200 | E2, E3 | duty 1 |
-| M4 | **Meta begins sending webhooks only once the GET is answered with 200 and the challenge; otherwise none are sent** | E4 | **the first barrier of §4** |
+| M4 | Meta begins sending webhooks only once the GET is answered with 200 and the challenge; otherwise none are sent | E4 | barrier B1 (§4) |
 | M5 | POSTs carry `X-Hub-Signature-256: sha256=<hash>`, an HMAC-SHA256 of the payload with the app secret | E5, E6 | duty 2 |
-| M6 | A POST batches up to 1000 updates | E7 | duty 3: one POST, many envelopes |
-| M7 | A failed POST is retried immediately, then with decreasing frequency, for up to 7 days; duplicates occur; unacknowledged deliveries are dropped after 7 days | E8, E9, E12, E13 | duty 5; §2 R1-F6 |
-| M8 | Payloads can be up to 3 MB | E11 | §2 R1-F1 |
-| M9 | mTLS is supported (client certificate CN `client.webhooks.fbclientcerts.com`) | E14, E17 | §5 R1-D10 |
-| M10 | Some webhooks are not sent while the app is in Dev mode | E15 | not a barrier (§4) |
-| M11 | Incoming messages carry `messages`; statuses carry `statuses`; up to three statuses per outgoing message; `delivered` is skipped when a message is read at once | E18, E19, E21 | duty 3 |
-| M12 | Statuses include `played` (a voice message's first play) | E22 | §2 R1-F2 |
-| M13 | A status of a group message carries the group's ID in `recipient_id`, and the user in `recipient_participant_id` | E23 | §2 R1-F4 |
-| M14 | Unsupported incoming messages have `type` `unsupported` | E20 | §2 R1-F5 |
-| M15 | The business number's ID is `metadata.phone_number_id`; the customer is `messages[].from` (incoming) and `statuses[].recipient_id` (statuses) | E24, E25, E26 | duty 6 |
+| M6 | A POST batches up to 1000 updates | E7 | duty 3; §5.1 |
+| M7 | A failed POST is retried immediately, then with decreasing frequency, for up to 7 days; duplicates occur; dropped after 7 days | E8, E9, E12, E13 | duty 5; §5.1 |
+| M8 | Payloads can be up to 3 MB | E11 | R1-D4 |
+| M9 | mTLS: trust Meta's outbound API CA certificate (`meta-outbound-api-ca-2025-12.pem`); verify the client certificate against it; verify its common name `client.webhooks.fbclientcerts.com` | E14, E17, E53, E54, E55 | R1-D10, §5.2 |
+| M10 | Some webhooks are not sent while the app is in Dev mode | E15 | not a barrier |
+| M11 | Incoming messages carry `messages`; statuses carry `statuses`; up to three statuses per outgoing message; `delivered` skipped when read at once | E18, E19, E21 | duty 3 |
+| M12 | Statuses include `played` | E22 | R1-D5 |
+| M13 | **Groups:** an incoming group message carries `messages[].group_id`; a status of a message sent to a group carries `"recipient_type": "group"`, the group's ID in `recipient_id` | E51, E52, E23 | R1-D7 |
+| M14 | The message types documented, each with its literal `type` (E28, E30, E33, E35, E37, E40–E50), and their content fields: `text.body`; `caption` on image, video, document; `filename` on document; the media `id` on image, audio, video, document, sticker | E28–E50, E56–E59 | R1-D6, §5.3 |
+| M15 | The business number's ID is `metadata.phone_number_id`; the customer is `messages[].from` (incoming) and `statuses[].recipient_id` (statuses) | E24, E25, E26 | duty 6; R1-D8 |
+| M16 | The fields to subscribe to appear only once the URL's GET is answered properly | E27 | barrier B4 |
 
-**A divergence in Meta's own pages:** the WhatsApp pages state retries for
-up to **7 days** (E8, E12); the general Graph API page states **36 hours**
-(E16). This plan relies on the WhatsApp pages, which are specific to the
-product, and states both.
+**A divergence in Meta's own pages:** retries for up to **7 days** in the
+WhatsApp pages (E8, E12), **36 hours** in the general Graph API page (E16).
+This plan relies on the WhatsApp pages, and states both.
 
 **Not found in the pages read, and not claimed:**
 - a time limit for the endpoint's answer;
 - a rule on how the signed bytes are encoded beyond "the JSON payload as the
   message input" (E6). The relay checks the signature over the raw bytes it
-  received, never over a re-serialized body.
+  received, never over a re-serialized body;
+- **a maximum size for any field** of a notification (a text's body, a
+  caption, a file name). None is attributed to Meta here (§3, duty 7).
 
 ## 2. Gaps between Meta and TURAB (findings)
 
 | # | Finding | Source | Where it is settled |
 |---|---|---|---|
-| R1-F1 | Meta's payload can reach 3 MB; TURAB refuses a body over 64 KiB. The 64 KiB limit applies to **each envelope** the relay sends, not to Meta's request to the relay | M8; G7-15 | duty 7; R1-D4 (the relay's own inbound limit) |
-| R1-F2 | `played` has no TURAB status (`STATUSES`: QUEUED, SENT, DELIVERED, READ, FAILED, UNKNOWN) | M12 | R1-D5 |
-| R1-F3 | `delivered` may never come; TURAB's `_ORDER` accepts any forward move (`SENT` → `READ`), so this is **consistent with G7-5**, not a gap | M11; `_accepted` | stated; tested (R1-T3.6) |
-| R1-F4 | A group's status names the group, not a customer: `<phone_number_id>:<group id>` would make a thread per group | M13 | R1-D7 |
-| R1-F5 | TURAB stores `message_type` as free text; Meta's types include `unsupported`. Without a mapping, any string Meta sends becomes a stored type, including one that collides with an internal type's meaning | M14; schema `message_type text` | R1-D6 |
-| R1-F6 | Meta retries a failed POST **whole**, up to 7 days; a POST may hold several events. A partly failed batch is therefore redelivered whole. TURAB's replay rule (S42: a completed event is 200 and writes nothing) makes that safe for TURAB | M6, M7; Slice 7 J01, S42 | R1-D2 |
-| R1-F7 | Retried statuses: whether Meta keeps a status's `timestamp` on a retry is **not documented** in the pages read. If it changes, the same status yields a new `provider_event_id`; TURAB then refuses the repeated status by G7-5 (the same status is not accepted), so no state changes | M7; G7-5 | stated; tested (R1-T5.5) |
-| R1-F8 | The relay handles message content (`text.body`) in transit. Slice 7's J03 binds TURAB, not the relay | Slice 7 J03 | R1-D9 |
-| R1-F9 | For an incoming message, the customer appears in `messages[].from` and in `contacts[].wa_id`; Meta's example shows them equal, and the pages read do not state that they always are | M15 | R1-D8 |
+| R1-F1 | Meta's payload can reach 3 MB; TURAB refuses a body over 65 536 bytes. The 64 KiB limit applies to **each envelope**, not to Meta's request | M8; G7-15 | duty 7; R1-D4 |
+| R1-F2 | `played` has no TURAB status | M12 | R1-D5 |
+| R1-F3 | `delivered` may never come; TURAB's `_ORDER` accepts `SENT` → `READ`, so this is **consistent with G7-5** | M11; `_accepted` | R1-T3.6 |
+| R1-F4 | Groups would make a thread per group | M13 | R1-D7 |
+| R1-F5 | TURAB's `message_type` is free text; without a mapping, a type from outside could collide with an internal type's meaning | M14 | R1-D6, §5.3 |
+| R1-F6 | Meta retries a failed POST **whole**; TURAB's replay rule (S42) makes that safe for TURAB | M6, M7 | §5.1 |
+| R1-F7 | Whether Meta keeps a status's `timestamp` on a retry is not documented; if it changes, TURAB refuses the repeated status by G7-5 | M7; G7-5 | R1-T5.5 |
+| R1-F8 | The relay handles content in transit; Slice 7's J03 binds TURAB, not the relay | J03 | R1-D9 |
+| R1-F9 | The customer appears in `messages[].from` and `contacts[].wa_id`; Meta's pages do not state they are always equal | M15 | R1-D8, §5.1 |
+| R1-F10 | **(New.)** Meta documents `edit` and `revoke` messages (E49, E50). TURAB's messages are append-only, with no edit or withdrawal. An edit's new content is not carried (§5.3); content archived before a revocation stays, as Slice 7's retention limit already states (OQ7-1) | E49, E50; Slice 7 §1 limit 4 | §5.3; stated as a limit |
 
 ## 3. The seven duties, and their acceptance tests
 
 Every test runs on **synthetic** notifications built from the documented
-structures (E18–E26), signed with a **test** app secret. None uses Meta's
-servers, a real number or a real customer. Each duty's test names a
-**refusal** where the duty is a guard: the relay's output is checked, and
-so is what it does **not** forward.
+structures, signed with a **test** app secret. None uses Meta's servers, a
+real number or a real customer.
 
 ### Duty 1 — Meta's GET verification (M2–M4)
 
 | Test | Input | Expected |
 |---|---|---|
 | R1-T1.1 | `hub.mode=subscribe`, the right token, a challenge | 200; the body is exactly the challenge |
-| R1-T1.2 | a wrong token | not 200 (R1-D11 fixes the code); no challenge in the body |
+| R1-T1.2 | a wrong token: of the same length, and of another length | 403 (R1-D11); no challenge in the body |
 | R1-T1.3 | no token; no challenge; a mode other than `subscribe` | not 200 |
-| R1-T1.4 | the verify token absent from the relay's environment | not 200 for any request: **fails closed** |
-| R1-T1.5 | the comparison | constant-time (`hmac.compare_digest` or its equivalent), shown by a mutation that makes it `==` being killed by a test of equal-length tokens differing in the last byte |
+| R1-T1.4 | the verify token absent from the relay's environment | not 200 for any request: fails closed |
+| R1-T1.5 | **(Corrected.)** the comparison's call path. The token received and the stored token, each encoded UTF-8, go through `hmac.compare_digest` (P1, P2). The test replaces `compare_digest` **in the relay's namespace** with a recording wrapper around the real function, and asserts it was called once per GET, with the two byte strings, for both a matching and a non-matching token. R1-T1.1 and R1-T1.2 stay as the behavioural tests | a mutation replacing the call by `==` is killed by the call-path test, since the wrapper is then never called. **What it does not prove:** the CPU's timing. That is Python's documented property (P1), with its stated limit for unequal lengths (P3) |
 
 ### Duty 2 — Meta's `X-Hub-Signature-256` (M5)
 
 | Test | Input | Expected |
 |---|---|---|
 | R1-T2.1 | a payload signed with the test app secret | accepted |
-| R1-T2.2 | no header; a header without `sha256=`; a non-hex or short hash | refused **before parsing**: no JSON parse, no envelope, nothing sent to TURAB |
-| R1-T2.3 | a valid signature over different bytes (one byte changed) | refused, nothing sent |
-| R1-T2.4 | the same JSON re-serialized (whitespace, key order) under the original signature | refused: the HMAC is over the raw bytes |
-| R1-T2.5 | the app secret absent | every POST refused: **fails closed** |
-| R1-T2.6 | a body over the relay's inbound limit (R1-D4) | refused without reading it whole |
-| R1-T2.7 | any refusal | the log names the refusal and the trace, **never the body or a header's value** |
+| R1-T2.2 | no header; a header without `sha256=`; a non-hex or short hash | refused before parsing; nothing sent to TURAB |
+| R1-T2.3 | a valid signature over different bytes | refused |
+| R1-T2.4 | the same JSON re-serialized under the original signature | refused: the HMAC is over the raw bytes |
+| R1-T2.5 | the app secret absent | every POST refused: fails closed |
+| R1-T2.6 | a body over the relay's inbound limit (R1-D4: 3 MiB) | 413, without reading it whole |
+| R1-T2.7 | any refusal | the log names the refusal and the trace, never the body or a header's value |
+| R1-T2.8 | **(New, as R1-T1.5.)** the signature's comparison | goes through `hmac.compare_digest` on bytes, shown by the same call-path test |
 
-### Duty 3 — the transformation, one envelope per message and per status (M6, M11)
-
-| Test | Input | Expected |
-|---|---|---|
-| R1-T3.1 | one text message | one envelope: `provider_event_id` `message:<wamid>`, `event_type` `message`, `payload` with `external_message_ref` (the wamid), `thread_ref` (duty 6), `occurred_at` (RFC 3339, UTC, from the Unix `timestamp`), `message_type` (R1-D6), `body_text` |
-| R1-T3.2 | one status | one envelope: `status:<wamid>:<status>:<timestamp>`, `event_type` `status`, `payload` with `external_message_ref`, `status` (R1-D5), `occurred_at` |
-| R1-T3.3 | one POST with several `entry`, several `changes`, mixed messages and statuses | exactly one envelope per message and per status, none lost, none doubled |
-| R1-T3.4 | a `field` other than `messages`; an `object` other than `whatsapp_business_account` | no envelope (R1-D12) |
-| R1-T3.5 | `unsupported` messages; `errors` arrays | as R1-D6 decides; never a stored body from an error |
-| R1-T3.6 | `sent` then `read`, with no `delivered` | two envelopes, which TURAB accepts in order (R1-F3) |
-| R1-T3.7 | **each envelope the relay produces, given to TURAB's own `parse_envelope`** | accepted: the relay's output is a valid envelope by TURAB's code, not by a copy of its rules |
-
-### Duty 4 — the relay's own signature (G7-2 (ii) 4)
+### Duty 3 — the transformation, one envelope per message and per status (M6, M11, M14)
 
 | Test | Input | Expected |
 |---|---|---|
-| R1-T4.1 | an envelope the relay sends | `X-Turab-Relay-Signature: sha256=<hex>`, the HMAC-SHA256 of **the exact bytes sent**, with the relay's key |
-| R1-T4.2 | **TURAB's own `verify`**, given those bytes and that header | true. With another key: false |
-| R1-T4.3 | the relay's key equal to Meta's app secret | the relay refuses to start (the keys are distinct by G7-2 (ii)) |
-| R1-T4.4 | the relay's key absent | the relay sends nothing (fails closed) |
+| R1-T3.1 | one text message | one envelope: `message:<wamid>`, `event_type` `message`, `external_message_ref`, `thread_ref` (duty 6), `occurred_at` (RFC 3339, UTC, from the Unix `timestamp`), `message_type` `TEXT`, `body_text` |
+| R1-T3.2 | one status | one envelope: `status:<wamid>:<status>:<timestamp>`, `event_type` `status`, `external_message_ref`, `status` (R1-D5), `occurred_at` |
+| R1-T3.3 | one POST with several `entry`, several `changes`, mixed messages and statuses | one envelope per forwarded element, none lost, none doubled, sent in document order |
+| R1-T3.4 | a `field` other than `messages`; an `object` other than `whatsapp_business_account` | no envelope; counted (R1-D12) |
+| R1-T3.5 | each Meta type of §5.3's table | the stored value and the content of §5.3, exactly; no content for any type the table gives none |
+| R1-T3.6 | `sent` then `read`, with no `delivered` | two envelopes, which TURAB accepts in order |
+| R1-T3.7 | each envelope the relay produces, given to **TURAB's own `parse_envelope`** | accepted |
+| R1-T3.8 | **(New, §5.1.)** batches mixing forwarded, isolated and dropped elements | the answer to Meta as §5.1 states, in each case of its table |
 
-### Duty 5 — redelivery of what TURAB did not complete (G7-2 (ii) 5; CORRECTION-007, -008)
-
-| Test | TURAB's answer (a test double of TURAB, and TURAB's real app in R1-T5.6) | Expected (under R1-D2 (a)) |
-|---|---|---|
-| R1-T5.1 | 200 for every envelope of the POST | the relay answers Meta 200 |
-| R1-T5.2 | a 500 for one envelope | the relay answers Meta **not 200**, so Meta retries the POST whole (M7) |
-| R1-T5.3 | a 503 for one envelope | the same |
-| R1-T5.4 | no answer within the relay's timeout (R1-D2) | the same |
-| R1-T5.5 | the retried POST, after the first attempt completed some envelopes | TURAB answers 200 for the completed ones and writes nothing (S42); the incomplete ones are completed once (J01); a repeated status changes nothing (R1-F7) |
-| R1-T5.6 | the same as R1-T5.2 and R1-T5.5, **against TURAB's real application and test database** | one event, one message and one interaction per message, as Slice 7's mandatory test 1 states |
-| R1-T5.7 | a 400 or a 401 from TURAB | as R1-D3 decides; logged without the body |
-
-### Duty 6 — the scope of `thread_ref` (G7-2 (ii) 6; M15)
+### Duty 4 — the relay's own signature
 
 | Test | Input | Expected |
 |---|---|---|
-| R1-T6.1 | an incoming message | `thread_ref` = `<metadata.phone_number_id>:<the customer's id>` (R1-D8 fixes the field) |
+| R1-T4.1 | an envelope the relay sends | `X-Turab-Relay-Signature: sha256=<hex>`, over the exact bytes sent |
+| R1-T4.2 | **TURAB's own `verify`**, given those bytes and that header | true; with another key, false |
+| R1-T4.3 | the relay's key equal to Meta's app secret | the relay refuses to start |
+| R1-T4.4 | the relay's key absent | the relay sends nothing |
+
+### Duty 5 — redelivery of what TURAB did not complete
+
+| Test | TURAB's answer | Expected (R1-D2 (a), §5.1) |
+|---|---|---|
+| R1-T5.1 | 200 for every forwarded element | 200 to Meta |
+| R1-T5.2 | a 500 for one forwarded element | not 200 to Meta |
+| R1-T5.3 | a 503 for one forwarded element | not 200 to Meta |
+| R1-T5.4 | no answer within the relay's timeout | not 200 to Meta |
+| R1-T5.5 | the retried POST, after some elements completed | TURAB answers 200 for those and writes nothing (S42); the others are completed once (J01); a repeated status changes nothing (R1-F7) |
+| R1-T5.6 | R1-T5.2 and R1-T5.5 against **TURAB's real application and test database** | one event, one message and one interaction per message |
+| R1-T5.7 | a 400 or a 401 from TURAB | not 200 to Meta, and an alert (R1-D3 (a)); logged without the body |
+
+### Duty 6 — the scope of `thread_ref` (M15, R1-D8)
+
+| Test | Input | Expected |
+|---|---|---|
+| R1-T6.1 | an incoming message | `<metadata.phone_number_id>:<messages[].from>` |
 | R1-T6.2 | a status | `<metadata.phone_number_id>:<recipient_id>` |
-| R1-T6.3 | the same customer writing to two business numbers | two different `thread_ref`s |
-| R1-T6.4 | every `thread_ref` produced | matches TURAB's `SCOPED` (`^[^:]+:[^:]+$`): exactly one colon |
-| R1-T6.5 | an identifier containing `:`; an empty identifier | no envelope (it could not be scoped) |
-| R1-T6.6 | a group status (`recipient_type` `group`) | as R1-D7 decides |
+| R1-T6.3 | the same customer writing to two business numbers | two `thread_ref`s |
+| R1-T6.4 | every `thread_ref` produced | matches TURAB's `SCOPED` |
+| R1-T6.5 | an identifier containing `:`, or empty | isolated (§5.1) |
+| R1-T6.6 | an incoming message with `group_id`; a status with `recipient_type` `group` | dropped, counted (R1-D7) |
+| R1-T6.7 | **(New, R1-D8.)** `contacts` absent; `contacts` with a `wa_id` equal to `from`; `contacts` whose `wa_id` differs from `from` | forwarded; forwarded; **isolated**, counted, alerted, its content neither forwarded nor logged |
 
-### Duty 7 — the size of the relay's envelopes (G7-15; R1-F1)
+### Duty 7 — the size of the relay's envelopes (corrected)
+
+**The limits that have a basis, and only those:**
+- **TURAB's body limit:** `BODY_LIMIT` = 64 × 1024 = **65 536 bytes**, a
+  body refused when larger (TURAB's code, §0);
+- **Meta's payload:** up to **3 MB** (E11); the relay's inbound limit is
+  **3 MiB** (R1-D4);
+- **Meta's batch:** up to **1000 updates** per POST (E7).
+
+**No maximum is attributed to any field.** The pages read state none (§1).
+The envelope's size is therefore bounded by testing the **bytes the relay
+actually sends**, not by an assumed field size.
 
 | Test | Input | Expected |
 |---|---|---|
-| R1-T7.1 | for each message type the relay forwards (R1-D6), a synthetic message at the documented maximum of each field the envelope carries | the envelope's bytes ≤ 64 KiB, **measured and recorded** per type |
-| R1-T7.2 | a field over its documented maximum | the relay's behaviour as R1-D4 decides; never an envelope over 64 KiB sent to TURAB |
-| R1-T7.3 | the real envelopes | **not measurable before real traffic.** R1-D13 decides what stands in for them |
+| R1-T7.1 | an envelope whose serialized bytes are **exactly 65 536** | sent; **TURAB's real route accepts it** |
+| R1-T7.2 | content that makes the envelope **65 537** bytes | not sent to TURAB; handled as R1-Q1 decides; never truncated |
+| R1-T7.3 | content that crosses the limit only once serialized: 2-, 3- and 4-byte UTF-8 characters; characters JSON escapes (`"`, `\`, U+0000–U+001F) | the size measured is the serialized bytes, never the content's length; each case at 65 536 and 65 537 bytes |
+| R1-T7.4 | a batch of several elements, each producing an envelope near the limit | each envelope measured on its own; none sent above 65 536 |
+| R1-T7.5 | a POST at 3 MiB, and one byte above, holding many elements | the first accepted, the second 413 (R1-T2.6) |
+| R1-T7.6 | each type of §5.3 that carries content | the envelope's bytes **without content** recorded per type: the room left for content, measured |
+| R1-T7.7 | the real envelopes | not measurable before real traffic; synthetic only (R1-D13 (a)) |
 
-**Not tested by R-1, and not claimed:** Meta's delivery itself, Meta's
-retries, and Meta's certificate. They are Meta's behaviour, documented (§1),
-not proven by synthetic tests.
+## 4. How real events stay blocked until R-1 passes (corrected, R1-D14)
 
-## 4. How real events stay blocked until R-1 passes
+**Each barrier is a mechanism, and a state.**
+- **The mechanism** is documented by Meta or proven by TURAB's tests.
+- **The state** is a fact about Meta's app and the deployed environments.
+  **This plan does not know it:** this repository has no deployment and no
+  access to Meta's app, and Meta's documentation does not prove either's
+  configuration.
+- **The state is measured and recorded at R-1's closure.** It is not
+  inferred from the documentation.
 
-**Four barriers, each sufficient on its own to stop a real event reaching
-TURAB's database. None is lifted by this plan.**
+| # | Barrier | What it blocks | Mechanism | State to measure at closure |
+|---|---|---|---|---|
+| B1 | **No verified callback URL at Meta** | **every** webhook to that app's callback: Meta sends none before the GET succeeds (E4) | Meta's documentation (E4) | whether a callback URL is set and verified for the app, read from the App Dashboard by the app's operator |
+| B2 | **No relay key in TURAB's environment** | every delivery to that TURAB: answered 503 `WEBHOOK_NOT_READY`, nothing written | Slice 7: `test_ii_a_missing_or_empty_secret_is_503_with_no_event_row` | whether `TURAB_RELAY_SIGNING_SECRET` is set in each deployed environment: presence only, never the value |
+| B3 | **TURAB's webhook route not exposed** | traffic that cannot reach it | operational (G7-2 (ii)) | the route's exposure in each deployed environment, as the operator records it |
+| B4 | **No subscription to the `messages` field** | **the `messages` field's events only.** If the app subscribes other fields, B4 does not block their events. Under R1-D12 they would produce no envelope, but that is the relay's behaviour, not a barrier | Meta's documentation (E27) | the list of fields the app subscribes to |
 
-| # | Barrier | Holds because | Evidence |
-|---|---|---|---|
-| B1 | **No verified callback URL at Meta** | Meta sends webhooks only after the GET is answered with 200 and the challenge (M4, E4). No relay is deployed, so no endpoint can answer it, and no verify token exists | Meta's documentation (E4) |
-| B2 | **No relay key in TURAB's environment** | without `TURAB_RELAY_SIGNING_SECRET`, TURAB answers every delivery 503 `WEBHOOK_NOT_READY` and writes nothing (CORRECTION-008) | Slice 7: `test_ii_a_missing_or_empty_secret_is_503_with_no_event_row` |
-| B3 | **TURAB's webhook route not exposed** to Meta's or the relay's traffic | G7-2 (ii): an operational condition, stated, not a code switch | none in code; R1-D14 |
-| B4 | **Meta's app not subscribed to the `messages` field** | the fields to subscribe to appear only once the URL's GET is answered properly (E27), and Meta sends webhooks only after verification (E4) | Meta's documentation |
+**The count check (R1-D14 (a)):** an operator command counts the rows of
+`webhook_events` in each non-test database, **counts only**, as Slice 7's
+sample tool reads them. The expected count before the first real event is
+**zero**. Its result is part of the state measured at closure.
 
-**Not a barrier:** Meta's Dev mode. Meta says *some* webhooks are not sent
-in Dev mode (E15), not all.
+**Not a barrier:** Meta's Dev mode (E15: *some* webhooks are not sent).
 
-**The order in which they may be lifted, after R-1 is reviewed and closed,
-each step a decision of its own:**
+**The order in which the barriers may be lifted, after R-1 is reviewed and
+closed, each a decision of its own:**
 1. the review closes R-1;
 2. the relay's key is created, and set in the relay and in TURAB, in a
-   **non-production** environment first (R1-D13);
-3. the relay is deployed behind TLS (M1), with mTLS if R1-D10 decides it;
-4. the callback URL and the verify token are set at Meta, and the GET
-   verified (M4);
-5. the `messages` field is subscribed (B4);
+   non-production environment first;
+3. the relay is deployed behind TLS (M1) and mTLS (R1-D10);
+4. the callback URL and verify token are set at Meta, and the GET verified;
+5. the `messages` field is subscribed;
 6. the first real event.
 
-**How a breach would be seen:** before step 6, **TURAB's
-`webhook_events` holds no row in any non-test database.** R1-D14 decides
-whether that is checked by an operator command, counts only, as Slice 7's
-sample tool reads them.
+## 5. The decisions (adopted in the review of `1d00f41`), and their specifications
 
-## 5. Open decisions (none is taken here; a recommendation is not a decision)
+| # | Decision | Adopted |
+|---|---|---|
+| R1-D1 | Where the relay lives | (a): a separate component in this repository (`relay/`), its tests in the same suite |
+| R1-D2 | The delivery model | (a): synchronous; 200 to Meta only as §5.1 states; a timeout per envelope; **its limit:** Meta drops a delivery after 7 days without success (E9) |
+| R1-D3 | TURAB's 400 or 401 | (a): not 200 to Meta, and an alert |
+| R1-D4 | The inbound limit; an oversize envelope | (a) 3 MiB; (i) an oversize envelope refused, never truncated. **See R1-Q1** |
+| R1-D5 | `played` | (a): no envelope, counted |
+| R1-D6 | The message types | (a): an allow-list; **§5.3** |
+| R1-D7 | Groups | (a): no envelope, counted; recognised by `group_id` or `recipient_type` `group` (M13) |
+| R1-D8 | The customer's identifier | **as specified in the review:** `from`, checked against `contacts[].wa_id` when present; §5.1 |
+| R1-D9 | Content in the relay | forwarded as §5.3 states; held in memory for the request; never logged or persisted. Retention not claimed |
+| R1-D10 | mTLS | (a), **as specified in the review:** §5.2 |
+| R1-D11 | Refusal codes | 403 for a wrong token, 401 for a signature, 413 for size |
+| R1-D12 | Other fields and objects | (a): 200, no envelope, counted |
+| R1-D13 | Real envelopes before real traffic | (a): synthetic only; Meta's test payloads only under a separate, explicit authorization |
+| R1-D14 | B3, and the breach check | (a), **as specified in the review:** §4 |
+| R1-D15 | How R-1 is closed | tests and mutations bound to a clean-tree run; a closure record **with the barriers' measured state**; the reviewer's decision |
 
-| # | Decision | Options | Recommended, and why |
-|---|---|---|---|
-| R1-D1 | **Where the relay lives** | (a) a separate component in this repository (`relay/`), its own tests in the same suite; (b) a separate repository; (c) a managed function | **(a)**: R1-T3.7, R1-T4.2 and R1-T5.6 run the relay's output through **TURAB's own code**, which (b) and (c) would replace by a copy |
-| R1-D2 | **The delivery model** | (a) **synchronous**: the relay answers Meta 200 only after every envelope of the POST got 200 from TURAB, otherwise not 200, and Meta redelivers (M7); a timeout of its own per envelope; (b) **store and forward**: the relay persists the notification, answers 200, and redelivers itself | **(a)**: the relay stores no content (R1-F8), and Meta's 7-day redelivery plus TURAB's replay rule (S42, J01) give at-least-once delivery without a second store. **Its limit:** after 7 days without success, Meta drops the delivery (E9) |
-| R1-D3 | **TURAB's 400 or 401 to the relay** | (a) not 200 to Meta, and an alert; (b) 200 to Meta, the envelope dropped, and an alert | **(a)**: a 400 is a relay defect and a 401 a key mismatch; neither should be acknowledged as delivered. Meta's 7-day limit bounds the retries |
-| R1-D4 | **The relay's inbound limit, and an oversize field** | (a) 3 MiB (3 × 2²⁰ bytes, at least Meta's "3 MB" under either reading), refused before reading; (b) Meta's figure read as 3 × 10⁶; an oversize envelope: (i) refused, not 200 to Meta; (ii) sent without its content | **(a) and (i)**: never truncate content silently |
-| R1-D5 | **`played`** | (a) no envelope, counted; (b) an envelope with a TURAB status | **(a)**: TURAB has no status for it, and Slice 7 does not widen `STATUSES` |
-| R1-D6 | **The message types forwarded** | (a) an allow-list of Meta types, each mapped to a stored value; any other type forwarded as one fixed value without content; (b) Meta's `type` passed through as is | **(a)**: no stored type ever comes from outside the list (R1-F5) |
-| R1-D7 | **Group messages** | (a) no envelope, counted; (b) a thread per group | **(a)**: Slice 7 has no group model, and the scope is SALE only |
-| R1-D8 | **The customer's identifier in an incoming message** | (a) `messages[].from`; (b) `contacts[].wa_id`; (c) both, refused when they differ | **(c)**: Meta's pages do not state they are always equal (R1-F9); a disagreement is refused, not guessed |
-| R1-D9 | **Content in the relay** | the relay forwards `text.body` and a media identifier only; holds them in memory for the request; never logs or persists them | as stated: J03's rule extended to the relay. **Retention is not claimed** (OQ7-1) |
-| R1-D10 | **mTLS** | (a) required, the client certificate's CN checked (E17); (b) not used | **(a)**, as defence in depth beside the signature; Meta says it is supported (E14) |
-| R1-D11 | **The relay's refusal codes** | the status codes of the GET's and the POST's refusals | 403 for a wrong token, 401 for a signature, 413 for size; all "not 200" for Meta (E3) |
-| R1-D12 | **Fields and objects other than `messages` on `whatsapp_business_account`** | (a) acknowledged 200, no envelope, counted; (b) not 200 | **(a)**: they are not TURAB's; refusing them would make Meta retry them for 7 days |
-| R1-D13 | **What stands in for real envelopes before real traffic (duty 7)** | (a) synthetic envelopes at documented maxima only; (b) also Meta's test payloads (App Dashboard) to a **non-production** relay and TURAB, after the reviewer authorizes it | **(a)** for R-1's closure; **(b)** only as a separate, explicit authorization, since it is traffic from Meta |
-| R1-D14 | **B3, and the breach check** | (a) B3 stays operational, with an operator command counting `webhook_events` rows (counts only); (b) a code switch refusing the route until an R-1 record is present | **(a)**, as G7-2 (ii) states; (b) would change TURAB's closed code |
-| R1-D15 | **How R-1 is closed** | the relay's tests and mutations, bound to a clean-tree run as Slice 7's evidence is; a closure record; the reviewer's decision | as stated |
+### 5.1 Each element's class, and the answer to Meta (R1-D2, R1-D8, the review's specification 1)
 
-## 6. Sequence (none of it authorized by this plan)
+Each element of a POST is one message of `messages[]` or one status of
+`statuses[]`, in one `change`. Each element is placed in exactly one class:
+
+| Class | Which elements | What the relay does |
+|---|---|---|
+| **FORWARD** | an element of `field` `messages` that passes every check below | builds its envelope (§5.3), sends it to TURAB in document order |
+| **ISOLATED** | a malformed or inconsistent element: `from`, `id` or `timestamp` missing; `from` differing from `contacts[].wa_id` where `contacts` is present (R1-D8); an identifier that cannot be scoped (empty, or containing `:`) | **no envelope; its content neither forwarded nor logged;** counted by reason; an alert |
+| **DROPPED** | an element documented and decided out of scope: `played` (R1-D5); a group message or a group status (R1-D7); `value.errors` | no envelope; counted by reason |
+
+**R1-D8's check, as we read the specification for review:**
+- when `value.contacts` holds **one** entry, its `wa_id` must equal the
+  `from` of each message of that `value`;
+- when it holds **several**, `from` must equal one of their `wa_id`s;
+- when it is absent, the message is not refused for that reason.
+
+**The answer to Meta for a POST:**
+
+| Case | Answer |
+|---|---|
+| every FORWARD element got 200 from TURAB; ISOLATED and DROPPED elements present or not | **200** |
+| at least one FORWARD element got a 500, a 503, no answer in time, a 400 or a 401 from TURAB | **not 200**: Meta redelivers the POST whole (M7). On that redelivery, the completed elements are 200 replays at TURAB (S42), and the ISOLATED and DROPPED elements are classed the same way again |
+| no FORWARD element at all | **200** |
+
+- **ISOLATED and DROPPED elements never make the answer not 200.** Their
+  class is a function of the notification's bytes, so a redelivery cannot
+  change it. Answering not 200 for them would make Meta redeliver a batch
+  whose valid elements are already delivered, for nothing.
+- **A failure to deliver a FORWARD element always keeps the answer not
+  200** (R1-D2, R1-D3). That is how Meta's redelivery completes it.
+
+### 5.2 mTLS (R1-D10, the review's specification 2)
+
+**What is verified, by the component that terminates the relay's TLS, on
+the certificate itself:**
+1. a client certificate is presented;
+2. **its chain is validated to Meta's outbound API CA certificate** (E53,
+   E54), configured as **the only trust anchor** for this endpoint. Not the
+   system's public roots;
+3. its validity period;
+4. **the decided identity:** the subject's common name is
+   `client.webhooks.fbclientcerts.com` (E55), read **from the validated
+   certificate**, never from a header or a text passed along.
+
+**If TLS is terminated before the relay** (a load balancer), that component
+is part of what the tests prove. A header carrying a certificate's subject
+is not trusted on its own.
+
+| Test | Input (a synthetic test CA stands for Meta's in the tests) | Expected |
+|---|---|---|
+| R1-T10.1 | a certificate from the test CA, the right CN, valid | handshake and request accepted |
+| R1-T10.2 | no client certificate | refused |
+| R1-T10.3 | a **self-signed** certificate with the right CN | refused: **untrusted** |
+| R1-T10.4 | a certificate from **another CA** (for instance one a public root trusts) with the right CN | refused: the only anchor is the configured CA |
+| R1-T10.5 | a certificate from the test CA with **another CN** | refused: **mismatched** |
+| R1-T10.6 | a certificate from the test CA, expired or not yet valid | refused |
+| R1-T10.7 | a request with no valid certificate, carrying a header that names the right CN | refused |
+
+**Not claimed:** the rotation of Meta's CA certificate. Its file name
+carries a date (E53); replacing it is an operational change outside R-1's
+tests.
+
+### 5.3 R1-D6: the mapping table
+
+**The rule:** only the types below are forwarded with content. Any other
+type, documented or not, is forwarded as `OTHER`, **without content**. No
+stored value equals an internal type (`PHONE_DECISION`,
+`CONFIRMATION_LINK`). The values follow TURAB's convention, uppercase, as
+`TEXT` is the contract's default.
+
+| Meta `type` | Excerpt | Stored `message_type` | `body_text` | `media_ref` |
+|---|---|---|---|---|
+| `text` | E28, E29 | `TEXT` | `text.body` | none |
+| `image` | E30, E31, E32 | `IMAGE` | `image.caption`, if present | `image.id` |
+| `video` | E35, E36, E57 | `VIDEO` | `video.caption`, if present | `video.id` |
+| `document` | E37, E38, E58 | `DOCUMENT` | `document.caption`, if present | `document.id` |
+| `audio` | E33, E56 | `AUDIO` | none | `audio.id` |
+| `sticker` | E40, E59 | `STICKER` | none | `sticker.id` |
+| `location` | E41 | `OTHER` | none | none |
+| `contacts` | E42 | `OTHER` | none | none |
+| `interactive` | E43 | `OTHER` | none | none |
+| `button` | E44 | `OTHER` | none | none |
+| `reaction` | E45 | `OTHER` | none | none |
+| `order` | E46 | `OTHER` | none | none |
+| `system` | E47 | `OTHER` | none | none |
+| `unsupported` | E48 | `OTHER` | none | none |
+| `edit` | E49 | `OTHER` | none (R1-F10) | none |
+| `revoke` | E50 | `OTHER` | none (R1-F10) | none |
+| any other value | — | `OTHER` | none | none |
+
+**Notes:**
+- **Content travels only in `body_text` and `media_ref`**, the two content
+  keys of TURAB's envelope (`OPTIONAL_CONTENT`). TURAB then applies its own
+  archive consent (G7-9). A document's `filename` (E39) is content, and is
+  not carried; neither are the media's `mime_type`, `sha256` or `url`.
+- **`media_ref` is Meta's media identifier, not the media.** The relay
+  downloads nothing.
+- **What `OTHER` loses:** a location, a shared contact card, a button or list
+  reply's text, a reaction's emoji, an order's items, an edit's new text.
+  None reaches TURAB. Widening the list is a later decision, with its own
+  consent review.
+
+### 5.4 A point found while writing this revision (not decided)
+
+**R1-Q1 · An oversize envelope inside a batch.** R1-D4 (i), adopted, refuses
+an envelope over 65 536 bytes and keeps Meta's answer not 200. Under §5.1,
+that oversize is a function of the notification's bytes: every redelivery
+fails the same way. For 7 days Meta would redeliver a POST whose other
+elements are already delivered, then drop it (E9).
+
+| Option | Effect |
+|---|---|
+| (a) **keep R1-D4 (i)**: not 200 | the element is retried for 7 days, then dropped by Meta; the valid elements are delivered on the first attempt and replayed as 200 |
+| (b) **class it ISOLATED**: no envelope, counted, an alert; the answer may be 200 | the element is not delivered, and an operator is alerted at once; no futile redelivery |
+
+**Recommended: (b).** It follows the principle of the review's
+specification 1: a failure determined by the bytes does not make a batch
+be redelivered. Its cost is that the message never reaches TURAB. So would
+it, under (a), after 7 days. **A recommendation is not a decision.** Until
+it is decided, R1-T7.2 is written for whichever is chosen.
+
+## 6. Sequence
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | the decisions R1-D1 to R1-D15 | the review of this plan |
-| 1 | duties 1 and 2 (the GET; Meta's signature; the inbound limit), with their refusals | step 0 |
-| 2 | duties 3, 4 and 6 (the transformation; the relay's signature; `thread_ref`), checked by TURAB's own `parse_envelope` and `verify` | step 1 |
-| 3 | duty 5 (redelivery), against a test double and against TURAB's real application and test database | step 2 |
-| 4 | duty 7 (the envelopes' sizes), measured and recorded; R-1's evidence and closure record | step 3 |
+| 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 open |
+| 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **the review of this revision** |
+| 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | step 1 |
+| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | step 2 |
+| 4 | duty 7 (the serialized sizes); R-1's evidence; the barriers' state measured (§4); the closure record | step 3; R1-Q1 decided |
 
 Each step is delivered with its tests and its mutation record, and reviewed
-before the next. A defect found is measured before it is fixed. **Lifting a
-barrier of §4 is not a step of this plan.**
+before the next. **Lifting a barrier of §4 is not a step of this plan.**
 
 ## 7. R-1's acceptance conditions
 
-1. Each of the seven duties is proven by the tests of §3, every one
-   passing, on synthetic notifications only.
-2. The relay's output is accepted by **TURAB's own** envelope parser and
-   signature check (R1-T3.7, R1-T4.2), and its redelivery is shown against
-   TURAB's real application (R1-T5.6).
+1. Each of the seven duties, and §5.2's mTLS, proven by the tests of §3
+   and §5.2, every one passing, on synthetic notifications only.
+2. The relay's output accepted by **TURAB's own** parser and signature
+   check (R1-T3.7, R1-T4.2), and its redelivery shown against TURAB's real
+   application (R1-T5.6).
 3. Every guard fails closed: no token, no secret, no key (R1-T1.4, R1-T2.5,
    R1-T4.4).
-4. No content in any log of the relay (R1-T2.7, R1-D9).
-5. Each mutation of the relay's guards is killed, in two identical runs.
-6. The four barriers of §4 still hold when R-1 is closed; lifting them is
-   decided separately.
-7. **K06 UNPROVEN, SALE only.** Not a release authorization.
+4. The constant-time comparisons proven by their call path (R1-T1.5,
+   R1-T2.8).
+5. §5.1's classes and answers proven (R1-T3.8, R1-T6.7), and §5.3's table
+   proven type by type (R1-T3.5).
+6. The envelope's size bounded by its serialized bytes (R1-T7.1 to
+   R1-T7.5). No limit attributed to Meta beyond its documentation.
+7. No content in any log of the relay (R1-T2.7, R1-D9); no content from an
+   ISOLATED element anywhere.
+8. Each mutation of the relay's guards killed, in two identical runs.
+9. **The barriers' state measured and recorded at closure** (§4). Lifting a
+   barrier is decided separately.
+10. **K06 UNPROVEN, SALE only.** Not a release authorization.
 
 ## 8. What this plan does not do
 
 - write code, create a secret or a verify token, or configure Meta's app;
 - deploy anything, expose any route, or receive any event;
 - change TURAB's webhook, contract or tests;
-- prove Meta's behaviour: §1 is Meta's documentation, retrieved and quoted,
-  not a test result;
+- prove Meta's behaviour or the state of any deployment: §1 is Meta's
+  documentation, retrieved and quoted; §4's states are measured at closure;
 - touch K06, which stays an independent condition before the release gate.
 
 ## 9. Document identity
 
 This file's sha256 is recorded in `docs/gate/evidence/DOCUMENT-HASHES.txt`
-at the commit that adds it.
+at the commit that adds each revision.
