@@ -621,10 +621,13 @@ def test_an_answer_after_5_s_and_before_the_10_s_limit_is_completed(monkeypatch)
     assert read == [1]
 
 
-@pytest.mark.parametrize("delay, status", [(1.0, 200), (3.0, 504)])
+@pytest.mark.parametrize("delay, status", [(0.5, 200), (3.0, 504)])
 def test_the_configured_limit_is_the_deadline_either_side(monkeypatch, delay, status):
-    """A limit of 2 s: an answer after 1 s is completed; after 3 s, 504 at
-    the limit, not before it."""
+    """A limit of 2 s: an answer after 0.5 s is completed; after 3 s, 504 at
+    the limit, not before it. Each delay stands at least 0.5 s from the
+    limit and from half of it (mutation T2): an answer on such a boundary
+    races the timer, and its outcome under a mutation is not repeatable
+    (the first pair of records at `3c19543`, with an answer after 1 s)."""
     with _answering_after(delay) as (url, _read):
         monkeypatch.setenv(forward.TURAB_URL_VARIABLE, url)
         with TestClient(_relay(timeout=2.0)) as client:

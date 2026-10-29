@@ -1126,3 +1126,6 @@ docs/gate/evidence/R1-STEP3-MUTATIONS-TRIAL.txt                new   a497d55a8d0
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f.txt           new   1bfb719ff0a9577c37c9b774de2adf7551bd4ae2418f69baa05d92f4b85c7eb8
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f-REPEAT.txt    new   c4268cd14e81c9df6304e5f6bdc0128f0415d4da5e804dd5282b6430b77c38e1
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f-TRIAL.txt     new   83197ee967209f61b319b2261bc66c34bd325211cd6e0f170bda19f7ef937fa7
+--- R-1 step 3: 3c19543's pair renamed (not identical: T2 on a test's boundary); the test corrected ---
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3c19543.txt           new   d01076a86b060b4848ac1950466c61ae49f18ca4eb8aee9f845ca115a8ab44b6
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3c19543-REPEAT.txt    new   25389a91a325af8dfc90efa8a5339ad6a441716d5766248995332f84e1ad9bd4
