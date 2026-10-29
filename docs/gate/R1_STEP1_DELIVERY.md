@@ -167,8 +167,8 @@ CA stands in for Meta's.
 | T, mTLS | a client certificate optional; the system's roots trusted too; no minimum TLS version; any identity; Meta's CN among others; the certificate not required by default; the validated subject not passed to the application |
 
 - **The official runs:** two, at `1ccaed4`, clean tree: **25/25 killed in
-  each, outcomes identical**. `evidence/R1-STEP1-MUTATIONS.txt` and
-  `-REPEAT.txt`.
+  each, outcomes identical**. `evidence/R1-STEP1-MUTATIONS-AT-1ccaed4.txt` and
+  `-AT-1ccaed4-REPEAT.txt` (renamed to their tree; §8.3).
 - **The trial run**, outside the record: 25/25 (`-TRIAL.txt`).
 - **G1 and S5, the `==` mutations, are killed only by the call-path tests**
   (`test_r1_t1_5_…`, `test_r1_t2_8_…`). That is the review of `3d8b593`'s
@@ -272,7 +272,7 @@ these tests.
 
 | Record | Tree | Recipe | Result |
 |---|---|---|---|
-| `R1-STEP1-MUTATIONS.txt`, `-REPEAT.txt` | `7502961` | the corrected recipe (`78c05bde…9e13`) | 28/28, twice, identical |
+| `R1-STEP1-MUTATIONS-AT-7502961.txt`, `-AT-7502961-REPEAT.txt` (renamed in `2d42061`) | `7502961` | the corrected recipe (`78c05bde…9e13`) | 28/28, twice, identical |
 | `R1-STEP1-MUTATIONS-AT-1ccaed4.txt`, `-AT-1ccaed4-REPEAT.txt` | `1ccaed4` | the earlier recipe | 25/25, twice, identical |
 | `R1-STEP1-MUTATIONS-TRIAL.txt` | the working tree before `1ccaed4` | outside the record | 25/25 |
 | `R1-STEP1-MUTATIONS-TRIAL-F.txt` | the working tree before `00134ee` | outside the record | F1–F3, 3/3 |

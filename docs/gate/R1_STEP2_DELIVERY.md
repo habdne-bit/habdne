@@ -154,8 +154,8 @@ Every notification is synthetic, built on the structures Meta documents
 ## 5. The evidence round
 
 **Superseded by §7.4** on the corrected tree. `gate-run.txt` and
-`TEST-RUN-PROVENANCE.txt` now hold that tree's runs. The rows below are
-readable at their own commits.
+`TEST-RUN-PROVENANCE.txt` are rewritten by each later round (step 3's:
+`R1_STEP3_DELIVERY.md` §6). The rows below are readable at their own commits.
 
 Every row ran on a clean tree with source fingerprint `9d6319a4…e172`,
 the mutation runs' own.
