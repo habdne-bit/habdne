@@ -1,14 +1,16 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 2** (planning only)
+## Plan — **revision 3**
 
-**Status: PLANNING ONLY, put up for a second review.**
+**Status: revision 2 ADOPTED; step 1 AUTHORIZED** (review of `3d8b593`,
+recorded below), within its stated scope: Meta's GET, the verification of
+Meta's signature, the inbound limit, and the synthetic mTLS tests.
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5).
-- **Step 1 is NOT authorized.** It may begin only after the review of this
-  revision.
-- **No code** is written under this plan. **No relay** is built or
-  deployed. **No secret, verify token or Meta app setting** is created.
+- **R1-Q1 is decided: (a)** (§5.4).
+- **Step 1's authorization does not allow** deploying the relay, creating a
+  secret, or receiving any real event. Steps 2 to 4 are not authorized.
+- **No relay** is deployed. **No secret, verify token or Meta app setting** is created.
   **No real event** is received. R-1 stays **UNMET**: **no real event may be
   received** before it is met and reviewed (§4).
 
@@ -40,9 +42,31 @@ does not touch it. The next slice's plan follows the review of this one.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `1d00f41` | first plan, planning only |
+| 3 | the commit that adds this revision | the review of `3d8b593` recorded: revision 2 adopted; step 1 authorized; R1-Q1 decided (a), §5.4 and R1-T7.2 set to it, with an OVERSIZE class in §5.1; R1-D8's reading accepted; §5.1's checks made explicit per element kind; R1-T1.5's count bounded to the requests that reach the comparison |
 | 2 | `878745e` | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
 
 ---
+
+## The review of `3d8b593`
+
+**Revision 2 is adopted. Step 1 is authorized, within its stated scope:
+Meta's GET, the verification of Meta's signature, the inbound limit, and
+the synthetic mTLS tests.** The diff since revision 1 is documentary. This
+does not authorize deploying the relay, creating secrets, or receiving real
+events.
+
+| # | Decision or request | Recorded in |
+|---|---|---|
+| 1 | **R1-Q1: option (a).** Meta's answer stays not 200 for an envelope over 65 536 bytes. That envelope is not sent to TURAB and its content is not shortened; an alert is raised, without the message's content. The redelivery of the elements already delivered is tested to write nothing a second time. *The reviewer's reason:* to keep the redelivery window open, so a size or mapping policy can be fixed; a 200 would remove that possibility at once. *The reviewer's note:* the "up to 7 days" comes from our record of the WhatsApp pages' excerpts; the reviewer could not confirm it from Meta's live page | §5.4; §5.1 (the OVERSIZE class); R1-T7.2 |
+| 2 | **R1-D8's reading of `contacts` is accepted:** `messages[].from` is used; it suffices that it matches one `wa_id` when several are present; the absence of `contacts` alone does not isolate a message | §5.1 |
+| 3 | **Before step 2:** make §5.1's classification explicit by element kind. The `from` condition belongs to a message; a status is checked on `recipient_id` and its own required fields. The wording "`from` missing" in ISOLATED could be read against every status | §5.1 (done in this revision) |
+| 4 | **R1-T1.5:** the call-path check kills the `==` mutation, with the result tests kept separate. Bound "once per GET" to the requests that actually reach a comparison of two tokens; a request without a token fails before it | §3, R1-T1.5 |
+
+- **What the reviewer did not do:** run tests or a migration, or verify
+  independently that Meta's excerpts match their pages.
+- **Standing:** R-1 UNMET until its seven duties are delivered and its
+  closure reviewed; K06 an independent condition before the release gate;
+  SALE only.
 
 ## The review of `1d00f41`
 
@@ -178,7 +202,7 @@ real number or a real customer.
 | R1-T1.2 | a wrong token: of the same length, and of another length | 403 (R1-D11); no challenge in the body |
 | R1-T1.3 | no token; no challenge; a mode other than `subscribe` | not 200 |
 | R1-T1.4 | the verify token absent from the relay's environment | not 200 for any request: fails closed |
-| R1-T1.5 | **(Corrected.)** the comparison's call path. The token received and the stored token, each encoded UTF-8, go through `hmac.compare_digest` (P1, P2). The test replaces `compare_digest` **in the relay's namespace** with a recording wrapper around the real function, and asserts it was called once per GET, with the two byte strings, for both a matching and a non-matching token. R1-T1.1 and R1-T1.2 stay as the behavioural tests | a mutation replacing the call by `==` is killed by the call-path test, since the wrapper is then never called. **What it does not prove:** the CPU's timing. That is Python's documented property (P1), with its stated limit for unequal lengths (P3) |
+| R1-T1.5 | **(Corrected.)** the comparison's call path. The token received and the stored token, each encoded UTF-8, go through `hmac.compare_digest` (P1, P2). The test replaces `compare_digest` **in the relay's namespace** with a recording wrapper around the real function, and asserts it was called **exactly once for each GET that reaches the comparison** (the verify token configured, `hub.mode` `subscribe`, a challenge and a token present), with the two byte strings, for both a matching and a non-matching token; and **not at all** for a GET refused before it (no token, another mode, no challenge, no configured token). R1-T1.1 and R1-T1.2 stay as the behavioural tests | a mutation replacing the call by `==` is killed by the call-path test, since the wrapper is then never called. **What it does not prove:** the CPU's timing. That is Python's documented property (P1), with its stated limit for unequal lengths (P3) |
 
 ### Duty 2 — Meta's `X-Hub-Signature-256` (M5)
 
@@ -255,7 +279,7 @@ actually sends**, not by an assumed field size.
 | Test | Input | Expected |
 |---|---|---|
 | R1-T7.1 | an envelope whose serialized bytes are **exactly 65 536** | sent; **TURAB's real route accepts it** |
-| R1-T7.2 | content that makes the envelope **65 537** bytes | not sent to TURAB; handled as R1-Q1 decides; never truncated |
+| R1-T7.2 | **(Set to R1-Q1 (a).)** content that makes one element's envelope **65 537** bytes, in a POST that also holds valid elements | that envelope is **not sent** to TURAB and **not shortened**; an alert is raised **without the message's content**; the valid elements are delivered; **Meta's answer is not 200**. On Meta's redelivery of the same POST, the delivered elements are 200 replays at TURAB that **write nothing a second time**, and the oversize element is OVERSIZE again |
 | R1-T7.3 | content that crosses the limit only once serialized: 2-, 3- and 4-byte UTF-8 characters; characters JSON escapes (`"`, `\`, U+0000–U+001F) | the size measured is the serialized bytes, never the content's length; each case at 65 536 and 65 537 bytes |
 | R1-T7.4 | a batch of several elements, each producing an envelope near the limit | each envelope measured on its own; none sent above 65 536 |
 | R1-T7.5 | a POST at 3 MiB, and one byte above, holding many elements | the first accepted, the second 413 (R1-T2.6) |
@@ -324,15 +348,24 @@ Each element of a POST is one message of `messages[]` or one status of
 
 | Class | Which elements | What the relay does |
 |---|---|---|
-| **FORWARD** | an element of `field` `messages` that passes every check below | builds its envelope (§5.3), sends it to TURAB in document order |
-| **ISOLATED** | a malformed or inconsistent element: `from`, `id` or `timestamp` missing; `from` differing from `contacts[].wa_id` where `contacts` is present (R1-D8); an identifier that cannot be scoped (empty, or containing `:`) | **no envelope; its content neither forwarded nor logged;** counted by reason; an alert |
+| **FORWARD** | an element of `field` `messages` that passes every check of its kind below | builds its envelope (§5.3), sends it to TURAB in document order |
+| **ISOLATED** | an element that fails a check of **its kind** (below) | **no envelope; its content neither forwarded nor logged;** counted by reason; an alert |
 | **DROPPED** | an element documented and decided out of scope: `played` (R1-D5); a group message or a group status (R1-D7); `value.errors` | no envelope; counted by reason |
+| **OVERSIZE** | **(R1-Q1 (a).)** an element that passes every check, whose envelope's serialized bytes exceed 65 536 | **not sent, not shortened;** an alert without the message's content; **keeps the answer not 200** |
 
-**R1-D8's check, as we read the specification for review:**
-- when `value.contacts` holds **one** entry, its `wa_id` must equal the
-  `from` of each message of that `value`;
-- when it holds **several**, `from` must equal one of their `wa_id`s;
-- when it is absent, the message is not refused for that reason.
+**The checks, by element kind** (each element is one kind, by the array it
+comes from):
+
+| Kind | Required, else ISOLATED | Also ISOLATED when |
+|---|---|---|
+| **a message** (`value.messages[]`) | `from`, `id`, `timestamp`, `type`; `value.metadata.phone_number_id` | `value.contacts` is present and `from` equals none of its `wa_id`s (R1-D8); `from` or `phone_number_id` empty, or containing `:` |
+| **a status** (`value.statuses[]`) | `id`, `status`, `timestamp`, `recipient_id`; `value.metadata.phone_number_id` | `recipient_id` or `phone_number_id` empty, or containing `:`. **A status has no `from`, and is never checked for it**; nor against `contacts` |
+
+**R1-D8, as accepted in the review of `3d8b593`:** `messages[].from` is the
+sender's identifier. When `value.contacts` is present, `from` must equal at
+least one of its `wa_id`s: with one entry, that entry's; with several, any
+one of them. **The absence of `contacts` alone does not isolate a
+message.**
 
 **The answer to Meta for a POST:**
 
@@ -340,12 +373,17 @@ Each element of a POST is one message of `messages[]` or one status of
 |---|---|
 | every FORWARD element got 200 from TURAB; ISOLATED and DROPPED elements present or not | **200** |
 | at least one FORWARD element got a 500, a 503, no answer in time, a 400 or a 401 from TURAB | **not 200**: Meta redelivers the POST whole (M7). On that redelivery, the completed elements are 200 replays at TURAB (S42), and the ISOLATED and DROPPED elements are classed the same way again |
-| no FORWARD element at all | **200** |
+| at least one OVERSIZE element (R1-Q1 (a)) | **not 200**, whatever the FORWARD elements' answers: the redelivery window stays open (§5.4) |
+| no FORWARD and no OVERSIZE element | **200** |
 
 - **ISOLATED and DROPPED elements never make the answer not 200.** Their
   class is a function of the notification's bytes, so a redelivery cannot
   change it. Answering not 200 for them would make Meta redeliver a batch
   whose valid elements are already delivered, for nothing.
+- **An OVERSIZE element always makes the answer not 200,** although its
+  class is also fixed by the bytes. That is the reviewer's decision on
+  R1-Q1, for a different end: to keep the redelivery window open while a
+  size or mapping policy is fixed (§5.4).
 - **A failure to deliver a FORWARD element always keeps the answer not
   200** (R1-D2, R1-D3). That is how Meta's redelivery completes it.
 
@@ -420,7 +458,7 @@ stored value equals an internal type (`PHONE_DECISION`,
   None reaches TURAB. Widening the list is a later decision, with its own
   consent review.
 
-### 5.4 A point found while writing this revision (not decided)
+### 5.4 R1-Q1 · An oversize envelope inside a batch: DECIDED (a) (review of `3d8b593`)
 
 **R1-Q1 · An oversize envelope inside a batch.** R1-D4 (i), adopted, refuses
 an envelope over 65 536 bytes and keeps Meta's answer not 200. Under §5.1,
@@ -433,21 +471,32 @@ elements are already delivered, then drop it (E9).
 | (a) **keep R1-D4 (i)**: not 200 | the element is retried for 7 days, then dropped by Meta; the valid elements are delivered on the first attempt and replayed as 200 |
 | (b) **class it ISOLATED**: no envelope, counted, an alert; the answer may be 200 | the element is not delivered, and an operator is alerted at once; no futile redelivery |
 
-**Recommended: (b).** It follows the principle of the review's
-specification 1: a failure determined by the bytes does not make a batch
-be redelivered. Its cost is that the message never reaches TURAB. So would
-it, under (a), after 7 days. **A recommendation is not a decision.** Until
-it is decided, R1-T7.2 is written for whichever is chosen.
+*Revision 2 recommended (b).* **The review of `3d8b593` decided (a):**
+- Meta's answer stays **not 200** for an envelope over 65 536 bytes;
+- that envelope is **not sent** to TURAB, and its content is **not
+  shortened**;
+- an **alert** is raised, **without the message's content**;
+- the redelivery of the elements already delivered is **tested to write
+  nothing a second time** (R1-T7.2).
+
+**The reviewer's reason:** to keep the redelivery window open, so a size or
+mapping policy can be fixed while Meta still redelivers; a 200 would remove
+that possibility at once.
+
+**Its limit, as recorded:** the window is Meta's documented "up to 7 days"
+(E8, E12), in our record of the WhatsApp pages. The reviewer could not
+confirm it from Meta's live page. After the window, Meta drops the delivery
+(E9), with its valid elements already delivered.
 
 ## 6. Sequence
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 open |
-| 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **the review of this revision** |
+| 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 **decided (a)** (review of `3d8b593`) |
+| 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **AUTHORIZED** (review of `3d8b593`); no deployment, no secret, no real event |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | step 1 |
 | 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | step 2 |
-| 4 | duty 7 (the serialized sizes); R-1's evidence; the barriers' state measured (§4); the closure record | step 3; R1-Q1 decided |
+| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | step 3 |
 
 Each step is delivered with its tests and its mutation record, and reviewed
 before the next. **Lifting a barrier of §4 is not a step of this plan.**

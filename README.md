@@ -19,7 +19,7 @@
 | Slice 5 — Human Review → OPPORTUNITY | **CLOSED at `339dbc4`**, SALE only — see [`docs/gate/SLICE_5_CLOSURE.md`](docs/gate/SLICE_5_CLOSURE.md) |
 | Slice 6 — Match Diagnostic / Information Work | **CLOSED at `ce8cfa0`**, SALE only — see [`docs/gate/SLICE_6_CLOSURE.md`](docs/gate/SLICE_6_CLOSURE.md) |
 | Slice 7 — Communication / WhatsApp Record | **CLOSED at `abee0f9`**, SALE only — see [`docs/gate/SLICE_7_CLOSURE.md`](docs/gate/SLICE_7_CLOSURE.md); **R-1 UNMET: no real event may be received**; K06 UNPROVEN; not a release authorization |
-| R-1 — the relay (Meta's boundary) | **Plan revision 2: PLANNING ONLY**; revision 1 accepted as the basis (review of `1d00f41`); **step 1 not authorized before the review of revision 2** — see [`docs/gate/R1_RELAY_PLAN.md`](docs/gate/R1_RELAY_PLAN.md) (Meta's requirements: [`docs/gate/evidence/R1-META-SOURCES.txt`](docs/gate/evidence/R1-META-SOURCES.txt)); no code; **R-1 UNMET: no real event may be received** |
+| R-1 — the relay (Meta's boundary) | **Plan revision 3**; revision 2 adopted; **step 1 authorized** (review of `3d8b593`: Meta's GET, Meta's signature, the inbound limit, synthetic mTLS tests); no deployment, no secret — see [`docs/gate/R1_RELAY_PLAN.md`](docs/gate/R1_RELAY_PLAN.md) (Meta's requirements: [`docs/gate/evidence/R1-META-SOURCES.txt`](docs/gate/evidence/R1-META-SOURCES.txt)); no code; **R-1 UNMET: no real event may be received** |
 
 Standing: K06 **UNPROVEN** (EN-02); G4-5R open, SALE only. The current
 suite count and its binding to the tree are in
