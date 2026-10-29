@@ -1073,3 +1073,5 @@ docs/gate/R1_STEP1_DELIVERY.md                                 add   7d5fa39dd0c
 docs/gate/R1_RELAY_PLAN.md                                     rev4  f772f38ac65929fcb7d7eb0392448641aa168cd2a76d9a8d3bb8fef95f3d0878
 --- R-1 plan revision 4's commit named (00134ee) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev4  b2144ad496fdb3a0519afd3796b89cc009f009d8be7957465d7eccc682ef7c87
+--- R-1 step 1 delivered again (review of 8c64c64 answered) ---
+docs/gate/R1_STEP1_DELIVERY.md                                 add   a8cd1a5a21ea3ac59935ecf45f2f50c72f4739385d88b31a83f34f4a7f497bf1

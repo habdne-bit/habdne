@@ -8,7 +8,12 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Steps 2 to 4.
 
-**Status: DELIVERED for review.** R-1 stays **UNMET**.
+**Status: DELIVERED again for review** (review of `8c64c64` answered, §8).
+R-1 stays **UNMET**.
+- *History:* delivered at `8c64c64`; NOT closed by the review of `8c64c64`,
+  because the evidence's fingerprint did not cover `pyproject.toml`. §8
+  answers it, with the evidence on the corrected tree. **§8.4 is the current
+  round; §5's and §6's results are the earlier tree's.**
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -203,3 +208,102 @@ which covers `relay/` (§1.4).
 - **The condition of §2** for the relay's run entry point.
 - **R-1 UNMET;** K06 an independent condition before the release gate; SALE
   only. **No real event.**
+
+---
+
+## 8. Addendum: the review of `8c64c64`, pytest's configuration in the binding
+
+### 8.1 What was wrong
+
+Step 1 added `relay` to `pyproject.toml`'s `pythonpath`, which makes the
+relay's tests importable. But `source_fingerprint.py` did not collect
+`pyproject.toml`, and `run_binding.py` compares that fingerprint alone with
+the current tree. **A later commit could change how the relay's tests are
+collected, and the check would still answer `bound`.** That does not deny the
+run's result at `8c64c64`; it limited what the binding check proved.
+
+The run record's limits text was also stale: it named `src/`, `tests/`,
+`db/` and `alembic.ini`, but not `relay/`, which step 1 had added.
+
+### 8.2 What changed (`00134ee`)
+
+- **The recipe** (`db/dev/source_fingerprint.py`) collects, at the root and
+  when present:
+  - **pytest's configuration files**, as pytest's documentation lists them
+    ("Configuration file formats", pytest 9.1; 9.1.1 is installed):
+    `pyproject.toml`, `pytest.toml`, `.pytest.toml`, `pytest.ini`,
+    `.pytest.ini`, `tox.ini`, `setup.cfg`. The whole list, not
+    `pyproject.toml` alone: `pytest.toml` and `pytest.ini` take precedence
+    over it, so one of them added later would change collection outside the
+    fingerprint;
+  - **a root `conftest.py`, as a precaution of ours.** The page read does not
+    list it; the recipe says so.
+  
+  An absent file of the list is not collected, so adding one later changes
+  the fingerprint. Only `alembic.ini` and `pyproject.toml` exist today.
+- **`gate_inputs.py`'s list of covered prefixes** follows the recipe.
+- **The run record's limits text** (`run_binding.py`) names everything
+  covered, and states what is not: **the installed environment** (`.venv`:
+  the interpreter and the packages' versions) **and the database server's
+  software.**
+
+### 8.3 The test, and the mutations
+
+**`tests/test_evidence_binding.py`, on an isolated copy** holding a bound,
+passing run (`run_binding.check` must accept it first):
+
+| Experiment | Expected |
+|---|---|
+| `pythonpath` with a path added; `relay` removed from it; `testpaths` changed | refused: the fingerprint is not the run's |
+| each of the seven configuration files added (`pytest.toml`, `.pytest.toml`, `pytest.ini`, `.pytest.ini`, `tox.ini`, `setup.cfg`, `conftest.py`) | refused |
+| the recipe's lists | `relay` in its trees; every file above in its root list; `pyproject.toml` collected |
+
+**Mutations, part 2, F1–F3** (the recipe weakened): pytest's files all
+removed; `relay/` removed; `pyproject.toml` alone removed. All killed by
+these tests.
+
+**The official runs, at `7502961`, clean tree, source fingerprint
+`78c05bde…9e13`:** **28/28 killed in each** (25 by `tests/test_r1_step1.py`,
+3 by `tests/test_evidence_binding.py`), outcomes identical.
+
+**The records, each attributed to the tree it ran on:**
+
+| Record | Tree | Recipe | Result |
+|---|---|---|---|
+| `R1-STEP1-MUTATIONS.txt`, `-REPEAT.txt` | `7502961` | the corrected recipe (`78c05bde…9e13`) | 28/28, twice, identical |
+| `R1-STEP1-MUTATIONS-AT-1ccaed4.txt`, `-AT-1ccaed4-REPEAT.txt` | `1ccaed4` | the earlier recipe | 25/25, twice, identical |
+| `R1-STEP1-MUTATIONS-TRIAL.txt` | the working tree before `1ccaed4` | outside the record | 25/25 |
+| `R1-STEP1-MUTATIONS-TRIAL-F.txt` | the working tree before `00134ee` | outside the record | F1–F3, 3/3 |
+
+`7502961` and `00134ee` hold the same code: `7502961` only names
+revision 4's commit in the plan, under `docs/`.
+
+### 8.4 The evidence round on the corrected tree
+
+Every row ran on a clean tree with source fingerprint **`78c05bde…9e13`**,
+the mutation runs' own.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Authorization matrix | 222 rules; suite **3250/3250** | `4b4878f` (run at `78bbd36`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS: all database-level contract tests passed; the same 67 operations | `d6ac6b3` (run at `4b4878f`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **3250 passed, 0 failed, 0 errors, 0 skipped**; the corrected limits text in the record | `bdd5c49` (run at `d6ac6b3`) | `evidence/TEST-RUN-PROVENANCE.txt`; **`bound`** |
+| Mutations | 28/28, twice, identical | `78bbd36` (run at `7502961`) | §8.3 |
+
+### 8.5 The access log: decided
+
+**The review of `8c64c64` decided the condition §2 put forward.** It is
+binding before any deployment or Callback setting:
+- the logging of the request line is disabled, or its query removed, in the
+  HTTP server and in every layer in front of it;
+- this is tested **through the actual run entry point**.
+
+Recorded in the plan, revision 4: §5.5, §4's order, §7 condition 11.
+**Step 1's test server proves its own configuration only**
+(`access_log=False`), not an entry point not yet built.
+
+### 8.6 What remains
+
+- **The review of this answer.** Step 1 is not closed.
+- Steps 2 to 4, not authorized. **R-1 UNMET; no real event;** K06 an
+  independent condition before the release gate; SALE only.
