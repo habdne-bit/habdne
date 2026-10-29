@@ -1,9 +1,10 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 7**
+## Plan — **revision 8**
 
 **Status: step 1 CLOSED at `e9fac51`; step 2 CLOSED at `da3d778`; step 3
-AUTHORIZED** (review of `da3d778`, recorded below), within this plan's scope
-(§6, step 3). Step 4 is not authorized.
+delivered and NOT closed** (review of `c480474`, recorded below): two
+corrections asked, the effective deadline and TURAB's URL (R1-Q2, decided:
+§5.6). Step 4 is not authorized until the correction is reviewed.
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5). Revision 2 was adopted in the review of
@@ -45,6 +46,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
+| 8 | the commit that adds this revision | the review of `c480474` recorded: step 3 not closed; its readings 4.1 to 4.3 accepted; the effective deadline to correct; R1-Q2 decided (§5.6, §7 condition 12) |
 | 7 | `bf330c4` | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
 | 6 | `e1f8138` | the review of `ced7df7` recorded: step 2 not closed (document order inside one `value`); R1-T3.3 made explicit; the undocumented status's reading accepted |
 | 5 | `a562c25` | the review of `e9fac51` recorded: step 1 CLOSED; step 2 authorized |
@@ -54,6 +56,42 @@ does not touch it. The next slice's plan follows the review of this one.
 | 1 | `1d00f41` | first plan, planning only |
 
 ---
+
+## The review of `c480474`
+
+**Step 3 is NOT closed at `c480474`.**
+
+- **Accepted:**
+  - **the stop at the first envelope not completed:** the recorded
+    measurement (`R1-STEP3-STOP-MEASURED.txt`) shows that going on can
+    make `READ` be processed before `DELIVERED`;
+  - **an alert on every answer other than `200`, `500` and `503`;**
+  - **`503` when the key or the URL is missing,** with its stated cost.
+- **To correct before the closure:**
+  1. **The effective deadline.** The code sets an outer limit of 10 s, but
+     creates `httpx.AsyncClient` without setting its timeout. HTTPX has a
+     default timeout of 5 s without network activity. The reviewer infers
+     that a server silent for 6 s may get a `504` from the relay before the
+     stated 10 s; the reviewer did not measure it on our run. **Set HTTPX's
+     timeout explicitly, consistent with the whole limit, and test an
+     answer arriving after 5 s and before 10 s, and the limit exceeded.**
+  2. **R1-Q2, TURAB's URL: decided (§5.6).** `https` with the server's
+     certificate verified for every address that is not loopback; `http`
+     allowed on loopback, for local tests. **The code refuses, before
+     sending any content,** an unencrypted external URL, and a URL holding
+     credentials or a query (HTTPX logs the URL). The refusal, and that
+     nothing is sent, pinned by tests. §5.5's access-log condition stays
+     independent.
+- **What the reviewer checked:** the delivery path, the tests against
+  TURAB's real application, and the mutation records: 17/17 of step 3 and
+  28/28 of step 1, in two runs each, with the same kills once times and
+  random values are set aside; 3375/3375 and `bound` as recorded; the
+  remote head at `c480474`.
+- **What it did not do:** re-run the suite, the gate or the mutations; it
+  cannot confirm the local tree's state.
+- **Standing:** step 4 not authorized until the correction is reviewed;
+  **R-1 UNMET, no real event;** K06 an independent condition before the
+  release; SALE only.
 
 ## The review of `da3d778`
 
@@ -629,6 +667,22 @@ step 1 (`R1_STEP1_DELIVERY.md` §2).
 **Where it binds:** §4's order (step 3, the deployment), and §7 (condition
 11).
 
+### 5.6 R1-Q2 · TURAB's URL (DECIDED in the review of `c480474`)
+
+**Why:** the relay carries content to TURAB (`body_text`, `media_ref`), and
+the `httpx` library logs each request's URL.
+
+**The rule, checked before anything is sent:**
+- **`https`, with TURAB's server certificate verified,** for every address
+  that is not loopback;
+- **`http` only on a loopback address,** for local tests;
+- **refused:** any other scheme; an unencrypted external URL; a URL holding
+  credentials (`user:password@`) or a query; and nothing is sent when the
+  URL is refused.
+
+**Independent of §5.5:** the access log of the relay's own entry point is
+its own condition.
+
 ## 6. Sequence
 
 | Step | Content | Depends on |
@@ -636,7 +690,7 @@ step 1 (`R1_STEP1_DELIVERY.md` §2).
 | 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 **decided (a)** (review of `3d8b593`) |
 | 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **CLOSED at `e9fac51`** (review of `e9fac51`; `R1_STEP1_DELIVERY.md`) |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **CLOSED at `da3d778`** (review of `da3d778`; `R1_STEP2_DELIVERY.md`) |
-| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **AUTHORIZED** (review of `da3d778`); no deployment, no secret, no real event |
+| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **AUTHORIZED** (review of `da3d778`); delivered; **NOT closed** (review of `c480474`: the effective deadline; R1-Q2, §5.6); no deployment, no secret, no real event |
 | 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | step 3 |
 
 Each step is delivered with its tests and its mutation record, and reviewed
@@ -665,6 +719,8 @@ before the next. **Lifting a barrier of §4 is not a step of this plan.**
 10. **K06 UNPROVEN, SALE only.** Not a release authorization.
 11. **The run entry point meets §5.5,** tested through it, before any
     deployment or Callback setting.
+12. **TURAB's URL meets §5.6** (R1-Q2), the refusals and their sending
+    nothing tested.
 
 ## 8. What this plan does not do
 

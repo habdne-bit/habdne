@@ -1113,3 +1113,5 @@ docs/gate/evidence/R1-STEP1-MUTATIONS-AT-7502961-REPEAT.txt    new   6add8450803
 docs/gate/R1_STEP3_DELIVERY.md                                 add   f44a00bc6f1161c9461f87d26513e0e80e4512626d05095bd2402302d14dd82e
 docs/gate/R1_STEP1_DELIVERY.md                                 ptrs  40f97c05179ba9d3923b040353efb7b927df466b2af5846d76b0c2069cf36f0e
 docs/gate/R1_STEP2_DELIVERY.md                                 ptrs  516bcf0987137af6e965d1968e9553c4d250fe5cbab1bd038acfe99fb81221f5
+--- Review of c480474: R-1 step 3 NOT closed; R1-Q2 decided; plan revision 8 ---
+docs/gate/R1_RELAY_PLAN.md                                     rev8  39b6e8336a87645ef8ec84e929ffe15739d82f90bd97cc8562998a2f37d194ac
