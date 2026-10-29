@@ -1,29 +1,29 @@
 TURAB — R-1 step 2: the transformation, the relay's signature, thread_ref
 ============================================================
-Base commit       : 5c8c1f02466e98ab51add2260f4142ec1b3d55e6
-Source fingerprint: 9d6319a48c250226937f95fd014e544488649a277ac6f69c23073b03ab50e172
+Base commit       : 5ddf0553dbe01c2afad6538d4a2f1c8b9a5c0974
+Source fingerprint: c183eacf2fb6384276f7a6a317872c8c00078a71371b747a0cc1eb60a7e734f1
 Working tree      : CLEAN
-Recorded          : 2026-10-29 15:08:04 UTC
+Recorded          : 2026-10-29 16:33:15 UTC
 Test file         : tests/test_r1_step2.py
 
 === baseline (no mutation) ===
-   80 passed in 0.37s
-== X1 a text's body not carried [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.37s
+   88 passed in 0.27s
+== X1 a text's body not carried [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.33s
    FAILED test_r1_t3_1_a_text_message_is_one_envelope_turab_accepts
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[text-0]
    cause: AssertionError: assert {'external_me...type': 'TEXT'} == {'external_me...: 'TEXT', ...}
    cause: AssertionError: assert {} == {'body_text':...CONTENT-r1s2'}
    cause: E   AssertionError: assert {'external_me...type': 'TEXT'} == {'external_me...: 'TEXT', ...}
    cause: E   AssertionError: assert {} == {'body_text':...CONTENT-r1s2'}
-== X2 a caption carried for every media type [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.29s
+== X2 a caption carried for every media type [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.25s
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[audio-5]
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[sticker-6]
    cause: AssertionError: assert {'media_ref':...CONTENT-r1s2'} == {'media_ref': 'media-id-r1'}
    cause: E   AssertionError: assert {'media_ref':...CONTENT-r1s2'} == {'media_ref': 'media-id-r1'}
-== X3 a media id not carried [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   6 failed, 74 passed in 0.28s
+== X3 a media id not carried [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   6 failed, 82 passed in 0.29s
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[audio-5]
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[document-4]
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[image-1]
@@ -34,8 +34,8 @@ Test file         : tests/test_r1_step2.py
    cause: AssertionError: assert {} == {'media_ref': 'media-id-r1'}
    cause: E   AssertionError: assert {'body_text':...CONTENT-r1s2'} == {'body_text':...'media-id-r1'}
    cause: E   AssertionError: assert {} == {'media_ref': 'media-id-r1'}
-== X4 an unlisted type passed through [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   11 failed, 69 passed in 0.26s
+== X4 an unlisted type passed through [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   11 failed, 77 passed in 0.35s
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[a_future_type-17]
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[button-10]
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[contacts-8]
@@ -53,48 +53,67 @@ Test file         : tests/test_r1_step2.py
    cause: AssertionError: assert 'EDIT' == 'OTHER'
    cause: AssertionError: assert 'INTERACTIVE' == 'OTHER'
    cause: AssertionError: assert 'LOCATION' == 'OTHER'
-== X5 an unlisted type carries content [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.29s
+== X5 an unlisted type carries content [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.32s
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[a_future_type-17]
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[system-13]
    cause: AssertionError: assert {'body_text':...CONTENT-r1s2'} == {}
    cause: E   AssertionError: assert {'body_text':...CONTENT-r1s2'} == {}
-== X6 an image's caption dropped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.26s
+== X6 an image's caption dropped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.34s
    FAILED test_r1_t3_5_each_type_maps_exactly_as_section_5_3_states[image-1]
    cause: AssertionError: assert {'media_ref': 'media-id-r1'} == {'body_text':...'media-id-r1'}
    cause: E   AssertionError: assert {'media_ref': 'media-id-r1'} == {'body_text':...'media-id-r1'}
-== X7 a message's event id without its prefix [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.26s
+== X7 a message's event id without its prefix [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   9 failed, 79 passed in 0.30s
    FAILED test_r1_t3_1_a_text_message_is_one_envelope_turab_accepts
    FAILED test_r1_t3_3_a_batch_gives_one_envelope_per_element_in_document_order
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-messages-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-statuses-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-errors-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-statuses-errors]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-errors-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-messages-errors]
+   FAILED test_r1_t3_3_statuses_before_messages_in_the_bytes_meta_sends
    cause: AssertionError: assert ('wamid.HBgLM...=', 'message') == ('message:wam...=', 'message')
-   cause: AssertionError: assert ['w1', 'w2', ...d:1700000000'] == ['message:w1'...d:1700000000']
-   cause: E   AssertionError: assert ('wamid.HBgLM...=', 'message') == ('message:wam...=', 'message')
-   cause: E   AssertionError: assert ['w1', 'w2', ...d:1700000000'] == ['message:w1'...d:1700000000']
-== X8 a status's event id without its timestamp [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.27s
+   cause: AssertionError: assert ['VALUE_ERROR...', 'w1', 'w2'] == ['VALUE_ERROR... 'message:w2']
+   cause: AssertionError: assert ['VALUE_ERROR...d:1700000000'] == ['VALUE_ERROR...d:1700000000']
+   cause: AssertionError: assert ['status:w9:d...000000', 'w1'] == ['status:w9:d... 'message:w1']
+   cause: AssertionError: assert ['status:w9:s...', 'w1', 'w2'] == ['status:w9:s... 'message:w2']
+   cause: AssertionError: assert ['status:w9:s...VALUE_ERRORS'] == ['status:w9:s...VALUE_ERRORS']
+== X8 a status's event id without its timestamp [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   9 failed, 79 passed in 0.30s
    FAILED test_r1_t3_2_a_status_is_one_envelope_turab_accepts
    FAILED test_r1_t3_3_a_batch_gives_one_envelope_per_element_in_document_order
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-messages-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-statuses-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-errors-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-statuses-errors]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-errors-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-messages-errors]
+   FAILED test_r1_t3_3_statuses_before_messages_in_the_bytes_meta_sends
    cause: AssertionError: assert ('status:wami...ad', 'status') == ('status:wami...00', 'status')
+   cause: AssertionError: assert ['VALUE_ERROR... 'message:w2'] == ['VALUE_ERROR... 'message:w2']
+   cause: AssertionError: assert ['VALUE_ERROR...atus:w8:read'] == ['VALUE_ERROR...d:1700000000']
+   cause: AssertionError: assert ['message:w1'...VALUE_ERRORS'] == ['message:w1'...VALUE_ERRORS']
+   cause: AssertionError: assert ['message:w1'...atus:w8:read'] == ['message:w1'...d:1700000000']
    cause: AssertionError: assert ['message:w1'...w7:delivered'] == ['message:w1'...d:1700000000']
-   cause: E   AssertionError: assert ('status:wami...ad', 'status') == ('status:wami...00', 'status')
-   cause: E   AssertionError: assert ['message:w1'...w7:delivered'] == ['message:w1'...d:1700000000']
-== X9 delivered mapped to READ [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.32s
+== X9 delivered mapped to READ [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.40s
    FAILED test_r1_t3_2_each_meta_status_maps_to_turabs[delivered-DELIVERED]
    cause: AssertionError: assert 'READ' == 'DELIVERED'
    cause: E   AssertionError: assert 'READ' == 'DELIVERED'
-== X10 played not dropped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.26s
+== X10 played not dropped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.29s
    FAILED test_no_element_ever_carries_content_unless_forwarded
    FAILED test_played_is_dropped
    cause: AssertionError: assert ('ISOLATED', ...US_NOT_KNOWN') == ('DROPPED', 'STATUS_PLAYED')
-   cause: AssertionError: assert ['DROPPED', '...', 'ISOLATED'] == ['DROPPED', '...', 'ISOLATED']
+   cause: AssertionError: assert ['FORWARD', '...D', 'DROPPED'] == ['FORWARD', '...D', 'DROPPED']
    cause: E   AssertionError: assert ('ISOLATED', ...US_NOT_KNOWN') == ('DROPPED', 'STATUS_PLAYED')
-   cause: E   AssertionError: assert ['DROPPED', '...', 'ISOLATED'] == ['DROPPED', '...', 'ISOLATED']
-== X11 the instant without its zone [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   37 failed, 43 passed in 0.36s
+   cause: E   AssertionError: assert ['FORWARD', '...D', 'DROPPED'] == ['FORWARD', '...D', 'DROPPED']
+== X11 the instant without its zone [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   38 failed, 50 passed in 0.42s
+   FAILED test_metadata_and_contacts_after_the_messages_still_apply
    FAILED test_r1_t3_1_a_text_message_is_one_envelope_turab_accepts
    FAILED test_r1_t3_2_a_status_is_one_envelope_turab_accepts
    FAILED test_r1_t3_2_each_meta_status_maps_to_turabs[delivered-DELIVERED]
@@ -134,20 +153,20 @@ Test file         : tests/test_r1_step2.py
    FAILED test_the_timestamp_becomes_rfc_3339_in_utc[1749416383-2025-06-08T20:59:43Z]
    cause: E   turab.services.webhooks.EnvelopeRefused: occurred_at must be an RFC 3339 instant with a zone
    cause: turab.services.webhooks.EnvelopeRefused: occurred_at must be an RFC 3339 instant with a zone
-== X12 a timestamp not checked as decimal digits [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   3 failed, 77 passed in 0.30s
+== X12 a timestamp not checked as decimal digits [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   3 failed, 85 passed in 0.39s
    FAILED test_a_timestamp_that_is_not_unix_seconds_isolates_the_element[
    FAILED test_a_timestamp_that_is_not_unix_seconds_isolates_the_element[-1]
    FAILED test_a_timestamp_that_is_not_unix_seconds_isolates_the_element[\u0661\u0667\u0660\u0660]
    cause: AssertionError: assert 'FORWARD' == 'ISOLATED'
    cause: E   AssertionError: assert 'FORWARD' == 'ISOLATED'
-== X13 non-ASCII digits accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.29s
+== X13 non-ASCII digits accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.28s
    FAILED test_a_timestamp_that_is_not_unix_seconds_isolates_the_element[\u0661\u0667\u0660\u0660]
    cause: AssertionError: assert 'FORWARD' == 'ISOLATED'
    cause: E   AssertionError: assert 'FORWARD' == 'ISOLATED'
-== X14 any object accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   3 failed, 77 passed in 0.30s
+== X14 any object accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   3 failed, 85 passed in 0.27s
    FAILED test_a_notification_not_on_whatsapp_business_account_forwards_nothing[{"object":
    FAILED test_a_notification_not_on_whatsapp_business_account_forwards_nothing[{}]
    FAILED test_r1_t3_4_another_field_or_object_is_dropped[kwargs1-OBJECT_NOT_WHATSAPP]
@@ -155,37 +174,66 @@ Test file         : tests/test_r1_step2.py
    cause: E   AssertionError: assert [('FORWARD', 'FORWARDED')] == [('DROPPED', ...OT_WHATSAPP')]
    cause: E   assert (0 == 1)
    cause: assert (0 == 1)
-== X15 any field accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.27s
+== X15 any field accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.31s
    FAILED test_r1_t3_4_another_field_or_object_is_dropped[kwargs0-FIELD_NOT_MESSAGES]
    cause: AssertionError: assert [('FORWARD', 'FORWARDED')] == [('DROPPED', ...OT_MESSAGES')]
    cause: E   AssertionError: assert [('FORWARD', 'FORWARDED')] == [('DROPPED', ...OT_MESSAGES')]
-== X16 value.errors not counted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.33s
+== X16 value.errors not counted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   8 failed, 80 passed in 0.28s
    FAILED test_no_element_ever_carries_content_unless_forwarded
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-messages-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-statuses-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-errors-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-statuses-errors]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-errors-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-messages-errors]
    FAILED test_value_errors_are_dropped_one_each
-   cause: AssertionError: assert ['FORWARD', '...', 'ISOLATED'] == ['DROPPED', '...', 'ISOLATED']
-   cause: AssertionError: assert [] == [('DROPPED', ...ALUE_ERRORS')]
-   cause: E   AssertionError: assert ['FORWARD', '...', 'ISOLATED'] == ['DROPPED', '...', 'ISOLATED']
-   cause: E   AssertionError: assert [] == [('DROPPED', ...ALUE_ERRORS')]
-== X17 a missing timestamp not a missing field [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.24s
+   cause: AssertionError: assert ['FORWARD', '...', 'ISOLATED'] == ['FORWARD', '...D', 'DROPPED']
+   cause: AssertionError: assert ['message:w1'...d:1700000000'] == ['VALUE_ERROR...d:1700000000']
+   cause: AssertionError: assert ['message:w1'...d:1700000000'] == ['message:w1'...VALUE_ERRORS']
+   cause: AssertionError: assert ['message:w1'...d:1700000000'] == ['message:w1'...d:1700000000']
+   cause: AssertionError: assert ['status:w9:s... 'message:w2'] == ['VALUE_ERROR... 'message:w2']
+   cause: AssertionError: assert ['status:w9:s... 'message:w2'] == ['status:w9:s... 'message:w2']
+== X17 a missing timestamp not a missing field [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.37s
    FAILED test_a_message_missing_a_required_field_is_isolated[timestamp]
    cause: AssertionError: assert ('ISOLATED', ...MP_NOT_VALID') == ('ISOLATED', ...IELD_MISSING')
    cause: E   AssertionError: assert ('ISOLATED', ...MP_NOT_VALID') == ('ISOLATED', ...IELD_MISSING')
-== I1 a message's thread_ref reversed [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   3 failed, 77 passed in 0.27s
+== X18 the fixed order of kinds restored [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   7 failed, 81 passed in 0.30s
+   FAILED test_no_element_ever_carries_content_unless_forwarded
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-statuses-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-errors-statuses]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-statuses-errors]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-errors-messages]
+   FAILED test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-messages-errors]
+   FAILED test_r1_t3_3_statuses_before_messages_in_the_bytes_meta_sends
+   cause: AssertionError: assert ['DROPPED', '...', 'ISOLATED'] == ['FORWARD', '...D', 'DROPPED']
+   cause: AssertionError: assert ['VALUE_ERROR...d:1700000000'] == ['VALUE_ERROR... 'message:w2']
+   cause: AssertionError: assert ['VALUE_ERROR...d:1700000000'] == ['message:w1'...VALUE_ERRORS']
+   cause: AssertionError: assert ['VALUE_ERROR...d:1700000000'] == ['message:w1'...d:1700000000']
+   cause: AssertionError: assert ['VALUE_ERROR...d:1700000000'] == ['status:w9:s... 'message:w2']
+   cause: AssertionError: assert ['VALUE_ERROR...d:1700000000'] == ['status:w9:s...VALUE_ERRORS']
+== X19 contacts read as a stream [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.34s
+   FAILED test_metadata_and_contacts_after_the_messages_still_apply
+   cause: AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...ACT_MISMATCH')
+   cause: E   AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...ACT_MISMATCH')
+== I1 a message's thread_ref reversed [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   4 failed, 84 passed in 0.34s
+   FAILED test_metadata_and_contacts_after_the_messages_still_apply
    FAILED test_r1_t3_1_a_text_message_is_one_envelope_turab_accepts
    FAILED test_r1_t3_3_a_batch_gives_one_envelope_per_element_in_document_order
    FAILED test_r1_t6_1_and_2_thread_ref_is_the_business_then_the_customer
+   cause: AssertionError: assert '16505551234:106540352242922' == '106540352242922:16505551234'
    cause: AssertionError: assert ['16505551234... '333', '333'] == ['111', '111'... '333', '333']
    cause: AssertionError: assert ['16505551234...:16505551234'] == ['10654035224...:16505551234']
    cause: AssertionError: assert {'external_me...: 'TEXT', ...} == {'external_me...: 'TEXT', ...}
+   cause: E   AssertionError: assert '16505551234:106540352242922' == '106540352242922:16505551234'
    cause: E   AssertionError: assert ['16505551234... '333', '333'] == ['111', '111'... '333', '333']
-   cause: E   AssertionError: assert ['16505551234...:16505551234'] == ['10654035224...:16505551234']
-   cause: E   AssertionError: assert {'external_me...: 'TEXT', ...} == {'external_me...: 'TEXT', ...}
-== I2 a status's thread_ref reversed [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   3 failed, 77 passed in 0.33s
+== I2 a status's thread_ref reversed [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   3 failed, 85 passed in 0.36s
    FAILED test_r1_t3_2_a_status_is_one_envelope_turab_accepts
    FAILED test_r1_t3_3_a_batch_gives_one_envelope_per_element_in_document_order
    FAILED test_r1_t6_1_and_2_thread_ref_is_the_business_then_the_customer
@@ -195,19 +243,19 @@ Test file         : tests/test_r1_step2.py
    cause: E   AssertionError: assert ['10654035224...540352242922'] == ['10654035224...:16505551234']
    cause: E   AssertionError: assert ['111', '111'...'16505551234'] == ['111', '111'... '333', '333']
    cause: E   AssertionError: assert {'external_me...14T22:13:20Z'} == {'external_me...14T22:13:20Z'}
-== I3 a message's identifiers not scoped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.31s
+== I3 a message's identifiers not scoped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.27s
    FAILED test_r1_t6_5_an_identifier_that_cannot_be_scoped_is_isolated[business-106:54]
    FAILED test_r1_t6_5_an_identifier_that_cannot_be_scoped_is_isolated[sender-165:0555]
    cause: AssertionError: assert 'FORWARD' == 'ISOLATED'
    cause: E   AssertionError: assert 'FORWARD' == 'ISOLATED'
-== I4 a status's identifiers not scoped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.26s
+== I4 a status's identifiers not scoped [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.44s
    FAILED test_r1_t6_5_a_status_recipient_that_cannot_be_scoped_is_isolated
    cause: AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...NOT_SCOPABLE')
    cause: E   AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...NOT_SCOPABLE')
-== I5 a colon accepted in an identifier [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   3 failed, 77 passed in 0.38s
+== I5 a colon accepted in an identifier [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   3 failed, 85 passed in 0.27s
    FAILED test_r1_t6_5_a_status_recipient_that_cannot_be_scoped_is_isolated
    FAILED test_r1_t6_5_an_identifier_that_cannot_be_scoped_is_isolated[business-106:54]
    FAILED test_r1_t6_5_an_identifier_that_cannot_be_scoped_is_isolated[sender-165:0555]
@@ -215,43 +263,46 @@ Test file         : tests/test_r1_step2.py
    cause: AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...NOT_SCOPABLE')
    cause: E   AssertionError: assert 'FORWARD' == 'ISOLATED'
    cause: E   AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...NOT_SCOPABLE')
-== I6 contacts not checked [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.34s
+== I6 contacts not checked [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   3 failed, 85 passed in 0.28s
+   FAILED test_metadata_and_contacts_after_the_messages_still_apply
    FAILED test_r1_t6_7_contacts_are_checked_as_r1_d8_states[contacts5-ISOLATED]
    FAILED test_r1_t6_7_contacts_are_checked_as_r1_d8_states[contacts6-ISOLATED]
    cause: AssertionError: assert 'FORWARD' == 'ISOLATED'
+   cause: AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...ACT_MISMATCH')
    cause: E   AssertionError: assert 'FORWARD' == 'ISOLATED'
-== I7 a message without a wa_id isolated [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.37s
+   cause: E   AssertionError: assert ('FORWARD', 'FORWARDED') == ('ISOLATED', ...ACT_MISMATCH')
+== I7 a message without a wa_id isolated [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.29s
    FAILED test_r1_t6_7_contacts_are_checked_as_r1_d8_states[contacts1-FORWARD]
    FAILED test_r1_t6_7_contacts_are_checked_as_r1_d8_states[contacts2-FORWARD]
    cause: AssertionError: assert 'ISOLATED' == 'FORWARD'
    cause: E   AssertionError: assert 'ISOLATED' == 'FORWARD'
-== I8 a group message forwarded [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   2 failed, 78 passed in 0.35s
+== I8 a group message forwarded [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   2 failed, 86 passed in 0.32s
    FAILED test_no_element_ever_carries_content_unless_forwarded
    FAILED test_r1_t6_6_group_messages_and_group_statuses_are_dropped
-   cause: AssertionError: assert ['DROPPED', '...', 'ISOLATED'] == ['DROPPED', '...', 'ISOLATED']
+   cause: AssertionError: assert ['FORWARD', '...D', 'DROPPED'] == ['FORWARD', '...D', 'DROPPED']
    cause: AssertionError: assert [('FORWARD', ...ROUP_STATUS')] == [('DROPPED', ...ROUP_STATUS')]
-   cause: E   AssertionError: assert ['DROPPED', '...', 'ISOLATED'] == ['DROPPED', '...', 'ISOLATED']
+   cause: E   AssertionError: assert ['FORWARD', '...D', 'DROPPED'] == ['FORWARD', '...D', 'DROPPED']
    cause: E   AssertionError: assert [('FORWARD', ...ROUP_STATUS')] == [('DROPPED', ...ROUP_STATUS')]
-== I9 a group status forwarded [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.27s
+== I9 a group status forwarded [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.42s
    FAILED test_r1_t6_6_group_messages_and_group_statuses_are_dropped
    cause: AssertionError: assert [('DROPPED', ... 'FORWARDED')] == [('DROPPED', ...ROUP_STATUS')]
    cause: E   AssertionError: assert [('DROPPED', ... 'FORWARDED')] == [('DROPPED', ...ROUP_STATUS')]
-== K1 the signature over other bytes [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.27s
+== K1 the signature over other bytes [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.37s
    FAILED test_r1_t4_1_and_2_the_signature_is_over_the_exact_bytes_and_turab_verifies_it
    cause: E   assert False
    cause: assert False
-== K2 a key equal to Meta's app secret accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.40s
+== K2 a key equal to Meta's app secret accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.26s
    FAILED test_r1_t4_3_a_key_equal_to_metas_app_secret_is_refused
    cause: E   Failed: DID NOT RAISE RelayKeyRefused
    cause: Failed: DID NOT RAISE RelayKeyRefused
-== K3 an empty key accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 b4cb878eb957fcfc identical
-   1 failed, 79 passed in 0.28s
+== K3 an empty key accepted [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 1cd4864e35f6004e identical
+   1 failed, 87 passed in 0.30s
    FAILED test_r1_t4_4_no_key_signs_nothing[]
    cause: E   Failed: DID NOT RAISE RelayKeyRefused
    cause: Failed: DID NOT RAISE RelayKeyRefused

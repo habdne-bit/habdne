@@ -1086,3 +1086,10 @@ docs/gate/R1_STEP2_DELIVERY.md                                 add   4c241379760
 docs/gate/R1_RELAY_PLAN.md                                     rev6  15fb1d092dea4fbd03411c1f0978e9245838fd34e9410855ed4c1c5f16b8c030
 --- R-1 plan revision 6's commit named (e1f8138) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev6  b70298641cab3d8d536f91eb727643928f688eef63b3c8ae01508d1a8e6cce47
+--- R-1 step 2 correction (document order): before record, mutation records at 5ddf055; the earlier pair renamed to its tree ---
+docs/gate/evidence/R1-STEP2-ORDER-BEFORE.txt                   new   41dc4fc029c7142f558e89da0f15fa9f7540802ba6eb49f486fd956d391f5259
+docs/gate/evidence/R1-STEP2-MUTATIONS.txt                      new   a374d641a9890706203c24fb942c9ace21d96282c7b7023d02c26f1bc88430cd
+docs/gate/evidence/R1-STEP2-MUTATIONS-REPEAT.txt               new   df06930b8e4f272c3ef6229be416281f037b16a25dc5545f969bffdd2fa21450
+docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0.txt           new   ffb66dfb4f5d9d028ea899c9f5a526c2b21f64d27e992489295cf6b61d4ca593
+docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0-REPEAT.txt    new   a952f2bde9e2e4632c2ce3af9b717124560b7299a168db49e05aaf762fb56926
+docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0-TRIAL.txt     new   99051f9d7a5500dc2a7343d29b584b60eab6f2b859e08b21f55c553021927c28
