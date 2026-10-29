@@ -1129,3 +1129,6 @@ docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f-TRIAL.txt     new   83197ee9672
 --- R-1 step 3: 3c19543's pair renamed (not identical: T2 on a test's boundary); the test corrected ---
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3c19543.txt           new   d01076a86b060b4848ac1950466c61ae49f18ca4eb8aee9f845ca115a8ab44b6
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3c19543-REPEAT.txt    new   25389a91a325af8dfc90efa8a5339ad6a441716d5766248995332f84e1ad9bd4
+--- R-1 step 3 mutation records at 648bec0: 29/29, twice, outcomes identical ---
+docs/gate/evidence/R1-STEP3-MUTATIONS.txt                      new   8b53b6fea81fe6d9c93a7608c15697d8ada2e06e57ecff85e9ae2eba12fcfef1
+docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   62f58953d0b0d38f9625c43678d51e116535c7b2a826a0fc3c7a3ffd57c74ed2
