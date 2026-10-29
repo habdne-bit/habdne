@@ -8,7 +8,9 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Steps 2 to 4.
 
-**Status: DELIVERED again for review** (review of `8c64c64` answered, §8).
+**Status: CLOSED at `e9fac51`** (review of `e9fac51`; `R1_RELAY_PLAN.md`
+revision 5). Step 2 is authorized. The reviewer did not re-run the suite, the
+mutations, the gate or `run_binding`; the results are ours.
 R-1 stays **UNMET**.
 - *History:* delivered at `8c64c64`; NOT closed by the review of `8c64c64`,
   because the evidence's fingerprint did not cover `pyproject.toml`. §8

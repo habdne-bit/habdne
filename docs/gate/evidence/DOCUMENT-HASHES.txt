@@ -1075,3 +1075,6 @@ docs/gate/R1_RELAY_PLAN.md                                     rev4  f772f38ac65
 docs/gate/R1_RELAY_PLAN.md                                     rev4  b2144ad496fdb3a0519afd3796b89cc009f009d8be7957465d7eccc682ef7c87
 --- R-1 step 1 delivered again (review of 8c64c64 answered) ---
 docs/gate/R1_STEP1_DELIVERY.md                                 add   a8cd1a5a21ea3ac59935ecf45f2f50c72f4739385d88b31a83f34f4a7f497bf1
+--- Review of e9fac51: R-1 step 1 CLOSED; step 2 authorized; plan revision 5 ---
+docs/gate/R1_STEP1_DELIVERY.md                                 add   abe6b9dcdfa62cb2bc8b22ffcb6c111b691dd0eed8020f19cff0854054464414
+docs/gate/R1_RELAY_PLAN.md                                     rev5  17e34c1579acb84f27cd81a9fe195986bbe645c1f53d8a49bfeef6a3939634d2
