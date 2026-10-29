@@ -8,7 +8,8 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Steps 3 and 4.
 
-**Status: DELIVERED for review.** R-1 stays **UNMET**.
+**Status: delivered at `ced7df7`; NOT closed** (review of `ced7df7`: document order
+inside one `value`). **The correction is delivered for review** (§7). R-1 stays **UNMET**.
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -24,6 +25,10 @@
 - `5c8c1f0`: `transform.py`, its tests, its mutation script;
 - `29d43c3`: the mutation records (§4);
 - `4953ced`, `81f1f98`, `adb5dce`: the evidence round (§5).
+- **The correction (§7):** `e1f8138`, `ef3c133`: plan revision 6 (the review of
+  `ced7df7`); `5ddf055`: the order kept, its tests, X18 and X19, the before
+  record; `80afe91`: the mutation records; `09a6dab`, `a6de9cf`, `47e0264`:
+  the evidence round (§7.4).
 
 ---
 
@@ -134,8 +139,9 @@ Every notification is synthetic, built on the structures Meta documents
 
 - **The official runs:** two, at `5c8c1f0`, clean tree, source fingerprint
   `9d6319a4…e172`: **29/29 killed in each, outcomes identical**.
-  `evidence/R1-STEP2-MUTATIONS.txt` and `-REPEAT.txt`.
-- **The trial run**, outside the record: 29/29 (`-TRIAL.txt`).
+  `evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0.txt` and `-AT-5c8c1f0-REPEAT.txt`
+  (renamed to their tree in `80afe91`; see §7.3).
+- **The trial run**, outside the record: 29/29 (`-AT-5c8c1f0-TRIAL.txt`).
 - **One test was strengthened before it:** the `audio` and `sticker` rows of
   R1-T3.5 now carry an undocumented `caption`. Without it, "a caption carried
   for every media type" (X2) would have passed the table test.
@@ -145,6 +151,10 @@ Every notification is synthetic, built on the structures Meta documents
   follows isolates the element anyway).
 
 ## 5. The evidence round
+
+**Superseded by §7.4** on the corrected tree. `gate-run.txt` and
+`TEST-RUN-PROVENANCE.txt` now hold that tree's runs. The rows below are
+readable at their own commits.
 
 Every row ran on a clean tree with source fingerprint `9d6319a4…e172`,
 the mutation runs' own.
@@ -169,5 +179,107 @@ rules); the relay's tests are in the suite's count.
   barriers' measured state; the closure record.
 - **The access-log condition** (§5.5) stands before any deployment or
   Callback setting.
+- **R-1 UNMET; no real event;** K06 an independent condition before the
+  release gate; SALE only.
+
+---
+
+## 7. The review of `ced7df7`, and the correction
+
+**Step 2 was not closed at `ced7df7`.** Recorded in the plan, revision 6
+(`e1f8138`, named in `ef3c133`).
+- **§3 is decided:** an undocumented status is ISOLATED with
+  `STATUS_NOT_KNOWN`, with no envelope or content, and is counted and
+  alerted on in step 3.
+- **The gap:** R1-T3.3's "document order" was not kept inside one `value`.
+  The loop walked the kinds in a fixed order (`errors`, then `messages`,
+  then `statuses`), so when `statuses` came first in `value`, the messages
+  still came out first. The test of §2 wrote `messages` before
+  `statuses`, so it could not tell the two behaviours apart.
+
+### 7.1 Before: the failure, pinned on the code of `ced7df7`
+
+`evidence/R1-STEP2-ORDER-BEFORE.txt`:
+- `transform.py` was **byte-identical to `ced7df7`'s** (sha256 `b4cb878e…8e53`
+  in the tree and at HEAD); only the new tests were added.
+- **6 failed:**
+  - five of the six orders of `errors`, `messages` and `statuses` inside
+    one `value`. The sixth, `errors-messages-statuses`, is the code's own
+    fixed order and passes by coincidence;
+  - `statuses` before `messages`, written directly as bytes.
+- **3 passed:** the old R1-T3.3 test, the coincidental order, and the
+  `metadata`/`contacts` test below (it guards the correction, not the
+  defect).
+
+### 7.2 The correction (`5ddf055`)
+
+- `elements()` now walks `value`'s own keys **in the order they came**,
+  emitting the elements of `errors`, `messages` and `statuses` where each
+  key stands. The order of `entry` and of `changes` was already the
+  document's.
+- **`metadata` and `contacts` are still read before any element,**
+  wherever they are written: keeping the order does not make `value` a
+  stream.
+- **`json.loads` keeps the key order of the bytes** (Python ≥ 3.7, dicts
+  keep insertion order; checked here on `{"statuses":…,"messages":…,"errors":…}`).
+
+**The tests, 8 new (88 in the file):**
+
+| Test | What it fixes |
+|---|---|
+| `…keep_the_order_of_its_keys`, six orders | inside one `value`: each kind's elements where its key stands; the test first checks that the parsed `value` really has that key order |
+| `…statuses_before_messages_in_the_bytes_meta_sends` | the review's case, written as bytes: no dict in the test chooses the order |
+| `…metadata_and_contacts_after_the_messages_still_apply` | a `contacts` written after the messages still isolates a mismatched `from` (`CONTACT_MISMATCH`, no content); a matching one forwards with the business number written after |
+
+**One existing expectation was the defect itself:**
+`test_no_element_ever_carries_content_unless_forwarded` expected `errors`
+first, though `_notification` writes them last. It now expects the
+document's order. Its assertion of no content is unchanged.
+
+**A limit, not claimed:** duplicate keys inside one JSON object. Python's
+`json.loads` keeps the **last** value (checked: `{"a":1,"a":2}` →
+`{"a": 2}`), so a `value` with two `messages` keys yields the second
+array's elements, at the place of the **first** key. RFC 8259 §4 says
+names "SHOULD be unique" and leaves duplicates' behaviour to the
+implementation. Meta documents no duplicate keys. This is neither tested
+nor claimed.
+
+### 7.3 Mutation evidence on the corrected tree
+
+`db/dev/mutate_r1_step2.py`, **31 mutations**:
+- **X18:** the fixed order of kinds restored;
+- **X19:** `contacts` read as a stream (only what comes before the
+  messages counts).
+
+| Record | Tree | Result |
+|---|---|---|
+| `R1-STEP2-MUTATIONS.txt`, `-REPEAT.txt` | `5ddf055`, clean, fingerprint `c183eacf…34f1` | **31/31 killed, twice; identical outcomes** once run times are set aside |
+| `R1-STEP2-MUTATIONS-AT-5c8c1f0.txt`, `-AT-5c8c1f0-REPEAT.txt`, `-AT-5c8c1f0-TRIAL.txt` | `5c8c1f0` (renamed from the records of §4) | 29/29, as §4 states |
+
+- **X18 is killed** by the five order tests and the bytes test.
+- **X19 is killed** by the `contacts` test.
+
+### 7.4 The evidence round on the corrected tree
+
+Every row ran on a clean tree with source fingerprint
+**`c183eacf…34f1`**, the mutation runs' own.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Authorization matrix | 222 rules; suite **3340/3340** | `09a6dab` (run at `80afe91`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS: all database-level contract tests passed; the same 67 operations | `a6de9cf` (run at `09a6dab`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **3340 passed, 0 failed, 0 errors, 0 skipped** | `47e0264` (run at `a6de9cf`) | `evidence/TEST-RUN-PROVENANCE.txt`; **`bound`** |
+| Mutations | 31/31, twice, identical | `80afe91` (run at `5ddf055`) | §7.3 |
+
+**The first gate attempt** ran without the `PG*` variables and stopped at
+step 2: `dropdb` could not connect as `root`. The run was not reported as
+a result, and its record was restored. It was re-run with the suite's own
+local settings (`PGHOST=127.0.0.1`, `PGUSER=turab`).
+
+### 7.5 What remains
+
+- **The review of this correction.** Step 2 is not closed.
+- **Step 3 stays unauthorized** until that review.
+- **The access-log condition** (§5.5) stands.
 - **R-1 UNMET; no real event;** K06 an independent condition before the
   release gate; SALE only.

@@ -1093,3 +1093,5 @@ docs/gate/evidence/R1-STEP2-MUTATIONS-REPEAT.txt               new   df06930b8e4
 docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0.txt           new   ffb66dfb4f5d9d028ea899c9f5a526c2b21f64d27e992489295cf6b61d4ca593
 docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0-REPEAT.txt    new   a952f2bde9e2e4632c2ce3af9b717124560b7299a168db49e05aaf762fb56926
 docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0-TRIAL.txt     new   99051f9d7a5500dc2a7343d29b584b60eab6f2b859e08b21f55c553021927c28
+--- R-1 step 2 correction delivered for review (§7 of the delivery note) ---
+docs/gate/R1_STEP2_DELIVERY.md                                 §7   27c207bc48a09b81ca4750553c256fb071608b64549d6f131338272ec9aa14b4
