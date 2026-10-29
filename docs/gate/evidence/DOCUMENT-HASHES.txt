@@ -1115,3 +1115,5 @@ docs/gate/R1_STEP1_DELIVERY.md                                 ptrs  40f97c05179
 docs/gate/R1_STEP2_DELIVERY.md                                 ptrs  516bcf0987137af6e965d1968e9553c4d250fe5cbab1bd038acfe99fb81221f5
 --- Review of c480474: R-1 step 3 NOT closed; R1-Q2 decided; plan revision 8 ---
 docs/gate/R1_RELAY_PLAN.md                                     rev8  39b6e8336a87645ef8ec84e929ffe15739d82f90bd97cc8562998a2f37d194ac
+--- R-1 plan revision 8's commit named (598526c) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev8  8d58b87751ec8bb3bd02b4a255713681f01be751b055dd4386e79d77cd65a8e7
