@@ -1065,3 +1065,5 @@ docs/gate/evidence/R1-META-SOURCES.txt                         add   87ccd76fd27
 docs/gate/R1_RELAY_PLAN.md                                     rev2  54ad192006f7876a6870899de2945a88b7bb7a9080c10139c0b2e7a86ab447c0
 --- Review of 3d8b593: R-1 plan revision 3; revision 2 adopted; step 1 authorized; R1-Q1 decided (a) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev3  e3bf74b472d3eabd272a58d078b02c7bcbd600770e62dfe780a73ccf59b7ed89
+--- R-1 plan revision 3's commit named (c601c25) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev3  ad0ea0747cf3e71171f6b08972226bf341f1d8de6fedba61bb05c5f7ac884f8b
