@@ -8,7 +8,8 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Step 4.
 
-**Status: DELIVERED for review.** R-1 stays **UNMET**.
+**Status: delivered at `c480474`; NOT closed** (review of `c480474`: the effective
+deadline; R1-Q2). **The correction is delivered for review** (§9). R-1 stays **UNMET**.
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -26,6 +27,11 @@
   measurement of §4.1;
 - `2d42061`: the mutation records (§5);
 - `e56bb93`, `636e1f1`, `19eddeb`: the evidence round (§6).
+- **The correction (§9):** `598526c`, `2e31160`: plan revision 8 (the review
+  of `c480474`); `3c19543`: the deadline, the URL rule, their tests and
+  mutations, the before record; `c9c16f9`: a first pair of mutation records,
+  not identical (§9.4); `648bec0`: the test corrected; `ddda6b5`: the
+  mutation records; `18220ad`, `14e17d5`, `b5501ef`: the evidence round.
 
 ---
 
@@ -194,6 +200,9 @@ while the configuration is missing.
 
 ## 6. The evidence round
 
+**Superseded by §9.5** on the corrected tree. The rows below are readable
+at their own commits.
+
 Every row ran on a clean tree with source fingerprint `e99380d3…bddf8`,
 the mutation runs' own.
 
@@ -207,7 +216,7 @@ the mutation runs' own.
 (`test_mutation_tools` runs over every mutation script, now
 `mutate_r1_step3.py` too).
 
-## 7. An open question
+## 7. An open question (decided in the review of `c480474`: §9)
 
 **R1-Q2 · The scheme between the relay and TURAB.**
 - **What the plan does not decide:** whether the relay must reach TURAB
@@ -229,5 +238,170 @@ the mutation runs' own.
   - R-1's evidence, the barriers' measured state, and the closure record.
 - **The access-log condition** (§5.5) stands before any deployment or
   Callback setting.
+- **R-1 UNMET; no real event;** K06 an independent condition before the
+  release gate; SALE only.
+
+---
+
+## 9. The review of `c480474`, and the correction
+
+**Step 3 was not closed at `c480474`.** Recorded in the plan, revision 8
+(`598526c`, named in `2e31160`).
+- **Accepted:**
+  - §4.1, the stop at the first envelope not completed;
+  - §4.2, an alert on every answer other than 200, 500 and 503;
+  - §4.3, 503 when the key or the URL is missing, with its cost.
+- **To correct:**
+  1. the effective deadline;
+  2. R1-Q2, decided (the plan's §5.6, §7 condition 12).
+
+### 9.1 Before: the two points, pinned on `c480474`'s code
+
+`evidence/R1-STEP3-CORRECTIONS-BEFORE.txt`:
+- **The tree:** `forward.py` byte-identical to `c480474`'s; only the new
+  tests were added, with the double's URL set to `https`.
+- **The deadline:** **TURAB silent for 6 s got 504 after 5.06 s,** under
+  the stated 10 s.
+  - The reviewer inferred this; it is now measured.
+  - The cause is HTTPX's own default, `Timeout(timeout=5.0)`
+    (`httpx/_config.py:246`, httpx 0.28.1), applied because the client set
+    none.
+- **TURAB's URL:** every external `http` URL, and every URL with
+  credentials, a query or a fragment, was used. The envelopes were sent,
+  and the relay answered 200 where 503 is due. The rule did not exist.
+- **Already true before:** TURAB's certificate was verified (httpx's
+  default, `verify=True`, with the `certifi` roots under
+  `trust_env=False`); the correction makes it explicit.
+- **Cases added after the record:** seven refused URLs and three allowed
+  ones. They are not in it:
+  - the loopback spellings;
+  - the escaped hosts;
+  - the default ports.
+
+### 9.2 The correction (`3c19543`; one test corrected in `648bec0`, §9.4)
+
+- **The deadline:**
+  - `httpx.AsyncClient(timeout=httpx.Timeout(limit))`: no phase of HTTPX
+    (connect, write, read, pool) ends an envelope before the relay's limit;
+  - the outer limit (`asyncio.timeout`) still bounds the whole.
+- **TURAB's certificate:** `verify=True`, stated.
+- **`url_refusal` (§5.6), checked before anything is sent.** A refusal is
+  503 `TURAB_URL_NOT_ALLOWED`, with an alert that names the fixed reason,
+  never the URL:
+
+| Reason | Refused |
+|---|---|
+| `MALFORMED` | a character outside printable ASCII, a space or a backslash; no host; an invalid port; an escape (`%`) in the host; `urllib` and `httpx` reading a different scheme, host or port |
+| `SCHEME` | any scheme but `https` and `http` |
+| `CREDENTIALS` | `@` in the authority |
+| `QUERY` | `?` or `#` anywhere |
+| `UNENCRYPTED` | `http` to anything but a **loopback IP literal**: `127.0.0.0/8`, `::1` |
+
+- **Two readings of ours inside the decision:**
+  - **"Loopback" is an IP literal, never a name.** `http://localhost` is
+    refused, because a resolver could point the name elsewhere. Other
+    spellings of loopback are refused too: `127.1`, `0x7f.1`,
+    `2130706433`, and `::ffff:127.0.0.1` (Python's `ipaddress` does not
+    take it as loopback).
+  - **A default port counts as none.** `:443` and `:80` are allowed:
+    `httpx` drops them and `urllib` keeps them, so they are normalised
+    before the comparison.
+- **Found while testing, before the commit:**
+  - an escaped host (`turab%2Eexample`) was refused only because the two
+    parsers keep the escape's letter case differently; `turab%2eexample`
+    would have passed. Hence the explicit `%` rule;
+  - the parser comparison itself is reached by no input we found once the
+    earlier rules hold. It stays as a guard, and is declared unmutated
+    (§9.4).
+
+**The tests: 66 new, 99 in the file.**
+
+| What | Tests |
+|---|---|
+| **the deadline** | a real server on loopback that reads the request, then stays silent 6 s: **200 under the default 10 s**, between 6 and 10 s; a limit of 2 s, an answer after 1 s: 200; after 3 s: **504, between 2 and 3 s**, at the limit, not before |
+| **the rule** | 9 URLs allowed; 26 refused, each with its reason |
+| **no sending** | each refused URL through the relay: 503, one alert naming the reason, **nothing reaching TURAB**, and no URL, password or query in any log |
+| **the certificate** | an `https` TURAB whose certificate a test CA issued, outside the default roots: **refused at the handshake, no request reaching it**, 504; the same TURAB with its CA trusted: delivered |
+
+**The double's URL** is now `https://turab.test/...`, which §5.6 allows.
+
+### 9.3 What did not change
+
+- `app.py`, `meta.py`, `tls.py`, `transform.py`, and the files of steps 1
+  and 2: unchanged since `3f86b1f`.
+- **Step 1's mutation records at `3f86b1f` stand:** its code and its tests
+  are the same.
+
+### 9.4 Mutation evidence on the corrected tree
+
+**`db/dev/mutate_r1_step3.py`, 29 mutations:**
+- **T1** HTTPX's timeout left at its 5 s default;
+- **T2** HTTPX's timeout shorter than the limit;
+- **V1** TURAB's certificate not verified;
+- **U1 to U9:**
+  - the URL not checked;
+  - `http` allowed for any host;
+  - a name taken as loopback;
+  - credentials allowed;
+  - a query allowed;
+  - a fragment allowed;
+  - any scheme allowed;
+  - any character allowed;
+  - an escaped host allowed.
+
+D6's anchor follows its line. **Not mutated,** with the reasons in the
+script:
+- the parser comparison: no input reaches it;
+- the default-port normalisation: removing it refuses more, not less.
+
+**The first official pair, at `3c19543`, did not have identical outcomes.**
+- **What differed:** one test case under T2 (HTTPX's timeout at half the
+  2 s limit, so 1.0 s). Its server answered after 1.0 s. It passed in one
+  run and failed in the other: the answer raced the timer.
+- **T2 was killed in both runs,** by two other tests. The outcomes still
+  differed, so that pair does not meet the condition.
+- **What was done:**
+  - the evidence round already started on that tree was stopped before it
+    recorded anything;
+  - the pair is kept, renamed `-AT-3c19543`;
+  - **the test was corrected in `648bec0`:** the answer now comes after
+    0.5 s, at least 0.5 s from the limit and from its half. T2 then gave
+    the same outcome three times in a row;
+  - the official pair was run again.
+- **The other timed tests were checked against every mutant.** Each keeps
+  at least 1 s from its nearest boundary.
+
+| Record | Tree | Result |
+|---|---|---|
+| `R1-STEP3-MUTATIONS.txt`, `-REPEAT.txt` | `648bec0`, clean, fingerprint `99af4583…9b2c` | **29/29, twice, outcomes identical**; the text differs only in random trace ids and measured seconds |
+| `R1-STEP3-MUTATIONS-AT-3c19543.txt`, `-AT-3c19543-REPEAT.txt` | `3c19543` | 29/29 in each; **outcomes not identical** (T2, above) |
+| `R1-STEP3-MUTATIONS-TRIAL.txt` | the working tree before `3c19543` | 29/29, outside the record |
+| `R1-STEP3-MUTATIONS-AT-3f86b1f*.txt` | `3f86b1f` (renamed) | 17/17, as §5 states |
+
+**Killed by the tests meant for them:**
+- **T1:** the 6 s test (504 after 5.04 s in the official run);
+- **V1:** the certificate test (200 where 504 is due);
+- **U3:** the `localhost` cases.
+
+### 9.5 The evidence round on the corrected tree
+
+Every row ran on a clean tree with source fingerprint `99af4583…9b2c`,
+the mutation runs' own.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Authorization matrix | 222 rules; suite **3441/3441** | `18220ad` (run at `ddda6b5`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS: all database-level contract tests passed; the same 67 operations | `14e17d5` (run at `18220ad`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **3441 passed, 0 failed, 0 errors, 0 skipped** | `b5501ef` (run at `14e17d5`) | `evidence/TEST-RUN-PROVENANCE.txt`; **`bound`** |
+
+**The count:** 3441 = 3375 + 66. The 66 new tests: the 6 s test, the two
+2 s cases, 9 allowed URLs, 26 refused URLs tested twice (the rule, and
+through the relay), and the two certificate tests.
+
+### 9.6 What remains
+
+- **The review of this correction.** Step 3 is not closed.
+- **Step 4 stays unauthorized** until that review.
+- **§5.5's access-log condition** stands, independent of §5.6.
 - **R-1 UNMET; no real event;** K06 an independent condition before the
   release gate; SALE only.

@@ -1132,3 +1132,5 @@ docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3c19543-REPEAT.txt    new   25389a91a32
 --- R-1 step 3 mutation records at 648bec0: 29/29, twice, outcomes identical ---
 docs/gate/evidence/R1-STEP3-MUTATIONS.txt                      new   8b53b6fea81fe6d9c93a7608c15697d8ada2e06e57ecff85e9ae2eba12fcfef1
 docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   62f58953d0b0d38f9625c43678d51e116535c7b2a826a0fc3c7a3ffd57c74ed2
+--- R-1 step 3 correction delivered for review (§9 of the delivery note) ---
+docs/gate/R1_STEP3_DELIVERY.md                                 §9   b15c11cbff0085caaac0a170e1dd572080566bd529c19f347bc1057bcb9ae944
