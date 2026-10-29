@@ -133,3 +133,66 @@ def test_a_report_whose_totals_disagree_with_its_cases_is_refused(tree):
     assert r.returncode == 1
     assert "the report's totals say" in r.stderr and "failures=0" in r.stderr
     assert "the report has 1 failed and 0 errored cases" in r.stderr
+
+
+# --- review of 8c64c64: pytest's configuration is part of what a run is bound to ----------
+
+def _bound_copy(tmp_path) -> pathlib.Path:
+    """An isolated copy of everything the fingerprint reads, holding a bound,
+    passing run; `run_binding.check` must accept it before any experiment."""
+    copy = tmp_path / "bound"
+    ignore = shutil.ignore_patterns("__pycache__", ".pytest_cache")
+    for d in ("src", "tests", "db", "relay"):
+        shutil.copytree(ROOT / d, copy / d, ignore=ignore)
+    for name in ("alembic.ini", "pyproject.toml"):
+        shutil.copy(ROOT / name, copy / name)
+    report = copy / REPORT
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(_synthetic_report(["test_one", "test_two"]))
+    (copy / run_binding.PROVENANCE).write_text(run_binding.provenance_text(
+        recorded="2026-01-01 00:00:00 UTC", commit="0" * 40,
+        source_fingerprint=run_binding.fingerprint(copy), report=report,
+        report_name=REPORT.as_posix()))
+    _, problems = run_binding.check(copy)
+    assert problems == [], f"the baseline must be bound: {problems}"
+    return copy
+
+
+@pytest.mark.parametrize("old, new", [
+    ('pythonpath = ["src", "relay"]', 'pythonpath = ["src", "relay", "elsewhere"]'),
+    ('pythonpath = ["src", "relay"]', 'pythonpath = ["src"]'),
+    ('testpaths = ["tests"]', 'testpaths = ["tests", "relay"]'),
+])
+def test_a_change_to_pytests_configuration_after_the_run_is_refused(tmp_path, old, new):
+    """The review of 8c64c64: `pyproject.toml`'s `pythonpath` decides whether
+    the relay's tests are collected; changing it after the run must unbind the
+    report."""
+    copy = _bound_copy(tmp_path)
+    config = copy / "pyproject.toml"
+    assert config.read_text().count(old) == 1
+    config.write_text(config.read_text().replace(old, new))
+    _, problems = run_binding.check(copy)
+    assert any("source fingerprint" in p and "not evidence for this tree" in p
+               for p in problems), problems
+
+
+@pytest.mark.parametrize("name", ["pytest.toml", ".pytest.toml", "pytest.ini", ".pytest.ini",
+                                  "tox.ini", "setup.cfg", "conftest.py"])
+def test_a_pytest_configuration_file_added_after_the_run_is_refused(tmp_path, name):
+    """Each file pytest reads for its configuration (its documentation lists
+    them), and a root conftest.py, unbinds the report when it appears."""
+    copy = _bound_copy(tmp_path)
+    (copy / name).write_text("[pytest]\n" if not name.endswith(".py") else "# added\n")
+    _, problems = run_binding.check(copy)
+    assert any("source fingerprint" in p for p in problems), problems
+
+
+def test_the_recipe_lists_pytests_configuration_files():
+    sys.path.insert(0, str(ROOT / "db" / "dev"))
+    import source_fingerprint
+
+    assert {"pyproject.toml", "pytest.toml", ".pytest.toml", "pytest.ini", ".pytest.ini",
+            "tox.ini", "setup.cfg", "conftest.py"} <= set(source_fingerprint.EXTRA)
+    assert "relay" in source_fingerprint.TREES
+    listed = {line.split("  ", 1)[1].strip() for line in source_fingerprint.lines(ROOT)}
+    assert "pyproject.toml" in listed

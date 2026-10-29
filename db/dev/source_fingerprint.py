@@ -10,10 +10,21 @@ carry this script's output, each bound to the run it describes.
 Recipe, deliberately simple enough to re-implement in any language:
 
   1. Collect every file under src/, tests/, db/ and relay/ whose suffix is one
-     of .py .sql .sh .ini .mako, plus alembic.ini at the repository root.
-     (relay/ added for R-1, plan `docs/gate/R1_RELAY_PLAN.md`: the relay is
-     a separate component in this repository, R1-D1 (a), and a run bound to
-     a tree must cover its code.)
+     of .py .sql .sh .ini .mako, plus, at the repository root and when present,
+     alembic.ini, pytest's configuration files, and conftest.py.
+     - relay/ was added for R-1 (plan `docs/gate/R1_RELAY_PLAN.md`): the relay
+       is a separate component in this repository, R1-D1 (a), and a run bound
+       to a tree must cover its code.
+     - pytest's configuration files were added in the review of `8c64c64`:
+       they decide what the suite collects (`pyproject.toml`'s `pythonpath`
+       makes the relay's tests importable), so a run bound to a tree must
+       cover them. The list is pytest's own, from its documentation
+       ("Configuration file formats", pytest 9.1): pytest.toml, .pytest.toml,
+       pytest.ini, .pytest.ini, pyproject.toml, tox.ini, setup.cfg. A root
+       conftest.py is added as a precaution of ours: pytest loads it for every
+       test below it; the page cited does not list it.
+     A file of this list that is absent is not collected, so adding one later
+     changes the fingerprint.
   2. Sort the POSIX-style paths, relative to the repository root, as byte
      strings (not locale-aware ordering).
   3. For each, emit "<sha256 of the file bytes>  <path>\n".
@@ -34,7 +45,8 @@ from pathlib import Path
 
 SUFFIXES = {".py", ".sql", ".sh", ".ini", ".mako"}
 TREES = ("src", "tests", "db", "relay")
-EXTRA = ("alembic.ini",)
+EXTRA = ("alembic.ini", "pyproject.toml", "pytest.toml", ".pytest.toml", "pytest.ini",
+         ".pytest.ini", "tox.ini", "setup.cfg", "conftest.py")
 
 
 def _files(root: Path) -> list[Path]:

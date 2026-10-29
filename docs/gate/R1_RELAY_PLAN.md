@@ -1,5 +1,5 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 3**
+## Plan — **revision 4**
 
 **Status: revision 2 ADOPTED; step 1 AUTHORIZED** (review of `3d8b593`,
 recorded below), within its stated scope: Meta's GET, the verification of
@@ -8,6 +8,10 @@ Meta's signature, the inbound limit, and the synthetic mTLS tests.
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5).
 - **R1-Q1 is decided: (a)** (§5.4).
+- **Step 1 is delivered and NOT closed** (review of `8c64c64`, recorded
+  below): the evidence's binding did not cover pytest's configuration.
+- **The run entry point's access log is a binding condition** (§5.5,
+  decided in the review of `8c64c64`).
 - **Step 1's authorization does not allow** deploying the relay, creating a
   secret, or receiving any real event. Steps 2 to 4 are not authorized.
 - **No relay** is deployed. **No secret, verify token or Meta app setting** is created.
@@ -42,10 +46,46 @@ does not touch it. The next slice's plan follows the review of this one.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `1d00f41` | first plan, planning only |
+| 4 | the commit that adds this revision | the review of `8c64c64` recorded: step 1 not closed (the fingerprint did not cover `pyproject.toml`); the access-log condition decided (§5.5), in §4's order and §7 |
 | 3 | `c601c25` | the review of `3d8b593` recorded: revision 2 adopted; step 1 authorized; R1-Q1 decided (a), §5.4 and R1-T7.2 set to it, with an OVERSIZE class in §5.1; R1-D8's reading accepted; §5.1's checks made explicit per element kind; R1-T1.5's count bounded to the requests that reach the comparison |
 | 2 | `878745e` | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
 
 ---
+
+## The review of `8c64c64`
+
+**Step 1 stays delivered for review; it is NOT closed.** The reviewer read
+the code and the delivery note at `8c64c64`. The remote head is at that
+commit; the reviewer did not check the local tree's cleanliness, and did not
+re-run the 3239 tests, the mutations or the gate.
+
+**The blocker:** the evidence's fingerprint does not cover a setting the
+step changed. `relay` was added to `pyproject.toml`'s `pythonpath`, but
+`source_fingerprint.py` does not collect that file, and `run_binding.py`
+compares the fingerprint alone against the current tree. So, reasoning from
+the code, a later commit could change how the relay's tests are collected
+while `bound` stays. This does not deny the run's result on `8c64c64`'s
+tree; it limits what the binding check proves.
+
+| # | Asked to close step 1 |
+|---|---|
+| 1 | add `pyproject.toml` to the fingerprint's recipe, and update the description of its limits in the run record |
+| 2 | a test that changes `pythonpath` in an isolated copy, and proves the binding check refuses it |
+| 3 | the evidence round again on the corrected tree, with the mutation records attributed exactly to the tree each ran on |
+
+**Decided: the access log** (§5.5). A binding condition of the relay's run
+entry point, before any deployment or Callback setting: the logging of the
+request line is disabled, or its query removed, in the HTTP server and in
+every layer in front of it, and this is tested through the actual run entry
+point. The current test server's `access_log=False` does not prove the
+configuration of an entry point not yet built. *(Uvicorn documents disabling
+its access log in its settings; the reviewer's citation.)*
+
+- **The reviewer's reading confirms:** a correctly signed POST is answered
+  503 now, so no undelivered event is acknowledged; the mTLS tests use
+  synthetic certificates, and are not a test of Meta's real certificate.
+- **Standing:** R-1 UNMET, no real events; K06 an independent condition
+  before the release; SALE only.
 
 ## The review of `3d8b593`
 
@@ -316,7 +356,9 @@ closed, each a decision of its own:**
 1. the review closes R-1;
 2. the relay's key is created, and set in the relay and in TURAB, in a
    non-production environment first;
-3. the relay is deployed behind TLS (M1) and mTLS (R1-D10);
+3. the relay is deployed behind TLS (M1) and mTLS (R1-D10), **only through
+   a run entry point that meets §5.5** (no request line with its query in any
+   log), tested through that entry point;
 4. the callback URL and verify token are set at Meta, and the GET verified;
 5. the `messages` field is subscribed;
 6. the first real event.
@@ -488,12 +530,29 @@ that possibility at once.
 confirm it from Meta's live page. After the window, Meta drops the delivery
 (E9), with its valid elements already delivered.
 
+### 5.5 The run entry point's access log (DECIDED in the review of `8c64c64`)
+
+**Why:** Meta sends `hub.verify_token` in the GET's query string (E1). Any
+log of the request line records it. uvicorn's access log does: found in R-1
+step 1 (`R1_STEP1_DELIVERY.md` §2).
+
+**The condition, binding before any deployment or Callback setting:**
+- the logging of the request line is **disabled, or its query removed,** in
+  the HTTP server **and in every layer in front of it** (a load balancer, a
+  proxy, a TLS terminator);
+- it is **tested through the actual run entry point**, as deployed. The step
+  1 test server's `access_log=False` proves that server's configuration
+  only, not an entry point not yet built.
+
+**Where it binds:** §4's order (step 3, the deployment), and §7 (condition
+11).
+
 ## 6. Sequence
 
 | Step | Content | Depends on |
 |---|---|---|
 | 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 **decided (a)** (review of `3d8b593`) |
-| 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **AUTHORIZED** (review of `3d8b593`); no deployment, no secret, no real event |
+| 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **AUTHORIZED** (review of `3d8b593`); delivered; **NOT closed** (review of `8c64c64`: the binding of pytest's configuration); no deployment, no secret, no real event |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | step 1 |
 | 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | step 2 |
 | 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | step 3 |
@@ -522,6 +581,8 @@ before the next. **Lifting a barrier of §4 is not a step of this plan.**
 9. **The barriers' state measured and recorded at closure** (§4). Lifting a
    barrier is decided separately.
 10. **K06 UNPROVEN, SALE only.** Not a release authorization.
+11. **The run entry point meets §5.5,** tested through it, before any
+    deployment or Callback setting.
 
 ## 8. What this plan does not do
 

@@ -20,7 +20,10 @@ Not mutated, each with its reason:
   the order;
 - the 404 and 405 answers: they guard no rule of the plan.
 
-Only `tests/test_r1_step1.py` is run. Run in one part. See
+Part 2, F (review of 8c64c64): the source fingerprint covers `relay/` and
+pytest's configuration files, killed by `tests/test_evidence_binding.py`.
+
+Run in two parts, one per test file; each prints its own header. See
 `mutation_runner.py`.
 """
 import sys
@@ -31,6 +34,8 @@ META = "relay/turab_relay/meta.py"
 APP = "relay/turab_relay/app.py"
 TLS = "relay/turab_relay/tls.py"
 TESTS = "tests/test_r1_step1.py"
+FINGERPRINT = "db/dev/source_fingerprint.py"
+BINDING_TESTS = "tests/test_evidence_binding.py"
 
 MUTATIONS = [
  # --- G: duty 1, Meta's GET ---------------------------------------------------------------
@@ -105,18 +110,36 @@ MUTATIONS = [
 ]
 
 
+#: Part 2 (review of 8c64c64): the fingerprint covers the relay and pytest's
+#: configuration, killed by `tests/test_evidence_binding.py`.
+BINDING_MUTATIONS = [
+ ("F1 pytest's configuration files not in the recipe", FINGERPRINT,
+  "EXTRA = (\"alembic.ini\", \"pyproject.toml\", \"pytest.toml\", \".pytest.toml\", "
+  "\"pytest.ini\",\n         \".pytest.ini\", \"tox.ini\", \"setup.cfg\", \"conftest.py\")",
+  "EXTRA = (\"alembic.ini\",)"),
+ ("F2 relay/ not in the recipe", FINGERPRINT,
+  "TREES = (\"src\", \"tests\", \"db\", \"relay\")", "TREES = (\"src\", \"tests\", \"db\")"),
+ ("F3 pyproject.toml alone not in the recipe", FINGERPRINT,
+  "EXTRA = (\"alembic.ini\", \"pyproject.toml\", ", "EXTRA = (\"alembic.ini\", "),
+]
+
+
 def _check_anchors() -> None:
     """Each anchor names ONE site: the runner replaces every occurrence. Run
     before a run, never on import."""
-    for name, rel, old, _new in MUTATIONS:
+    for name, rel, old, _new in MUTATIONS + BINDING_MUTATIONS:
         count = (ROOT / rel).read_text().count(old)
         assert count == 1, (name, count)
-    labels = [m[0].split()[0] for m in MUTATIONS]
+    labels = [m[0].split()[0] for m in MUTATIONS + BINDING_MUTATIONS]
     assert len(set(labels)) == len(labels)
 
 
 if __name__ == "__main__":
     _check_anchors()
+    only = tuple(sys.argv[1:])
     survivors = run("TURAB — R-1 step 1: Meta's GET, Meta's signature, the inbound limit, "
-                    "mutual TLS", TESTS, MUTATIONS, tuple(sys.argv[1:]))
+                    "mutual TLS", TESTS, MUTATIONS, only)
+    print()
+    survivors += run("TURAB — R-1 step 1: the fingerprint covers the relay and pytest's "
+                     "configuration (review of 8c64c64)", BINDING_TESTS, BINDING_MUTATIONS, only)
     sys.exit(1 if survivors else 0)

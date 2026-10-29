@@ -111,10 +111,14 @@ WHAT THIS DOES AND DOES NOT SAY
       - the CURRENT tree's source fingerprint differs from the value above.
   * It does not say the reviewer's environment would produce the same result.
     Nobody but us has re-run this suite; every result we report is ours.
-  * The fingerprint covers src/, tests/, db/ and alembic.ini, not docs/. A
-    later commit that touches only documentation leaves it unchanged, which is
-    why the fingerprint, not the commit id, is what binds a report to the code
-    it exercised.
+  * The fingerprint covers src/, tests/, db/ and relay/; and, at the root when
+    present, alembic.ini, pytest's configuration files (pyproject.toml,
+    pytest.toml, .pytest.toml, pytest.ini, .pytest.ini, tox.ini, setup.cfg)
+    and conftest.py. It does not cover docs/. A later commit that touches only
+    documentation leaves it unchanged, which is why the fingerprint, not the
+    commit id, is what binds a report to the code it exercised.
+  * It does not cover the installed environment (.venv: the interpreter and
+    the packages' versions), nor the database server's software.
 """
 
 

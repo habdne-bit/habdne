@@ -69,7 +69,9 @@ _PATH = re.compile(r"(?<![\w./-])(?:docs|db|src|tests)/[A-Za-z0-9_./-]+")
 _INVOKED = re.compile(r"[A-Za-z0-9_./$\{\}-]*?([A-Za-z0-9_-]+\.(?:py|sh))")
 
 #: Covered by the source fingerprint (db/dev/source_fingerprint.py).
-_SOURCE_PREFIXES = ("src/", "tests/", "db/", "relay/", "alembic.ini")
+_SOURCE_PREFIXES = ("src/", "tests/", "db/", "relay/", "alembic.ini", "pyproject.toml",
+                    "pytest.toml", ".pytest.toml", "pytest.ini", ".pytest.ini", "tox.ini",
+                    "setup.cfg", "conftest.py")
 
 ENTRY = "db/gate/run_gate.sh"
 

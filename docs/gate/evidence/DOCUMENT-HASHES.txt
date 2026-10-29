@@ -1069,3 +1069,5 @@ docs/gate/R1_RELAY_PLAN.md                                     rev3  e3bf74b472d
 docs/gate/R1_RELAY_PLAN.md                                     rev3  ad0ea0747cf3e71171f6b08972226bf341f1d8de6fedba61bb05c5f7ac884f8b
 --- R-1 step 1 delivered for review ---
 docs/gate/R1_STEP1_DELIVERY.md                                 add   7d5fa39dd0cc1ef8ed7d738548a26ff095792545e1a56379b3364d553f2c5bce
+--- Review of 8c64c64: R-1 plan revision 4; step 1 not closed; the access-log condition decided ---
+docs/gate/R1_RELAY_PLAN.md                                     rev4  f772f38ac65929fcb7d7eb0392448641aa168cd2a76d9a8d3bb8fef95f3d0878
