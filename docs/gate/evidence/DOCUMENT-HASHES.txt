@@ -1100,3 +1100,12 @@ docs/gate/R1_RELAY_PLAN.md                                     rev7  902653a6dbc
 docs/gate/R1_STEP2_DELIVERY.md                                 §8   244f4b661c45b0eb31e8c59314ffa0fbb11bfa40db1d62c48643bc298677fd3e
 --- R-1 plan revision 7's commit named (bf330c4) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev7  92d8ed5b373fe492e16a789818c25b6748faa1fbcfa3110e506f378ba83ad547
+--- R-1 step 3: mutation records at 3f86b1f (step 3, and step 1 on the new code); step 1's earlier pair renamed to its tree; the stop measured ---
+docs/gate/evidence/R1-STEP3-STOP-MEASURED.txt                  new   cdc7ad7c38ebe499cd50ee854302831109e32e4499e7794d6261b4ddcff12ad2
+docs/gate/evidence/R1-STEP3-MUTATIONS.txt                      new   1bfb719ff0a9577c37c9b774de2adf7551bd4ae2418f69baa05d92f4b85c7eb8
+docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   c4268cd14e81c9df6304e5f6bdc0128f0415d4da5e804dd5282b6430b77c38e1
+docs/gate/evidence/R1-STEP3-MUTATIONS-TRIAL.txt                new   83197ee967209f61b319b2261bc66c34bd325211cd6e0f170bda19f7ef937fa7
+docs/gate/evidence/R1-STEP1-MUTATIONS.txt                      new   8bb35606ba5ca1a6cbe5c0ba402e9866949b3af09b0cf9e9da658604a64fea4e
+docs/gate/evidence/R1-STEP1-MUTATIONS-REPEAT.txt               new   b5becffdfdb8cde3f7ecf0299c5d23564874799908e331114420fae9cb3cc6cc
+docs/gate/evidence/R1-STEP1-MUTATIONS-AT-7502961.txt           new   04f71ae176badf4386d2f4a7ed022b6fde176c7e6a33c37374311dbfcd1bc26d
+docs/gate/evidence/R1-STEP1-MUTATIONS-AT-7502961-REPEAT.txt    new   6add8450803eb4ff4fe4043fb71fa793c4fefe95a545d9348fc7cda817668a57
