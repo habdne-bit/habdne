@@ -1,0 +1,35 @@
+TURAB — R-1 step 2: document order inside one `value` — BEFORE the correction
+The review of `ced7df7`: pin an inverted case that shows the failure on the current code.
+
+HEAD:                        ced7df7e4f27328f07053ed06a212974e4d9c35b
+relay/turab_relay/transform.py, as committed at HEAD (unchanged in the tree):
+  git diff --quiet HEAD -- relay/turab_relay/transform.py -> exit 0
+  sha256 b4cb878eb957fcfc90722a9999fa42040f576f279562b99f49b160f90a828e53
+  sha256 at HEAD b4cb878eb957fcfc90722a9999fa42040f576f279562b99f49b160f90a828e53
+The only other changes in the tree: the new tests in tests/test_r1_step2.py and the plan's revision 6:
+   M docs/gate/R1_RELAY_PLAN.md
+   M tests/test_r1_step2.py
+  ?? docs/gate/evidence/R1-STEP2-ORDER-BEFORE.txt
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider -rA tests/test_r1_step2.py -k 'r1_t3_3 or metadata_and_contacts'
+Run at: 2026-10-29T16:14:15Z
+------------------------------------------------------------------------
+PASSED tests/test_r1_step2.py::test_r1_t3_3_a_batch_gives_one_envelope_per_element_in_document_order
+PASSED tests/test_r1_step2.py::test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-messages-statuses]
+PASSED tests/test_r1_step2.py::test_metadata_and_contacts_after_the_messages_still_apply
+FAILED tests/test_r1_step2.py::test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[errors-statuses-messages]
+FAILED tests/test_r1_step2.py::test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-errors-statuses]
+FAILED tests/test_r1_step2.py::test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[messages-statuses-errors]
+FAILED tests/test_r1_step2.py::test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-errors-messages]
+FAILED tests/test_r1_step2.py::test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys[statuses-messages-errors]
+FAILED tests/test_r1_step2.py::test_r1_t3_3_statuses_before_messages_in_the_bytes_meta_sends
+6 failed, 3 passed, 79 deselected in 0.51s
+------------------------------------------------------------------------
+Reading:
+- The 5 failing orders are every order other than errors-messages-statuses,
+  the fixed order the code iterates in; that one passes by coincidence. The
+  old R1-T3.3 test passes because it writes `messages` before `statuses`.
+- `statuses` before `messages`, written as bytes: the message comes out
+  first. This is the defect the review named.
+- `metadata` and `contacts` after the messages: passes before; it is there
+  so that the correction does not read `value` as a stream.

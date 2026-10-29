@@ -1,14 +1,15 @@
 """Duties 3, 4 and 6: Meta's notification to TURAB's envelopes, the relay's
 signature, and `thread_ref`.
 
-Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 5) §3 duties 3, 4 and 6; §5.1
+Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 6) §3 duties 3, 4 and 6; §5.1
 (each element's class, by its kind); §5.3 (R1-D6's table); R1-D5, R1-D7,
 R1-D8, R1-D12. Meta's structures are quoted in
 `docs/gate/evidence/R1-META-SOURCES.txt` (E18-E59).
 
 **What this module does:** given the bytes of a notification whose signature
 was verified (duty 2), it returns one `Element` per message and per status,
-in document order, each placed in exactly one class:
+in document order (of `entry`, of `changes`, and of the keys inside each
+`value`), each placed in exactly one class:
 - **FORWARD:** passes every check of its kind; carries its envelope's bytes;
 - **ISOLATED:** fails a check of its kind; no envelope, and **no content
   anywhere**, not in the element, its reason or a log;
@@ -203,10 +204,17 @@ def elements(raw: bytes) -> list[Element]:
             business = meta_data.get("phone_number_id")
             business = business if _text(business) else None
             contacts = value.get("contacts") if isinstance(value.get("contacts"), list) else None
-            for _error in value.get("errors") if isinstance(value.get("errors"), list) else []:
-                out.append(Element("change", DROPPED, "VALUE_ERRORS"))
-            for message in value.get("messages") if isinstance(value.get("messages"), list) else []:
-                out.append(_message(message, business, contacts))
-            for status in value.get("statuses") if isinstance(value.get("statuses"), list) else []:
-                out.append(_status(status, business))
+            # In the order of `value`'s own keys, as received (the review of
+            # `ced7df7`); `metadata` and `contacts` are read first, wherever
+            # they are written.
+            for key, items in value.items():
+                if key not in ("errors", "messages", "statuses") or not isinstance(items, list):
+                    continue
+                for item in items:
+                    if key == "errors":
+                        out.append(Element("change", DROPPED, "VALUE_ERRORS"))
+                    elif key == "messages":
+                        out.append(_message(item, business, contacts))
+                    else:
+                        out.append(_status(item, business))
     return out

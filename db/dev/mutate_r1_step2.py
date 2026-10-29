@@ -3,8 +3,9 @@ which test refuses which weakening.
 
     .venv/bin/python db/dev/mutate_r1_step2.py [X1 I1 ...] > /outside/the/tree.txt
 
-Plan: `docs/gate/R1_RELAY_PLAN.md`, revision 5; step 2 authorized in the
-review of `e9fac51`. Each mutation weakens ONE rule:
+Plan: `docs/gate/R1_RELAY_PLAN.md`, revision 6; step 2 authorized in the
+review of `e9fac51`; X18 and X19 added after the review of `ced7df7`
+(document order inside one `value`). Each mutation weakens ONE rule:
 - X: duty 3, the transformation and §5.3's table, §5.1's checks by kind;
 - I: duty 6, `thread_ref`, R1-D8 and R1-D7;
 - K: duty 4, the relay's signature and its key.
@@ -77,6 +78,14 @@ MUTATIONS = [
  ("X17 a missing timestamp not a missing field", TRANSFORM,
   "            and _text(message.get(\"timestamp\"))) or business is None:",
   "            ) or business is None:"),
+ ("X18 the fixed order of kinds restored", TRANSFORM,
+  "            for key, items in value.items():",
+  "            for key, items in sorted(value.items(), key=lambda kv: (\"errors\", \"messages\", "
+  "\"statuses\").index(kv[0]) if kv[0] in (\"errors\", \"messages\", \"statuses\") else -1):"),
+ ("X19 contacts read as a stream", TRANSFORM,
+  "            for key, items in value.items():",
+  "            contacts = None\n            for key, items in value.items():\n"
+  "                contacts = items if key == \"contacts\" else contacts"),
  # --- I: duty 6 ---------------------------------------------------------------------------
  ("I1 a message's thread_ref reversed", TRANSFORM,
   "                            \"thread_ref\": f\"{business}:{sender}\",",

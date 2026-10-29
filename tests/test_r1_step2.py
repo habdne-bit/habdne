@@ -13,6 +13,7 @@ Not here (step 3): sending to TURAB, and the answer to Meta. Not here (step
 """
 from __future__ import annotations
 
+import itertools
 import json
 
 import pytest
@@ -119,6 +120,59 @@ def test_r1_t3_3_a_batch_gives_one_envelope_per_element_in_document_order():
     assert all(e.cls == FORWARD for e in out)
     assert [_turab(e).payload["thread_ref"].split(":")[0] for e in out] == [
         "111", "111", "111", "222", "333", "333"]
+
+
+#: Each kind's elements, in the order this test writes them inside one `value`.
+_KINDS = {"errors": ["VALUE_ERRORS", "VALUE_ERRORS"],
+          "messages": ["message:w1", "message:w2"],
+          "statuses": ["status:w9:sent:1700000000", "status:w8:read:1700000000"]}
+
+
+@pytest.mark.parametrize("order", list(itertools.permutations(_KINDS)),
+                         ids=lambda order: "-".join(order))
+def test_r1_t3_3_inside_one_value_the_elements_keep_the_order_of_its_keys(order):
+    """The review of `ced7df7`: document order holds inside one `value` too,
+    whatever the order of its `errors`, `messages` and `statuses` keys."""
+    items = {"errors": [{"code": 1}, {"code": 2}],
+             "messages": [_message(wamid="w1"), _message(wamid="w2")],
+             "statuses": [_status("sent", wamid="w9"), _status("read", wamid="w8")]}
+    value = {"metadata": {"phone_number_id": BUSINESS}}
+    for key in order:
+        value[key] = items[key]
+    raw = json.dumps({"object": "whatsapp_business_account",
+                      "entry": [{"changes": [{"field": "messages", "value": value}]}]}).encode()
+    assert list(json.loads(raw)["entry"][0]["changes"][0]["value"])[1:] == list(order)
+    out = transform.elements(raw)
+    assert [e.provider_event_id or e.reason for e in out] == [
+        label for key in order for label in _KINDS[key]]
+
+
+def test_r1_t3_3_statuses_before_messages_in_the_bytes_meta_sends():
+    """The same, written as bytes, `statuses` first: no dict of this test
+    decides the order."""
+    raw = (b'{"object":"whatsapp_business_account","entry":[{"changes":[{"field":"messages",'
+           b'"value":{"statuses":[' + json.dumps(_status("delivered", wamid="w9")).encode()
+           + b'],"messages":[' + json.dumps(_message(wamid="w1")).encode()
+           + b'],"metadata":{"phone_number_id":"' + BUSINESS.encode() + b'"}}}]}]}')
+    out = transform.elements(raw)
+    assert [e.provider_event_id for e in out] == ["status:w9:delivered:1700000000",
+                                                  "message:w1"]
+    assert all(e.cls == FORWARD for e in out)
+
+
+def test_metadata_and_contacts_after_the_messages_still_apply():
+    """Keeping the order must not read `value` as a stream: a business number
+    or `contacts` written after the messages still governs them."""
+    raw = (b'{"object":"whatsapp_business_account","entry":[{"changes":[{"field":"messages",'
+           b'"value":{"messages":[' + json.dumps(_message(wamid="w1")).encode()
+           + b'],"contacts":[{"wa_id":"19998887777"}],'
+           b'"metadata":{"phone_number_id":"' + BUSINESS.encode() + b'"}}}]}]}')
+    [e] = transform.elements(raw)
+    assert (e.cls, e.reason) == (ISOLATED, "CONTACT_MISMATCH")
+    _no_content(e)
+    raw = raw.replace(b'"19998887777"', CUSTOMER.encode().join([b'"', b'"']))
+    [e] = transform.elements(raw)
+    assert _turab(e).payload["thread_ref"] == f"{BUSINESS}:{CUSTOMER}"
 
 
 @pytest.mark.parametrize("kwargs, reason", [
@@ -374,7 +428,8 @@ def test_no_element_ever_carries_content_unless_forwarded():
         statuses=[_status("played"), _status("deleted")],
         contacts=[{"wa_id": CUSTOMER}], errors=[{"title": CONTENT}])
     out = transform.elements(doc)
-    assert [e.cls for e in out] == [DROPPED, FORWARD, ISOLATED, DROPPED, DROPPED, ISOLATED]
+    # In document order: `_notification` writes `errors` after `statuses`.
+    assert [e.cls for e in out] == [FORWARD, ISOLATED, DROPPED, DROPPED, ISOLATED, DROPPED]
     for e in out:
         if e.cls != FORWARD:
             _no_content(e)
