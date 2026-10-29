@@ -1078,3 +1078,5 @@ docs/gate/R1_STEP1_DELIVERY.md                                 add   a8cd1a5a21e
 --- Review of e9fac51: R-1 step 1 CLOSED; step 2 authorized; plan revision 5 ---
 docs/gate/R1_STEP1_DELIVERY.md                                 add   abe6b9dcdfa62cb2bc8b22ffcb6c111b691dd0eed8020f19cff0854054464414
 docs/gate/R1_RELAY_PLAN.md                                     rev5  17e34c1579acb84f27cd81a9fe195986bbe645c1f53d8a49bfeef6a3939634d2
+--- R-1 plan revision 5's commit named (a562c25) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev5  6f5564c920078a4c39a1df61c833f670c48516f642ab9d4712b4667d5dcce45a
