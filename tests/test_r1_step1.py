@@ -42,6 +42,9 @@ QUERY = {"hub.mode": "subscribe", "hub.challenge": "1158201444", "hub.verify_tok
 def _secrets(monkeypatch):
     monkeypatch.setenv(meta.VERIFY_TOKEN_VARIABLE, TOKEN)
     monkeypatch.setenv(meta.APP_SECRET_VARIABLE, SECRET)
+    # Step 3's delivery: no relay key and no TURAB URL here, so nothing is sent.
+    monkeypatch.delenv("TURAB_RELAY_SIGNING_SECRET", raising=False)
+    monkeypatch.delenv("TURAB_RELAY_TURAB_WEBHOOK_URL", raising=False)
 
 
 @pytest.fixture
@@ -161,12 +164,15 @@ def test_r1_t1_5_no_configured_token_never_calls_the_comparison(client, monkeypa
 
 # --- duty 2: Meta's signature, and the inbound limit -------------------------------------
 
-def test_r1_t2_1_a_verified_post_is_503_not_forwarding_never_200(client, caplog):
-    """Step 1 builds no forwarding: a verified POST is not acknowledged."""
+def test_r1_t2_1_a_verified_post_without_the_relay_key_is_503_never_200(client, caplog):
+    """A verified POST reaches the delivery (step 3, `tests/test_r1_step3.py`).
+    This file's environment holds no relay key, so nothing is sent and the
+    answer is 503, never 200 (R1-T4.4). Until step 3 the answer was 503
+    `RELAY_NOT_FORWARDING`."""
     caplog.set_level(logging.INFO, logger="turab_relay")
     r = _post(client, BODY)
     assert r.status_code == 503
-    assert any("RELAY_NOT_FORWARDING" in m for m in _reason(caplog))
+    assert any("RELAY_KEY_REFUSED" in m for m in _reason(caplog))
 
 
 @pytest.mark.parametrize("signature", [

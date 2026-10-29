@@ -1,0 +1,27 @@
+TURAB — R-1 step 3: why the delivery stops at the first element not completed, MEASURED
+
+Question: what TURAB records if the relay went on past an element TURAB did not complete.
+Method, in the working tree before the step's commit (HEAD 8b74a52 + step 3's files):
+  1. forward.py: the stop replaced by going on (mutation D2: 'break' -> 'continue');
+  2. the test's first check ('read waits') replaced by 'pass', to reach the consequence;
+  3. test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order run against
+     TURAB's real application and test database; both files then restored, byte for byte.
+Scenario: an OUTBOUND message at QUEUED; one POST with 'delivered' then 'read' for it;
+TURAB's T2 fails once for 'delivered' (500); Meta redelivers the POST.
+Run at: 2026-10-29T17:45:05Z
+------------------------------------------------------------------------
+E       AssertionError: assert [('IGNORED', ...OT_ACCEPTED')] == [('PROCESSED', None)]
+E         
+E         At index 0 diff: ('IGNORED', 'STATUS_TRANSITION_NOT_ACCEPTED') != ('PROCESSED', None)
+E         Use -v to get more diff
+ERROR    turab.webhook:webhooks.py:385 webhook processing failed
+1 failed, 32 deselected, 1 warning in 6.91s
+------------------------------------------------------------------------
+Restored: forward.py sha256 201105b418cea3b8, test file sha256 667492367bd9d8c7
+The same test, unmodified, with the stop:
+1 passed, 32 deselected, 1 warning in 7.54s
+------------------------------------------------------------------------
+Reading: going on, 'read' is processed first (QUEUED -> READ), and the redelivered
+'delivered' is IGNORED with STATUS_TRANSITION_NOT_ACCEPTED (G7-5): TURAB's record
+differs from the document's order. With the stop, both are PROCESSED, in order:
+QUEUED -> DELIVERED -> READ.

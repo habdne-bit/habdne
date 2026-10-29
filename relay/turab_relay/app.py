@@ -1,8 +1,9 @@
-"""The relay's HTTP boundary at step 1: Meta's GET, the inbound limit, Meta's
-signature, and the client certificate's identity.
+"""The relay's HTTP boundary: Meta's GET, the inbound limit, Meta's
+signature, the client certificate's identity (step 1), and the delivery of a
+verified POST to TURAB (step 3).
 
-Plan: `docs/gate/R1_RELAY_PLAN.md` §3 duties 1 and 2, §5.2 (R1-D10), R1-D4,
-R1-D11.
+Plan: `docs/gate/R1_RELAY_PLAN.md` §3 duties 1, 2 and 5, §5.1, §5.2
+(R1-D10), R1-D2, R1-D4, R1-D11.
 
 **The order of a POST's checks:**
 1. the inbound limit (R1-D4: 3 MiB), before the body is read whole: a
@@ -10,8 +11,8 @@ R1-D11.
    counted as they arrive (413);
 2. the app secret, absent: 503;
 3. `X-Hub-Signature-256` over the raw bytes: 401 when missing or wrong;
-4. **verified: 503 `RELAY_NOT_FORWARDING`.** Step 1 builds no forwarding;
-   answering 200 would acknowledge to Meta a delivery nobody received.
+4. **verified: delivered to TURAB, and answered, as `forward.py` states**
+   (step 3). 200 only when TURAB answered 200 for every envelope sent.
 
 **The client certificate (§5.2):** the TLS layer validates the certificate's
 chain to Meta's CA, its only anchor, and its validity (`tls.py`); this
@@ -31,7 +32,9 @@ import os
 import re
 import uuid
 
-from turab_relay import meta, tls
+from collections import Counter
+
+from turab_relay import forward, meta, tls
 
 LOG = logging.getLogger("turab_relay")
 PATH = "/whatsapp/webhook"
@@ -82,7 +85,7 @@ def _header(scope, name: bytes) -> str | None:
     return found[0].decode("latin-1") if len(found) == 1 else None
 
 
-async def _post(scope, receive) -> meta.Answer:
+async def _post(scope, receive, trace: str, deliver) -> meta.Answer:
     if declared_over_limit(_header(scope, b"content-length")):
         return meta.Answer(413, "BODY_TOO_LARGE")
     raw = await _read_body(receive)
@@ -94,12 +97,21 @@ async def _post(scope, receive) -> meta.Answer:
     if not meta.signature_valid(raw, _header(scope, meta.SIGNATURE_HEADER.encode()),
                                 secret.encode("utf-8")):
         return meta.Answer(401, "SIGNATURE_NOT_VALID")
-    return meta.Answer(503, "RELAY_NOT_FORWARDING")
+    return await deliver(raw, trace)
 
 
-def create_app(*, require_client_certificate: bool = True):
+def create_app(*, require_client_certificate: bool = True,
+               turab_timeout: float = forward.TIMEOUT_SECONDS, turab_transport=None):
     """The relay's ASGI application. `require_client_certificate` is True
-    unless a test of duties 1 and 2 turns it off explicitly."""
+    unless a test of duties 1 and 2 turns it off explicitly. `app.counts`
+    counts each element by class and reason, and each delivery by outcome,
+    for this process. `turab_transport` is an `httpx` transport a test may
+    put in place of the network."""
+    counts: Counter = Counter()
+
+    async def deliver(raw: bytes, trace: str) -> meta.Answer:
+        return await forward.post(raw, counts=counts, trace=trace, timeout=turab_timeout,
+                                  transport=turab_transport)
 
     async def app(scope, receive, send):
         if scope["type"] == "lifespan":
@@ -122,9 +134,10 @@ def create_app(*, require_client_certificate: bool = True):
         if scope["method"] == "GET":
             answer = meta.subscription(scope.get("query_string", b""))
         elif scope["method"] == "POST":
-            answer = await _post(scope, receive)
+            answer = await _post(scope, receive, trace, deliver)
         else:
             answer = meta.Answer(405, "METHOD_NOT_ALLOWED")
         await _send(send, answer, trace)
 
+    app.counts = counts
     return app
