@@ -8,8 +8,9 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Steps 3 and 4.
 
-**Status: delivered at `ced7df7`; NOT closed** (review of `ced7df7`: document order
-inside one `value`). **The correction is delivered for review** (§7). R-1 stays **UNMET**.
+**Status: CLOSED at `da3d778`** (review of `da3d778`, §8), after the correction
+of §7 (not closed at `ced7df7`: document order inside one `value`).
+R-1 stays **UNMET**.
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -283,3 +284,19 @@ local settings (`PGHOST=127.0.0.1`, `PGUSER=turab`).
 - **The access-log condition** (§5.5) stands.
 - **R-1 UNMET; no real event;** K06 an independent condition before the
   release gate; SALE only.
+
+---
+
+## 8. The closure
+
+**The review of `da3d778` closed step 2 at `da3d778`, and authorized step
+3** within the plan's scope. Recorded in the plan, revision 7.
+- **The reviewer checked:** the correction, the before record, the new
+  tests, and the two mutation records (31/31, the same tests killing each
+  mutation).
+- **The reviewer did not re-run anything.** The suite's 3340/3340, `bound`
+  and the gate's PASS are our recorded results.
+- **This closure does not** close R-1, or allow deploying the relay,
+  creating a secret, or receiving any real event. The access-log condition
+  (§5.5 of the plan) stands. **R-1 UNMET; no real event;** K06 an
+  independent condition before the release gate; SALE only.

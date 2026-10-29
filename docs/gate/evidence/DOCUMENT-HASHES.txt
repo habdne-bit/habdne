@@ -1095,3 +1095,6 @@ docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0-REPEAT.txt    new   a952f2bde9e
 docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5c8c1f0-TRIAL.txt     new   99051f9d7a5500dc2a7343d29b584b60eab6f2b859e08b21f55c553021927c28
 --- R-1 step 2 correction delivered for review (§7 of the delivery note) ---
 docs/gate/R1_STEP2_DELIVERY.md                                 §7   27c207bc48a09b81ca4750553c256fb071608b64549d6f131338272ec9aa14b4
+--- Review of da3d778: R-1 step 2 CLOSED; step 3 authorized; plan revision 7 ---
+docs/gate/R1_RELAY_PLAN.md                                     rev7  902653a6dbc2cec1e1afdbf2c8338f709d732efb9f2f441a040abdd2b08e26f7
+docs/gate/R1_STEP2_DELIVERY.md                                 §8   244f4b661c45b0eb31e8c59314ffa0fbb11bfa40db1d62c48643bc298677fd3e

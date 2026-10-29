@@ -1,24 +1,19 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 6**
+## Plan — **revision 7**
 
-**Status: revision 2 ADOPTED; step 1 AUTHORIZED** (review of `3d8b593`,
-recorded below), within its stated scope: Meta's GET, the verification of
-Meta's signature, the inbound limit, and the synthetic mTLS tests.
+**Status: step 1 CLOSED at `e9fac51`; step 2 CLOSED at `da3d778`; step 3
+AUTHORIZED** (review of `da3d778`, recorded below), within this plan's scope
+(§6, step 3). Step 4 is not authorized.
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
-  with binding specifications (§5).
+  with binding specifications (§5). Revision 2 was adopted in the review of
+  `3d8b593`.
 - **R1-Q1 is decided: (a)** (§5.4).
-- **Step 2 is delivered and NOT closed** (review of `ced7df7`, recorded
-  below): the document order of R1-T3.3 was not kept inside one `value`.
-  Step 3 is not authorized before the review of the correction.
-- **Step 1 is CLOSED at `e9fac51`, and step 2 is AUTHORIZED** (review of
-  `e9fac51`, recorded below): the transformation of Meta's notifications,
-  the signing of the relay's envelopes, and `thread_ref`, tested with
-  TURAB's own code.
 - **The run entry point's access log is a binding condition** (§5.5,
-  decided in the review of `8c64c64`).
-- **Step 1's authorization does not allow** deploying the relay, creating a
-  secret, or receiving any real event. Steps 3 and 4 are not authorized.
+  decided in the review of `8c64c64`), before any deployment or Callback
+  setting.
+- **No authorization so far allows** deploying the relay, creating a
+  secret, or receiving any real event. Closing a step does not close R-1.
 - **No relay** is deployed. **No secret, verify token or Meta app setting** is created.
   **No real event** is received. R-1 stays **UNMET**: **no real event may be
   received** before it is met and reviewed (§4).
@@ -50,14 +45,42 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
-| 1 | `1d00f41` | first plan, planning only |
+| 7 | the commit that adds this revision | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
 | 6 | `e1f8138` | the review of `ced7df7` recorded: step 2 not closed (document order inside one `value`); R1-T3.3 made explicit; the undocumented status's reading accepted |
 | 5 | `a562c25` | the review of `e9fac51` recorded: step 1 CLOSED; step 2 authorized |
 | 4 | `00134ee` | the review of `8c64c64` recorded: step 1 not closed (the fingerprint did not cover `pyproject.toml`); the access-log condition decided (§5.5), in §4's order and §7 |
 | 3 | `c601c25` | the review of `3d8b593` recorded: revision 2 adopted; step 1 authorized; R1-Q1 decided (a), §5.4 and R1-T7.2 set to it, with an OVERSIZE class in §5.1; R1-D8's reading accepted; §5.1's checks made explicit per element kind; R1-T1.5's count bounded to the requests that reach the comparison |
 | 2 | `878745e` | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
+| 1 | `1d00f41` | first plan, planning only |
 
 ---
+
+## The review of `da3d778`
+
+**Step 2 is CLOSED at `da3d778`. Step 3 is AUTHORIZED** within this plan's
+scope: duty 5 and §5.1's classes and answers, against a test double and
+against TURAB's real application and test database (§6).
+
+- **What the reviewer checked:**
+  - the correction: `value`'s keys are walked in the order received, and
+    `metadata` and `contacts` are read before any element is classed;
+  - the before record: the inverted cases fail on `ced7df7`'s code;
+  - the new tests: the six orders, the order of the bytes, and `contacts`
+    written after the messages;
+  - the two mutation records: **31/31 killed** in each, with the same
+    tests killing each mutation once the run times are set aside;
+  - that no file changed after `5ddf055` is source or a test.
+- **What it did not do:** re-run anything. 3340/3340, `bound` and the
+  PostgreSQL gate's PASS are the implementation's recorded results. The
+  local tree's cleanliness is not confirmed by the reviewer.
+- **A documentary correction asked,** not delaying step 3: the plan's first
+  status line still described revision 2 and step 1 as authorized. It is
+  rewritten in this revision to the current state.
+- **This decision does not** close R-1, or allow deploying the relay,
+  creating a secret, or receiving any real event.
+- **Standing:** the access-log condition (§5.5) before any deployment or
+  Callback setting; **R-1 UNMET, no real event before it**; K06 an
+  independent condition before the release gate; SALE only.
 
 ## The review of `ced7df7`
 
@@ -612,8 +635,8 @@ step 1 (`R1_STEP1_DELIVERY.md` §2).
 |---|---|---|
 | 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 **decided (a)** (review of `3d8b593`) |
 | 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **CLOSED at `e9fac51`** (review of `e9fac51`; `R1_STEP1_DELIVERY.md`) |
-| 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **AUTHORIZED** (review of `e9fac51`); delivered; **NOT closed** (review of `ced7df7`: document order); no deployment, no secret, no real event |
-| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | step 2 |
+| 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **CLOSED at `da3d778`** (review of `da3d778`; `R1_STEP2_DELIVERY.md`) |
+| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **AUTHORIZED** (review of `da3d778`); no deployment, no secret, no real event |
 | 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | step 3 |
 
 Each step is delivered with its tests and its mutation record, and reviewed
