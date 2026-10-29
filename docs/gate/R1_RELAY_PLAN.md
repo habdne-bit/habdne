@@ -46,7 +46,7 @@ does not touch it. The next slice's plan follows the review of this one.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `1d00f41` | first plan, planning only |
-| 4 | the commit that adds this revision | the review of `8c64c64` recorded: step 1 not closed (the fingerprint did not cover `pyproject.toml`); the access-log condition decided (§5.5), in §4's order and §7 |
+| 4 | `00134ee` | the review of `8c64c64` recorded: step 1 not closed (the fingerprint did not cover `pyproject.toml`); the access-log condition decided (§5.5), in §4's order and §7 |
 | 3 | `c601c25` | the review of `3d8b593` recorded: revision 2 adopted; step 1 authorized; R1-Q1 decided (a), §5.4 and R1-T7.2 set to it, with an OVERSIZE class in §5.1; R1-D8's reading accepted; §5.1's checks made explicit per element kind; R1-T1.5's count bounded to the requests that reach the comparison |
 | 2 | `878745e` | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
 
