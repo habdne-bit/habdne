@@ -1080,3 +1080,5 @@ docs/gate/R1_STEP1_DELIVERY.md                                 add   abe6b9dcdfa
 docs/gate/R1_RELAY_PLAN.md                                     rev5  17e34c1579acb84f27cd81a9fe195986bbe645c1f53d8a49bfeef6a3939634d2
 --- R-1 plan revision 5's commit named (a562c25) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev5  6f5564c920078a4c39a1df61c833f670c48516f642ab9d4712b4667d5dcce45a
+--- R-1 step 2 delivered for review ---
+docs/gate/R1_STEP2_DELIVERY.md                                 add   4c241379760fe67deb9f0bce9539f0b512a1144abfa9562d234dadf4c795ca36
