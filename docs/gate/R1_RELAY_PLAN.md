@@ -40,7 +40,7 @@ does not touch it. The next slice's plan follows the review of this one.
 | rev | commit | what changed |
 |---|---|---|
 | 1 | `1d00f41` | first plan, planning only |
-| 2 | the commit that adds this revision | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
+| 2 | `878745e` | the review of `1d00f41` recorded: R1-D1 to R1-D15 adopted as recommended, with binding specifications (R1-D8 and batches, R1-D10, R1-D14); R1-T1.5 and R1-T7 corrected; R1-D6's mapping table; one point found while writing it (R1-Q1), not decided |
 
 ---
 

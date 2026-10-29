@@ -1061,3 +1061,5 @@ docs/gate/evidence/R1-META-SOURCES.txt                         add   89eb13ade13
 --- Review of 1d00f41: R-1 plan revision 2 (planning only); decisions adopted with specifications; Meta's type pages retrieved ---
 docs/gate/R1_RELAY_PLAN.md                                     rev2  ba99fa9468dfe7ca884ed4a7c53d0d77e4f9531c4ae93927d49b3d21f8224902
 docs/gate/evidence/R1-META-SOURCES.txt                         add   87ccd76fd27b6b853e16c44ba29f08b7b06fe31e25807ae027ad314761a85380
+--- R-1 plan revision 2's commit named (878745e) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev2  54ad192006f7876a6870899de2945a88b7bb7a9080c10139c0b2e7a86ab447c0
