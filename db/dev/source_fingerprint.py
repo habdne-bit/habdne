@@ -9,8 +9,11 @@ carry this script's output, each bound to the run it describes.
 
 Recipe, deliberately simple enough to re-implement in any language:
 
-  1. Collect every file under src/, tests/ and db/ whose suffix is one of
-     .py .sql .sh .ini .mako, plus alembic.ini at the repository root.
+  1. Collect every file under src/, tests/, db/ and relay/ whose suffix is one
+     of .py .sql .sh .ini .mako, plus alembic.ini at the repository root.
+     (relay/ added for R-1, plan `docs/gate/R1_RELAY_PLAN.md`: the relay is
+     a separate component in this repository, R1-D1 (a), and a run bound to
+     a tree must cover its code.)
   2. Sort the POSIX-style paths, relative to the repository root, as byte
      strings (not locale-aware ordering).
   3. For each, emit "<sha256 of the file bytes>  <path>\n".
@@ -30,7 +33,7 @@ import sys
 from pathlib import Path
 
 SUFFIXES = {".py", ".sql", ".sh", ".ini", ".mako"}
-TREES = ("src", "tests", "db")
+TREES = ("src", "tests", "db", "relay")
 EXTRA = ("alembic.ini",)
 
 

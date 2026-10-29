@@ -24,7 +24,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "relay"]
 filterwarnings = ["error::DeprecationWarning:turab.*"]
 # xunit1: per-testcase <properties> are part of the format. The step-4
 # attribution experiment records waited / wrote / final per case with
