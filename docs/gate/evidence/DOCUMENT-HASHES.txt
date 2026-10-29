@@ -1119,3 +1119,10 @@ docs/gate/R1_RELAY_PLAN.md                                     rev8  39b6e8336a8
 docs/gate/R1_RELAY_PLAN.md                                     rev8  8d58b87751ec8bb3bd02b4a255713681f01be751b055dd4386e79d77cd65a8e7
 --- R-1 step 3 correction (review of c480474): before record ---
 docs/gate/evidence/R1-STEP3-CORRECTIONS-BEFORE.txt             new   dc53714e51f41d38c372d4b56516d9e2e494b34470eeed8acc52818d92b8c632
+--- R-1 step 3 mutation records at 3c19543; 3f86b1f's renamed ---
+docs/gate/evidence/R1-STEP3-MUTATIONS.txt                      new   d01076a86b060b4848ac1950466c61ae49f18ca4eb8aee9f845ca115a8ab44b6
+docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   25389a91a325af8dfc90efa8a5339ad6a441716d5766248995332f84e1ad9bd4
+docs/gate/evidence/R1-STEP3-MUTATIONS-TRIAL.txt                new   a497d55a8d060ca00970e83ae8b07a2f8c41bf0b0cb70846a1572e919cfbc462
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f.txt           new   1bfb719ff0a9577c37c9b774de2adf7551bd4ae2418f69baa05d92f4b85c7eb8
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f-REPEAT.txt    new   c4268cd14e81c9df6304e5f6bdc0128f0415d4da5e804dd5282b6430b77c38e1
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-3f86b1f-TRIAL.txt     new   83197ee967209f61b319b2261bc66c34bd325211cd6e0f170bda19f7ef937fa7
