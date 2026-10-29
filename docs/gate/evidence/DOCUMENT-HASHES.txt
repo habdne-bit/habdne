@@ -1098,3 +1098,5 @@ docs/gate/R1_STEP2_DELIVERY.md                                 §7   27c207bc48a
 --- Review of da3d778: R-1 step 2 CLOSED; step 3 authorized; plan revision 7 ---
 docs/gate/R1_RELAY_PLAN.md                                     rev7  902653a6dbc2cec1e1afdbf2c8338f709d732efb9f2f441a040abdd2b08e26f7
 docs/gate/R1_STEP2_DELIVERY.md                                 §8   244f4b661c45b0eb31e8c59314ffa0fbb11bfa40db1d62c48643bc298677fd3e
+--- R-1 plan revision 7's commit named (bf330c4) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev7  92d8ed5b373fe492e16a789818c25b6748faa1fbcfa3110e506f378ba83ad547

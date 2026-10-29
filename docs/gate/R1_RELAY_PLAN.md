@@ -45,7 +45,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
-| 7 | the commit that adds this revision | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
+| 7 | `bf330c4` | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
 | 6 | `e1f8138` | the review of `ced7df7` recorded: step 2 not closed (document order inside one `value`); R1-T3.3 made explicit; the undocumented status's reading accepted |
 | 5 | `a562c25` | the review of `e9fac51` recorded: step 1 CLOSED; step 2 authorized |
 | 4 | `00134ee` | the review of `8c64c64` recorded: step 1 not closed (the fingerprint did not cover `pyproject.toml`); the access-log condition decided (§5.5), in §4's order and §7 |
