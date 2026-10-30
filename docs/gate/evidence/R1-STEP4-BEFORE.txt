@@ -1,0 +1,59 @@
+TURAB — R-1 step 4: duty 7 (the serialized sizes, OVERSIZE) and serialization, BEFORE
+
+HEAD:                        1e7ea3e6f780b7ffa0ef596e0aa35f4d36e071f0
+relay/turab_relay/transform.py and forward.py, as at 79c232b (unchanged since):
+  transform.py sha256 now 1cd4864e35f6004e  at 79c232b 1cd4864e35f6004e
+  forward.py sha256 now a56bce2a2b1b4495  at 79c232b a56bce2a2b1b4495
+The tree's only change: the new test file:
+  ?? docs/gate/evidence/R1-STEP4-BEFORE.txt
+  ?? tests/test_r1_step4.py
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider -rA tests/test_r1_step4.py
+Run at: 2026-10-30T11:30:02Z
+------------------------------------------------------------------------
+  cause: AttributeError: module 'turab_relay.transform' has no attribute 'ENVELOPE_LIMIT'
+  cause: AttributeError: module 'turab_relay.transform' has no attribute 'OVERSIZE'
+  cause: assert 200 != 200
+  cause: +  where 200 = <Response [200 OK]>.status_code
+  cause: assert 2 == (1 + 3)
+ERROR    turab_relay.alert:forward.py:143 alert TURAB_REFUSED 400 trace=X
+  cause: UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position N: surrogates not allowed
+PASSED tests/test_r1_step4.py::test_r1_t7_1_an_envelope_of_exactly_65536_bytes_is_forwarded
+PASSED tests/test_r1_step4.py::test_r1_t7_1_turabs_real_route_accepts_exactly_65536_bytes
+PASSED tests/test_r1_step4.py::test_r1_t7_5_a_post_of_exactly_3_mib_is_accepted_one_byte_more_is_413
+PASSED tests/test_r1_step4.py::test_a_surrogate_pair_is_one_character_of_four_bytes
+PASSED tests/test_r1_step4.py::test_r1_t7_6_the_room_left_for_content_is_measured_per_type[audio]
+PASSED tests/test_r1_step4.py::test_r1_t7_6_the_room_left_for_content_is_measured_per_type[sticker]
+FAILED tests/test_r1_step4.py::test_the_relays_limit_is_turabs_body_limit - A...
+FAILED tests/test_r1_step4.py::test_r1_t7_2_an_oversize_element_is_classed_oversize_without_its_envelope
+FAILED tests/test_r1_step4.py::test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
+FAILED tests/test_r1_step4.py::test_r1_t7_2_metas_redelivery_writes_nothing_twice_and_is_oversize_again
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\xe9']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\u20ac']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\U0001f600']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['"']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\\\\']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\\n']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\\x01']
+FAILED tests/test_r1_step4.py::test_r1_t7_3_each_case_at_65536_and_65537_bytes['\\x1f']
+FAILED tests/test_r1_step4.py::test_r1_t7_4_a_batch_of_envelopes_near_the_limit
+FAILED tests/test_r1_step4.py::test_a_lone_surrogate_is_isolated_not_a_crash[body]
+FAILED tests/test_r1_step4.py::test_a_lone_surrogate_is_isolated_not_a_crash[from]
+FAILED tests/test_r1_step4.py::test_r1_t7_6_the_room_left_for_content_is_measured_per_type[text]
+FAILED tests/test_r1_step4.py::test_r1_t7_6_the_room_left_for_content_is_measured_per_type[image]
+FAILED tests/test_r1_step4.py::test_r1_t7_6_the_room_left_for_content_is_measured_per_type[video]
+FAILED tests/test_r1_step4.py::test_r1_t7_6_the_room_left_for_content_is_measured_per_type[document]
+19 failed, 6 passed, 1 warning in 7.12s
+------------------------------------------------------------------------
+Reading:
+- No limit, no OVERSIZE class: the attributes do not exist (AttributeError).
+- One byte over, against TURAB's real application: the relay sends the 65 537-byte
+  envelope; TURAB answers 400 (its 64 KiB limit); the relay alerts TURAB_REFUSED 400 and
+  stops (step 3), so the valid elements after it are not delivered on any attempt.
+- A lone surrogate escaped in the JSON ("\ud800"), in a text or in 'from':
+  UnicodeEncodeError in the serialization (transform._serialize): the relay raises.
+- R1-T7.1 against the real route, the 3 MiB request, the surrogate pair, the audio and
+  sticker room: pass already (not defects; the code had no limit to get wrong).
+- "assert 1 == (0 + 3)" is the redelivery test against TURAB's real application, in this
+  run's fresh test database: one event (w1's) where three are due (w1, w3, the status);
+  the delivery stopped at w2's 400.

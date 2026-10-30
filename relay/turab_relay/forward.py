@@ -1,7 +1,7 @@
 """Duty 5 and §5.1's answers: each FORWARD element sent to TURAB, signed, in
 document order; Meta's answer decided from TURAB's.
 
-Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 9) §3 duty 5, §5.1 (each
+Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 10) §3 duties 5 and 7, §5.1 (each
 class, and the answer to Meta), R1-D2 (synchronous, a timeout per envelope),
 R1-D3 (TURAB's 400 or 401: not 200, and an alert), §5.6 (R1-Q2, TURAB's
 URL). Step 3, authorized in the review of `da3d778`; corrected after the
@@ -31,8 +31,18 @@ review of `c480474`.
    one). Stopped, TURAB processes the elements in document order across
    attempts; the cost is that the elements after the failure wait for the
    redelivery;
-5. every envelope answered 200: **200 to Meta.** ISOLATED and DROPPED
-   elements never change the answer (§5.1).
+5. every envelope answered 200: **200 to Meta**, unless an element is
+   OVERSIZE. ISOLATED and DROPPED elements never change the answer (§5.1).
+
+**OVERSIZE (step 4, R1-Q1 (a), §5.4):** an element whose envelope's
+serialized bytes exceed TURAB's 64 KiB (`transform.ENVELOPE_LIMIT`) is **not
+sent and not shortened**; it is counted and **alerted, without content**
+(its kind only); the other elements are delivered as above, **the ones
+after it included**; and Meta's answer is **not 200** (503
+`ENVELOPE_OVERSIZE`), whatever TURAB answered, so the redelivery window
+stays open (§5.4). On that redelivery the delivered elements are 200
+replays at TURAB that write nothing (S42), and the element is OVERSIZE
+again.
 
 **TURAB's answers:**
 - 200: completed;
@@ -43,9 +53,6 @@ review of `c480474`.
   alert.** TURAB does not refuse an envelope it can read; such an answer
   means a configuration to fix, not a delivery to wait for.
 
-**Not here (step 4):** OVERSIZE (R1-Q1 (a)). Until then an envelope over
-TURAB's 64 KiB is sent, and TURAB's 400 is answered as above: not 200, and
-an alert.
 
 **The relay's logs and alerts carry fixed codes, TURAB's status number and
 the trace id: never an envelope, a content, a signature, a key or TURAB's
@@ -182,6 +189,9 @@ async def post(raw: bytes, *, counts: Counter, trace: str, timeout: float = TIME
         counts[(element.cls, element.reason)] += 1
         if element.cls == transform.ISOLATED:
             alert(f"ISOLATED {element.reason}", trace)
+        elif element.cls == transform.OVERSIZE:
+            alert(f"OVERSIZE {element.kind}", trace)
+    oversize = any(element.cls == transform.OVERSIZE for element in elements)
     failed: meta.Answer | None = None
     async with httpx.AsyncClient(transport=transport, trust_env=False,
                                  follow_redirects=False, verify=True,
@@ -195,6 +205,8 @@ async def post(raw: bytes, *, counts: Counter, trace: str, timeout: float = TIME
             if outcome != COMPLETED:
                 failed = _not_completed(outcome, status, trace)
                 break
+    if failed is None and oversize:
+        failed = meta.Answer(503, "ENVELOPE_OVERSIZE")
     return failed or meta.Answer(200, "DELIVERED")
 
 

@@ -1,7 +1,7 @@
-"""Duties 3, 4 and 6: Meta's notification to TURAB's envelopes, the relay's
-signature, and `thread_ref`.
+"""Duties 3, 4, 6 and 7: Meta's notification to TURAB's envelopes, the
+relay's signature, `thread_ref`, and each envelope's serialized size.
 
-Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 6) §3 duties 3, 4 and 6; §5.1
+Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 10) §3 duties 3, 4, 6 and 7; §5.1
 (each element's class, by its kind); §5.3 (R1-D6's table); R1-D5, R1-D7,
 R1-D8, R1-D12. Meta's structures are quoted in
 `docs/gate/evidence/R1-META-SOURCES.txt` (E18-E59).
@@ -15,10 +15,17 @@ in document order (of `entry`, of `changes`, and of the keys inside each
   anywhere**, not in the element, its reason or a log;
 - **DROPPED:** documented and decided out of scope: `played` (R1-D5); a group
   message or a group status (R1-D7); `value.errors`; a `field` other than
-  `messages`, or an `object` other than `whatsapp_business_account` (R1-D12).
+  `messages`, or an `object` other than `whatsapp_business_account` (R1-D12);
+- **OVERSIZE** (step 4, R1-Q1 (a)): passes every check, but its envelope's
+  serialized bytes exceed `ENVELOPE_LIMIT`; not sent, **not shortened**, and
+  **its envelope not kept**: the element carries its event id only.
 
-**What it does not do (step 3):** send anything, or decide Meta's answer.
-OVERSIZE (R1-Q1) is step 4's, with duty 7.
+**A string UTF-8 cannot encode** (a lone surrogate, which JSON may escape as
+`"\ud800"` and `json.loads` accepts) cannot be sent: the element is ISOLATED,
+`NOT_UTF8_ENCODABLE` (found in step 4).
+
+**What it does not do:** send anything, or decide Meta's answer
+(`forward.py`).
 
 **The relay's signature (duty 4):** an HMAC-SHA256 of the envelope's exact
 bytes with the relay's key, `TURAB_RELAY_SIGNING_SECRET`, the same variable
@@ -39,7 +46,10 @@ from turab_relay import meta
 
 SIGNING_KEY_VARIABLE = "TURAB_RELAY_SIGNING_SECRET"
 SIGNATURE_HEADER = "X-Turab-Relay-Signature"
-FORWARD, ISOLATED, DROPPED = "FORWARD", "ISOLATED", "DROPPED"
+FORWARD, ISOLATED, DROPPED, OVERSIZE = "FORWARD", "ISOLATED", "DROPPED", "OVERSIZE"
+#: Duty 7: TURAB's `BODY_LIMIT` (G7-15), 64 KiB, a body refused when larger.
+#: Measured on the serialized bytes of each envelope, never on a content.
+ENVELOPE_LIMIT = 64 * 1024
 OBJECT = "whatsapp_business_account"
 
 #: §5.3: Meta's `type` -> (stored `message_type`, the content each carries).
@@ -62,7 +72,7 @@ PLAYED = "played"
 @dataclass(frozen=True)
 class Element:
     kind: str                       # "message", "status", "change" or "object"
-    cls: str                        # FORWARD, ISOLATED or DROPPED
+    cls: str                        # FORWARD, ISOLATED, DROPPED or OVERSIZE
     reason: str                     # a fixed code, never a value of the notification
     provider_event_id: str | None = None
     envelope: bytes | None = None   # FORWARD only
@@ -92,6 +102,18 @@ def sign(envelope: bytes, key: bytes) -> str:
 def _serialize(envelope: dict) -> bytes:
     """The bytes sent: compact JSON, UTF-8, non-ASCII kept as UTF-8."""
     return json.dumps(envelope, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
+def _forwarded(kind: str, event_id: str, envelope: dict) -> Element:
+    """The element of an envelope that passed every check of its kind:
+    FORWARD with its bytes, or OVERSIZE without them (duty 7)."""
+    try:
+        data = _serialize(envelope)
+    except UnicodeEncodeError:
+        return Element(kind, ISOLATED, "NOT_UTF8_ENCODABLE")
+    if len(data) > ENVELOPE_LIMIT:
+        return Element(kind, OVERSIZE, "ENVELOPE_OVER_LIMIT", event_id)
+    return Element(kind, FORWARD, "FORWARDED", event_id, data)
 
 
 def _scoped(value) -> bool:
@@ -153,7 +175,7 @@ def _message(message, business: str | None, contacts) -> Element:
                 "payload": {"external_message_ref": wamid,
                             "thread_ref": f"{business}:{sender}",
                             "occurred_at": occurred, "message_type": stored, **content}}
-    return Element("message", FORWARD, "FORWARDED", event_id, _serialize(envelope))
+    return _forwarded("message", event_id, envelope)
 
 
 def _status(status, business: str | None) -> Element:
@@ -180,7 +202,7 @@ def _status(status, business: str | None) -> Element:
                 "payload": {"external_message_ref": wamid,
                             "thread_ref": f"{business}:{recipient}",
                             "status": STATUSES[value], "occurred_at": occurred}}
-    return Element("status", FORWARD, "FORWARDED", event_id, _serialize(envelope))
+    return _forwarded("status", event_id, envelope)
 
 
 def elements(raw: bytes) -> list[Element]:

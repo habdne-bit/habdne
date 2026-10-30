@@ -1153,3 +1153,6 @@ docs/gate/R1_RELAY_PLAN.md                                     rev10 d70591994df
 docs/gate/R1_STEP3_DELIVERY.md                                 §11  cd296006a3ea50ee3068253ca3828d3b228fa6c13deda8d194abfd492daa548e
 --- R-1 plan revision 10's commit named (453cde7) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev10 4f1f5251818dc13f0a84d04997dcf9930bceea04120f833242406ec978d1bbe1
+--- R-1 step 4: before record; the room per type ---
+docs/gate/evidence/R1-STEP4-BEFORE.txt                         new   4ed77f1c2a3ccf7c1003004c19abd3c5d4caefcc34946d362f556cd17ce15b35
+docs/gate/evidence/R1-STEP4-ENVELOPE-ROOM.txt                  new   40c76c839da3f47d7c5fe938be5a8b95b74a5e745d150208d73ac01d8b895975

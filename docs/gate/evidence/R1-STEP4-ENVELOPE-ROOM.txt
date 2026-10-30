@@ -1,0 +1,28 @@
+TURAB — R-1 step 4, R1-T7.6: the room each envelope leaves for content, measured
+Written by db/dev/r1_envelope_room.py; sizes are the bytes transform.elements produces.
+Limit: transform.ENVELOPE_LIMIT = 65536 bytes (TURAB's BODY_LIMIT, G7-15).
+Identifiers: phone_number_id 15 digits; from/recipient_id 11 digits; wamid 62 characters; media id 16 digits.
+
+Meta type  variable content           envelope, 1 byte  room for content
+text       text.body                               335             65202
+image      image.caption                           367             65170
+video      video.caption                           367             65170
+document   document.caption                        370             65167
+audio      audio.id                                336             65201
+sticker    sticker.id                              338             65199
+(status)   none                                    337                 —
+
+What each identifier's length costs (measured on a text message, bytes per
+added character):
+  wamid            2
+  from             1
+  phone_number_id  1
+
+Reading:
+- The room is the limit less the envelope with one byte of content, plus that byte.
+- A content's bytes are its serialized bytes: a 2-, 3- or 4-byte UTF-8 character costs
+  2, 3 or 4; " and \ cost 2; a control character costs 2 (\n, \t...) or 6 (\u00XX).
+- For image, video and document, the caption shares the room with nothing else that
+  varies here; the media id is fixed at the example's length.
+- For audio and sticker the only content is the media id, Meta's identifier.
+- R1-T7.7: real envelopes are not measured. No real traffic exists (R1-D13 (a)).
