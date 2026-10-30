@@ -1180,3 +1180,8 @@ docs/gate/R1_RELAY_PLAN.md                                     rev11 2769b719df7
 docs/gate/R1_RELAY_PLAN.md                                     rev11 4c5073342da42e3d6ba184a25161f02ac1b2bb2dd39ce444fab7848b9ab7f6b4
 --- R-1 step 4 addendum (review of 18e4aec): the before record ---
 docs/gate/evidence/R1-STEP4-ADDENDUM-BEFORE.txt                new   b9b474e844205649577513aa42e4d53212e795b47638decb6fa80c7eafa68663
+--- R-1 step 4 addendum: mutation records of step 4 at c751bd6; the earlier pair renamed ---
+docs/gate/evidence/R1-STEP4-MUTATIONS.txt                      new   4c555416410d064e6e43f884b92aae96875582f67f66167655235098a12f7d19
+docs/gate/evidence/R1-STEP4-MUTATIONS-REPEAT.txt               new   bb74a8554c46037752e49b003cd5725cefb8d473baf9b81a6c8ed2f16d556273
+docs/gate/evidence/R1-STEP4-MUTATIONS-AT-db8fcf8.txt           new   aa6cfa8f44448808e59c47b81caa9c26cb884eac03b9acb15bddbd55c50b28aa
+docs/gate/evidence/R1-STEP4-MUTATIONS-AT-db8fcf8-REPEAT.txt    new   60ca3dfee77c768e82fd000c1d85e374321e66bacca9f6fbc4dff6050afa8118

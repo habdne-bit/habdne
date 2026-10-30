@@ -1,15 +1,15 @@
 TURAB — R-1 step 4: duty 7, the serialized size, OVERSIZE
 ============================================================
-Base commit       : db8fcf867824ca575907531f5ab8b0b8462dad06
-Source fingerprint: 884519ff684dc8678cb85f704a66a0651fa87832af3830425c27e3573be34ade
+Base commit       : c751bd614ca2291f572f1041070409e867228594
+Source fingerprint: 71f705bd33d0083467daa96c30dbe26b4f859bb05edc5f08db2a9cd0a0c9835e
 Working tree      : CLEAN
-Recorded          : 2026-10-30 12:26:48 UTC
+Recorded          : 2026-10-30 13:36:20 UTC
 Test file         : tests/test_r1_step4.py
 
 === baseline (no mutation) ===
-   29 passed, 1 warning in 9.20s
+   34 passed, 1 warning in 7.58s
 == Z1 the limit one byte larger [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   17 failed, 12 passed, 1 warning in 8.47s
+   17 failed, 17 passed, 1 warning in 7.56s
    FAILED test_r1_t7_2_an_oversize_element_is_classed_oversize_without_its_envelope
    FAILED test_r1_t7_2_metas_redelivery_writes_nothing_twice_and_is_oversize_again
    FAILED test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
@@ -34,7 +34,7 @@ Test file         : tests/test_r1_step4.py
    cause: E   AssertionError: assert ('FORWARD', 'message:w2') == ('OVERSIZE', 'message:w2')
    cause: E   AssertionError: assert ['FORWARD', '...D', 'FORWARD'] == ['FORWARD', '...E', 'FORWARD']
 == Z2 the limit one byte smaller [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   16 failed, 13 passed, 1 warning in 8.04s
+   16 failed, 18 passed, 1 warning in 7.85s
    FAILED test_r1_t7_1_an_envelope_of_exactly_65536_bytes_is_forwarded
    FAILED test_r1_t7_1_turabs_real_route_accepts_exactly_65536_bytes
    FAILED test_r1_t7_3_each_case_at_65536_and_65537_bytes['"']
@@ -58,14 +58,14 @@ Test file         : tests/test_r1_step4.py
    cause: E   AssertionError: assert ('OVERSIZE' == 'FORWARD'
    cause: E   AssertionError: assert ['OVERSIZE', ...', 'OVERSIZE'] == ['FORWARD', '...E', 'FORWARD']
 == Z3 the size measured in characters [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   3 failed, 26 passed, 1 warning in 7.98s
+   3 failed, 31 passed, 1 warning in 9.10s
    FAILED test_r1_t7_3_each_case_at_65536_and_65537_bytes['\U0001f600']
    FAILED test_r1_t7_3_each_case_at_65536_and_65537_bytes['\u20ac']
    FAILED test_r1_t7_3_each_case_at_65536_and_65537_bytes['\xe9']
    cause: AssertionError: assert 'FORWARD' == 'OVERSIZE'
    cause: E   AssertionError: assert 'FORWARD' == 'OVERSIZE'
 == Z4 the limit not checked [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   16 failed, 13 passed, 1 warning in 8.09s
+   16 failed, 18 passed, 1 warning in 7.93s
    FAILED test_r1_t7_2_an_oversize_element_is_classed_oversize_without_its_envelope
    FAILED test_r1_t7_2_metas_redelivery_writes_nothing_twice_and_is_oversize_again
    FAILED test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
@@ -89,7 +89,7 @@ Test file         : tests/test_r1_step4.py
    cause: E   AssertionError: assert ('FORWARD', 'message:w2') == ('OVERSIZE', 'message:w2')
    cause: E   AssertionError: assert ['FORWARD', '...D', 'FORWARD'] == ['FORWARD', '...E', 'FORWARD']
 == O1 an oversize envelope shortened and sent [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   16 failed, 13 passed, 1 warning in 8.65s
+   16 failed, 18 passed, 1 warning in 8.45s
    FAILED test_r1_t7_2_an_oversize_element_is_classed_oversize_without_its_envelope
    FAILED test_r1_t7_2_metas_redelivery_writes_nothing_twice_and_is_oversize_again
    FAILED test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
@@ -113,7 +113,7 @@ Test file         : tests/test_r1_step4.py
    cause: E   AssertionError: assert ('FORWARD', 'message:w2') == ('OVERSIZE', 'message:w2')
    cause: E   AssertionError: assert ['FORWARD', '...D', 'FORWARD'] == ['FORWARD', '...E', 'FORWARD']
 == O2 the oversize answer 200 [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 d7bae9b4756d98f5 identical
-   10 failed, 19 passed, 1 warning in 8.19s
+   10 failed, 24 passed, 1 warning in 9.15s
    FAILED test_r1_t7_2_metas_redelivery_writes_nothing_twice_and_is_oversize_again
    FAILED test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
    FAILED test_r1_t7_3_each_case_at_65536_and_65537_bytes['"']
@@ -127,12 +127,12 @@ Test file         : tests/test_r1_step4.py
    cause: E   assert 200 != 200
    cause: assert 200 != 200
 == O3 OVERSIZE not alerted [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 d7bae9b4756d98f5 identical
-   1 failed, 28 passed, 1 warning in 8.00s
+   1 failed, 33 passed, 1 warning in 8.69s
    FAILED test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
    cause: AssertionError: assert [] == ['alert OVERSIZE message']
    cause: E   AssertionError: assert [] == ['alert OVERSIZE message']
 == O4 OVERSIZE stops the delivery [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 d7bae9b4756d98f5 identical
-   3 failed, 26 passed, 1 warning in 8.50s
+   3 failed, 31 passed, 1 warning in 8.51s
    FAILED test_r1_t7_2_metas_redelivery_writes_nothing_twice_and_is_oversize_again
    FAILED test_r1_t7_2_not_sent_not_shortened_the_others_delivered_the_answer_not_200
    FAILED test_r1_t7_4_a_batch_of_envelopes_near_the_limit
@@ -143,35 +143,80 @@ Test file         : tests/test_r1_step4.py
    cause: KeyError: 'message:w4'
    cause: assert 2 == (1 + 3)
 == O5 the oversize envelope kept in the element [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   1 failed, 28 passed, 1 warning in 8.77s
+   1 failed, 33 passed, 1 warning in 8.52s
    FAILED test_r1_t7_2_an_oversize_element_is_classed_oversize_without_its_envelope
    cause: E   assert (b'{"provider_event_id":"message:w2","event_type":"message","payload":{"external_message_ref":"w2","thread_ref":"106540...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
    cause: assert (b'{"provider_event_id":"message:w2","event_type":"message","payload":{"external_message_ref":"w2","thread_ref":"106540...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 == E1 a string UTF-8 cannot encode not caught [relay/turab_relay/transform.py, 1 site(s)]  restored: sha256 aa9eaa8a2ddd4a98 identical
-   2 failed, 27 passed, 1 warning in 8.49s
+   2 failed, 32 passed, 1 warning in 8.73s
    FAILED test_a_lone_surrogate_is_isolated_not_a_crash[body]
    FAILED test_a_lone_surrogate_is_isolated_not_a_crash[from]
    cause: E   UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 127: surrogates not allowed
    cause: E   UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 212: surrogates not allowed
    cause: UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 127: surrogates not allowed
    cause: UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 212: surrogates not allowed
-== C1 the count not read-only [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 1fad30360732913b identical
-   2 failed, 27 passed, 1 warning in 8.74s
+== C1 the count not read-only [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   4 failed, 30 passed, 1 warning in 12.69s
+   FAILED test_a_count_is_attributed_to_the_server_pghostaddr_reached_not_to_pghost
+   FAILED test_an_unset_pgport_is_pinned_to_5432
    FAILED test_the_count_check_prints_the_count_read_only_and_nothing_else
    FAILED test_the_count_check_says_when_there_is_no_table
-   cause: AssertionError: assert False
-   cause: AssertionError: assert None
-   cause: E   AssertionError: assert False
-   cause: E   AssertionError: assert None
-== C2 PGDATABASE accepted [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 1fad30360732913b identical
-   1 failed, 28 passed, 1 warning in 7.89s
+   cause: AssertionError: assert 'turab_authz_...0.1 port=5432' == 'turab_authz_...0.1 port=5432'
+   cause: AssertionError: assert ['postgres: w...=- port=5432'] == ['postgres: w...=- port=5432']
+   cause: AssertionError: assert ['turab_authz...=- port=5432'] == ['turab_authz...=- port=5432']
+   cause: E   AssertionError: assert 'turab_authz_...0.1 port=5432' == 'turab_authz_...0.1 port=5432'
+   cause: E   AssertionError: assert ['postgres: w...=- port=5432'] == ['postgres: w...=- port=5432']
+   cause: E   AssertionError: assert ['turab_authz...=- port=5432'] == ['turab_authz...=- port=5432']
+== C2 PGDATABASE accepted [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.75s
    FAILED test_the_count_check_refuses_a_destination_it_was_not_given[PGDATABASE]
    cause: AssertionError: assert 0 == 2
    cause: E   AssertionError: assert 0 == 2
-== C3 PGSERVICE accepted [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 1fad30360732913b identical
-   1 failed, 28 passed, 1 warning in 8.19s
+== C3 PGSERVICE accepted [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.86s
    FAILED test_the_count_check_refuses_a_destination_it_was_not_given[PGSERVICE]
-   cause: E   psycopg.OperationalError: connection is bad: definition of service "elsewhere" not found
-   cause: psycopg.OperationalError: connection is bad: definition of service "elsewhere" not found
+   cause: AssertionError: assert 1 == 2
+   cause: E   AssertionError: assert 1 == 2
+== D1 an empty hostaddr not passed [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.30s
+   FAILED test_every_destination_parameter_is_pinned_at_the_connection
+   cause: E   KeyError: 'hostaddr'
+   cause: KeyError: 'hostaddr'
+== D2 the unset port left to libpq [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.19s
+   FAILED test_an_unset_pgport_is_pinned_to_5432
+   cause: AssertionError: assert ['postgres: w...addr=- port='] == ['postgres: w...=- port=5432']
+   cause: E   AssertionError: assert ['postgres: w...addr=- port='] == ['postgres: w...=- port=5432']
+== D3 the answering address taken from PGHOST [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.05s
+   FAILED test_a_count_is_attributed_to_the_server_pghostaddr_reached_not_to_pghost
+   cause: AssertionError: assert 'turab_authz_...0.1 port=5432' == 'turab_authz_...0.1 port=5432'
+   cause: E   AssertionError: assert 'turab_authz_...0.1 port=5432' == 'turab_authz_...0.1 port=5432'
+== D4 the answering server's identifier not read [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   4 failed, 30 passed, 1 warning in 7.89s
+   FAILED test_a_count_is_attributed_to_the_server_pghostaddr_reached_not_to_pghost
+   FAILED test_an_unset_pgport_is_pinned_to_5432
+   FAILED test_the_count_check_prints_the_count_read_only_and_nothing_else
+   FAILED test_the_count_check_says_when_there_is_no_table
+   cause: AssertionError: assert 'turab_authz_...0.1 port=5432' == 'turab_authz_...0.1 port=5432'
+   cause: AssertionError: assert ['postgres: w...=- port=5432'] == ['postgres: w...=- port=5432']
+   cause: AssertionError: assert ['turab_authz...=- port=5432'] == ['turab_authz...=- port=5432']
+   cause: E   AssertionError: assert 'turab_authz_...0.1 port=5432' == 'turab_authz_...0.1 port=5432'
+   cause: E   AssertionError: assert ['postgres: w...=- port=5432'] == ['postgres: w...=- port=5432']
+   cause: E   AssertionError: assert ['turab_authz...=- port=5432'] == ['turab_authz...=- port=5432']
+== D5 PGHOST not required [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 9.01s
+   FAILED test_the_count_check_refuses_without_pghost
+   cause: E   KeyError: 'PGHOST'
+== D6 a failed connection exits 0 [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.58s
+   FAILED test_a_pghostaddr_where_no_server_answers_attributes_no_count
+   cause: AssertionError: assert 0 == 1
+   cause: E   AssertionError: assert 0 == 1
+== D7 a failed connection printed as a line of counts [db/ops/count_webhook_events.py, 1 site(s)]  restored: sha256 a4267b0353e33cb7 identical
+   1 failed, 33 passed, 1 warning in 8.45s
+   FAILED test_a_pghostaddr_where_no_server_answers_attributes_no_count
+   cause: AssertionError: assert 'turab_authz_...2 port=5432\n' == ''
+   cause: E   AssertionError: assert 'turab_authz_...2 port=5432\n' == ''
 
 SURVIVING MUTATIONS: none
