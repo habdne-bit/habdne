@@ -10,9 +10,11 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. It is not a release authorization.
 
-**Status: DELIVERED for review.** R-1 stays **UNMET**: two of its twelve
-conditions cannot be met inside this repository (§6, and
-`R1_CLOSURE_RECORD.md`).
+**Status: the addendum DELIVERED for review (§8).** The review of
+`18e4aec` accepted duty 7 and the encoding fix, did not close step 4, and
+asked for one addendum on the count check's destination. R-1 stays
+**UNMET**: two of its twelve conditions cannot be met inside this
+repository (§6, §8, and `R1_CLOSURE_RECORD.md`).
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -23,6 +25,12 @@ conditions cannot be met inside this repository (§6, and
 - `3385456`: the mutation records (§4);
 - `e8cd4f3`, `000a796`, `e49d2a3`: the evidence round (§5);
 - `ede11fc`: the barriers' measurement, this note, the closure record.
+- `8cbd718`, `f50a104`: plan revision 11 (the review of `18e4aec`);
+- `c751bd6`: the addendum: the count check's destination, its tests and
+  mutations, the before record (§8);
+- `257a28e`: step 4's mutation records again (§8.4);
+- `994c895`, `19fc3f2`, `001f429`: the evidence round again (§8.5);
+- ADD_COMMIT: the barriers measured again, §8, the closure record updated.
 
 ---
 
@@ -193,3 +201,139 @@ evidence, and records the barriers as measured.
 - **The decisions on R1-Q3 and R1-Q4.**
 - **R-1 UNMET; no real event;** K06 an independent condition before the
   release gate; SALE only; not a release authorization.
+
+---
+
+## 8. Addendum: the count check's destination (review of `18e4aec`)
+
+**The review of `18e4aec` did not close step 4.** It accepted duty 7 and
+the fix of `UnicodeEncodeError`, and asked for one addendum (plan revision
+11, `8cbd718`).
+
+**The gap.**
+- `count_webhook_events.py` printed `PGHOST`, but neither pinned `hostaddr`
+  nor refused `PGHOSTADDR`.
+- libpq connects to `PGHOSTADDR` and never resolves `PGHOST`. So a count
+  could be printed against a host the tool never reached.
+- The tests deleted `PGHOSTADDR` in their setup, so they did not reveal it.
+
+**What was asked:**
+1. every destination parameter pinned at the connection;
+2. the identity of the server and database that answered recorded;
+3. a test that changes `PGHOSTADDR` and shows the count is not attributed
+   to the mismatched `PGHOST`;
+4. the evidence of the resulting tree bound again.
+
+### 8.1 Before (`evidence/R1-STEP4-ADDENDUM-BEFORE.txt`)
+
+**The tree:** `count_webhook_events.py` byte-identical to `18e4aec`'s; only
+the new tests added.
+- **Shown directly:** `PGHOST=elsewhere.invalid` and `PGHOSTADDR=127.0.0.1`
+  printed `turab_authz_test host=elsewhere.invalid read_only=on
+  webhook_events=0`, exit 0. The count was attributed to a host that does
+  not exist.
+- **The tests:** 6 failed, 2 passed (the two existing refusals).
+  - The connection was given `dbname` only (`KeyError: 'host'`).
+  - Without `PGHOST`, libpq fell back to a local socket, a destination
+    nobody named.
+  - A `PGHOSTADDR` with no server raised an unhandled `OperationalError`.
+
+### 8.2 The fix (`c751bd6`)
+
+- **Every destination parameter is pinned:**
+  - `host`, `hostaddr` (empty when none), `port` (5432 when `PGPORT` is
+    unset) and `dbname` are each passed to the connection;
+  - libpq fills none of them from anywhere else;
+  - **`PGHOST` is required.**
+- **The count is attributed to what answered.** Each line names:
+  - the server, read from itself: its cluster's system identifier, the
+    address and port it answered on (`pg_control_system()`,
+    `inet_server_addr()`, `inet_server_port()`);
+  - the database: `current_database()`;
+  - what was asked, separately.
+
+  ```
+  DATABASE: webhook_events=N read_only=on | answered: system_identifier=...
+  address=... port=... database=... | asked: host=... hostaddr=... port=...
+  ```
+- **A failed connection is never a count:** `DATABASE: CONNECTION_FAILED
+  asked: ...` on stderr, nothing on stdout, exit status 1.
+- **Unchanged:** `PGSERVICE` and `PGDATABASE` refused; a read-only
+  transaction, its state read back; `count(*)` and nothing else.
+- **The identifier is readable without superuser:** on this server PUBLIC
+  holds EXECUTE on `pg_control_system()` (measured,
+  `has_function_privilege`).
+
+### 8.3 The tests (`tests/test_r1_step4.py`, now 34)
+
+| Test | What it shows |
+|---|---|
+| the count printed, read-only | the whole line equals the count read by SQL, the suite server's own identifier, address and port, and what was asked |
+| `NO_TABLE` | the same line, for `postgres` |
+| **`PGHOSTADDR` reached, `PGHOST` mismatched** (the review's test) | `PGHOST=elsewhere.invalid`, `PGHOSTADDR` = the suite server's address: the count is the answering server's, named by its identifier and address; `elsewhere.invalid` appears in `asked` only, never in `answered` |
+| a `PGHOSTADDR` where no server listens | `PGHOST` names the suite's server, `PGHOSTADDR` 127.0.0.2: no count printed, for either; `CONNECTION_FAILED` on stderr; exit 1 |
+| every parameter pinned | the connection receives `host`, `hostaddr` (empty), `port` and `dbname` explicitly |
+| an unset `PGPORT` | pinned to 5432, and printed |
+| no `PGHOST` | refused, nothing printed |
+| `PGSERVICE`, `PGDATABASE` | refused, as before |
+
+### 8.4 Mutations (`db/dev/mutate_r1_step4.py`, now 20)
+
+| Mutation | Killed by |
+|---|---|
+| D1 an empty `hostaddr` not passed | every parameter pinned |
+| D2 the unset port left to libpq | an unset `PGPORT` |
+| D3 the answering address taken from `PGHOST` | the review's test |
+| D4 the answering server's identifier not read | the line tests, the review's test |
+| D5 `PGHOST` not required | no `PGHOST` |
+| D6 a failed connection exits 0 | no server listening |
+| D7 a failed connection printed as a line of counts | no server listening |
+
+- **Not mutated:** the answered database printed from the request's name.
+  A connection's `current_database()` is the `dbname` it was given, so no
+  test can tell them apart.
+- **Steps 1 to 3 were not re-run.** Their code, tests and mutation scripts
+  are byte-identical to their pairs' trees (`git diff db8fcf8` on
+  `relay/`, their test files, their scripts and `mutation_runner.py`:
+  empty).
+
+| Record | Tree | Result |
+|---|---|---|
+| `R1-STEP4-MUTATIONS.txt`, `-REPEAT.txt` | `c751bd6` | 20/20 killed, twice, outcomes identical |
+| `R1-STEP4-MUTATIONS-AT-db8fcf8.txt`, `-REPEAT.txt` | `db8fcf8` | 13/13 killed, twice, outcomes identical (§4) |
+
+### 8.5 The evidence round, again
+
+Every row ran on a clean tree with source fingerprint `71f705bd33d0083467daa96c30dbe26b4f859bb05edc5f08db2a9cd0a0c9835e`, the mutation
+runs' own.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Authorization matrix | 222 rules; suite **3493/3493** | `994c895` (run at `257a28e`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS: all database-level contract tests passed; the same 67 operations | `19fc3f2` (run at `994c895`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **3493 passed, 0 failed, 0 errors, 0 skipped** | `001f429` (run at `19fc3f2`) | `evidence/TEST-RUN-PROVENANCE.txt`; **`bound`** |
+
+**The count:** 3493 = 3488 + 5 (the count check: 4 tests before, 9 now).
+
+### 8.6 The barriers measured again (`evidence/R1-STEP4-BARRIERS-MEASURED.txt`)
+
+**Measured with the fixed tool, on the bound tree.** Its earlier version,
+measured at `e49d2a3` with the old tool, is kept as
+`R1-STEP4-BARRIERS-MEASURED-AT-e49d2a3.txt`.
+- **Every count now names the server that answered.** All four databases
+  answered from the same cluster, system identifier `7697828029857667607`,
+  at 127.0.0.1:5432.
+- **This is the test server.** As the review states, **its counts are no
+  evidence of the state of any deployed environment.**
+- **B1 to B4 stay `UNKNOWN`.** Under R1-Q3 (§5.7 of the plan), the
+  operators measure them; condition 9 is not met.
+
+### 8.7 What remains
+
+- **The review of this addendum.** Step 4 is not closed.
+- **Step 5** (the run entry point, R1-Q4) waits on step 4's closure.
+- **§5.5's access-log condition** stands before any deployment or Callback
+  setting.
+- **R-1 UNMET:** no real event, no deployment, no Callback setting. K06 an
+  independent condition before the release gate; SALE only; not a release
+  authorization.

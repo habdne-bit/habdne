@@ -1,10 +1,10 @@
 TURAB — R-1 step 4: the barriers' state (plan §4), as measurable from this session
-Measured: 2026-10-30T13:06:28Z, on the tree at e49d2a3 (working tree CLEAN apart from this record, which was being written)
-Source fingerprint: 884519ff684dc8678cb85f704a66a0651fa87832af3830425c27e3573be34ade
+Measured again after the addendum (review of 18e4aec), with the fixed count check.
+Measured: 2026-10-30T14:10:59Z, on the tree at 001f429 (working tree CLEAN apart from this record, which was being written, and its earlier version renamed to -AT-e49d2a3)
+Source fingerprint: 71f705bd33d0083467daa96c30dbe26b4f859bb05edc5f08db2a9cd0a0c9835e
 
 1. The databases of this session's PostgreSQL server
    command: psql -d postgres -AtXc "select datname from pg_database where not datistemplate order by 1"
-   server: host=127.0.0.1 server_version=16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) system_identifier=7697828029857667607
    postgres
    turab_authz_test
    turab_contract_test
@@ -12,22 +12,34 @@ Source fingerprint: 884519ff684dc8678cb85f704a66a0651fa87832af3830425c27e3573be3
 
 2. The count check (R1-D14 (a)), on every one of them
    command: .venv/bin/python db/ops/count_webhook_events.py postgres turab_authz_test turab_contract_test turab_probe
-   environment: PGHOST, PGUSER, PGPASSWORD set; PGDATABASE and PGSERVICE unset
-   postgres host=127.0.0.1 read_only=on webhook_events=NO_TABLE
-   turab_authz_test host=127.0.0.1 read_only=on webhook_events=112
-   turab_contract_test host=127.0.0.1 read_only=on webhook_events=0
-   turab_probe host=127.0.0.1 read_only=on webhook_events=0
+   environment: PGHOST=127.0.0.1 PGPORT=5432, PGUSER and PGPASSWORD set; PGHOSTADDR, PGDATABASE
+   and PGSERVICE unset
+   postgres: webhook_events=NO_TABLE read_only=on
+       | answered: system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=postgres
+       | asked: host=127.0.0.1 hostaddr=- port=5432
+   turab_authz_test: webhook_events=112 read_only=on
+       | answered: system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_authz_test
+       | asked: host=127.0.0.1 hostaddr=- port=5432
+   turab_contract_test: webhook_events=0 read_only=on
+       | answered: system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_contract_test
+       | asked: host=127.0.0.1 hostaddr=- port=5432
+   turab_probe: webhook_events=0 read_only=on
+       | answered: system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_probe
+       | asked: host=127.0.0.1 hostaddr=- port=5432
    exit status: 0
+   Each count is the answering server's: every line names the cluster's system identifier,
+   the address and port it answered on, and the database, read from the server itself.
    What each database is (named in the repository, not inferred from its rows):
    - postgres: the server's maintenance database; no TURAB schema.
    - turab_authz_test: the suite's database (tests/conftest.py, TURAB_TEST_DB's default);
-     the bound run of this tree wrote to it. Its rows are the tests' synthetic events.
+     its rows are the tests' synthetic events, and change with every run of the suite.
    - turab_contract_test: the PostgreSQL gate's database (db/gate/run_gate.sh).
    - turab_probe: a probe database of Slice 6's work (docs/gate/SLICE_6_STEP5_DELIVERY.md).
-   None is a non-test database. R1-D14's count is meant for the deployed environments'
-   databases; none is reachable from this session.
+   This is the test server. Its counts are no evidence of the state of any deployed
+   environment (review of 18e4aec). None of the deployed environments' databases is
+   reachable from this session.
 
-3. B2 in this session's environment: variables named TURAB_RELAY_*, TURAB*, WHATSAPP*, META*
+3. B2 in this session's environment: variables named TURAB*, WHATSAPP*, META*
    command: env | grep -oE '^(TURAB|WHATSAPP|META)[A-Z_]*' | sort -u   (names only, never values)
    result: 0 variables
 
@@ -37,9 +49,9 @@ Source fingerprint: 884519ff684dc8678cb85f704a66a0651fa87832af3830425c27e3573be3
    The relay's run entry point: relay/turab_relay/__main__.py does not exist
    This is a fact about the repository, not about any deployment.
 
-5. Not measurable from this session
+5. Not measured, and not measurable from this session
    - B1 (no verified callback URL) and B4 (no subscription to 'messages'): Meta's App
      Dashboard; this session has no access to Meta's app, and none was given.
-   - B2 and B3 in the deployed environments, and the count in their databases: none is
-     known to the repository or reachable from here.
-   Their state is UNKNOWN. It is not inferred from anything above.
+   - B2 and B3 in the deployed environments, and the count in their databases.
+   Under R1-Q3 (plan §5.7) the operator of Meta's app and the operator of each deployed
+   environment measure them. Their state is UNKNOWN; it is not inferred from anything above.

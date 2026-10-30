@@ -2,7 +2,8 @@
 
 **What this record is.**
 - **The plan's step 4 asks for it:** "R-1's evidence; the barriers' state
-  measured (§4); the closure record" (`R1_RELAY_PLAN.md`, revision 10, §6).
+  measured (§4); the closure record" (`R1_RELAY_PLAN.md`, revision 10, §6;
+  revision 11 since the review of `18e4aec`).
 - **It maps §7's twelve acceptance conditions to their evidence**, and
   records the barriers' state as far as it can be measured from here.
 - **R1-D15 decides how R-1 closes:** tests and mutations bound to a
@@ -17,8 +18,9 @@
 - **K06** stays an independent condition before the release gate.
 - **SALE only.** This is not a release authorization.
 
-**Prepared at:** `ede11fc`, on the tree whose run is bound (`e49d2a3`,
-source fingerprint `884519ff684dc8678cb85f704a66a0651fa87832af3830425c27e3573be34ade`). **The reviewer has not re-run anything.** Every
+**Prepared at:** `ede11fc`; **updated by step 4's addendum** (review of
+`18e4aec`) at ADD_COMMIT, on the tree whose run is bound (`001f429`, source
+fingerprint `71f705bd33d0083467daa96c30dbe26b4f859bb05edc5f08db2a9cd0a0c9835e`). **The reviewer has not re-run anything.** Every
 result here is ours.
 
 ---
@@ -35,9 +37,9 @@ result here is ours.
 | 6 | the envelope's size bounded by its serialized bytes (R1-T7.1 to R1-T7.5); no limit attributed to Meta beyond its documentation | **met**, subject to step 4's review | `test_r1_step4.py`; the room per type, `evidence/R1-STEP4-ENVELOPE-ROOM.txt`; no field maximum attributed to Meta (plan §1) |
 | 7 | no content in any log of the relay; no content from an ISOLATED element anywhere | **met** | R1-T2.7 (step 1); every logger, `httpx`'s included, across 200, 500, 400 and no answer (step 3); OVERSIZE's alert and logs (step 4); ISOLATED elements carry no envelope (step 2) |
 | 8 | each mutation of the relay's guards killed, in two identical runs | **met**, subject to step 4's review | steps 1 to 4: `evidence/R1-STEP{1,2,3,4}-MUTATIONS*.txt`, §2 below |
-| **9** | **the barriers' state measured and recorded at closure (§4)** | **NOT MET** | §3 below: measurable here only in part; B1 to B4 need the app's operator and the deployed environments |
+| **9** | **the barriers' state measured and recorded at closure (§4)** | **NOT MET** | §3 below: measurable here only in part; under R1-Q3 (decided, review of `18e4aec`) the operators of Meta's app and of each deployed environment measure B1 to B4; `UNKNOWN` until they do |
 | 10 | K06 UNPROVEN, SALE only; not a release authorization | **stated** | — |
-| **11** | **the run entry point meets §5.5, tested through it, before any deployment or Callback setting** | **NOT MET** | no run entry point exists. The tests run uvicorn programmatically with `access_log=False` (step 1), which proves that test server only, as §5.5 says |
+| **11** | **the run entry point meets §5.5, tested through it, before any deployment or Callback setting** | **NOT MET** | no run entry point exists. The tests run uvicorn programmatically with `access_log=False` (step 1), which proves that test server only, as §5.5 says. Under R1-Q4 (decided, review of `18e4aec`), step 5 builds and tests it through an actual process, after step 4's closure; each layer in front of it is examined in the deployment environment |
 | 12 | TURAB's URL meets §5.6, the refusals and their sending nothing tested | **met** | step 3's §9 and §10: the rule, the relay's path, behind uvicorn |
 
 ## 2. The mutation records
@@ -47,7 +49,7 @@ result here is ours.
 | 1 | 28 | `3f86b1f` | 28/28, twice, outcomes identical (its code and tests unchanged since) |
 | 2 | 31 | `db8fcf8` | 31/31 killed, twice, outcomes identical |
 | 3 | 30 | `db8fcf8` | 30/30 killed, twice, outcomes identical |
-| 4 | 13 | `db8fcf8` | 13/13 killed, twice, outcomes identical |
+| 4 | 20 | `c751bd6` | 20/20 killed, twice, outcomes identical (the pair at `db8fcf8`, 13/13, kept as `-AT-db8fcf8`) |
 
 ## 3. The barriers (§4), as measured
 
@@ -55,7 +57,7 @@ result here is ours.
 Meta's app and the deployed environments. The plan does not know it, and
 it is to be measured, not inferred.**
 
-| # | Barrier | Who can measure its state | Measured here | State |
+| # | Barrier | Who measures its state (R1-Q3, decided) | Measured here | State |
 |---|---|---|---|---|
 | B1 | no verified callback URL at Meta | the app's operator, in the App Dashboard | **not measurable:** this session has no access to Meta's app, and none was given | **unknown** |
 | B2 | no relay key in TURAB's environment | the operator of each deployed environment (presence only) | **this session's environment:** no variable named `TURAB*`, `WHATSAPP*` or `META*` is set (names read, never values), `TURAB_RELAY_SIGNING_SECRET` included. Deployed environments: none known to this repository | **unknown** for deployed environments |
@@ -65,46 +67,49 @@ it is to be measured, not inferred.**
 **The count check (R1-D14 (a)).**
 - **Built in step 4:** `db/ops/count_webhook_events.py` (read-only, counts
   only, the databases named).
+- **Its destination, since the addendum (review of `18e4aec`):** every
+  destination parameter pinned at the connection (`host`, `hostaddr`,
+  `port`, `dbname`), `PGHOST` required; each count printed with the
+  identity of the server and database that answered it: the cluster's
+  system identifier, its address and port, `current_database()`. A count
+  is never attributed to a `PGHOST` the connection did not reach.
 - **Run on every database of this session's server:** `evidence/R1-STEP4-BARRIERS-MEASURED.txt`.
   - **The server holds no non-test TURAB database.** Its databases are
     `postgres`, the suite's (`turab_authz_test`), the gate's
     (`turab_contract_test`), and a probe database left by Slice 6's work
     (`turab_probe`). Their counts are test rows, and say nothing of a real
     event.
-  - **The counts, read-only on each:** `postgres` NO_TABLE;
-    `turab_authz_test` 112, written by the suite's synthetic events (the
-    bound run of this tree used it); `turab_contract_test` 0;
-    `turab_probe` 0. Exit status 0.
+  - **The counts, read-only on each, measured again with the fixed tool
+    on the bound tree:** `postgres` NO_TABLE; `turab_authz_test` 112 (the suite's synthetic events); `turab_contract_test` 0; `turab_probe` 0. Every line names the same
+    answering cluster, system identifier `7697828029857667607`, at
+    127.0.0.1:5432. Exit status 0.
+  - **The earlier measurement**, at `e49d2a3` with the old tool, is kept as
+    `evidence/R1-STEP4-BARRIERS-MEASURED-AT-e49d2a3.txt`.
+  - **These counts are no evidence of the state of any deployed
+    environment** (review of `18e4aec`).
   - **The non-test databases R1-D14 means** are those of the deployed
     environments. None is reachable from here.
 
 ## 4. What closing R-1 still needs
 
-**R1-Q3 · Measuring the barriers (condition 9).**
-- **Who measures:** B1 and B4 can be measured only by the operator of
-  Meta's app, and B2, B3 and the count check only by the operator of each
-  deployed environment.
-- **Proposed:** the operator fills in §3's last column, with the date and
-  what was read: the dashboard's callback and subscription fields; each
-  environment's presence of the key and exposure of the route; the count
-  command's output, unchanged. The record is then reviewed.
-- **Not proposed:** measuring them by any access this session does not
-  have.
+**R1-Q3 · Measuring the barriers (condition 9): DECIDED** in the review of
+`18e4aec` (plan §5.7).
+- **The operator of Meta's app and the operator of each deployed
+  environment** measure the barriers: B1 and B4 in the App Dashboard; B2,
+  B3 and the count check in each environment.
+- **They record** the date, what was seen, and the count of events, in a
+  record that is reviewed.
+- **Where nothing was measured, the state stays `UNKNOWN`.** That is every
+  row of §3 now: **condition 9 is not met.**
 
-**R1-Q4 · The run entry point (condition 11).**
-- **The gap:**
-  - §5.5 and §7 require an entry point whose request-line logging is off,
-    or its query removed, tested through it;
-  - no step of §6 builds one, and the relay has none: no `__main__`, and no
-    server configuration;
-  - "every layer in front of it" (a load balancer, a TLS terminator) is the
-    deployment's.
-- **Proposed, for decision:** a fifth step that builds
-  `python -m turab_relay` with uvicorn's access log off and the TLS of
-  §5.2. It would be tested through that entry point, as §5.5 asks, by
-  starting it as a process and reading every log line it writes.
-- **The layers in front of it** would stay a deployment condition, measured
-  with the barriers.
+**R1-Q4 · The run entry point (condition 11): DECIDED** in the review of
+`18e4aec` (plan §5.7, §6 step 5).
+- **Step 5** builds `python -m turab_relay`, and tests its log and its mTLS
+  configuration **through an actual process**.
+- **Its local test does not prove** the logs of a load balancer or a TLS
+  terminator: each layer in front of the relay is examined in the
+  deployment environment before condition 11 is met.
+- **Step 5 waits on step 4's closure.** Condition 11 is not met.
 
 ## 5. Standing
 
