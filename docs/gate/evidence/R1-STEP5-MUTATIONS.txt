@@ -1,0 +1,144 @@
+TURAB — R-1 step 5: the run entry point, python -m turab_relay
+============================================================
+Base commit       : 9dc7afded86c5fe81d8c2191b945c6a33c3dc6cf
+Source fingerprint: 4571a1c09003bc06511a1f2a66ebf05da3b33318afefa4f81a85bd528a5f5dc6
+Working tree      : CLEAN
+Recorded          : 2026-10-30 14:36:37 UTC
+Test file         : tests/test_r1_step5.py
+
+=== baseline (no mutation) ===
+   29 passed, 1 warning in 18.54s
+== A1 the access log on [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 18.73s
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   cause: AssertionError: verify-token-r1-step5
+   cause: E   AssertionError: verify-token-r1-step5
+== A2 uvicorn's default logging configuration [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 19.27s
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   cause: AssertionError: a line not written by the configured logging: 'INFO:     Started server process [10059]'
+   cause: E   AssertionError: a line not written by the configured logging: 'INFO:     Started server process [10059]'
+== A3 httpx at INFO [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 19.04s
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   cause: AssertionError: http://127.0.0.1:45949/webhooks/whatsapp
+   cause: E   AssertionError: http://127.0.0.1:45949/webhooks/whatsapp
+== T1 no TLS [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   11 failed, 18 passed, 1 warning in 235.25s (0:03:55)
+   FAILED test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[two-cn]
+   FAILED test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[wrong-cn]
+   FAILED test_a_header_naming_metas_cn_does_not_replace_the_certificate
+   FAILED test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[None]
+   FAILED test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[expired]
+   FAILED test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[future]
+   FAILED test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[other]
+   FAILED test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[self]
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   FAILED test_the_entry_point_answers_metas_get_over_mutual_tls
+   FAILED test_the_entry_point_delivers_a_signed_notification_to_turab
+   cause: AssertionError: not started: ['2026-10-30 14:37:59,958 INFO uvicorn.error Started server process [10431]', '2026-10-30 14:37:59,958 INFO uvicorn.error Waiting for applica
+   cause: AssertionError: not started: ['2026-10-30 14:38:20,523 INFO uvicorn.error Started server process [10464]', '2026-10-30 14:38:20,523 INFO uvicorn.error Waiting for applica
+   cause: AssertionError: not started: ['2026-10-30 14:38:41,023 INFO uvicorn.error Started server process [10473]', '2026-10-30 14:38:41,023 INFO uvicorn.error Waiting for applica
+   cause: AssertionError: not started: ['2026-10-30 14:39:01,056 INFO uvicorn.error Started server process [10485]', '2026-10-30 14:39:01,056 INFO uvicorn.error Waiting for applica
+   cause: AssertionError: not started: ['2026-10-30 14:39:21,072 INFO uvicorn.error Started server process [10494]', '2026-10-30 14:39:21,072 INFO uvicorn.error Waiting for applica
+   cause: AssertionError: not started: ['2026-10-30 14:39:41,121 INFO uvicorn.error Started server process [10508]', '2026-10-30 14:39:41,121 INFO uvicorn.error Waiting for applica
+== T2 uvicorn's own protocol, without the TLS extension [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   3 failed, 26 passed, 1 warning in 17.88s
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   FAILED test_the_entry_point_answers_metas_get_over_mutual_tls
+   FAILED test_the_entry_point_delivers_a_signed_notification_to_turab
+   cause: AssertionError: assert (403, b'') == (200, b'')
+   cause: AssertionError: assert (403, b'') == (200, b'chall...1-step5-7731')
+   cause: E   AssertionError: assert (403, b'') == (200, b'')
+   cause: E   AssertionError: assert (403, b'') == (200, b'chall...1-step5-7731')
+== T3 the client certificate not required [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   4 failed, 25 passed, 1 warning in 18.49s
+   FAILED test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[two-cn]
+   FAILED test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[wrong-cn]
+   FAILED test_a_header_naming_metas_cn_does_not_replace_the_certificate
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   cause: AssertionError: assert (200, b'chall...1-step5-7731') == (403, b'')
+   cause: E   AssertionError: assert (200, b'chall...1-step5-7731') == (403, b'')
+   cause: E   assert 200 == 403
+   cause: assert 200 == 403
+== T4 the server's certificate as the client's anchor [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   7 failed, 22 passed, 1 warning in 36.54s
+   FAILED test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[two-cn]
+   FAILED test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[wrong-cn]
+   FAILED test_a_header_naming_metas_cn_does_not_replace_the_certificate
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_META_CA_FILE-/nonexistent/meta-ca.pem]
+   FAILED test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+   FAILED test_the_entry_point_answers_metas_get_over_mutual_tls
+   FAILED test_the_entry_point_delivers_a_signed_notification_to_turab
+   cause: E   http.client.RemoteDisconnected: Remote end closed connection without response
+   cause: E   subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+   cause: http.client.RemoteDisconnected: Remote end closed connection without response
+   cause: subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+== R1 a command-line argument accepted [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 37.81s
+   FAILED test_it_takes_no_command_line_argument
+   cause: E   subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay', '--port', '8443']' timed out after 20.0 seconds
+   cause: subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay', '--port', '8443']' timed out after 20.0 seconds
+== R2 a missing setting not refused [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   6 failed, 23 passed, 1 warning in 38.58s
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_BIND_HOST]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_BIND_HOST]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_BIND_PORT]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_META_CA_FILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_TLS_CERTFILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_TLS_KEYFILE]
+   cause: E   assert 1 == 2
+   cause: E   subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+   cause: assert 1 == 2
+   cause: subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+== R3 an empty setting accepted [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 38.08s
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_BIND_HOST]
+   cause: E   subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+   cause: subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+== R4 a port above 65535 accepted [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 38.32s
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT-65536]
+   cause: E   subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+   cause: subprocess.TimeoutExpired: Command '['/home/user/habdne/.venv/bin/python', '-m', 'turab_relay']' timed out after 20.0 seconds
+== R5 a signed port accepted [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 18.78s
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT--1]
+   cause: E   assert 3 == 2
+   cause: assert 3 == 2
+== R6 a TLS file that cannot be loaded not caught [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   3 failed, 26 passed, 1 warning in 18.05s
+   FAILED test_a_key_that_is_not_the_certificates_is_refused_at_start
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_META_CA_FILE-/nonexistent/meta-ca.pem]
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_TLS_CERTFILE-/nonexistent/server.pem]
+   cause: E   assert 1 == 2
+   cause: assert 1 == 2
+== R7 a refusal exits 1 [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   18 failed, 11 passed, 1 warning in 18.89s
+   FAILED test_a_key_that_is_not_the_certificates_is_refused_at_start
+   FAILED test_a_refusal_to_start_names_no_value
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT--1]
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT-65536]
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT-https]
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_META_CA_FILE-/nonexistent/meta-ca.pem]
+   FAILED test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_TLS_CERTFILE-/nonexistent/server.pem]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_BIND_HOST]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_BIND_PORT]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_META_CA_FILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_TLS_CERTFILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_TLS_KEYFILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_BIND_HOST]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_BIND_PORT]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_META_CA_FILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_TLS_CERTFILE]
+   FAILED test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_TLS_KEYFILE]
+   FAILED test_it_takes_no_command_line_argument
+   cause: E   assert 1 == 2
+   cause: assert 1 == 2
+== R8 a refusal names the value [relay/turab_relay/__main__.py, 1 site(s)]  restored: sha256 176bf147ea776330 identical
+   1 failed, 28 passed, 1 warning in 18.78s
+   FAILED test_a_refusal_to_start_names_no_value
+   cause: AssertionError: assert 'not-a-port-r1s5' not in 'refused: TU... port number'
+   cause: E   AssertionError: assert 'not-a-port-r1s5' not in 'refused: TU... port number'
+
+SURVIVING MUTATIONS: none

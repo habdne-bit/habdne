@@ -1202,3 +1202,6 @@ docs/gate/R1_RELAY_PLAN.md                                     rev12 6ac4fe803ee
 docs/gate/evidence/R1-STEP5-BEFORE.txt                         new   14a56ae8aac24e6978873cdd7cdd58f21708d1ebbe51e0c7df980e493e27ae59
 docs/gate/evidence/R1-STEP5-PROCESS-LINES.txt                  new   5167aaeb8020a5ac8d4f813603bc5c44d30d8e78e1ec1c5487f06f583b1a1fef
 docs/gate/evidence/R1-STEP5-MUTATIONS-TRIAL.txt                new   4a561f7a8669db265c6033ae2322e3641b29f018dc5dd9de8131941823c9f365
+--- R-1 step 5: mutation records at 9dc7afd ---
+docs/gate/evidence/R1-STEP5-MUTATIONS.txt                      new   4f02f99e441f320e7644bc1ae327f6c3db63a7b7ed9e3abae15ff5423d64a13e
+docs/gate/evidence/R1-STEP5-MUTATIONS-REPEAT.txt               new   aa8a8d363c3dbd62f106860196a3c529bd9993afeeb82f4eb7c2a69b8848f6e8
