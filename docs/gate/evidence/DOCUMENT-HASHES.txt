@@ -1148,3 +1148,6 @@ docs/gate/evidence/R1-STEP3-MUTATIONS-AT-648bec0.txt           new   8b53b6fea81
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-648bec0-REPEAT.txt    new   62f58953d0b0d38f9625c43678d51e116535c7b2a826a0fc3c7a3ffd57c74ed2
 --- R-1 step 3 correction delivered for review (§10 of the delivery note) ---
 docs/gate/R1_STEP3_DELIVERY.md                                 §10  d4b01cefb272e4077077d431abfe491870cad614d0418308158969a7120bc926
+--- Review of 79c232b: R-1 step 3 CLOSED; step 4 authorized; plan revision 10 ---
+docs/gate/R1_RELAY_PLAN.md                                     rev10 d70591994dfd37b178481a2e386a63aae131c811438c14b7eb891722901f641c
+docs/gate/R1_STEP3_DELIVERY.md                                 §11  cd296006a3ea50ee3068253ca3828d3b228fa6c13deda8d194abfd492daa548e

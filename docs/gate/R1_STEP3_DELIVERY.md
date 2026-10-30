@@ -8,9 +8,8 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Step 4.
 
-**Status: NOT closed** (review of `c480474`: the effective deadline, R1-Q2, §9;
-review of `3dac09f`: a URL `urlsplit` refuses, §10). **The correction of §10 is
-delivered for review.** R-1 stays **UNMET**.
+**Status: CLOSED at `79c232b`** (review of `79c232b`, §11), after the corrections
+of §9 and §10. R-1 stays **UNMET**.
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -503,3 +502,22 @@ the mutation runs' own.
 - **§5.5's access-log condition** stands.
 - **R-1 UNMET; no real event;** K06 an independent condition before the
   release gate; SALE only.
+
+---
+
+## 11. The closure
+
+**The review of `79c232b` closed step 3 at `79c232b`, and authorized step
+4** as the plan states it. Recorded in the plan, revision 10.
+- **The reviewer checked:**
+  - the fix of §10;
+  - the URL tests, through the rule and the relay's path;
+  - the two mutation records on the same fingerprint.
+- **The reviewer did not re-run anything.** 3457/3457, the gate and `bound`
+  are our recorded results.
+- **This closure does not** close R-1, or allow deploying the relay,
+  creating a secret, or receiving any real event. It is not a release
+  authorization.
+- **Standing:** the access-log condition (§5.5 of the plan); **R-1 UNMET;
+  no real event;** K06 an independent condition before the release gate;
+  SALE only.

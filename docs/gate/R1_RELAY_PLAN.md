@@ -1,10 +1,9 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 9**
+## Plan — **revision 10**
 
 **Status: step 1 CLOSED at `e9fac51`; step 2 CLOSED at `da3d778`; step 3
-delivered and NOT closed** (review of `3dac09f`, recorded below): a refusal
-of §5.6 is missing for a URL `urllib` cannot split. Step 4 is not
-authorized until the correction is reviewed.
+CLOSED at `79c232b`; step 4 AUTHORIZED** (review of `79c232b`, recorded
+below), within this plan's scope (§6, step 4).
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5). Revision 2 was adopted in the review of
@@ -46,6 +45,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
+| 10 | the commit that adds this revision | the review of `79c232b` recorded: step 3 CLOSED; step 4 authorized |
 | 9 | `7b2e4ed` | the review of `3dac09f` recorded: step 3 not closed (a URL `urlsplit` raises on escapes §5.6's refusal); the loopback-literal and default-port readings accepted |
 | 8 | `598526c` | the review of `c480474` recorded: step 3 not closed; its readings 4.1 to 4.3 accepted; the effective deadline to correct; R1-Q2 decided (§5.6, §7 condition 12) |
 | 7 | `bf330c4` | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
@@ -57,6 +57,28 @@ does not touch it. The next slice's plan follows the review of this one.
 | 1 | `1d00f41` | first plan, planning only |
 
 ---
+
+## The review of `79c232b`
+
+**Step 3 is CLOSED at `79c232b`. Step 4 is AUTHORIZED** as this plan states
+it (§6): the size of **each envelope after its serialization**, the
+OVERSIZE class and the redelivery (R1-Q1 (a), §5.4, duty 7); then R-1's
+evidence, the barriers' state measured (§4), and the closure record.
+
+- **What the reviewer checked:**
+  - the fix: `urlsplit`'s `ValueError` caught at its place, as
+    `MALFORMED`;
+  - the new URL tests, through the rule and through the relay's path: 503,
+    the alert, nothing sent;
+  - the two mutation records bound to the same fingerprint, with no
+    mutation surviving.
+- **What it did not do:** re-run anything. 3457/3457, the gate and `bound`
+  are the implementation's recorded results.
+- **Standing:**
+  - §5.5's access-log condition before any deployment or Callback setting;
+  - **R-1 UNMET, no real event received;**
+  - K06 an independent condition before the release gate; SALE only;
+  - **this decision is not a release authorization.**
 
 ## The review of `3dac09f`
 
@@ -719,8 +741,8 @@ its own condition.
 | 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 **decided (a)** (review of `3d8b593`) |
 | 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **CLOSED at `e9fac51`** (review of `e9fac51`; `R1_STEP1_DELIVERY.md`) |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **CLOSED at `da3d778`** (review of `da3d778`; `R1_STEP2_DELIVERY.md`) |
-| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **AUTHORIZED** (review of `da3d778`); delivered; **NOT closed** (review of `c480474`: the effective deadline; R1-Q2, §5.6; review of `3dac09f`: an unsplittable URL); no deployment, no secret, no real event |
-| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | step 3 |
+| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **CLOSED at `79c232b`** (review of `79c232b`; `R1_STEP3_DELIVERY.md`) |
+| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | **AUTHORIZED** (review of `79c232b`); no deployment, no secret, no real event |
 
 Each step is delivered with its tests and its mutation record, and reviewed
 before the next. **Lifting a barrier of §4 is not a step of this plan.**
