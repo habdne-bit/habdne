@@ -22,7 +22,7 @@ conditions cannot be met inside this repository (§6, and
   and mutations, the before record, the room record;
 - `3385456`: the mutation records (§4);
 - `e8cd4f3`, `000a796`, `e49d2a3`: the evidence round (§5);
-- CLOSE_COMMIT (named by the commit after it): the barriers' measurement, this note, the closure record.
+- `ede11fc`: the barriers' measurement, this note, the closure record.
 
 ---
 

@@ -17,7 +17,7 @@
 - **K06** stays an independent condition before the release gate.
 - **SALE only.** This is not a release authorization.
 
-**Prepared at:** CLOSE_COMMIT (named by the commit after it), on the tree whose run is bound (`e49d2a3`,
+**Prepared at:** `ede11fc`, on the tree whose run is bound (`e49d2a3`,
 source fingerprint `884519ff684dc8678cb85f704a66a0651fa87832af3830425c27e3573be34ade`). **The reviewer has not re-run anything.** Every
 result here is ours.
 

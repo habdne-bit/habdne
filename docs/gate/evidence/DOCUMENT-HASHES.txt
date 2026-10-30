@@ -1172,3 +1172,6 @@ docs/gate/evidence/R1-STEP3-MUTATIONS-AT-9a17cc1-REPEAT.txt    new   c8c1dc5556a
 docs/gate/evidence/R1-STEP4-BARRIERS-MEASURED.txt              new   35f11a9412d666b7606e3bc9665866864cdd67ce6168e3c41cd0817a7949e8af
 docs/gate/R1_STEP4_DELIVERY.md                                 new   7ad175976ca4bd30c16f80d8d35d0353858fd7426530ae17a6a9ac6ddf4dbaeb
 docs/gate/R1_CLOSURE_RECORD.md                                 new   9758e18dd04039ec8ce44a12eb50f9d43a949a93b8415731038d252cdf16511a
+--- R-1 step 4: the delivery note and closure record name ede11fc ---
+docs/gate/R1_STEP4_DELIVERY.md                                 named ac91bfe534d39f9cb131b7d36da018b6b28455066ffb98efedfb5142639e746d
+docs/gate/R1_CLOSURE_RECORD.md                                 named 6f95bf36628d7716f95049e774d52616af4b83d4e4f75faa1544afdf551ce365
