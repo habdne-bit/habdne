@@ -19,7 +19,7 @@
 - **SALE only.** This is not a release authorization.
 
 **Prepared at:** `ede11fc`; **updated by step 4's addendum** (review of
-`18e4aec`) at ADD_COMMIT, on the tree whose run is bound (`001f429`, source
+`18e4aec`) at `f14634c`, on the tree whose run is bound (`001f429`, source
 fingerprint `71f705bd33d0083467daa96c30dbe26b4f859bb05edc5f08db2a9cd0a0c9835e`). **The reviewer has not re-run anything.** Every
 result here is ours.
 

@@ -1190,3 +1190,6 @@ docs/gate/evidence/R1-STEP4-BARRIERS-MEASURED.txt              new   0b8e226c3ca
 docs/gate/evidence/R1-STEP4-BARRIERS-MEASURED-AT-e49d2a3.txt   new   35f11a9412d666b7606e3bc9665866864cdd67ce6168e3c41cd0817a7949e8af
 docs/gate/R1_STEP4_DELIVERY.md                                 new   28ba4700ccc5a25923a89071670ce54ea99e6ee881bb3c3b242bd8d50dfa3cf9
 docs/gate/R1_CLOSURE_RECORD.md                                 new   f35b772d361f9f38fcb3b9366d17acb51421a66dcadd3f8460208d0bbdacb481
+--- R-1 step 4 addendum: the delivery note and closure record name f14634c ---
+docs/gate/R1_STEP4_DELIVERY.md                                 named 7efc6b00d4c8d460c929692bf1eaf29311a6adf47d39be9e4a7453b55e37419c
+docs/gate/R1_CLOSURE_RECORD.md                                 named fc3dcb1a7054e554cbe22951682b7f0633889f263f3b1afe4a2be305a9347bfd

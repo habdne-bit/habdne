@@ -30,7 +30,7 @@ repository (§6, §8, and `R1_CLOSURE_RECORD.md`).
   mutations, the before record (§8);
 - `257a28e`: step 4's mutation records again (§8.4);
 - `994c895`, `19fc3f2`, `001f429`: the evidence round again (§8.5);
-- ADD_COMMIT: the barriers measured again, §8, the closure record updated.
+- `f14634c`: the barriers measured again, §8, the closure record updated.
 
 ---
 
