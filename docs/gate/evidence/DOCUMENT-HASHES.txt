@@ -1222,3 +1222,7 @@ docs/gate/R1_STEP5_DELIVERY.md                                 doc13 bd9b10036da
 docs/gate/R1_CLOSURE_RECORD.md                                 doc13 bd9cdfc40ecaac2cfd56c7740c53d77b32846a09995dfdd864242faa97c3d6b6
 --- Slice 8 plan revision 1 (planning only) ---
 docs/gate/SLICE_8_PLAN.md                                      rev1  673974cc29a5da981f8c3f55bdd2e7253ecb540b76dbbedda166d49ebcb1ffa4
+--- Slice 8 plan revision 2 (the review of 3922850); the plan's measurements ---
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS.py                 new   b859e5fea22fdbf365585ed2b59e3cbae5bb5dee5a9634134ae94ffcc265110f
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS.txt                new   dae53e69c1802851b1698e0b06a2a87a795b776670f0753c69efadf57b68cc84
+docs/gate/SLICE_8_PLAN.md                                      rev2  e8505622883d2b012de4aaabbcb13d1393a62c1fdc7814b063edcd88ab44ba2f

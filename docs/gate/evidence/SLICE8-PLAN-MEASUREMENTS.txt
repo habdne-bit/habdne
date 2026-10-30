@@ -1,0 +1,120 @@
+TURAB — Slice 8: the plan's facts measured on PostgreSQL, before any code
+=========================================================================
+Authorized : the review of 3922850 (plan revision 1): §6.5's three measurements,
+             plus the race between revoking ASSISTED_ENTRY and a conversion, and
+             the rows that exist before any new constraint. No implementation
+             code; no migration applied; a scratch database dropped at the end.
+Script     : docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS.py (kept beside this
+             record; under docs/, outside the fingerprinted trees).
+Runs       : twice, each on a freshly rebuilt scratch database; the two outputs
+             are IDENTICAL, byte for byte. The output below is the first run.
+             "working tree NOT CLEAN" below: the script itself, not yet committed.
+These results are ours; nobody else has re-run them.
+
+Tree    : 39228504caccbb2d0b9ffd3b3ac102553b9378d4; working tree NOT CLEAN at the start
+Database: turab_s8_probe, rebuilt by db/dev/reset_db.sh --fixtures; PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1); system_identifier 7697828029857667607
+
+M1  Which application statements write external_leads, and the leads by status
+    src/turab/services/external_leads.py:121 INSERT INTO
+    scratch database, leads by status: none
+
+M2  Two concurrent ACTIVE interests for one (party, property)
+    second insert still waiting while the first is uncommitted: True
+    first: committed; second: REFUSED 23505 UniqueViolation constraint=ux_active_interest_per_pair: duplicate key value violates unique constraint "ux_active_interest_per_pair"
+    the second waited for the first's commit: True
+    ACTIVE rows for the pair: 1
+
+M3  enforce_consent_binding() on a REQUEST binding of an ASSISTED_ENTRY grant
+    the request's party's grant : ACCEPTED
+    another party's grant       : REFUSED P0001 RaiseException: Request consent party mismatch
+    a revoked grant             : REFUSED P0001 RaiseException: Consent grant must exist and be GRANTED
+    a purpose not the grant's   : REFUSED P0001 RaiseException: Consent grant scope ASSISTED_ENTRY does not match binding purpose PUBLIC_LISTING_ALLOWED
+    (rolled back)
+
+M4  A revocation of ASSISTED_ENTRY racing a conversion's binding (READ COMMITTED)
+    The conversion inserts a request and its binding, then waits before committing;
+    the revocation runs meanwhile, as consent.revoke_consent does.
+    [a, no lock] revocation waited for the conversion's commit: False
+    [a, no lock] conversion: COMMITTED; grant now REVOKED; unrevoked bindings to it: 1
+    [a, no lock] commit order: revocation then conversion
+    [b, FOR KEY SHARE] revocation waited for the conversion's commit: False
+    [b, FOR KEY SHARE] conversion: COMMITTED; grant now REVOKED; unrevoked bindings to it: 1
+    [b, FOR KEY SHARE] commit order: revocation then conversion
+    [c, FOR SHARE] revocation waited for the conversion's commit: True
+    [c, FOR SHARE] conversion: COMMITTED; grant now REVOKED; unrevoked bindings to it: 1
+    [c, FOR SHARE] commit order: conversion then revocation
+    The revocation first, uncommitted; then the conversion:
+    [d, FOR SHARE, revocation first] conversion still waiting on the uncommitted revocation: True
+    [d, FOR SHARE, revocation first] conversion: REFUSED by the service: no GRANTED grant after the lock; grant now REVOKED; unrevoked bindings to it: 0
+    [d, FOR SHARE, revocation first] commit order: revocation
+
+M5  The rows that exist before any new constraint
+    scratch database (frozen schema, seed, migrations, dev fixtures):
+      leads by status: none
+      leads with any workflow column set: 0
+      interests by status: [('ACTIVE', 1)]
+      ACTIVE interest pairs held twice: 0
+      reason codes named LEAD_*: 0
+      table external_lead_contact_attempts: none
+      reason code categories: [('FRESHNESS', 3), ('GENERAL', 1), ('IDENTITY', 4), ('MATCH', 9), ('OPPORTUNITY', 7), ('PERMISSION', 2), ('REQUEST_CLOSURE', 3), ('TASK_OUTCOME', 4)]
+    postgres: no turab.external_leads (read only)
+    turab_authz_test (read only, counts only):
+      leads by status: [('DECLINED', 1), ('DISCOVERED', 28)]
+      leads with any workflow column set: 0
+      interests by status: none
+      ACTIVE interest pairs held twice: 0
+      reason codes named LEAD_*: 0
+      table external_lead_contact_attempts: none
+    turab_contract_test (read only, counts only):
+      leads by status: none
+      leads with any workflow column set: 0
+      interests by status: none
+      ACTIVE interest pairs held twice: 0
+      reason codes named LEAD_*: 0
+      table external_lead_contact_attempts: none
+    turab_probe (read only, counts only):
+      leads by status: none
+      leads with any workflow column set: 0
+      interests by status: none
+      ACTIVE interest pairs held twice: 0
+      reason codes named LEAD_*: 0
+      table external_lead_contact_attempts: none
+
+M6  Keyset paging of the leads queue by (discovered_at, id), a late commit
+    page 1 (the earlier transaction not yet committed): 1 lead(s)
+    page 2 after the cursor: 0 lead(s)
+    all leads, in the queue's order: ['late-committed', 'committed first']
+    the late-committed lead sorts before the cursor, so paging never returns it: True
+    (discovered_at defaults to now(): the inserting TRANSACTION's start)
+
+
+Reading (what each measurement shows, and no more):
+- M1: the application writes external_leads by one INSERT only. No path moves a
+  status. The suite's database holds one DECLINED lead: written by a TEST, by SQL
+  (tests/test_slice3_sources.py, the queue test), not by the application.
+- M2: the partial unique index serializes two concurrent ACTIVE interests: the
+  second waits for the first's commit, then fails 23505 on
+  ux_active_interest_per_pair. One ACTIVE row.
+- M3: the binding trigger accepts the request's party's ASSISTED_ENTRY grant, and
+  refuses another party's, a revoked one, and a purpose other than the grant's
+  scope. G8-5 (i)'s assumption holds at the moment of writing.
+- M4: the trigger reads the grant WITHOUT a lock, and the foreign key takes only
+  FOR KEY SHARE, which does not conflict with the revocation's UPDATE of a
+  non-key column. So (a) and (b): the revocation commits FIRST, and the
+  conversion still commits a binding to a grant revoked before its commit.
+  (c) FOR SHARE on the grant, before binding: the revocation waits, and commits
+  after the conversion: the binding was valid at the conversion's commit, and is
+  made inert by the later revocation (ADR-04). (d) The revocation first,
+  uncommitted: the conversion's FOR SHARE waits, then finds no GRANTED grant, and
+  the service refuses. So the conversion must take FOR SHARE (or stronger) on the
+  grant, re-check it is GRANTED and unrevoked, then bind, in one transaction.
+- M5: before any new constraint, no lead in any database here carries a
+  workflow column; the only non-DISCOVERED lead is the test's DECLINED one; no
+  ACTIVE interest pair is held twice; no reason code is named LEAD_*; no table
+  external_lead_contact_attempts exists. These are this server's test and probe
+  databases: no evidence about any deployed database.
+- M6: keyset paging on (discovered_at, external_lead_id) skips a lead whose
+  inserting transaction began before the cursor's row and committed after the
+  page was read: discovered_at is now(), the transaction's start, so the late
+  commit sorts before the cursor. Any cursor on an insert-time column has this
+  gap; commit order is not timestamp order.
