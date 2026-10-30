@@ -1156,3 +1156,15 @@ docs/gate/R1_RELAY_PLAN.md                                     rev10 4f1f5251818
 --- R-1 step 4: before record; the room per type ---
 docs/gate/evidence/R1-STEP4-BEFORE.txt                         new   4ed77f1c2a3ccf7c1003004c19abd3c5d4caefcc34946d362f556cd17ce15b35
 docs/gate/evidence/R1-STEP4-ENVELOPE-ROOM.txt                  new   40c76c839da3f47d7c5fe938be5a8b95b74a5e745d150208d73ac01d8b895975
+--- R-1 step 4: mutation records of steps 2, 3 and 4 at db8fcf8; the earlier pairs renamed ---
+docs/gate/evidence/R1-STEP2-MUTATIONS.txt                      new   74c216cf7ac47bee6518b4240a554597851d1cb73ef9b6748a70f8bb0b159bcb
+docs/gate/evidence/R1-STEP2-MUTATIONS-REPEAT.txt               new   e001728417c950252bbfae11a0ff8db3ba1c48e209ecf4216dea8f7204d69f87
+docs/gate/evidence/R1-STEP3-MUTATIONS.txt                      new   90b369832950f5f22e7f223dc115d0d66862ff46ee51b60433d8230de1559d35
+docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   fe00190548d4f9f9b08496201b7da3b5156a091b52ae609ae7fa398929a9e999
+docs/gate/evidence/R1-STEP4-MUTATIONS.txt                      new   aa6cfa8f44448808e59c47b81caa9c26cb884eac03b9acb15bddbd55c50b28aa
+docs/gate/evidence/R1-STEP4-MUTATIONS-REPEAT.txt               new   60ca3dfee77c768e82fd000c1d85e374321e66bacca9f6fbc4dff6050afa8118
+docs/gate/evidence/R1-STEP4-MUTATIONS-TRIAL.txt                new   38f302056d228321c64a2d9ee247f7c24f1f9b3f6d8e5eeea169a62e6ef74d82
+docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5ddf055.txt           new   a374d641a9890706203c24fb942c9ace21d96282c7b7023d02c26f1bc88430cd
+docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5ddf055-REPEAT.txt    new   df06930b8e4f272c3ef6229be416281f037b16a25dc5545f969bffdd2fa21450
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-9a17cc1.txt           new   2377f51e725fe08414b0c7f1a8baeabd94d357cae3b307d0d3baf6b5aa252f6b
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-9a17cc1-REPEAT.txt    new   c8c1dc5556a71d3483e9c087fdc25ee4eb040246ea324b28a983312f6c0628ca
