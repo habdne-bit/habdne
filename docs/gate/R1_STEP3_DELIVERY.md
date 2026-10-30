@@ -8,8 +8,9 @@
 - **Not authorized:** deploying the relay, creating a secret, or receiving
   any real event. Step 4.
 
-**Status: delivered at `c480474`; NOT closed** (review of `c480474`: the effective
-deadline; R1-Q2). **The correction is delivered for review** (§9). R-1 stays **UNMET**.
+**Status: NOT closed** (review of `c480474`: the effective deadline, R1-Q2, §9;
+review of `3dac09f`: a URL `urlsplit` refuses, §10). **The correction of §10 is
+delivered for review.** R-1 stays **UNMET**.
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
@@ -32,6 +33,10 @@ deadline; R1-Q2). **The correction is delivered for review** (§9). R-1 stays **
   mutations, the before record; `c9c16f9`: a first pair of mutation records,
   not identical (§9.4); `648bec0`: the test corrected; `ddda6b5`: the
   mutation records; `18220ad`, `14e17d5`, `b5501ef`: the evidence round.
+- **The correction (§10):** `7b2e4ed`, `8dd4490`: plan revision 9 (the review
+  of `3dac09f`); `9a17cc1`: the catch, the tests, U10, the before and after
+  records; `e5be82a`: the mutation records; `879a376`, `0c08bc0`, `740b348`:
+  the evidence round.
 
 ---
 
@@ -398,10 +403,103 @@ the mutation runs' own.
 2 s cases, 9 allowed URLs, 26 refused URLs tested twice (the rule, and
 through the relay), and the two certificate tests.
 
-### 9.6 What remains
+### 9.6 What remained (superseded by §10)
 
 - **The review of this correction.** Step 3 is not closed.
 - **Step 4 stays unauthorized** until that review.
 - **§5.5's access-log condition** stands, independent of §5.6.
+- **R-1 UNMET; no real event;** K06 an independent condition before the
+  release gate; SALE only.
+
+---
+
+## 10. The review of `3dac09f`, and the correction
+
+**Step 3 was not closed at `3dac09f`.** Recorded in the plan, revision 9
+(`7b2e4ed`, named in `8dd4490`).
+- **Accepted:** §9.2's two readings: loopback as an IP literal only, and a
+  default port counting as none.
+- **The gap:** `url_refusal` called `urlsplit(url)` outside its `try`. A URL
+  with an unclosed bracket passes the character check, then `urlsplit`
+  raises `ValueError`, and §5.6's 503 and fixed alert are never reached.
+
+### 10.1 Before (`evidence/R1-STEP3-UNSPLITTABLE-BEFORE.txt`)
+
+**The tree:** `forward.py` byte-identical to `3dac09f`'s; only eight URLs
+added to the tests' `REFUSED`.
+
+**Seven of the eight make `urlsplit` raise `ValueError`:**
+
+| URL (path `/webhooks/whatsapp`) | `urlsplit`'s error |
+|---|---|
+| `https://[::1`, `https://::1]`, `http://[::1]x`, `https://[::1]]` | `Invalid IPv6 URL` |
+| `https://[[::1]` | `'[::1' does not appear to be an IPv4 or IPv6 address` |
+| `http://[zz]` | `'zz' does not appear to be an IPv4 or IPv6 address` |
+| `http://[127.0.0.1]` | `An IPv4 address cannot be in brackets` |
+
+- **The eighth,** `http://[v1.x]`, `urlsplit` accepts; it was already
+  refused, because the two parsers read it differently.
+- **14 tests failed:** the 7 URLs through the rule, and through the relay's
+  path.
+- **What the relay answered, behind uvicorn** (the review did not state
+  it):
+  - **500**, uvicorn's own, with a traceback in `uvicorn.error` ending in
+    `ValueError: Invalid IPv6 URL`;
+  - no alert, and no `503 TURAB_URL_NOT_ALLOWED`;
+  - neither the URL nor the content in any log.
+- **What that means:** not 200, so Meta would redeliver, but not the
+  refusal §5.6 decides.
+
+### 10.2 The correction (`9a17cc1`)
+
+- **`urlsplit` inside its own `ValueError` catch, at its place:**
+  `MALFORMED`.
+  - The other reasons keep their order and their codes.
+  - No general catch around `url_refusal` was added: it would hide a
+    future fault of the rule, and mutation U10 would survive it.
+- **After, behind uvicorn** (`evidence/R1-STEP3-UNSPLITTABLE-AFTER.txt`):
+  - **503 `TURAB_URL_NOT_ALLOWED`**;
+  - the alert `TURAB_URL_NOT_ALLOWED MALFORMED`;
+  - no traceback;
+  - neither the URL nor the content in any log.
+- **The tests:** the eight URLs in `REFUSED`, so each runs twice:
+  - through the rule;
+  - **through the relay's path: 503, nothing sent to TURAB, one alert
+    naming the reason, and no URL in any log.**
+  - That makes 16 new tests, 115 in the file.
+
+### 10.3 Mutation evidence
+
+**`db/dev/mutate_r1_step3.py`, 30 mutations:** U10 is added (the catch
+removed: a URL `urlsplit` refuses raises instead of being refused). It is
+killed by the 14 cases.
+
+| Record | Tree | Result |
+|---|---|---|
+| `R1-STEP3-MUTATIONS.txt`, `-REPEAT.txt` | `9a17cc1`, clean, fingerprint `f03d8788…ae1d` | **30/30, twice, outcomes identical**; the text differs only in random trace ids and measured seconds |
+| `R1-STEP3-MUTATIONS-AT-648bec0*.txt` | `648bec0` (renamed) | 29/29, twice, outcomes identical (§9.4) |
+
+**This time the chain gated itself.** It compared the two runs before
+recording them, and would have stopped before the evidence round had their
+outcomes differed (§9.4).
+
+### 10.4 The evidence round on the corrected tree
+
+Every row ran on a clean tree with source fingerprint `f03d8788…ae1d`,
+the mutation runs' own.
+
+| Evidence | Result | Commit | Record |
+|---|---|---|---|
+| Authorization matrix | 222 rules; suite **3457/3457** | `879a376` (run at `e5be82a`) | `AUTHORIZATION_EVIDENCE_MATRIX.md` |
+| PostgreSQL gate | PASS: all database-level contract tests passed; the same 67 operations | `0c08bc0` (run at `879a376`) | `evidence/gate-run.txt` |
+| Suite (`record_test_run.py`) | **3457 passed, 0 failed, 0 errors, 0 skipped** | `740b348` (run at `0c08bc0`) | `evidence/TEST-RUN-PROVENANCE.txt`; **`bound`** |
+
+**The count:** 3457 = 3441 + 16.
+
+### 10.5 What remains
+
+- **The review of this correction.** Step 3 is not closed.
+- **Step 4 stays unauthorized** until that review.
+- **§5.5's access-log condition** stands.
 - **R-1 UNMET; no real event;** K06 an independent condition before the
   release gate; SALE only.
