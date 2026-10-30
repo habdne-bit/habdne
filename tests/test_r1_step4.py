@@ -303,21 +303,103 @@ def server(engine, monkeypatch):
     return url.database
 
 
-def test_the_count_check_prints_the_count_read_only_and_nothing_else(server, engine, capsys):
-    import re
+def _answering(engine):
+    """The suite's server as it identifies itself: its cluster's system
+    identifier, and the address and port it answers on."""
+    from tests.test_slice4_step7 import _one as scalar
 
+    return (scalar(engine, "SELECT system_identifier FROM pg_control_system()"),
+            scalar(engine, "SELECT host(inet_server_addr())"),
+            scalar(engine, "SELECT inet_server_port()"))
+
+
+def _line(database, count, sid, address, port, host, hostaddr):
+    return (f"{database}: webhook_events={count} read_only=on | answered: "
+            f"system_identifier={sid} address={address} port={port} database={database} | "
+            f"asked: host={host} hostaddr={hostaddr} port={port}")
+
+
+def test_the_count_check_prints_the_count_read_only_and_nothing_else(server, engine, capsys):
     from tests.test_slice4_step7 import _one as scalar
 
     expected = scalar(engine, "SELECT count(*) FROM turab.webhook_events")
+    sid, address, port = _answering(engine)
     assert _counter().main([server]) == 0
     out = capsys.readouterr().out.splitlines()
-    assert len(out) == 1
-    assert re.fullmatch(rf"{server} host=\S+ read_only=on webhook_events={expected}", out[0])
+    assert out == [_line(server, expected, sid, address, port, engine.url.host or "127.0.0.1", "-")]
 
 
-def test_the_count_check_says_when_there_is_no_table(server, capsys):
+def test_the_count_check_says_when_there_is_no_table(server, engine, capsys):
+    sid, address, port = _answering(engine)
     assert _counter().main(["postgres"]) == 0
-    assert capsys.readouterr().out.strip().endswith("read_only=on webhook_events=NO_TABLE")
+    assert capsys.readouterr().out.splitlines() == [
+        _line("postgres", "NO_TABLE", sid, address, port, engine.url.host or "127.0.0.1", "-")]
+
+
+def test_a_count_is_attributed_to_the_server_pghostaddr_reached_not_to_pghost(
+        server, engine, capsys, monkeypatch):
+    """Review of 18e4aec: libpq connects to `PGHOSTADDR` and does not resolve
+    `PGHOST`, which then names nothing reached. The count is the answering
+    server's, named by its own identity, and the line says which address was
+    asked."""
+    from tests.test_slice4_step7 import _one as scalar
+
+    sid, address, port = _answering(engine)
+    monkeypatch.setenv("PGHOST", "elsewhere.invalid")
+    monkeypatch.setenv("PGHOSTADDR", address)
+    expected = scalar(engine, "SELECT count(*) FROM turab.webhook_events")
+    assert _counter().main([server]) == 0
+    [line] = capsys.readouterr().out.splitlines()
+    assert line == _line(server, expected, sid, address, port, "elsewhere.invalid", address)
+    answered = line.split(" | ")[1]
+    assert "elsewhere.invalid" not in answered
+
+
+def test_a_pghostaddr_where_no_server_answers_attributes_no_count(server, capsys, monkeypatch):
+    """`PGHOST` names the suite's server; `PGHOSTADDR` an address where none
+    listens. No count is printed, for `PGHOST` or anything else."""
+    monkeypatch.setenv("PGHOSTADDR", "127.0.0.2")
+    assert _counter().main([server]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert f"{server}: CONNECTION_FAILED" in captured.err and "hostaddr=127.0.0.2" in captured.err
+
+
+def test_every_destination_parameter_is_pinned_at_the_connection(server, capsys, monkeypatch):
+    """host, hostaddr, port and dbname are each passed to the connection, an
+    empty hostaddr included: none is left for libpq to fill from elsewhere."""
+    import psycopg
+
+    seen = []
+    real = psycopg.connect
+
+    def spy(*args, **kwargs):
+        seen.append((args, kwargs))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(psycopg, "connect", spy)
+    assert _counter().main([server]) == 0
+    [(args, kwargs)] = seen
+    assert args == ()
+    assert {k: kwargs[k] for k in ("host", "hostaddr", "port", "dbname")} == {
+        "host": __import__("os").environ["PGHOST"], "hostaddr": "",
+        "port": __import__("os").environ["PGPORT"], "dbname": server}
+
+
+def test_an_unset_pgport_is_pinned_to_5432(server, engine, capsys, monkeypatch):
+    sid, address, port = _answering(engine)
+    assert port == 5432
+    monkeypatch.delenv("PGPORT")
+    assert _counter().main(["postgres"]) == 0
+    assert capsys.readouterr().out.splitlines() == [
+        _line("postgres", "NO_TABLE", sid, address, port, engine.url.host or "127.0.0.1", "-")]
+
+
+def test_the_count_check_refuses_without_pghost(server, capsys, monkeypatch):
+    monkeypatch.delenv("PGHOST")
+    assert _counter().main([server]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "PGHOST" in captured.err
 
 
 @pytest.mark.parametrize("variable", ["PGSERVICE", "PGDATABASE"])

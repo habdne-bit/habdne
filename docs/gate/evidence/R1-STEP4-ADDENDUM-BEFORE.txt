@@ -1,0 +1,50 @@
+TURAB — R-1 step 4 addendum (review of 18e4aec): the count check's destination, BEFORE
+
+HEAD:                        f50a104357ca77964bf552097ca2b0e73940edbf
+db/ops/count_webhook_events.py, as at 18e4aec (unchanged since):
+  sha256 now 1fad30360732913b  at 18e4aec 1fad30360732913b
+The tree's only change: the count-check tests of tests/test_r1_step4.py, and this record:
+   M tests/test_r1_step4.py
+  ?? docs/gate/evidence/R1-STEP4-ADDENDUM-BEFORE.txt
+
+1. The gap, shown directly. PGHOST names a host that does not exist; PGHOSTADDR the
+   suite's server. libpq connects to PGHOSTADDR without resolving PGHOST.
+   Command: PGHOST=elsewhere.invalid PGHOSTADDR=127.0.0.1 PGPORT=5432 PGUSER=turab PGPASSWORD=*** \
+            .venv/bin/python db/ops/count_webhook_events.py turab_authz_test
+   Output:
+     turab_authz_test host=elsewhere.invalid read_only=on webhook_events=0
+   exit status: 0
+   The count is printed against host=elsewhere.invalid: a host the tool never reached.
+   Neither the address reached nor the answering server is named.
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider -rA tests/test_r1_step4.py -k 'count_check or pghost or pinned'
+Run at: 2026-10-30T13:32:14Z
+------------------------------------------------------------------------
+PASSED tests/test_r1_step4.py::test_the_count_check_refuses_a_destination_it_was_not_given[PGSERVICE]
+PASSED tests/test_r1_step4.py::test_the_count_check_refuses_a_destination_it_was_not_given[PGDATABASE]
+FAILED tests/test_r1_step4.py::test_the_count_check_prints_the_count_read_only_and_nothing_else
+FAILED tests/test_r1_step4.py::test_the_count_check_says_when_there_is_no_table
+FAILED tests/test_r1_step4.py::test_a_count_is_attributed_to_the_server_pghostaddr_reached_not_to_pghost
+FAILED tests/test_r1_step4.py::test_a_pghostaddr_where_no_server_answers_attributes_no_count
+FAILED tests/test_r1_step4.py::test_every_destination_parameter_is_pinned_at_the_connection
+FAILED tests/test_r1_step4.py::test_the_count_check_refuses_without_pghost - ...
+6 failed, 2 passed, 25 deselected, 1 warning in Ns
+  cause: psycopg.OperationalError: connection failed: connection to server at "127.0.0.2", port 5432 failed: Connection refused
+  cause: psycopg.OperationalError: connection failed: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  Peer authentication failed for user "turab"
+  cause: + turab_authz_test host=elsewhere.invalid read_only=on webhook_events=N
+  cause: - turab_authz_test: webhook_events=N read_only=on | answered: system_identifier=N address=127.0.0.1 port=5432 database=turab_authz_test | asked: host=elsewhere.invalid hostaddr=127.0.0.1 port=5432
+  cause: At index 0 diff: 'postgres host=127.0.0.1 read_only=on webhook_events=NO_TABLE' != 'postgres: webhook_events=NO_TABLE read_only=on | answered: system_identifier=N address=127.0.0.1 port=5432 database=postgres | asked: host=127.0.0.1 hostaddr=- port=5432'
+  cause: At index 0 diff: 'turab_authz_test host=127.0.0.1 read_only=on webhook_events=N' != 'turab_authz_test: webhook_events=N read_only=on | answered: system_identifier=N address=127.0.0.1 port=5432 database=turab_authz_test | asked: host=127.0.0.1 hostaddr=- port=5432'
+  cause: AssertionError: assert 'turab_authz_...hook_events=0' == 'turab_authz_...0.1 port=5432'
+  cause: AssertionError: assert ['postgres ho...nts=NO_TABLE'] == ['postgres: w...=- port=5432']
+  cause: AssertionError: assert ['turab_authz...ook_events=0'] == ['turab_authz...=- port=5432']
+  cause: KeyError: 'host'
+
+Reading:
+- 1 and the attribution test: the count is printed against PGHOST, a host the tool did not
+  reach; the address reached (PGHOSTADDR) and the answering server are not named.
+- The pinning test: the connection is given dbname only (KeyError 'host'); host, hostaddr
+  and port are left to libpq's environment and defaults.
+- Without PGHOST: libpq's default, a local socket, is used; a destination nobody named.
+- A PGHOSTADDR where no server listens: an unhandled OperationalError, not a refusal.
+- The two refusals (PGSERVICE, PGDATABASE) already passed.

@@ -1178,3 +1178,5 @@ docs/gate/R1_CLOSURE_RECORD.md                                 named 6f95bf36628
 --- R-1 plan revision 11 (the review of 18e4aec) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev11 2769b719df78b36241072430d2504ec7bd042f1b9568530962a3cad88c4e18fd
 docs/gate/R1_RELAY_PLAN.md                                     rev11 4c5073342da42e3d6ba184a25161f02ac1b2bb2dd39ce444fab7848b9ab7f6b4
+--- R-1 step 4 addendum (review of 18e4aec): the before record ---
+docs/gate/evidence/R1-STEP4-ADDENDUM-BEFORE.txt                new   b9b474e844205649577513aa42e4d53212e795b47638decb6fa80c7eafa68663

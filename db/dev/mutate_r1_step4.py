@@ -8,12 +8,18 @@ review of `79c232b`. Each mutation weakens ONE rule:
 - O: OVERSIZE (R1-Q1 (a), §5.4): not sent, not shortened, alerted, the
   others delivered, the answer not 200;
 - E: a string UTF-8 cannot encode, ISOLATED;
-- C: the count check of §4 (R1-D14 (a)): read-only, the databases named.
+- C: the count check of §4 (R1-D14 (a)): read-only, the databases named;
+- D: the count check's destination (addendum, review of `18e4aec`): every
+  parameter pinned at the connection, the count attributed to the server
+  that answered, a failed connection never a count.
 
 Not mutated, each with its reason:
 - the 503 code of `ENVELOPE_OVERSIZE`: §5.1 asks only "not 200";
 - the OVERSIZE element's event id: it is not content, and nothing reads it
-  but the counts.
+  but the counts;
+- the answered database printed from the request's name: a connection's
+  `current_database()` is the `dbname` it was given, so no test can tell
+  them apart.
 
 Only `tests/test_r1_step4.py` is run. Run in one part. See
 `mutation_runner.py`.
@@ -63,6 +69,24 @@ MUTATIONS = [
   "    for variable in (\"PGSERVICE\", \"PGDATABASE\"):", "    for variable in (\"PGSERVICE\",):"),
  ("C3 PGSERVICE accepted", COUNTS,
   "    for variable in (\"PGSERVICE\", \"PGDATABASE\"):", "    for variable in (\"PGDATABASE\",):"),
+ # --- D: the count check's destination (review of 18e4aec) --------------------------------
+ ("D1 an empty hostaddr not passed", COUNTS,
+  "    with psycopg.connect(**dest) as conn:",
+  "    with psycopg.connect(**{k: v for k, v in dest.items() if v}) as conn:"),
+ ("D2 the unset port left to libpq", COUNTS,
+  "\"port\": os.environ.get(\"PGPORT\") or \"5432\"", "\"port\": os.environ.get(\"PGPORT\", \"\")"),
+ ("D3 the answering address taken from PGHOST", COUNTS,
+  "address={address} port={port}", "address={dest['host']} port={port}"),
+ ("D4 the answering server's identifier not read", COUNTS,
+  "f\"system_identifier={sid} ", "f\"system_identifier=- "),
+ ("D5 PGHOST not required", COUNTS,
+  "    if not os.environ.get(\"PGHOST\"):", "    if False:"),
+ ("D6 a failed connection exits 0", COUNTS,
+  "            status = 1\n", "            pass\n"),
+ ("D7 a failed connection printed as a line of counts", COUNTS,
+  "            print(f\"{database}: CONNECTION_FAILED asked: {asked(destination(database))}\",\n"
+  "                  file=sys.stderr)",
+  "            print(f\"{database}: CONNECTION_FAILED asked: {asked(destination(database))}\")"),
 ]
 
 
