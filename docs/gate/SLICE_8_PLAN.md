@@ -29,7 +29,7 @@
 
 | rev | commit | what changed |
 |---|---|---|
-| 2 | REV2_COMMIT | the review of `3922850` recorded; §6.5's measurements run, with the two the review added; §0.4 (delivered and deferred); §5A's drafts (status machine, Contract Delta, `0009`, Call Brief, Direct Interest, conversion, audit, queue paging), not applied; OQ8-1 checked against the Journal Officiel |
+| 2 | `3db08bb` | the review of `3922850` recorded; §6.5's measurements run, with the two the review added; §0.4 (delivered and deferred); §5A's drafts (status machine, Contract Delta, `0009`, Call Brief, Direct Interest, conversion, audit, queue paging), not applied; OQ8-1 checked against the Journal Officiel |
 | 1 | `3922850` | first plan (planning only) |
 
 ---
