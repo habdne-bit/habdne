@@ -1,0 +1,65 @@
+TURAB — R-1 step 5: the run entry point (python -m turab_relay), BEFORE
+
+HEAD:                        1b046b46ffaa2608b6bb75c9000443af2ed03b13
+relay/turab_relay/: as at 63a3e95 (unchanged since); no __main__.py:
+  __init__.py app.py forward.py meta.py tls.py transform.py 
+The tree's only change: the new test file, and this record:
+  ?? docs/gate/evidence/R1-STEP5-BEFORE.txt
+  ?? tests/test_r1_step5.py
+
+1. Without an entry point, the way to run the relay is uvicorn's own command line.
+   Measured through an actual process, plain HTTP, synthetic token (the GET is refused
+   403: no client certificate; the request line is logged all the same):
+   Command: env -i PATH=... PYTHONPATH=relay TURAB_RELAY_META_VERIFY_TOKEN=verify-token-r1-step5 \
+            .venv/bin/python -m uvicorn turab_relay.app:create_app --factory --host 127.0.0.1 --port 0
+   then one GET of Meta's subscription. Every line the process wrote:
+     INFO:     Started server process [PID]
+     INFO:     Waiting for application startup.
+     INFO:     Application startup complete.
+     INFO:     Uvicorn running on http://127.0.0.1:PORT (Press CTRL+C to quit)
+     INFO:     127.0.0.1:PORT - "GET /whatsapp/webhook?hub.mode=subscribe&hub.challenge=challenge-r1-step5-7731&hub.verify_token=verify-token-r1-step5 HTTP/1.1" 403 Forbidden
+     INFO:     Shutting down
+     INFO:     Waiting for application shutdown.
+     INFO:     Application shutdown complete.
+     INFO:     Finished server process [PID]
+   uvicorn's default access log writes the request line, its query included: the verify
+   token and the challenge (plan §5.5; R1_STEP1_DELIVERY.md §2).
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider -rA tests/test_r1_step5.py
+------------------------------------------------------------------------
+FAILED tests/test_r1_step5.py::test_the_entry_point_answers_metas_get_over_mutual_tls
+FAILED tests/test_r1_step5.py::test_the_entry_point_delivers_a_signed_notification_to_turab
+FAILED tests/test_r1_step5.py::test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+FAILED tests/test_r1_step5.py::test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[None]
+FAILED tests/test_r1_step5.py::test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[self]
+FAILED tests/test_r1_step5.py::test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[other]
+FAILED tests/test_r1_step5.py::test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[expired]
+FAILED tests/test_r1_step5.py::test_an_absent_untrusted_or_invalid_certificate_is_refused_by_the_process[future]
+FAILED tests/test_r1_step5.py::test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[wrong-cn]
+FAILED tests/test_r1_step5.py::test_a_certificate_of_metas_ca_with_another_identity_is_403_from_the_process[two-cn]
+FAILED tests/test_r1_step5.py::test_a_header_naming_metas_cn_does_not_replace_the_certificate
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_BIND_HOST]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_BIND_PORT]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_TLS_CERTFILE]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_TLS_KEYFILE]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[None-TURAB_RELAY_META_CA_FILE]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_BIND_HOST]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_BIND_PORT]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_TLS_CERTFILE]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_TLS_KEYFILE]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_without_each_of_its_settings[-TURAB_RELAY_META_CA_FILE]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT-https]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT-65536]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_BIND_PORT--1]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_META_CA_FILE-/nonexistent/meta-ca.pem]
+FAILED tests/test_r1_step5.py::test_it_refuses_to_start_with_a_setting_it_cannot_use[TURAB_RELAY_TLS_CERTFILE-/nonexistent/server.pem]
+FAILED tests/test_r1_step5.py::test_a_key_that_is_not_the_certificates_is_refused_at_start
+FAILED tests/test_r1_step5.py::test_it_takes_no_command_line_argument
+FAILED tests/test_r1_step5.py::test_a_refusal_to_start_names_no_value
+29 failed, 1 warning
+  cause: AssertionError: the process exited: ["/home/user/habdne/.venv/bin/python: No module named turab_relay.__main__; 'turab_relay' is a package and cannot be directly executed"]
+  cause: assert 1 == 2
+
+Reading:
+- python -m turab_relay does not exist: every test of the entry point fails, the refusals
+  to start included (exit status 1, Python's own, not the entry point's 2).

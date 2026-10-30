@@ -1,0 +1,24 @@
+TURAB — R-1 step 5: every line `python -m turab_relay` wrote, through an actual process
+Written by db/dev/r1_entry_point_lines.py, from tests/test_r1_step5.py::test_no_line_the_process_writes_holds_a_request_line_a_query_a_secret_or_content
+(which passed: no request line, query, secret, signature, content, TURAB URL or answer).
+Replaced: the time (T), the port (PORT), the process id (PID), trace ids (X).
+The requests, in order: Meta's GET (200); a wrong token (403); a query holding %ff,
+a percent-escape that is not UTF-8 (400, parameters missing); another path with the
+token in its query (404); a signed POST delivered
+to TURAB's double (200); a wrong signature (401); a certificate of the test CA with
+another CN (403); no certificate, and another CA's (refused at the handshake); a
+clear-text request to the TLS port; then SIGTERM.
+------------------------------------------------------------------------
+T INFO uvicorn.error Started server process [PID]
+T INFO uvicorn.error Waiting for application startup.
+T INFO uvicorn.error Application startup complete.
+T INFO uvicorn.error Uvicorn running on https://127.0.0.1:PORT (Press CTRL+C to quit)
+T INFO turab_relay refused 403 VERIFY_TOKEN_MISMATCH trace=X
+T INFO turab_relay refused 400 SUBSCRIPTION_PARAMETERS_MISSING_OR_REPEATED trace=X
+T INFO turab_relay refused 404 NOT_FOUND trace=X
+T INFO turab_relay refused 401 SIGNATURE_NOT_VALID trace=X
+T INFO turab_relay refused 403 CLIENT_CERTIFICATE_NOT_META trace=X
+T INFO uvicorn.error Shutting down
+T INFO uvicorn.error Waiting for application shutdown.
+T INFO uvicorn.error Application shutdown complete.
+T INFO uvicorn.error Finished server process [PID]
