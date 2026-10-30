@@ -23,7 +23,7 @@
   the process's lines, the first mutation trial;
 - `2155278`: the mutation records (§5);
 - `1830194`, `8e6261f`, `428c9e2`: the evidence round (§6);
-- CLOSE_COMMIT: this note, the closure record updated.
+- `c2bbfcf`: this note, the closure record updated.
 
 ---
 

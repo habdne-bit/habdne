@@ -20,7 +20,7 @@
 - **SALE only.** This is not a release authorization.
 
 **Prepared at:** `ede11fc`; **updated by step 4's addendum** (review of
-`18e4aec`) at `f14634c`; **updated by step 5's delivery** at CLOSE_COMMIT,
+`18e4aec`) at `f14634c`; **updated by step 5's delivery** at `c2bbfcf`,
 on the tree whose run is bound (`428c9e2`, source fingerprint
 `4571a1c09003bc06511a1f2a66ebf05da3b33318afefa4f81a85bd528a5f5dc6`). The
 barriers' measurement (§3) was taken at `001f429`, with the same tool. **The
