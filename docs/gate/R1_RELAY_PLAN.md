@@ -45,7 +45,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
-| 10 | the commit that adds this revision | the review of `79c232b` recorded: step 3 CLOSED; step 4 authorized |
+| 10 | `453cde7` | the review of `79c232b` recorded: step 3 CLOSED; step 4 authorized |
 | 9 | `7b2e4ed` | the review of `3dac09f` recorded: step 3 not closed (a URL `urlsplit` raises on escapes §5.6's refusal); the loopback-literal and default-port readings accepted |
 | 8 | `598526c` | the review of `c480474` recorded: step 3 not closed; its readings 4.1 to 4.3 accepted; the effective deadline to correct; R1-Q2 decided (§5.6, §7 condition 12) |
 | 7 | `bf330c4` | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
