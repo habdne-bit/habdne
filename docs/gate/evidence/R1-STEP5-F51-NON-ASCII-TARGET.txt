@@ -1,0 +1,38 @@
+TURAB — R-1 step 5, finding F5-1: a request target outside ASCII, through the entry point, MEASURED
+
+Measured: 2026-10-30, on the tree at 9dc7afd (relay/turab_relay/ as committed there), outside the
+test suite, with a throwaway synthetic PKI (a server CA, a CA standing for Meta's, a client
+certificate with Meta's CN) and a synthetic verify token.
+Process: env -i PATH=... PYTHONPATH=relay TURAB_RELAY_BIND_HOST=127.0.0.1 TURAB_RELAY_BIND_PORT=0
+         TURAB_RELAY_TLS_CERTFILE=... TURAB_RELAY_TLS_KEYFILE=... TURAB_RELAY_META_CA_FILE=...
+         TURAB_RELAY_META_VERIFY_TOKEN=tok-f51 .venv/bin/python -m turab_relay
+Client: .venv/bin/python, a TLS socket with Meta's client certificate, one raw request line each:
+  GET /whatsapp/webhook?hub.mode=subscribe&hub.challenge=c&hub.verify_token=tok-f51&x=<0xff> HTTP/1.1
+  GET /whatsapp/webhook?hub.mode=subscribe&hub.challenge=c&hub.verify_token=tok-f51&x=é (UTF-8) HTTP/1.1
+  GET /whatsapp/webhook?hub.verify_token=tok-f51<0x01> HTTP/1.1
+
+Answers:
+  raw 0xff in the query  -> HTTP/1.1 400 Bad Request | body: Invalid HTTP request received.
+  raw UTF-8 in the query -> HTTP/1.1 400 Bad Request | body: Invalid HTTP request received.
+  ASCII control          -> HTTP/1.1 400 Bad Request | body: Invalid HTTP request received.
+
+Every line the process wrote (time, port and process id replaced):
+  T INFO uvicorn.error Started server process [PID]
+  T INFO uvicorn.error Waiting for application startup.
+  T INFO uvicorn.error Application startup complete.
+  T INFO uvicorn.error Uvicorn running on https://127.0.0.1:PORT (Press CTRL+C to quit)
+  T WARNING uvicorn.error Invalid HTTP request received.
+  T WARNING uvicorn.error Invalid HTTP request received.
+  T WARNING uvicorn.error Invalid HTTP request received.
+  T INFO uvicorn.error Shutting down
+  T INFO uvicorn.error Waiting for application shutdown.
+  T INFO uvicorn.error Application shutdown complete.
+  T INFO uvicorn.error Finished server process [PID]
+
+Reading:
+- h11 (the relay's HTTP protocol, through TLSExtensionH11Protocol) accepts a request target of
+  bytes 0x21 to 0x7E only (h11/_abnf.py: request_target = vchar+, vchar = [\x21-\x7e]). Any
+  other byte is refused by the server, 400, before the application is called.
+- So meta.subscription's QUERY_NOT_UTF8 branch cannot be reached through this entry point: a
+  query reaching it is ASCII, and decodes. It stays as a guard for any other server.
+- The warning line uvicorn writes holds no request line, no query and no token.

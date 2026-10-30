@@ -20,9 +20,11 @@
 - **SALE only.** This is not a release authorization.
 
 **Prepared at:** `ede11fc`; **updated by step 4's addendum** (review of
-`18e4aec`) at `f14634c`, on the tree whose run is bound (`001f429`, source
-fingerprint `71f705bd33d0083467daa96c30dbe26b4f859bb05edc5f08db2a9cd0a0c9835e`). **The reviewer has not re-run anything.** Every
-result here is ours.
+`18e4aec`) at `f14634c`; **updated by step 5's delivery** at CLOSE_COMMIT,
+on the tree whose run is bound (`428c9e2`, source fingerprint
+`4571a1c09003bc06511a1f2a66ebf05da3b33318afefa4f81a85bd528a5f5dc6`). The
+barriers' measurement (§3) was taken at `001f429`, with the same tool. **The
+reviewer has not re-run anything.** Every result here is ours.
 
 ---
 
@@ -30,17 +32,17 @@ result here is ours.
 
 | # | Condition (§7) | State | Evidence |
 |---|---|---|---|
-| 1 | each of the seven duties, and §5.2's mTLS, proven by the tests of §3 and §5.2, every one passing, on synthetic notifications only | **met** | duties 1, 2 and mTLS: `tests/test_r1_step1.py` (step 1 closed at `e9fac51`); duties 3, 4, 6: `test_r1_step2.py` (closed at `da3d778`); duty 5: `test_r1_step3.py` (closed at `79c232b`); duty 7: `test_r1_step4.py` (closed at `63a3e95`); suite **3493 passed, 0 failed, 0 errors, 0 skipped**, bound at `001f429` |
+| 1 | each of the seven duties, and §5.2's mTLS, proven by the tests of §3 and §5.2, every one passing, on synthetic notifications only | **met** | duties 1, 2 and mTLS: `tests/test_r1_step1.py` (step 1 closed at `e9fac51`); duties 3, 4, 6: `test_r1_step2.py` (closed at `da3d778`); duty 5: `test_r1_step3.py` (closed at `79c232b`); duty 7: `test_r1_step4.py` (closed at `63a3e95`); suite **3524 passed, 0 failed, 0 errors, 0 skipped**, bound at `428c9e2` |
 | 2 | the relay's output accepted by TURAB's own parser and signature check (R1-T3.7, R1-T4.2), its redelivery shown against TURAB's real application (R1-T5.6) | **met** | `parse_envelope` and `verify` called on every forwarded envelope (steps 2 and 3); R1-T5.6 against TURAB's application behind uvicorn and the test database (step 3); R1-T7.1 and R1-T7.2 against the same (step 4) |
 | 3 | every guard fails closed: no token, no secret, no key | **met** | R1-T1.4, R1-T2.5 (step 1); R1-T4.4 (steps 2 and 3: 503, nothing sent); no TURAB URL, a refused URL (step 3, §5.6) |
 | 4 | the constant-time comparisons proven by their call path | **met** | R1-T1.5, R1-T2.8 (step 1) |
 | 5 | §5.1's classes and answers proven (R1-T3.8, R1-T6.7); §5.3's table type by type (R1-T3.5) | **met** | R1-T3.5, R1-T6.7 (step 2); R1-T3.8 (step 3); OVERSIZE's answer, R1-T7.2 (step 4) |
 | 6 | the envelope's size bounded by its serialized bytes (R1-T7.1 to R1-T7.5); no limit attributed to Meta beyond its documentation | **met** | `test_r1_step4.py`; the room per type, `evidence/R1-STEP4-ENVELOPE-ROOM.txt`; no field maximum attributed to Meta (plan §1) |
 | 7 | no content in any log of the relay; no content from an ISOLATED element anywhere | **met** | R1-T2.7 (step 1); every logger, `httpx`'s included, across 200, 500, 400 and no answer (step 3); OVERSIZE's alert and logs (step 4); ISOLATED elements carry no envelope (step 2) |
-| 8 | each mutation of the relay's guards killed, in two identical runs | **met** | steps 1 to 4: `evidence/R1-STEP{1,2,3,4}-MUTATIONS*.txt`, §2 below |
+| 8 | each mutation of the relay's guards killed, in two identical runs | **met**; step 5's subject to its review | steps 1 to 5: `evidence/R1-STEP{1,2,3,4,5}-MUTATIONS*.txt`, §2 below |
 | **9** | **the barriers' state measured and recorded at closure (§4)** | **NOT MET** | §3 below: measurable here only in part; under R1-Q3 (decided, review of `18e4aec`) the operators of Meta's app and of each deployed environment measure B1 to B4; `UNKNOWN` until they do |
 | 10 | K06 UNPROVEN, SALE only; not a release authorization | **stated** | — |
-| **11** | **the run entry point meets §5.5, tested through it, before any deployment or Callback setting** | **NOT MET** | no run entry point exists. The tests run uvicorn programmatically with `access_log=False` (step 1), which proves that test server only, as §5.5 says. Under R1-Q4 (decided, review of `18e4aec`), step 5 builds and tests it through an actual process, after step 4's closure; each layer in front of it is examined in the deployment environment |
+| **11** | **the run entry point meets §5.5, tested through it, before any deployment or Callback setting** | **NOT MET** | **the entry point's part delivered in step 5, for review:** `python -m turab_relay`, tested through an actual process (`tests/test_r1_step5.py`): no request line, query, secret or content in any line it writes (`evidence/R1-STEP5-PROCESS-LINES.txt`), and §5.2's refusals. **Not examined:** each layer in front of it, in the deployment environment (R1-Q4); no deployment exists |
 | 12 | TURAB's URL meets §5.6, the refusals and their sending nothing tested | **met** | step 3's §9 and §10: the rule, the relay's path, behind uvicorn |
 
 ## 2. The mutation records
@@ -51,6 +53,7 @@ result here is ours.
 | 2 | 31 | `db8fcf8` | 31/31 killed, twice, outcomes identical |
 | 3 | 30 | `db8fcf8` | 30/30 killed, twice, outcomes identical |
 | 4 | 20 | `c751bd6` | 20/20 killed, twice, outcomes identical (the pair at `db8fcf8`, 13/13, kept as `-AT-db8fcf8`) |
+| 5 | 15 | `9dc7afd` | 15/15 killed, twice, outcomes identical (a first trial let A1 survive; corrected before the commit, `R1_STEP5_DELIVERY.md` §4) |
 
 ## 3. The barriers (§4), as measured
 
@@ -110,7 +113,10 @@ it is to be measured, not inferred.**
 - **Its local test does not prove** the logs of a load balancer or a TLS
   terminator: each layer in front of the relay is examined in the
   deployment environment before condition 11 is met.
-- **Step 5 waits on step 4's closure.** Condition 11 is not met.
+- **Step 5, authorized in the review of `63a3e95`, is delivered for
+  review** (`R1_STEP5_DELIVERY.md`): the entry point, tested through an
+  actual process. **The layers in front of it are not examined.**
+  Condition 11 is not met.
 
 ## 5. Standing
 

@@ -1205,3 +1205,7 @@ docs/gate/evidence/R1-STEP5-MUTATIONS-TRIAL.txt                new   4a561f7a866
 --- R-1 step 5: mutation records at 9dc7afd ---
 docs/gate/evidence/R1-STEP5-MUTATIONS.txt                      new   4f02f99e441f320e7644bc1ae327f6c3db63a7b7ed9e3abae15ff5423d64a13e
 docs/gate/evidence/R1-STEP5-MUTATIONS-REPEAT.txt               new   aa8a8d363c3dbd62f106860196a3c529bd9993afeeb82f4eb7c2a69b8848f6e8
+--- R-1 step 5: the F5-1 measurement; the delivery note; the closure record updated ---
+docs/gate/evidence/R1-STEP5-F51-NON-ASCII-TARGET.txt           new   bb0ada49ec47ef6a8e907f10555f91626549d3da76a5274b9b6ede012922265f
+docs/gate/R1_STEP5_DELIVERY.md                                 new   fe11c63267386767242a54bbd2fc7904dc8f07651231a5e3cefd00ec198ea958
+docs/gate/R1_CLOSURE_RECORD.md                                 new   51614f66b856bc737c4da07b15921e50affbfd3505018849ac15e64470ea3bdd
