@@ -10,8 +10,9 @@
   clean-tree run; this record, **with the barriers' measured state**; and
   the reviewer's decision.
 
-**Status: R-1 is UNMET.** Step 4 is CLOSED at `63a3e95` (review of
-`63a3e95`); step 5 (the run entry point) is authorized.
+**Status: R-1 is UNMET.** Every step of the plan is closed: step 4 at
+`63a3e95`, step 5 (the run entry point) at `4f2f430` (review of
+`4f2f430`).
 - **Two conditions are open,** and cannot be met inside this repository:
   - **condition 9:** the barriers' state;
   - **condition 11:** the run entry point's access log.
@@ -39,10 +40,10 @@ reviewer has not re-run anything.** Every result here is ours.
 | 5 | §5.1's classes and answers proven (R1-T3.8, R1-T6.7); §5.3's table type by type (R1-T3.5) | **met** | R1-T3.5, R1-T6.7 (step 2); R1-T3.8 (step 3); OVERSIZE's answer, R1-T7.2 (step 4) |
 | 6 | the envelope's size bounded by its serialized bytes (R1-T7.1 to R1-T7.5); no limit attributed to Meta beyond its documentation | **met** | `test_r1_step4.py`; the room per type, `evidence/R1-STEP4-ENVELOPE-ROOM.txt`; no field maximum attributed to Meta (plan §1) |
 | 7 | no content in any log of the relay; no content from an ISOLATED element anywhere | **met** | R1-T2.7 (step 1); every logger, `httpx`'s included, across 200, 500, 400 and no answer (step 3); OVERSIZE's alert and logs (step 4); ISOLATED elements carry no envelope (step 2) |
-| 8 | each mutation of the relay's guards killed, in two identical runs | **met**; step 5's subject to its review | steps 1 to 5: `evidence/R1-STEP{1,2,3,4,5}-MUTATIONS*.txt`, §2 below |
+| 8 | each mutation of the relay's guards killed, in two identical runs | **met** | steps 1 to 5: `evidence/R1-STEP{1,2,3,4,5}-MUTATIONS*.txt`, §2 below |
 | **9** | **the barriers' state measured and recorded at closure (§4)** | **NOT MET** | §3 below: measurable here only in part; under R1-Q3 (decided, review of `18e4aec`) the operators of Meta's app and of each deployed environment measure B1 to B4; `UNKNOWN` until they do |
 | 10 | K06 UNPROVEN, SALE only; not a release authorization | **stated** | — |
-| **11** | **the run entry point meets §5.5, tested through it, before any deployment or Callback setting** | **NOT MET** | **the entry point's part delivered in step 5, for review:** `python -m turab_relay`, tested through an actual process (`tests/test_r1_step5.py`): no request line, query, secret or content in any line it writes (`evidence/R1-STEP5-PROCESS-LINES.txt`), and §5.2's refusals. **Not examined:** each layer in front of it, in the deployment environment (R1-Q4); no deployment exists |
+| **11** | **the run entry point meets §5.5, tested through it, before any deployment or Callback setting** | **NOT MET** | **the entry point's part: step 5, CLOSED at `4f2f430`:** `python -m turab_relay`, tested through an actual process (`tests/test_r1_step5.py`): no request line, query, secret or content in any line it writes (`evidence/R1-STEP5-PROCESS-LINES.txt`), and §5.2's refusals. **Not examined:** each layer in front of it, in the deployment environment (R1-Q4); no deployment exists |
 | 12 | TURAB's URL meets §5.6, the refusals and their sending nothing tested | **met** | step 3's §9 and §10: the rule, the relay's path, behind uvicorn |
 
 ## 2. The mutation records
@@ -113,10 +114,13 @@ it is to be measured, not inferred.**
 - **Its local test does not prove** the logs of a load balancer or a TLS
   terminator: each layer in front of the relay is examined in the
   deployment environment before condition 11 is met.
-- **Step 5, authorized in the review of `63a3e95`, is delivered for
-  review** (`R1_STEP5_DELIVERY.md`): the entry point, tested through an
-  actual process. **The layers in front of it are not examined.**
-  Condition 11 is not met.
+- **Step 5 is CLOSED at `4f2f430`** (`R1_STEP5_DELIVERY.md`): the entry
+  point, tested through an actual process. **The layers in front of it are
+  not examined.** Condition 11 is not met.
+- **The reviewer's limit (review of `4f2f430`):** the logging of an
+  unexpected ASGI exception stays enabled, and the test of the lines does
+  not prove that every future exception's message is free of content. No
+  absolute guarantee is drawn from it.
 
 ## 5. Standing
 

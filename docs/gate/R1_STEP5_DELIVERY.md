@@ -224,3 +224,32 @@ environment (§5.7), before any deployment or Callback setting."
 - **R-1 UNMET:** no deployment, no Callback setting, no real event. K06 an
   independent condition before the release gate; SALE only; not a release
   authorization.
+
+---
+
+## 8. The closure
+
+**The review of `4f2f430` closed step 5 at `4f2f430`. R-1 is not closed.**
+Recorded in the plan, revision 13.
+- **The reviewer checked:** the entry point's start (TLS, the client
+  certificate required, the access log off); the tests of the actual
+  process; the record of the lines and the two mutation records; that no
+  source or test changed after the implementation's commit.
+- **The reviewer did not re-run anything.** 3524/3524 and `bound` are our
+  recorded results.
+- **§1.5's four readings are accepted, within their limits:**
+  - port `0`, for tests;
+  - the secrets and TURAB's URL checked at each request;
+  - `proxy_headers` as it is, as long as the application uses none of the
+    values it changes;
+  - the ASGI exception's logging stays enabled. **The test of the lines
+    does not prove that every future exception's message is free of
+    content; no absolute guarantee is drawn from it.**
+- **F5-1:** no change to step 1 and no new test required. The measurement
+  is a judgement on the entry point tested, not on any other server.
+- **Conditions 9 and 11 stay open** (§6, §7).
+- **This closure does not** allow deploying the relay, a Callback setting,
+  or receiving any real event. It is not a release authorization.
+- **Standing:** the access-log condition (§5.5 of the plan); **R-1 UNMET;
+  no real event;** K06 an independent condition before the release gate;
+  SALE only.
