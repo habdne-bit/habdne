@@ -36,7 +36,7 @@
 
 | rev | commit | what changed |
 |---|---|---|
-| 3 | REV3_COMMIT | the review of `b39ad10` recorded; Q-A1 to Q-A8 applied; §5A.8's guarantee rewritten to the query (Delta §3.4); `0009`'s clock rule and the party-deletion consequence settled in its draft and measured (M7 to M11); the drafts as files under `docs/gate/drafts/`, with the expected effective contract generated |
+| 3 | `1eafe4c` | the review of `b39ad10` recorded; Q-A1 to Q-A8 applied; §5A.8's guarantee rewritten to the query (Delta §3.4); `0009`'s clock rule and the party-deletion consequence settled in its draft and measured (M7 to M11); the drafts as files under `docs/gate/drafts/`, with the expected effective contract generated |
 | 2 | `3db08bb` | the review of `3922850` recorded; §6.5's measurements run, with the two the review added; §0.4 (delivered and deferred); §5A's drafts (status machine, Contract Delta, `0009`, Call Brief, Direct Interest, conversion, audit, queue paging), not applied; OQ8-1 checked against the Journal Officiel |
 | 1 | `3922850` | first plan (planning only) |
 
