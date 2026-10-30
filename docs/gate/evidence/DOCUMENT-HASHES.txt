@@ -1216,3 +1216,4 @@ docs/gate/R1_CLOSURE_RECORD.md                                 named a697749574a
 docs/gate/R1_RELAY_PLAN.md                                     rev13 b177d58a382057211121366dc5bae403bedbaee14a874133f9d4c20b9a3e8f0b
 docs/gate/R1_STEP5_DELIVERY.md                                 §8   afdbaa8bc770cb47ef7f4b98b4d70f55b857fe6e3109258aa6e48595b3899067
 docs/gate/R1_CLOSURE_RECORD.md                                 s5cl  04e9dc991df46d87cbdd5d74316ff1e4c9a6c0a96f02097dfb0f7b82d4202f44
+docs/gate/R1_RELAY_PLAN.md                                     rev13 58c95a6b223ca0831a8950fc242f2cd6f6871dd3ac586a807a6cb0011fd36e14
