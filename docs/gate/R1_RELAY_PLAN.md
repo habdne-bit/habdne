@@ -1,11 +1,10 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 11**
+## Plan — **revision 12**
 
 **Status: step 1 CLOSED at `e9fac51`; step 2 CLOSED at `da3d778`; step 3
-CLOSED at `79c232b`; step 4 NOT CLOSED at `18e4aec`, an addendum asked**
-(the count check's destination; review of `18e4aec`, recorded below).
-**Step 5** (the run entry point) is added to §6, and waits on step 4's
-closure.
+CLOSED at `79c232b`; step 4 CLOSED at `63a3e95`; step 5 AUTHORIZED** (review
+of `63a3e95`, recorded below), within this plan's scope (§5.7, §6 step 5).
+**Conditions 9 and 11 of §7 stay open.**
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5). Revision 2 was adopted in the review of
@@ -48,6 +47,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
+| 12 | REV12_COMMIT | the review of `63a3e95` recorded: step 4 CLOSED; step 5 authorized; conditions 9 and 11 stay open |
 | 11 | `8cbd718` | the review of `18e4aec` recorded: duty 7 and the encoding fix accepted; step 4 not closed (the count check's destination); R1-Q3 and R1-Q4 decided (§5.7); step 5 added to §6; §4's count check and §7's conditions 9 and 11 made precise |
 | 10 | `453cde7` | the review of `79c232b` recorded: step 3 CLOSED; step 4 authorized |
 | 9 | `7b2e4ed` | the review of `3dac09f` recorded: step 3 not closed (a URL `urlsplit` raises on escapes §5.6's refusal); the loopback-literal and default-port readings accepted |
@@ -61,6 +61,37 @@ does not touch it. The next slice's plan follows the review of this one.
 | 1 | `1d00f41` | first plan, planning only |
 
 ---
+
+## The review of `63a3e95`
+
+**Step 4 is CLOSED at `63a3e95`. Step 5 is AUTHORIZED** within the scope
+this plan sets (§5.7, §6): building the run entry point
+`python -m turab_relay`, and testing its access log and its mTLS
+configuration **through an actual process**.
+
+- **What the reviewer checked:**
+  - the count check now passes `host`, `hostaddr`, `port` and `dbname`
+    explicitly, and prints each count with the identity of the server and
+    database that answered it, apart from the destination asked;
+  - the test of `PGHOST=elsewhere.invalid` with `PGHOSTADDR` naming the test
+    server;
+  - the records: 20/20 mutations killed twice, 3493/3493, `bound`. **The
+    reviewer read the records and did not re-run them independently;**
+  - the difference from the fix's commit to the head changes no source and
+    no test.
+- **Conditions 9 and 11 stay open:**
+  - **condition 9:** measuring the test server does not determine the state
+    of Meta's barriers or of the deployed environments;
+  - **condition 11:** testing the entry point locally does not examine the
+    logs of the layers in front of it;
+  - both are completed by the operators' measurement and the review of its
+    record, under R1-Q3 and R1-Q4 (§5.7).
+- **Standing:**
+  - §5.5's access-log condition before any deployment or Callback setting;
+  - **R-1 UNMET:** no deployment, no Callback setting and no real event by
+    this decision;
+  - K06 an independent condition before the release gate; SALE only;
+  - **this decision is not a release authorization.**
 
 ## The review of `18e4aec`
 
@@ -809,8 +840,8 @@ its own condition.
 | 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **CLOSED at `e9fac51`** (review of `e9fac51`; `R1_STEP1_DELIVERY.md`) |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **CLOSED at `da3d778`** (review of `da3d778`; `R1_STEP2_DELIVERY.md`) |
 | 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **CLOSED at `79c232b`** (review of `79c232b`; `R1_STEP3_DELIVERY.md`) |
-| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | **NOT CLOSED at `18e4aec`** (review of `18e4aec`): duty 7 accepted; **an addendum asked** on the count check's destination; no deployment, no secret, no real event |
-| 5 | the run entry point `python -m turab_relay` (R1-Q4, §5.7): its log and its mTLS configuration tested through an actual process | **added** (review of `18e4aec`); **waits on step 4's closure**; it does not prove the layers in front of the relay |
+| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | **CLOSED at `63a3e95`** (review of `63a3e95`; `R1_STEP4_DELIVERY.md`) |
+| 5 | the run entry point `python -m turab_relay` (R1-Q4, §5.7): its log and its mTLS configuration tested through an actual process | **AUTHORIZED** (review of `63a3e95`); no deployment, no secret, no real event; it does not prove the layers in front of the relay |
 
 Each step is delivered with its tests and its mutation record, and reviewed
 before the next. **Lifting a barrier of §4 is not a step of this plan.**

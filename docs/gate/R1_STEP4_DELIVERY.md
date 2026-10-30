@@ -337,3 +337,28 @@ measured at `e49d2a3` with the old tool, is kept as
 - **R-1 UNMET:** no real event, no deployment, no Callback setting. K06 an
   independent condition before the release gate; SALE only; not a release
   authorization.
+
+---
+
+## 9. The closure
+
+**The review of `63a3e95` closed step 4 at `63a3e95`, and authorized step
+5** within the plan's scope. Recorded in the plan, revision 12.
+- **The reviewer checked:**
+  - the count check's destination, pinned, and the answering server and
+    database named apart from the destination asked;
+  - the test of `PGHOST=elsewhere.invalid` with `PGHOSTADDR` naming the
+    test server;
+  - the records: 20/20 mutations killed twice, 3493/3493, `bound`;
+  - that the commits after the fix change no source and no test.
+- **The reviewer read the records and did not re-run them independently.**
+  They are our recorded results.
+- **Conditions 9 and 11 stay open.** The test server's measurement does
+  not determine the barriers' state, and a local test of the entry point
+  does not examine the layers in front of it (R1-Q3, R1-Q4).
+- **This closure does not** close R-1, or allow deploying the relay, a
+  Callback setting, or receiving any real event. It is not a release
+  authorization.
+- **Standing:** the access-log condition (§5.5 of the plan); **R-1 UNMET;
+  no real event;** K06 an independent condition before the release gate;
+  SALE only.
