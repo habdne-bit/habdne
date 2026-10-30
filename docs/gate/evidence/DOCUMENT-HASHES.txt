@@ -1220,3 +1220,5 @@ docs/gate/R1_RELAY_PLAN.md                                     rev13 58c95a6b223
 --- R-1: documentary corrections after the review of 917650b ---
 docs/gate/R1_STEP5_DELIVERY.md                                 doc13 bd9b10036da6f8265986c556df6148d86fa786c35ad9cfc4a55b6a6a295d020c
 docs/gate/R1_CLOSURE_RECORD.md                                 doc13 bd9cdfc40ecaac2cfd56c7740c53d77b32846a09995dfdd864242faa97c3d6b6
+--- Slice 8 plan revision 1 (planning only) ---
+docs/gate/SLICE_8_PLAN.md                                      rev1  673974cc29a5da981f8c3f55bdd2e7253ecb540b76dbbedda166d49ebcb1ffa4
