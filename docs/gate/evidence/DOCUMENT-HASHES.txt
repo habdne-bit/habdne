@@ -1168,3 +1168,7 @@ docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5ddf055.txt           new   a374d641a98
 docs/gate/evidence/R1-STEP2-MUTATIONS-AT-5ddf055-REPEAT.txt    new   df06930b8e4f272c3ef6229be416281f037b16a25dc5545f969bffdd2fa21450
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-9a17cc1.txt           new   2377f51e725fe08414b0c7f1a8baeabd94d357cae3b307d0d3baf6b5aa252f6b
 docs/gate/evidence/R1-STEP3-MUTATIONS-AT-9a17cc1-REPEAT.txt    new   c8c1dc5556a71d3483e9c087fdc25ee4eb040246ea324b28a983312f6c0628ca
+--- R-1 step 4: the barriers measured; the delivery note; the closure record ---
+docs/gate/evidence/R1-STEP4-BARRIERS-MEASURED.txt              new   35f11a9412d666b7606e3bc9665866864cdd67ce6168e3c41cd0817a7949e8af
+docs/gate/R1_STEP4_DELIVERY.md                                 new   7ad175976ca4bd30c16f80d8d35d0353858fd7426530ae17a6a9ac6ddf4dbaeb
+docs/gate/R1_CLOSURE_RECORD.md                                 new   9758e18dd04039ec8ce44a12eb50f9d43a949a93b8415731038d252cdf16511a
