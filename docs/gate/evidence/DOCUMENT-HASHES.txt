@@ -1177,3 +1177,4 @@ docs/gate/R1_STEP4_DELIVERY.md                                 named ac91bfe534d
 docs/gate/R1_CLOSURE_RECORD.md                                 named 6f95bf36628d7716f95049e774d52616af4b83d4e4f75faa1544afdf551ce365
 --- R-1 plan revision 11 (the review of 18e4aec) ---
 docs/gate/R1_RELAY_PLAN.md                                     rev11 2769b719df78b36241072430d2504ec7bd042f1b9568530962a3cad88c4e18fd
+docs/gate/R1_RELAY_PLAN.md                                     rev11 4c5073342da42e3d6ba184a25161f02ac1b2bb2dd39ce444fab7848b9ab7f6b4

@@ -48,7 +48,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
-| 11 | REV11_COMMIT | the review of `18e4aec` recorded: duty 7 and the encoding fix accepted; step 4 not closed (the count check's destination); R1-Q3 and R1-Q4 decided (§5.7); step 5 added to §6; §4's count check and §7's conditions 9 and 11 made precise |
+| 11 | `8cbd718` | the review of `18e4aec` recorded: duty 7 and the encoding fix accepted; step 4 not closed (the count check's destination); R1-Q3 and R1-Q4 decided (§5.7); step 5 added to §6; §4's count check and §7's conditions 9 and 11 made precise |
 | 10 | `453cde7` | the review of `79c232b` recorded: step 3 CLOSED; step 4 authorized |
 | 9 | `7b2e4ed` | the review of `3dac09f` recorded: step 3 not closed (a URL `urlsplit` raises on escapes §5.6's refusal); the loopback-literal and default-port readings accepted |
 | 8 | `598526c` | the review of `c480474` recorded: step 3 not closed; its readings 4.1 to 4.3 accepted; the effective deadline to correct; R1-Q2 decided (§5.6, §7 condition 12) |
