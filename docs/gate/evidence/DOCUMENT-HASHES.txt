@@ -1217,3 +1217,6 @@ docs/gate/R1_RELAY_PLAN.md                                     rev13 b177d58a382
 docs/gate/R1_STEP5_DELIVERY.md                                 §8   afdbaa8bc770cb47ef7f4b98b4d70f55b857fe6e3109258aa6e48595b3899067
 docs/gate/R1_CLOSURE_RECORD.md                                 s5cl  04e9dc991df46d87cbdd5d74316ff1e4c9a6c0a96f02097dfb0f7b82d4202f44
 docs/gate/R1_RELAY_PLAN.md                                     rev13 58c95a6b223ca0831a8950fc242f2cd6f6871dd3ac586a807a6cb0011fd36e14
+--- R-1: documentary corrections after the review of 917650b ---
+docs/gate/R1_STEP5_DELIVERY.md                                 doc13 bd9b10036da6f8265986c556df6148d86fa786c35ad9cfc4a55b6a6a295d020c
+docs/gate/R1_CLOSURE_RECORD.md                                 doc13 bd9cdfc40ecaac2cfd56c7740c53d77b32846a09995dfdd864242faa97c3d6b6

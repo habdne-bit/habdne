@@ -14,8 +14,12 @@
 `63a3e95`, step 5 (the run entry point) at `4f2f430` (review of
 `4f2f430`).
 - **Two conditions are open,** and cannot be met inside this repository:
-  - **condition 9:** the barriers' state;
-  - **condition 11:** the run entry point's access log.
+  - **condition 9:** the barriers' state, measured by the operators of
+    Meta's app and of each deployed environment (R1-Q3);
+  - **condition 11:** the logs of each layer in front of the relay (a load
+    balancer, a proxy, a TLS terminator), examined in the deployment
+    environment (R1-Q4). Its part for the run entry point is closed with
+    step 5 at `4f2f430`.
 - **No real event may be received.**
 - **K06** stays an independent condition before the release gate.
 - **SALE only.** This is not a release authorization.

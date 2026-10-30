@@ -9,11 +9,12 @@
 - **Not authorized:** deploying the relay, a Callback setting, creating a
   secret, or receiving any real event. It is not a release authorization.
 
-**Status: DELIVERED for review.**
-- **R-1 stays UNMET.** Conditions 9 and 11 stay open (§7 below).
-  - Condition 11's local part, the entry point, is delivered here.
-  - The layers in front of the relay are the deployment's, and are not
-    examined here (§5.7).
+**Status: CLOSED at `4f2f430`** (review of `4f2f430`, §8; plan revision
+13). Delivered for review at `c2bbfcf`.
+- **R-1 stays UNMET.** Conditions 9 and 11 stay open (§6, §7).
+  - Condition 11's part for the entry point is closed with this step.
+  - What stays open of it: the logs of each layer in front of the relay,
+    examined in the deployment environment (§5.7).
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 
