@@ -1136,3 +1136,5 @@ docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   62f58953d0b
 docs/gate/R1_STEP3_DELIVERY.md                                 §9   b15c11cbff0085caaac0a170e1dd572080566bd529c19f347bc1057bcb9ae944
 --- Review of 3dac09f: R-1 step 3 NOT closed (an unsplittable URL); plan revision 9 ---
 docs/gate/R1_RELAY_PLAN.md                                     rev9  55570fd9669a71f1deddeac2ff01f017eeb1e730db01ff756d9364dd0a508201
+--- R-1 plan revision 9's commit named (7b2e4ed) ---
+docs/gate/R1_RELAY_PLAN.md                                     rev9  8c83920dde06b973ecaa5c480cd4624937c6cf2958113ee01942d27c1d79d01e
