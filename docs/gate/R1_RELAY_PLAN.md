@@ -1,14 +1,17 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 10**
+## Plan — **revision 11**
 
 **Status: step 1 CLOSED at `e9fac51`; step 2 CLOSED at `da3d778`; step 3
-CLOSED at `79c232b`; step 4 AUTHORIZED** (review of `79c232b`, recorded
-below), within this plan's scope (§6, step 4).
+CLOSED at `79c232b`; step 4 NOT CLOSED at `18e4aec`, an addendum asked**
+(the count check's destination; review of `18e4aec`, recorded below).
+**Step 5** (the run entry point) is added to §6, and waits on step 4's
+closure.
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5). Revision 2 was adopted in the review of
   `3d8b593`.
-- **R1-Q1 is decided: (a)** (§5.4).
+- **R1-Q1 is decided: (a)** (§5.4). **R1-Q2** (§5.6), **R1-Q3** and
+  **R1-Q4** (§5.7) are decided.
 - **The run entry point's access log is a binding condition** (§5.5,
   decided in the review of `8c64c64`), before any deployment or Callback
   setting.
@@ -45,6 +48,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
+| 11 | REV11_COMMIT | the review of `18e4aec` recorded: duty 7 and the encoding fix accepted; step 4 not closed (the count check's destination); R1-Q3 and R1-Q4 decided (§5.7); step 5 added to §6; §4's count check and §7's conditions 9 and 11 made precise |
 | 10 | `453cde7` | the review of `79c232b` recorded: step 3 CLOSED; step 4 authorized |
 | 9 | `7b2e4ed` | the review of `3dac09f` recorded: step 3 not closed (a URL `urlsplit` raises on escapes §5.6's refusal); the loopback-literal and default-port readings accepted |
 | 8 | `598526c` | the review of `c480474` recorded: step 3 not closed; its readings 4.1 to 4.3 accepted; the effective deadline to correct; R1-Q2 decided (§5.6, §7 condition 12) |
@@ -57,6 +61,46 @@ does not touch it. The next slice's plan follows the review of this one.
 | 1 | `1d00f41` | first plan, planning only |
 
 ---
+
+## The review of `18e4aec`
+
+**Step 4 is NOT CLOSED at `18e4aec`.** Duty 7 and the fix of
+`UnicodeEncodeError` are accepted; one gap in the count check remains.
+
+- **What the reviewer checked:**
+  - the tests of 65 536 and 65 537 bytes after serialization; OVERSIZE not
+    sent and not shortened; the other elements delivered, and redelivered
+    without a second write;
+  - the lone surrogate isolated, the batch going on;
+  - the mutation and evidence records. 3488/3488, 31/31, 30/30, 13/13 and
+    `bound` are the implementation's recorded results; **the reviewer
+    re-ran none of them.**
+- **The gap (blocking):**
+  - `count_webhook_events.py` prints `PGHOST`, but neither pins `hostaddr`
+    nor refuses `PGHOSTADDR`;
+  - libpq can take `PGHOSTADDR` as the server's actual address while
+    `PGHOST` names another, so a count can be attributed to a server other
+    than the one the tool reached;
+  - the tests delete `PGHOSTADDR` in their setup, so they do not reveal it.
+- **The addendum asked, before closing:**
+
+| # | What |
+|---|---|
+| 1 | pin every destination parameter at the connection |
+| 2 | record the identity of the server and database that answered |
+| 3 | a test that changes `PGHOSTADDR` and shows the tool does not attribute the count to the mismatched `PGHOST` |
+| 4 | the evidence of the resulting tree bound again |
+
+- **The counts measured on the test server are no evidence of the state of
+  any deployed environment.**
+- **R1-Q3 and R1-Q4 are decided** (§5.7). Step 5 is added to §6; **it waits
+  on step 4's addendum being closed.**
+- **Standing:**
+  - §5.5's access-log condition before any deployment or Callback setting;
+  - **R-1 UNMET:** no real event, no deployment, no Callback setting by this
+    decision;
+  - K06 an independent condition before the release gate; SALE only;
+  - **this decision is not a release authorization.**
 
 ## The review of `79c232b`
 
@@ -519,6 +563,11 @@ actually sends**, not by an assumed field size.
 `webhook_events` in each non-test database, **counts only**, as Slice 7's
 sample tool reads them. The expected count before the first real event is
 **zero**. Its result is part of the state measured at closure.
+- **Its destination (review of `18e4aec`):** every destination parameter
+  is pinned at the connection, and each count is printed with the identity
+  of the server and database that answered it. A count is never attributed
+  to a host the environment names but the connection did not reach.
+- **Who measures, and how:** R1-Q3 (§5.7).
 
 **Not a barrier:** Meta's Dev mode (E15: *some* webhooks are not sent).
 
@@ -734,6 +783,24 @@ the `httpx` library logs each request's URL.
 **Independent of §5.5:** the access log of the relay's own entry point is
 its own condition.
 
+### 5.7 R1-Q3 and R1-Q4 · Measuring the barriers, and the run entry point (DECIDED in the review of `18e4aec`)
+
+**R1-Q3 · Who measures the barriers (§4, condition 9).**
+- **The operator of Meta's app and the operator of each deployed
+  environment** measure the barriers.
+- **They record** the date, what was seen, and the count of events, in a
+  record that is reviewed.
+- **Where nothing was measured, the state stays `UNKNOWN`.** Condition 9 is
+  not met now.
+
+**R1-Q4 · The run entry point (§5.5, condition 11).**
+- **Step 5 is added (§6):** the run entry point `python -m turab_relay`;
+  its log tested, and its mTLS configuration, **through an actual
+  process**.
+- **Its local test does not prove the logs of a load balancer or a TLS
+  terminator.** Each layer in front of the relay is examined in the
+  deployment environment before condition 11 is met.
+
 ## 6. Sequence
 
 | Step | Content | Depends on |
@@ -742,7 +809,8 @@ its own condition.
 | 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **CLOSED at `e9fac51`** (review of `e9fac51`; `R1_STEP1_DELIVERY.md`) |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **CLOSED at `da3d778`** (review of `da3d778`; `R1_STEP2_DELIVERY.md`) |
 | 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **CLOSED at `79c232b`** (review of `79c232b`; `R1_STEP3_DELIVERY.md`) |
-| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | **AUTHORIZED** (review of `79c232b`); no deployment, no secret, no real event |
+| 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | **NOT CLOSED at `18e4aec`** (review of `18e4aec`): duty 7 accepted; **an addendum asked** on the count check's destination; no deployment, no secret, no real event |
+| 5 | the run entry point `python -m turab_relay` (R1-Q4, §5.7): its log and its mTLS configuration tested through an actual process | **added** (review of `18e4aec`); **waits on step 4's closure**; it does not prove the layers in front of the relay |
 
 Each step is delivered with its tests and its mutation record, and reviewed
 before the next. **Lifting a barrier of §4 is not a step of this plan.**
@@ -765,11 +833,13 @@ before the next. **Lifting a barrier of §4 is not a step of this plan.**
 7. No content in any log of the relay (R1-T2.7, R1-D9); no content from an
    ISOLATED element anywhere.
 8. Each mutation of the relay's guards killed, in two identical runs.
-9. **The barriers' state measured and recorded at closure** (§4). Lifting a
-   barrier is decided separately.
+9. **The barriers' state measured and recorded at closure** (§4), by the
+   operators R1-Q3 names (§5.7); `UNKNOWN` where nothing was measured.
+   Lifting a barrier is decided separately.
 10. **K06 UNPROVEN, SALE only.** Not a release authorization.
-11. **The run entry point meets §5.5,** tested through it, before any
-    deployment or Callback setting.
+11. **The run entry point meets §5.5,** tested through it (step 5), and
+    **each layer in front of it examined in the deployment environment**
+    (§5.7), before any deployment or Callback setting.
 12. **TURAB's URL meets §5.6** (R1-Q2), the refusals and their sending
     nothing tested.
 
