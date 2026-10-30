@@ -1,10 +1,10 @@
 # R-1 — The relay between Meta and TURAB's webhook
-## Plan — **revision 8**
+## Plan — **revision 9**
 
 **Status: step 1 CLOSED at `e9fac51`; step 2 CLOSED at `da3d778`; step 3
-delivered and NOT closed** (review of `c480474`, recorded below): two
-corrections asked, the effective deadline and TURAB's URL (R1-Q2, decided:
-§5.6). Step 4 is not authorized until the correction is reviewed.
+delivered and NOT closed** (review of `3dac09f`, recorded below): a refusal
+of §5.6 is missing for a URL `urllib` cannot split. Step 4 is not
+authorized until the correction is reviewed.
 - **Revision 1 was accepted as the basis for implementation** in the review
   of `1d00f41`, which adopted the recommended options of R1-D1 to R1-D15
   with binding specifications (§5). Revision 2 was adopted in the review of
@@ -46,6 +46,7 @@ does not touch it. The next slice's plan follows the review of this one.
 
 | rev | commit | what changed |
 |---|---|---|
+| 9 | the commit that adds this revision | the review of `3dac09f` recorded: step 3 not closed (a URL `urlsplit` raises on escapes §5.6's refusal); the loopback-literal and default-port readings accepted |
 | 8 | `598526c` | the review of `c480474` recorded: step 3 not closed; its readings 4.1 to 4.3 accepted; the effective deadline to correct; R1-Q2 decided (§5.6, §7 condition 12) |
 | 7 | `bf330c4` | the review of `da3d778` recorded: step 2 CLOSED; step 3 authorized; the status block rewritten to the current state (it still described revision 2); row 1 of this table moved to its place |
 | 6 | `e1f8138` | the review of `ced7df7` recorded: step 2 not closed (document order inside one `value`); R1-T3.3 made explicit; the undocumented status's reading accepted |
@@ -56,6 +57,34 @@ does not touch it. The next slice's plan follows the review of this one.
 | 1 | `1d00f41` | first plan, planning only |
 
 ---
+
+## The review of `3dac09f`
+
+**Step 3 is NOT closed at `3dac09f`.**
+
+- **Seen:** the deadline's correction in the source; the before record
+  shows HTTPX's 5 s limit before the fix.
+- **Accepted:** the two readings inside §5.6: loopback as an IP literal
+  only, and a default port counting as none.
+- **The gap:** `url_refusal` calls `urlsplit(url)` **outside** its `try`.
+  `https://[::1/webhooks/whatsapp` passes the character check, then
+  `urlsplit` raises `ValueError` (the unclosed bracket), as the reviewer
+  tried and as Python's documentation states. The request then never
+  reaches §5.6's `503 TURAB_URL_NOT_ALLOWED` and its fixed alert. The
+  reviewer did not run the whole relay with it, and does not state the
+  HTTP code it gives.
+- **Asked:** move `urlsplit` inside the `ValueError` catch; pin a URL with an
+  unclosed bracket by a test through the relay's path: **503, nothing
+  sent, an alert without the URL**; then bind the suite's run to the
+  corrected tree.
+- **What the reviewer checked:** the two mutation records, 29/29 in each,
+  the same results once times and random ids are set aside; 3441/3441 and
+  `bound` as recorded; the remote head at `3dac09f`.
+- **What it did not do:** re-run anything; it cannot confirm the local
+  tree's cleanliness.
+- **Standing:** step 4 not authorized until this correction is reviewed;
+  the access-log condition; **R-1 UNMET, no real event;** K06 an
+  independent condition before the release; SALE only.
 
 ## The review of `c480474`
 
@@ -690,7 +719,7 @@ its own condition.
 | 0 | the decisions R1-D1 to R1-D15 | **adopted** (review of `1d00f41`); R1-Q1 **decided (a)** (review of `3d8b593`) |
 | 1 | duties 1 and 2 (the GET; Meta's signature, with R1-T1.5 and R1-T2.8; the inbound limit) and mTLS (§5.2) | **CLOSED at `e9fac51`** (review of `e9fac51`; `R1_STEP1_DELIVERY.md`) |
 | 2 | duties 3, 4 and 6 (the transformation and §5.3's table; the relay's signature; `thread_ref` and R1-D8), checked by TURAB's own `parse_envelope` and `verify` | **CLOSED at `da3d778`** (review of `da3d778`; `R1_STEP2_DELIVERY.md`) |
-| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **AUTHORIZED** (review of `da3d778`); delivered; **NOT closed** (review of `c480474`: the effective deadline; R1-Q2, §5.6); no deployment, no secret, no real event |
+| 3 | duty 5 and §5.1's classes and answers, against a test double and against TURAB's real application and test database | **AUTHORIZED** (review of `da3d778`); delivered; **NOT closed** (review of `c480474`: the effective deadline; R1-Q2, §5.6; review of `3dac09f`: an unsplittable URL); no deployment, no secret, no real event |
 | 4 | duty 7 (the serialized sizes, with R1-Q1 (a)); R-1's evidence; the barriers' state measured (§4); the closure record | step 3 |
 
 Each step is delivered with its tests and its mutation record, and reviewed
