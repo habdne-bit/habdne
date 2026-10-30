@@ -1,0 +1,667 @@
+TURAB — Slice 8 plan revision 3: the effective contract the drafts would produce
+================================================================================
+DRAFT EVIDENCE. Nothing below is in force.
+
+How it was produced (the same tools the gate runs, on a temporary git worktree
+of b39ad10, never on the repository's tree):
+- docs/contract/addenda/ADD-SLICE8_external_lead_workflow.yaml = the draft
+  docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml, its
+  delta_sha256 set to the sha256 of the Delta draft;
+- CONTRACT_CORRECTIONS.yaml + CORRECTION-009, ONLY the part today's narrowing
+  keys express: require [target, payload] (see part 3 for the rest);
+- then: db/gate/generate_effective_contract.py, and
+  db/gate/generate_api_inventory.py docs/api/openapi_effective_v0.2.3.yaml
+  -o docs/api/API_INVENTORY_GENERATED.md.
+The worktree was removed afterwards. Below: the two generated diffs, unedited,
+then part 3, which is NOT generated.
+
+1. git diff docs/api/API_INVENTORY_GENERATED.md
+-----------------------------------------------
+diff --git a/docs/api/API_INVENTORY_GENERATED.md b/docs/api/API_INVENTORY_GENERATED.md
+index 89b019b..f64ead4 100644
+--- a/docs/api/API_INVENTORY_GENERATED.md
++++ b/docs/api/API_INVENTORY_GENERATED.md
+@@ -3,8 +3,8 @@
+ **Do not edit.** Regenerate with `db/gate/generate_api_inventory.py`.
+ 
+ - Source: `docs/api/openapi_effective_v0.2.3.yaml`
+-- Source SHA-256: `5a0391b71218d40bc3204c60c97a2551a2114425bfb509a356590fbcbe975f43`
+-- Operations: 67 · role-annotated: 60 · unauthenticated: 6
++- Source SHA-256: `60b1fa412e28a1f82b628ae5cb2b633a0ee49c7dff1ace3540a08ce31b76970e`
++- Operations: 71 · role-annotated: 64 · unauthenticated: 6
+ 
+ ## Unauthenticated operations
+ 
+@@ -35,10 +35,12 @@ Each needs an explicit policy decision before implementation.
+ | `attachPartyPhoneContactPoint` | POST | `/parties/{party_id}/contact-points/phone` | `ADMIN`, `OPERATOR`, `CUSTOMER` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
+ | `getAudit` | GET | `/audit` | `ADMIN`, `REVIEWER` | — |
+ | `getBackofficeQueuesExternalLeads` | GET | `/backoffice/queues/external-leads` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
++| `getBackofficeQueuesExternalLeadsPage` | GET | `/backoffice/queues/external-leads/page` | `ADMIN`, `OPERATOR`, `REVIEWER` | Staff-only, audited once per page. The operation for operational volume; its guarantee is Delta §3.4, exactly as stated there. |
+ | `getBackofficeQueuesMatches` | GET | `/backoffice/queues/matches` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
+ | `getBackofficeQueuesOpportunities` | GET | `/backoffice/queues/opportunities` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
+ | `getBackofficeQueuesProperties` | GET | `/backoffice/queues/properties` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
+ | `getBackofficeQueuesRequests` | GET | `/backoffice/queues/requests` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
++| `getExternalLeadsLeadIdCallBrief` | GET | `/external-leads/{lead_id}/call-brief` | `ADMIN`, `OPERATOR`, `REVIEWER` | Staff-only, audited read. Never carries raw text, a URL, the raw payload or a contact point's value. CONSENT_CURRENT is computed at the read and authorizes nothing (Delta §3.3). |
+ | `getIdentityCandidates` | GET | `/identity/candidates` | `ADMIN`, `OPERATOR`, `REVIEWER` | — |
+ | `getLocations` | GET | `/locations` | — | — |
+ | `getMasterCriterionDefinitions` | GET | `/master/criterion-definitions` | — | — |
+@@ -70,7 +72,9 @@ Each needs an explicit policy decision before implementation.
+ | `postConsentsBindings` | POST | `/consents/bindings` | `ADMIN`, `OPERATOR` | Server validates consent party, scope, status and resource-party consistency. |
+ | `postConsentsConsentIdRevoke` | POST | `/consents/{consent_id}/revoke` | `ADMIN`, `OPERATOR`, `CUSTOMER` | CUSTOMER may revoke only consent belonging to own party; staff require operational authority. |
+ | `postExternalLeads` | POST | `/external-leads` | `ADMIN`, `OPERATOR` | — |
++| `postExternalLeadsLeadIdContactAttempts` | POST | `/external-leads/{lead_id}/contact-attempts` | `ADMIN`, `OPERATOR` | Staff-only. Records an attempt made outside TURAB; sends nothing. The lead's contact status is derived from the outcome (Delta §3.1). |
+ | `postExternalLeadsLeadIdConvert` | POST | `/external-leads/{lead_id}/convert` | `ADMIN`, `OPERATOR` | — |
++| `postExternalLeadsLeadIdStatus` | POST | `/external-leads/{lead_id}/status` | `ADMIN`, `OPERATOR` | Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock (Delta §3.2); CONVERTED is never set here. |
+ | `postIdentityCandidatesCandidateIdReview` | POST | `/identity/candidates/{candidate_id}/review` | `ADMIN`, `REVIEWER` | — |
+ | `postIdentityCandidatesGenerate` | POST | `/identity/candidates/generate` | `ADMIN`, `OPERATOR` | — |
+ | `postInterests` | POST | `/interests` | `CUSTOMER`, `ADMIN`, `OPERATOR` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
+
+2. git diff docs/api/openapi_effective_v0.2.3.yaml
+--------------------------------------------------
+diff --git a/docs/api/openapi_effective_v0.2.3.yaml b/docs/api/openapi_effective_v0.2.3.yaml
+index 5a6eb90..76ef4f9 100644
+--- a/docs/api/openapi_effective_v0.2.3.yaml
++++ b/docs/api/openapi_effective_v0.2.3.yaml
+@@ -23,11 +23,12 @@
+ #
+ # Source digests at generation time:
+ #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
+-#   CONTRACT_CORRECTIONS.yaml    91f30c7fbd37a0eec74d71b5cfd8b6e2c725cbad81f0c8ead69c35e02183f671
++#   CONTRACT_CORRECTIONS.yaml    ba00dffe5574193663484224dc8b4da1f6c497e7d27bd0543ddf2482076f8fa9
+ #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
++#   addenda/ADD-SLICE8_external_lead_workflow.yaml   86f1f51c90a0e4d1ea1f7695636b624f93ca5cf8a670133369c10cf6be469121
+ #
+-# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)
+-# Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd)
++# Corrections applied: CORRECTION-001 (postParties), CORRECTION-009 (postExternalLeadsLeadIdConvert), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)
++# Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd), ADD-SLICE8 (postExternalLeadsLeadIdContactAttempts), ADD-SLICE8 (postExternalLeadsLeadIdStatus), ADD-SLICE8 (getExternalLeadsLeadIdCallBrief), ADD-SLICE8 (getBackofficeQueuesExternalLeadsPage)
+ # =============================================================================
+ openapi: 3.1.0
+ info:
+@@ -471,6 +472,8 @@ paths:
+               required:
+               - party_id
+               - consent_id
++              - target
++              - payload
+               properties:
+                 party_id: *id002
+                 consent_id: *id002
+@@ -510,6 +513,18 @@ paths:
+       - ADMIN
+       - OPERATOR
+       operationId: postExternalLeadsLeadIdConvert
++      x-turab-correction:
++        id: CORRECTION-009
++        kind: REQUEST_BODY_NARROWING
++        decision: DRAFT (temporary worktree only). Slice 8 plan Q-A5, the part the existing narrowing
++          keys can express.
++        approved: '2026-10-30'
++        frozen-required:
++        - party_id
++        - consent_id
++        frozen-defaults: {}
++        runtime-rule: DRAFT
++        reference: docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md
+   /requests:
+     post:
+       summary: Create request
+@@ -3256,6 +3271,202 @@ paths:
+           applied as revision 3a.
+         delta_document: docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
+         delta_sha256: e2550c095d6cba9a152e89ec0e73b015fb61f8089c7b3ad5c6445cd720abdbf8
++  /external-leads/{lead_id}/contact-attempts:
++    post:
++      operationId: postExternalLeadsLeadIdContactAttempts
++      summary: Record one contact attempt on an external lead and its outcome
++      tags:
++      - External Leads
++      security:
++      - BearerAuth: []
++      x-roles:
++      - ADMIN
++      - OPERATOR
++      x-authorization: Staff-only. Records an attempt made outside TURAB; sends nothing. The lead's contact
++        status is derived from the outcome (Delta §3.1).
++      parameters:
++      - name: lead_id
++        in: path
++        required: true
++        schema:
++          type: string
++          format: uuid
++      - $ref: '#/components/parameters/IdempotencyKey'
++      requestBody:
++        required: true
++        content:
++          application/json:
++            schema:
++              $ref: '#/components/schemas/LeadContactAttemptInput'
++      responses:
++        '201':
++          description: Recorded
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/LeadContactAttemptRecorded'
++        '400':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '401':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '403':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '404':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '409':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '422':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++      x-turab-addendum:
++        id: ADD-SLICE8
++        kind: ADDITION
++        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
++          in the review of b39ad10; not approved.'
++        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
++        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++  /external-leads/{lead_id}/status:
++    post:
++      operationId: postExternalLeadsLeadIdStatus
++      summary: Move an external lead to a status the workflow allows
++      tags:
++      - External Leads
++      security:
++      - BearerAuth: []
++      x-roles:
++      - ADMIN
++      - OPERATOR
++      x-authorization: Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock (Delta §3.2);
++        CONVERTED is never set here.
++      parameters:
++      - name: lead_id
++        in: path
++        required: true
++        schema:
++          type: string
++          format: uuid
++      - $ref: '#/components/parameters/IdempotencyKey'
++      requestBody:
++        required: true
++        content:
++          application/json:
++            schema:
++              $ref: '#/components/schemas/LeadStatusChangeInput'
++      responses:
++        '200':
++          description: Moved
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/LeadStatusChanged'
++        '400':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '401':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '403':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '404':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '409':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '422':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++      x-turab-addendum:
++        id: ADD-SLICE8
++        kind: ADDITION
++        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
++          in the review of b39ad10; not approved.'
++        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
++        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++  /external-leads/{lead_id}/call-brief:
++    get:
++      operationId: getExternalLeadsLeadIdCallBrief
++      summary: A computed brief of what is known, missing and needed for a lead
++      tags:
++      - External Leads
++      security:
++      - BearerAuth: []
++      x-roles:
++      - ADMIN
++      - OPERATOR
++      - REVIEWER
++      x-authorization: Staff-only, audited read. Never carries raw text, a URL, the raw payload or a contact
++        point's value. CONSENT_CURRENT is computed at the read and authorizes nothing (Delta §3.3).
++      parameters:
++      - name: lead_id
++        in: path
++        required: true
++        schema:
++          type: string
++          format: uuid
++      responses:
++        '200':
++          description: The brief
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/LeadCallBrief'
++        '401':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '403':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '404':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++      x-turab-addendum:
++        id: ADD-SLICE8
++        kind: ADDITION
++        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
++          in the review of b39ad10; not approved.'
++        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
++        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++  /backoffice/queues/external-leads/page:
++    get:
++      operationId: getBackofficeQueuesExternalLeadsPage
++      summary: The external-lead queue, one page at a time
++      tags:
++      - Backoffice
++      security:
++      - BearerAuth: []
++      x-roles:
++      - ADMIN
++      - OPERATOR
++      - REVIEWER
++      x-authorization: Staff-only, audited once per page. The operation for operational volume; its guarantee
++        is Delta §3.4, exactly as stated there.
++      parameters:
++      - name: cursor
++        in: query
++        required: false
++        schema:
++          type: string
++          maxLength: 512
++      - name: limit
++        in: query
++        required: false
++        schema:
++          type: integer
++          minimum: 1
++          maximum: 200
++          default: 50
++      responses:
++        '200':
++          description: One page, oldest first
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/LeadQueuePage'
++        '401':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '403':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++        '422':
++          $ref: '#/components/responses/LeadWorkflowProblem'
++      x-turab-addendum:
++        id: ADD-SLICE8
++        kind: ADDITION
++        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
++          in the review of b39ad10; not approved.'
++        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
++        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
+ components:
+   securitySchemes:
+     BearerAuth:
+@@ -5284,6 +5495,224 @@ components:
+         total:
+           type: integer
+           minimum: 0
++    LeadContactAttemptInput:
++      type: object
++      additionalProperties: false
++      required:
++      - channel
++      - outcome_code
++      - occurred_at
++      properties:
++        channel:
++          type: string
++          enum:
++          - PHONE
++          - WHATSAPP
++          - SMS
++          - IN_PERSON
++          - OTHER
++        outcome_code:
++          type: string
++          enum:
++          - LEAD_NO_ANSWER
++          - LEAD_REACHED
++          - LEAD_WRONG_NUMBER
++          - LEAD_NUMBER_NOT_IN_SERVICE
++        occurred_at:
++          type: string
++          format: date-time
++    LeadContactAttemptRecorded:
++      type: object
++      additionalProperties: false
++      required:
++      - attempt_id
++      - lead_id
++      - lead_status
++      properties:
++        attempt_id:
++          type: string
++          format: uuid
++        lead_id:
++          type: string
++          format: uuid
++        lead_status:
++          $ref: '#/components/schemas/LeadWorkflowStatus'
++    LeadStatusChangeInput:
++      type: object
++      additionalProperties: false
++      required:
++      - to
++      properties:
++        to:
++          type: string
++          enum:
++          - CONSENT_PENDING
++          - CONSENTED
++          - PENDING_INFO
++          - DECLINED
++          - CLOSED
++        party_id:
++          type: string
++          format: uuid
++        consent_id:
++          type: string
++          format: uuid
++        reason_code:
++          type: string
++          enum:
++          - LEAD_DECLINED_BY_PERSON
++          - LEAD_DUPLICATE
++          - LEAD_NOT_RELEVANT
++          - LEAD_STALE
++      allOf:
++      - if:
++          properties:
++            to:
++              const: CONSENTED
++          required:
++          - to
++        then:
++          required:
++          - party_id
++          - consent_id
++          not:
++            required:
++            - reason_code
++        else:
++          not:
++            anyOf:
++            - required:
++              - party_id
++            - required:
++              - consent_id
++      - if:
++          properties:
++            to:
++              enum:
++              - DECLINED
++              - CLOSED
++          required:
++          - to
++        then:
++          required:
++          - reason_code
++        else:
++          not:
++            required:
++            - reason_code
++    LeadStatusChanged:
++      type: object
++      additionalProperties: false
++      required:
++      - lead_id
++      - status
++      properties:
++        lead_id:
++          type: string
++          format: uuid
++        status:
++          $ref: '#/components/schemas/LeadWorkflowStatus'
++    LeadWorkflowStatus:
++      type: string
++      enum:
++      - DISCOVERED
++      - CONTACT_ATTEMPTED
++      - CONTACTED
++      - CONSENT_PENDING
++      - CONSENTED
++      - PENDING_INFO
++      - CONVERTED
++      - DECLINED
++      - UNREACHABLE
++      - CLOSED
++    LeadCallBrief:
++      type: object
++      additionalProperties: false
++      required:
++      - lead_id
++      - lead_kind
++      - status
++      - source_kind
++      - discovered_at
++      - attempts
++      - known
++      - missing
++      - permission_needed
++      - as_of
++      properties:
++        lead_id:
++          type: string
++          format: uuid
++        lead_kind:
++          type: string
++          enum:
++          - PROPERTY
++          - REQUEST
++        status:
++          $ref: '#/components/schemas/LeadWorkflowStatus'
++        source_kind:
++          type: string
++        discovered_at:
++          type: string
++          format: date-time
++        attempts:
++          type: object
++          additionalProperties: false
++          required:
++          - count
++          properties:
++            count:
++              type: integer
++              minimum: 0
++            last_outcome_code:
++              type:
++              - string
++              - 'null'
++            last_occurred_at:
++              type:
++              - string
++              - 'null'
++              format: date-time
++        known:
++          type: array
++          uniqueItems: true
++          items:
++            type: string
++            enum:
++            - PARTY_IDENTIFIED
++            - CONTACT_POINT_VERIFIED
++            - CONSENT_CURRENT
++        missing:
++          type: array
++          uniqueItems: true
++          items:
++            type: string
++        permission_needed:
++          type: array
++          uniqueItems: true
++          items:
++            type: string
++            enum:
++            - ASSISTED_ENTRY
++            - PROPERTY_CONVERSION_NOT_AVAILABLE
++        as_of:
++          type: string
++          format: date-time
++    LeadQueuePage:
++      type: object
++      additionalProperties: false
++      required:
++      - items
++      - next_cursor
++      properties:
++        items:
++          type: array
++          items:
++            $ref: '#/components/schemas/QueueItem'
++        next_cursor:
++          type:
++          - string
++          - 'null'
+   responses:
+     AddendumProblem:
+       description: Request rejected
+@@ -5291,3 +5720,9 @@ components:
+         application/problem+json:
+           schema:
+             $ref: '#/components/schemas/Problem'
++    LeadWorkflowProblem:
++      description: Request rejected
++      content:
++        application/problem+json:
++          schema:
++            $ref: '#/components/schemas/Problem'
+
+3. NOT GENERATED: the body of postExternalLeadsLeadIdConvert once CORRECTION-009's
+   payload constraint is expressible (plan Q-B3: a new narrowing key, `add_all_of`,
+   in src/turab/auth/contract.py and the generator; not authorized). Computed by
+   this record's script from the effective body generated in part 2 (the frozen
+   body + `require: [target, payload]`) and the frozen RequestCreate, without
+   party_id, management_mode and claim_status, which the conversion sets.
+   An added allOf branch can only narrow: a document it accepts, the frozen
+   body accepts.
+------------------------------------------------------------------------------
+type: object
+required:
+- party_id
+- consent_id
+- target
+- payload
+properties:
+  party_id:
+    type: string
+    format: uuid
+  consent_id:
+    type: string
+    format: uuid
+  target:
+    type: string
+    enum:
+    - REQUEST
+    - PROPERTY
+  payload:
+    type: object
+    additionalProperties: true
+allOf:
+- if:
+    properties:
+      target:
+        const: REQUEST
+    required:
+    - target
+  then:
+    properties:
+      payload:
+        type: object
+        additionalProperties: false
+        required:
+        - intent
+        - transaction_intent
+        properties:
+          intent:
+            type: string
+            enum:
+            - EXPLORING
+            - ACTIVE_SEARCH
+            - READY_TO_ACT
+          payment:
+            type: string
+            enum:
+            - CASH
+            - BANK_FINANCING
+            - MIXED
+            - UNDECIDED
+          desired_property_type:
+            anyOf:
+            - type: string
+              enum:
+              - HOUSE_VILLA
+              - APARTMENT
+              - LAND
+              - SHOP_COMMERCIAL
+              - AGRICULTURAL_PROPERTY
+              - BUILDING
+              - OTHER
+            - type: 'null'
+          property_type_importance:
+            type: string
+            enum:
+            - REQUIRED
+            - PREFERRED
+            - FLEXIBLE
+          primary_location_id:
+            anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          location_importance:
+            type: string
+            enum:
+            - REQUIRED
+            - PREFERRED
+            - FLEXIBLE
+          local_location_detail:
+            type: string
+          budget_target_dzd:
+            type: integer
+            minimum: 0
+          budget_max_dzd:
+            type: integer
+            minimum: 0
+          budget_importance:
+            type: string
+            enum:
+            - REQUIRED
+            - PREFERRED
+            - FLEXIBLE
+          budget_flexibility:
+            type: string
+            enum:
+            - STRICT
+            - LOW
+            - MODERATE
+            - HIGH
+            - UNSPECIFIED
+          criteria:
+            type: array
+            items:
+              $ref: '#/components/schemas/RequestCriterion'
+          transaction_intent:
+            type: string
+            enum:
+            - BUY
+            - RENT
+

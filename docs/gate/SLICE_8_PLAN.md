@@ -1,36 +1,106 @@
 # Slice 8 — External Acquisition / Assisted Entry / Self-service
-## Implementation plan — **revision 2**
+## Implementation plan — **revision 3**
 
-**Status: revision 2 submitted for review.**
-- **Revision 1 was accepted as a basis for planning** in the review of
-  `3922850`, which authorized §6.5's measurements and preparing this
-  revision. It is recorded below.
-- **No code for this slice exists, and none is written.** The review did
-  **not** approve the Contract Delta's text or migration `0009`, and did not
-  authorize writing Slice 8's code. **§5A's texts are drafts for review:
-  nothing in them is applied** (no addendum under `docs/contract/addenda/`,
-  no migration under `db/migrations/`).
-- **What this revision adds:** the review's directions (the section "The
-  review of `3922850`", below); the measurements, run (§6.5,
-  `evidence/SLICE8-PLAN-MEASUREMENTS.txt`); what Slice 8 delivers and what it
-  declares deferred (§0.4); the drafts of §5A; OQ8-1 checked against the
-  Journal Officiel.
+**Status: revision 3 submitted for review (planning only).**
+- **The review of `b39ad10`** accepted revision 2's measurements as a basis
+  for planning, adopted M4's condition (the conversion locks the grant `FOR
+  SHARE` and re-checks it in its transaction), decided Q-A1 to Q-A8, asked
+  for corrections, and authorized this planning revision. **It did not
+  approve `0009`'s text or the Delta, and did not authorize code.** Recorded
+  below.
+- **The drafts are files now**, under `docs/gate/drafts/`, which neither the
+  code nor Alembic reads:
+  - `0009_external_lead_workflow.DRAFT.py`: upgrade **and downgrade**;
+  - `CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md` and
+    `ADD-SLICE8_external_lead_workflow.DRAFT.yaml`: the Delta and its
+    addendum;
+  - `CORRECTION-009-lead-conversion-payload.DRAFT.md`: the payload's
+    narrowing;
+  - `SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt`: the effective contract and
+    the inventory **as the gate's own generators produce them** from these
+    drafts, on a temporary worktree.
+- **Nothing is applied:** no file under `db/migrations/versions/` or
+  `docs/contract/` changed; no code.
+- **The draft of `0009` was run** on a scratch database:
+  `evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt` (M7 to M11).
 
 **What it rests on:**
 - **The findings of §4** rest on reading the frozen sources, the earlier
-  slices' decisions and the code; F8-13 to F8-16 on the measurements.
-- **The measurements** ran twice on a scratch database rebuilt from the
-  frozen schema and the fixtures, with identical outputs. They say nothing
-  about any deployed database.
-- **OQ8-1** now cites the official texts it could read (§5, OQ8-1); it
-  still decides nothing.
+  slices' decisions and the code; F8-13 to F8-18 on the measurements.
+- **The measurements** ran twice each on scratch databases, with identical
+  outputs. They say nothing about any deployed database.
+- **OQ8-1** stays open. The reviewer could not verify its citations
+  independently; they are ours and unconfirmed.
 
 **Revision history**
 
 | rev | commit | what changed |
 |---|---|---|
+| 3 | REV3_COMMIT | the review of `b39ad10` recorded; Q-A1 to Q-A8 applied; §5A.8's guarantee rewritten to the query (Delta §3.4); `0009`'s clock rule and the party-deletion consequence settled in its draft and measured (M7 to M11); the drafts as files under `docs/gate/drafts/`, with the expected effective contract generated |
 | 2 | `3db08bb` | the review of `3922850` recorded; §6.5's measurements run, with the two the review added; §0.4 (delivered and deferred); §5A's drafts (status machine, Contract Delta, `0009`, Call Brief, Direct Interest, conversion, audit, queue paging), not applied; OQ8-1 checked against the Journal Officiel |
 | 1 | `3922850` | first plan (planning only) |
+
+---
+
+## The review of `b39ad10`
+
+**Revision 2's measurements are accepted as a basis for planning. The texts
+of `0009` and of the Delta are not approved in their current form, and code
+is not authorized.** A planning revision 3 is authorized, with the
+corrections, the Delta's and the correction's texts and the resulting
+contract, and `0009`'s text with its downgrade and the tests of its
+consequences. **The reviewer re-ran neither the measurements nor
+`run_binding`.**
+
+- **M4 is decisive.** `FOR KEY SHARE` does not order a conversion against a
+  revocation; `FOR SHARE` orders them in both directions measured. **Adopted:
+  the conversion locks the grant row `FOR SHARE` and re-checks its state in
+  its transaction, with a race test through the actual conversion command
+  when it is implemented.** `CONSENTED` stays a historical fact, not a
+  standing permission. The decision rests on the measurement within its
+  limits: probe transactions, not the conversion command, which is not
+  written.
+- **Q-A1 to Q-A8:**
+
+| | Decision | Where applied |
+|---|---|---|
+| Q-A1 | yes: the `DECLINED` test supplies a valid reason when `0009` is applied; the guard stays as it is | §6.6; M7 |
+| Q-A2 | the eight codes accepted in principle; `LEAD_NUMBER_NOT_IN_SERVICE`'s Arabic label is «خارج الخدمة», not «غير مستعمل»; the final text fixed in the next revision | §5A.2; the draft |
+| Q-A3 | yes: the guard checks the `LEAD_CLOSURE` category when a reason is set, not only that the code exists; **state what changing the reason of a closed row does** | the draft; M9 |
+| Q-A4 | yes: `INSERT` on the attempts audited by `audit_row_change('attempt_id')`. The frozen function records the whole row, so **no free text and no content of a contact in that table** stays a required condition | the draft; M10 |
+| Q-A5 | a **CORRECTION** narrowing the open `payload` is reasonable, but **show the correction's text and the expected effective contract in full** for approval; §5A.6's description is not enough to approve a contract correction | CORRECTION-009 draft; the expected contract |
+| Q-A6 | do not limit a `RAW` request to `BUY` because RENT matching is not approved: the existing contract accepts recording it. **Prove that a conversion activates no RENT request and opens no matching or opportunity for it, and that this slice's evidence stays SALE only** | §5A.6; §6.7 |
+| Q-A7 | a **new** paging operation in the addendum, not a change to the frozen one. **State that operational volume uses it; the old unbounded operation does not become safe because the new path exists** | Delta §3.5; Q-B2 |
+| Q-A8 | **not adopted:** `discovered_at` does not move to `clock_timestamp()` now. It does not order rows by commit time, and could change the meaning of the discovery time without closing the gap. Keep the current time, the measured limit of a walk, and test a new walk | §5A.8; §6.8 |
+
+- **A correction required in §5A.8 before the contract is approved:**
+  "a walk returns every open lead committed before its first page was read"
+  was stronger than the cursor proves. `walk_started_at` is a value in a
+  response, not a database snapshot held across pages, and a lead's status
+  can change between two pages; M6 shows a late commit falling behind the
+  cursor. **Word the guarantee to what the queries actually do; say that a
+  new walk reconsiders the row if it is still eligible for the queue; show
+  the cursor's query and the cases of committed inserts and status changes
+  between pages.** (Delta draft §3.4.)
+- **Two points of `0009` to settle in its text before approval:**
+  - the Delta said `occurred_at` is "not in the future", while the SQL
+    accepted up to five minutes after `recorded_at`: **choose one rule**,
+    and justify a clock margin if one is chosen;
+  - the guard freezing a terminal lead's columns forbids making `party_id`
+    NULL, while the frozen key `external_leads.party_id` is `ON DELETE SET
+    NULL`: deleting a party a terminal lead names may be refused. **State
+    and measure that consequence before the text is approved; do not present
+    it as the earlier schema's behaviour.**
+- **OQ8-1:** the reviewer could not fetch the two Journal Officiel files and
+  verify them independently in that session, so cannot confirm the quotes or
+  apply the legal exception to capturing posts. It stays open; `raw_text`'s
+  use is not widened on an unsettled legal reading.
+- **The reviewer's own correction:** an automated citation token in the
+  reviewer's previous message led to no source actually fetched, and is
+  **withdrawn**. The direct links to the repository's files are what was
+  reviewed.
+- **Standing:** R-1 UNMET; K06 UNPROVEN; the evidence's scope SALE only; not
+  a release authorization.
 
 ---
 
@@ -278,6 +348,8 @@ payload as captured, its status. The queue projects no floor field (G3-10
 | **F8-14** | **Keyset paging on `(discovered_at, id)` skips a late-committed lead.** `discovered_at` is `now()`, the inserting transaction's start; a lead whose transaction began before a page's last row and committed after the page was read sorts before the cursor | **M6** |
 | F8-15 | The application writes `external_leads` by one `INSERT` only. The suite's database holds one `DECLINED` lead, written **by a test** through SQL, not by the application | M1, M5 |
 | F8-16 | Two concurrent `ACTIVE` interests for a pair: the second waits for the first's commit, then fails `23505` on `ux_active_interest_per_pair` | M2 |
+| **F8-17** | **A guard freezing a terminal lead's `party_id` refuses a party's deletion.** The frozen `external_leads.party_id` is `ON DELETE SET NULL`; the foreign key's action is an `UPDATE`, and fires the guard. Measured on the draft's strict variant: the deletion of a party a `DECLINED` lead names is refused; for an open lead it passes. As `0008`'s M8 found for thread links | **M9** |
+| **F8-18** | **The correction overlay cannot narrow an inner schema.** `contract.py` accepts `require`, `non_null`, `enum`, `frozen_defaults` on a body's own properties only; the open `payload` cannot be given a schema without a new narrowing key (Q-B3) | `_BODY_NARROWING_KEYS`; the generator run |
 
 ## 5. Decisions needed — none is taken by this plan
 
@@ -474,6 +546,9 @@ K06.
   - **The review's direction stands:** `raw_text` capture is neither widened
     nor put into operation on this basis before the official text is read by
     a competent person and a data policy is set.
+  - **Not confirmed by the reviewer** (review of `b39ad10`): the quotes above
+    are ours, read by automated extraction; the reviewer could not fetch the
+    files to verify them.
 - **OQ8-2 · Retention of a declined or closed lead's raw payload.** Not
   claimed, as OQ7-1 in Slice 7.
 
@@ -522,18 +597,24 @@ conversion refuse.
 
 **Where each rule is enforced:**
 - **in the service:** the whole table above;
-- **in `0009`'s trigger** (§5A.3): a terminal status never changes; `CONVERTED`
-  only from `CONSENTED` or `PENDING_INFO`; `CONSENTED` only with a `party_id`;
-  `DECLINED` and `CLOSED` only with a `close_reason_code`.
+- **in `0009`'s trigger** (§5A.3, revision 3): **the whole transition
+  table above** (27 pairs; M8); `CONSENTED` only with a `party_id`;
+  `DECLINED` and `CLOSED` only with a `LEAD_CLOSURE` reason, and no reason on
+  any other status; a terminal lead's reason frozen and its links only
+  NULLable (Q-B1).
+- **in the service only:** the derivation of a status from an attempt's
+  outcome, and the consent check under `FOR SHARE` (the trigger cannot lock
+  another table's row for a later statement).
 - **Not K06:** the trigger guards what a careless write can do through the
   application role; with the application role a superuser that owns every
   table, it is not a privilege boundary (G8-14).
 
-**Q-A1 · The existing test that writes `DECLINED` by SQL without a reason
-code** (`test_the_queue_lists_open_leads_oldest_first_and_omits_closed_ones`,
-F8-15) would be refused by the trigger. Recommended: that test sets a
-reason code, in the step that applies `0009`. The trigger acts on `UPDATE`
-only: the row already in the suite's database (M5) is not touched.
+**Q-A1 (decided, review of `b39ad10`): the existing test that writes
+`DECLINED` by SQL without a reason** (`test_the_queue_lists_open_leads_oldest_first_and_omits_closed_ones`,
+F8-15) supplies a valid `LEAD_CLOSURE` reason when `0009` is applied; the
+guard stays as it is. Measured (M7): its statement is refused after the
+draft, and accepted with `LEAD_DUPLICATE`. The trigger acts on UPDATE only:
+the row already in the suite's database is not touched.
 
 ### 5A.2 Reason codes (inserted by `0009`)
 
@@ -544,115 +625,55 @@ None named `LEAD_*` exists in any database measured (M5).
 | `LEAD_NO_ANSWER` | `LEAD_CONTACT` | لم يُجب | No answer |
 | `LEAD_REACHED` | `LEAD_CONTACT` | تم التواصل | Reached |
 | `LEAD_WRONG_NUMBER` | `LEAD_CONTACT` | رقم خاطئ | Wrong number |
-| `LEAD_NUMBER_NOT_IN_SERVICE` | `LEAD_CONTACT` | رقم غير مستعمل | Number not in service |
+| `LEAD_NUMBER_NOT_IN_SERVICE` | `LEAD_CONTACT` | رقم خارج الخدمة | Number not in service |
 | `LEAD_DECLINED_BY_PERSON` | `LEAD_CLOSURE` | رفض الشخص | Declined by the person |
 | `LEAD_DUPLICATE` | `LEAD_CLOSURE` | مكرّر | Duplicate |
 | `LEAD_NOT_RELEVANT` | `LEAD_CLOSURE` | خارج النطاق | Not relevant |
 | `LEAD_STALE` | `LEAD_CLOSURE` | قديم | Stale |
 
-**Q-A2:** the labels are proposals; the reviewer may replace them.
+**Q-A2 (decided, review of `b39ad10`):** accepted in principle;
+`LEAD_NUMBER_NOT_IN_SERVICE` reads «رقم خارج الخدمة». **The final text, for
+fixing:** the table above, as the draft of `0009` carries it.
 
-### 5A.3 Migration `0009` — draft text, for viewing only
+### 5A.3 Migration `0009` — the draft, with its downgrade (revision 3)
 
-```sql
--- 0009_external_lead_workflow — DRAFT for review (Slice 8 plan rev 2, §5A.3).
--- NOT APPLIED. No file under db/migrations/ holds this text.
+**The text is the file** `docs/gate/drafts/0009_external_lead_workflow.DRAFT.py`:
+`UPGRADE` and `DOWNGRADE` as statement lists, in `0008`'s form. Revision 2's
+inline SQL is replaced by it. **Measured by executing those statements**
+(M7 to M11, `evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt`).
 
--- 1. The attempts record: append-only (G8-2 (a)).
-CREATE TABLE turab.external_lead_contact_attempts (
-  attempt_id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_lead_id    uuid NOT NULL REFERENCES turab.external_leads(external_lead_id)
-                        ON DELETE RESTRICT,
-  channel             turab.communication_channel NOT NULL,
-  outcome_code        text NOT NULL REFERENCES turab.reason_codes(code),
-  occurred_at         timestamptz NOT NULL,
-  operator_account_id uuid NOT NULL REFERENCES turab.user_accounts(account_id)
-                        ON DELETE RESTRICT,
-  recorded_at         timestamptz NOT NULL DEFAULT clock_timestamp(),
-  CHECK (occurred_at <= recorded_at + interval '5 minutes')
-);
-CREATE INDEX idx_lead_attempts_lead ON turab.external_lead_contact_attempts
-  (external_lead_id, occurred_at, attempt_id);
+**What the draft settles, point by point:**
 
--- Its outcome must be a LEAD_CONTACT code.
-CREATE FUNCTION turab.enforce_lead_attempt_outcome() RETURNS trigger
-LANGUAGE plpgsql AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM turab.reason_codes
-                  WHERE code = NEW.outcome_code AND category = 'LEAD_CONTACT') THEN
-    RAISE EXCEPTION 'outcome_code % is not a LEAD_CONTACT code', NEW.outcome_code;
-  END IF;
-  RETURN NEW;
-END $$;
-CREATE TRIGGER trg_lead_attempt_outcome BEFORE INSERT
-  ON turab.external_lead_contact_attempts
-  FOR EACH ROW EXECUTE FUNCTION turab.enforce_lead_attempt_outcome();
+| Point | The draft | Measured |
+|---|---|---|
+| the transitions (G8-3) | **the whole table of §5A.1 in the trigger**, not a subset: 27 allowed pairs; a terminal status is never left | M8: of 90 ordered pairs, the 27 accepted, no other |
+| `CONSENTED` | only with `party_id` | M9 |
+| `DECLINED`, `CLOSED` (Q-A3) | a `close_reason_code` of category `LEAD_CLOSURE`; a reason on any other status refused | M9: a `MATCH` code refused; a reason on an open lead refused |
+| **changing a closed row's reason** (Q-A3) | **refused:** a terminal lead's reason is frozen | M9 |
+| the clock (the review) | **one rule:** `occurred_at <= recorded_at`, both the server's clock (`clock_timestamp()`), **no margin**; the service refuses the same with `422`. No margin, because both sides of the comparison are the server's: the operator types a time, the server compares it with its own | M10: one second after the insert's clock refused |
+| the attempts' outcome | a `LEAD_CONTACT` code (trigger) | M10 |
+| append-only | UPDATE and DELETE refused | M10 |
+| audit (Q-A4) | `AFTER INSERT ... audit_row_change('attempt_id')`; the table has **no free-text column** | M10: one `audit_log` row per insert, the whole row |
+| **a party's deletion** (F8-17) | **Q-B1**, below | M9a, M9 |
+| existing rows | the guard acts on UPDATE only; a pre-check refuses the upgrade if a `LEAD_*` code exists | M7: the test's `DECLINED` row without a reason survives the upgrade unchanged |
+| **downgrade** | **refused** while an attempt or a `LEAD_*` reason exists, naming the counts; otherwise drops the triggers, functions and table, then the eight codes. Nothing recorded is lost by a downgrade that runs | M11: refused twice with data; with none, run, then the upgrade again |
 
--- Append-only, as 0005 and 0006 made match and opportunity history.
-CREATE FUNCTION turab.prevent_lead_attempt_change() RETURNS trigger
-LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'external_lead_contact_attempts is append-only';
-END $$;
-CREATE TRIGGER trg_lead_attempt_immutable BEFORE UPDATE OR DELETE
-  ON turab.external_lead_contact_attempts
-  FOR EACH ROW EXECUTE FUNCTION turab.prevent_lead_attempt_change();
+**Q-B1 · A party's deletion and the terminal freeze (F8-17).** Measured:
+the frozen schema alone lets a party be deleted, setting the lead's
+`party_id` to NULL (M9a). Three texts are possible:
 
--- 2. The lead's guards (§5A.1). UPDATE only: existing rows are not re-checked.
-CREATE FUNCTION turab.enforce_external_lead_transition() RETURNS trigger
-LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.status IS DISTINCT FROM OLD.status THEN
-    IF OLD.status IN ('CONVERTED', 'DECLINED', 'CLOSED') THEN
-      RAISE EXCEPTION 'a lead in status % is terminal', OLD.status;
-    END IF;
-    IF NEW.status = 'CONVERTED' AND OLD.status NOT IN ('CONSENTED', 'PENDING_INFO') THEN
-      RAISE EXCEPTION 'CONVERTED only from CONSENTED or PENDING_INFO, not %', OLD.status;
-    END IF;
-    IF NEW.status = 'CONSENTED' AND NEW.party_id IS NULL THEN
-      RAISE EXCEPTION 'CONSENTED requires party_id';
-    END IF;
-    IF NEW.status IN ('DECLINED', 'CLOSED') AND NEW.close_reason_code IS NULL THEN
-      RAISE EXCEPTION '% requires close_reason_code', NEW.status;
-    END IF;
-  END IF;
-  IF OLD.status IN ('CONVERTED', 'DECLINED', 'CLOSED')
-     AND (NEW.party_id, NEW.converted_request_id, NEW.converted_property_id,
-          NEW.close_reason_code)
-         IS DISTINCT FROM
-         (OLD.party_id, OLD.converted_request_id, OLD.converted_property_id,
-          OLD.close_reason_code) THEN
-    RAISE EXCEPTION 'a terminal lead''s workflow columns are frozen';
-  END IF;
-  RETURN NEW;
-END $$;
-CREATE TRIGGER trg_external_lead_transition BEFORE UPDATE ON turab.external_leads
-  FOR EACH ROW EXECUTE FUNCTION turab.enforce_external_lead_transition();
+| Option | Effect | Measured |
+|---|---|---|
+| **(a) recommended, the draft:** a terminal lead's links may become NULL, never another value; the reason never changes | a party's deletion works as the frozen key declares | M9: accepted, `party_id` NULL. **Consequence, declared:** a NULL written by hand is accepted too; the trigger cannot tell it from the key's action |
+| (b) strict freeze | deleting a party that a terminal lead names is **refused**; for an open lead it passes | M9: refused for `DECLINED`, accepted for `CONTACTED` |
+| (c) as `0008`'s D2: the key becomes `ON DELETE RESTRICT` | no party any lead names can be deleted; a frozen constraint changes, a declared delta in `migration_deltas.py` | not measured (`0008`'s precedent) |
 
--- 3. The reason codes of §5A.2.
-INSERT INTO turab.reason_codes (code, category, label_ar, label_en) VALUES
-  ('LEAD_NO_ANSWER',             'LEAD_CONTACT', 'لم يُجب',        'No answer'),
-  ('LEAD_REACHED',               'LEAD_CONTACT', 'تم التواصل',     'Reached'),
-  ('LEAD_WRONG_NUMBER',          'LEAD_CONTACT', 'رقم خاطئ',       'Wrong number'),
-  ('LEAD_NUMBER_NOT_IN_SERVICE', 'LEAD_CONTACT', 'رقم غير مستعمل', 'Number not in service'),
-  ('LEAD_DECLINED_BY_PERSON',    'LEAD_CLOSURE', 'رفض الشخص',      'Declined by the person'),
-  ('LEAD_DUPLICATE',             'LEAD_CLOSURE', 'مكرّر',           'Duplicate'),
-  ('LEAD_NOT_RELEVANT',          'LEAD_CLOSURE', 'خارج النطاق',    'Not relevant'),
-  ('LEAD_STALE',                 'LEAD_CLOSURE', 'قديم',           'Stale');
--- DECLINED/CLOSED reason codes must be LEAD_CLOSURE: enforced by the service
--- (close_reason_code's foreign key admits any reason code). Q-A3 below.
-```
+*Why (a):* it keeps the frozen key's meaning, and changes no frozen object.
+A party's deletion is an erasure path that this slice should not newly
+block (OQ8-1). Its cost, the hand-written NULL, is a write the service never
+makes; the tests pin that no service path makes it.
 
-**Q-A3 · Should the trigger also require `close_reason_code`'s category to
-be `LEAD_CLOSURE`?** Recommended: yes, one more `IF` in the same function.
-Left out of the draft so the reviewer decides it.
-
-**Q-A4 · The audit trigger** that the frozen schema puts on core tables
-(`audit_row_change`): recommended on `external_lead_contact_attempts` too, as
-on `claims`. To be read against the frozen audit function before revision 3.
-
-**Before applying:** the "existing rows" check (M5) is repeated on the
-database the migration targets, and its counts recorded, as the review asked.
+**Tests of the draft's consequences** (§6.6).
 
 ### 5A.4 The Contract Delta — draft operations (G8-4)
 
@@ -703,11 +724,27 @@ edited.
 
 **4. Queue paging** (§5A.8).
 
-**5. The REQUEST conversion payload** (§5A.6), declared as the schema of
-`postExternalLeadsLeadIdConvert`'s `payload` for `target = REQUEST`. **Q-A5:**
-the frozen operation's `payload` is an open object; declaring its schema is
-a narrowing a CORRECTION can carry (it may only narrow), not an addendum
-operation. Recommended: CORRECTION, bound like CORRECTION-001 to 008.
+**The texts, revision 3:** the Delta draft and its addendum draft under
+`docs/gate/drafts/`; the effective contract they produce, generated by the
+gate's own generators on a temporary worktree:
+`SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt` (71 operations, 64 role-annotated;
+no frozen operation's roles change).
+
+**5. The REQUEST conversion payload: CORRECTION-009** (Q-A5, decided as a
+CORRECTION), drafted in full in
+`docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md`:
+`require: [target, payload]`, and, for `target = REQUEST`, the payload
+closed to `RequestCreate` without the three fields the conversion sets.
+PROPERTY is not narrowed: it stays a `409` by decision.
+
+**Q-B3 · The overlay cannot carry the payload's schema (F8-18).** Measured
+on the worktree: `require` is carried today; the payload's schema is not.
+(a) recommended: a new narrowing key, `add_all_of`, in `contract.py` and the
+generator (an appended `allOf` can only narrow), with its tests; **code,
+which needs its own authorization**. (b) the payload's schema as a new
+addendum operation (`POST /external-leads/{lead_id}/convert-request`), which
+leaves two conversion paths. The body (a) would produce is the expected
+file's part 3.
 
 **6. `postInterests`** needs no Delta: it is frozen. Its rules are §5A.5.
 
@@ -762,12 +799,14 @@ operation. Recommended: CORRECTION, bound like CORRECTION-001 to 008.
 Any refusal writes nothing and consumes no idempotency key. **Never
 activated:** nothing moves the request beyond `RAW`.
 
-**The payload schema** (`target = REQUEST`): `RequestCreate` without
-`party_id`, `management_mode` and `claim_status`, which the conversion sets;
-`additionalProperties: false`. **Q-A6:** `transaction_intent` limited to
-`BUY` in this slice, since G4-5R refuses RENT matching? Recommended: no
-limit at conversion (a RENT request may be recorded, as `postRequests`
-allows); matching stays refused for RENT, as today.
+**The payload schema:** CORRECTION-009 (draft).
+
+**Q-A6 (decided): RENT is not refused at conversion.** A `RAW` RENT request
+may be recorded, as `postRequests` already allows. What must be **proved**
+(§6.7): a conversion activates no request, RENT or BUY (it stays `RAW`); it
+runs no matching, writes no candidate, opportunity, task or thread; and a
+later matching run on a RENT request stays refused with G4-5R's `422`. This
+slice's evidence is SALE only.
 
 **PROPERTY:** `409 EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE`, as today.
 
@@ -783,36 +822,33 @@ allows); matching stays refused for RENT, as today.
 | the paged queue (§5A.8) | read | audited once per page |
 | `external_lead_contact_attempts` | table | `audit_row_change` (Q-A4) |
 
-### 5A.8 Queue paging (G8-4; F8-14, M6)
+### 5A.8 Queue paging (G8-4; F8-14, M6) — revised after the review of `b39ad10`
 
-- **A new operation** (Q-A7), since an addendum carries only new
-  operations: `GET /backoffice/queues/external-leads/page`, roles ADMIN,
-  OPERATOR, REVIEWER; query `cursor` (optional), `limit` (1 to 200, default
-  50). The frozen `getBackofficeQueuesExternalLeads` stays as it is.
-- **Order:** `discovered_at ASC, external_lead_id ASC`: total and stable.
-- **Cursor:** opaque, base64url of `{"v":1,"at":<discovered_at, microseconds>,
-  "id":<lead id>,"walk":<walk_started_at>}`; malformed: `422`. It carries
-  nothing a staff member did not already see.
-- **Concurrent inserts, as measured (M6):** a lead whose inserting
-  transaction began before the cursor's row and committed after the page was
-  read sorts before the cursor, and **that walk never returns it**.
-  `discovered_at` is the transaction's start; commit order is not timestamp
-  order.
-- **The rule proposed, stated rather than hidden:**
-  - **a walk returns every open lead committed before its first page was
-    read** (`walk_started_at`, carried in every cursor and every page);
-  - a lead committed during a walk may be missed **by that walk only**; the
-    next walk, started from no cursor, returns it;
-  - every page carries `walk_started_at`, so a client knows which leads the
-    walk guarantees.
-- **Q-A8:** narrow the gap by setting `discovered_at = clock_timestamp()` at
-  capture, in a short transaction? It narrows the window; it does not close
-  it (commit order ≠ timestamp order). Recommended: yes, with the rule above
-  unchanged.
-- **G3-10's condition:** "the absence of a page parameter must never become
-  a silent drop". With the rule above, nothing is dropped: a lead missed by
-  one walk is returned by the next, and the response says what a walk
-  guarantees.
+**The text is the Delta draft's §3.4:** the page's query, the cursor, the
+three guarantees, and the table of what a walk does not guarantee. In brief:
+- each page is **one statement, one snapshot**; no snapshot spans the pages;
+- **a lead committed before the walk's first page, and open when its page
+  is read, is returned once**; no lead twice in a walk;
+- a lead committed during the walk with a key at or below the cursor (M6)
+  is not returned by that walk; a lead that turns terminal before its page
+  is not returned; one that moves between open statuses keeps its place;
+- **a new walk reconsiders a lead only if it is still open** at its read;
+- **revision 2's `walk_started_at` is withdrawn**: a value in a response
+  is not a snapshot.
+
+**Q-A7 (decided):** the paged operation is new, in the addendum; at
+operational volume it is the one used. **The frozen unpaged operation does
+not become safe because the new one exists** (Delta §3.5).
+
+**Q-B2 · The frozen unpaged queue before operational volume.** (a)
+recommended: before operational volume begins, a CORRECTION narrows
+`getBackofficeQueuesExternalLeads` to ADMIN only, so operators use the paged
+one; (b) keep it as it is, the closure record carrying G3-10's condition as a
+limit. Either way, its use at operational volume stays forbidden.
+
+**Q-A8 (decided): `discovered_at` stays `now()`.** Revision 2's proposal to
+move it to `clock_timestamp()` is withdrawn: it would not order rows by
+commit, and could change what the discovery time means.
 
 ## 6. Tests and closure evidence
 
@@ -873,6 +909,49 @@ fingerprinted trees.
 **Before `0009` is applied:** M5 repeated on the target database, its counts
 recorded (§5A.3).
 
+**Revision 3's measurements** (`evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt`),
+on the draft of `0009`, its own statements executed:
+
+| # | Measurement | Result |
+|---|---|---|
+| M9a | a party's deletion, frozen schema alone | accepted; the lead's `party_id` NULL |
+| M7 | the draft on a database with a `DECLINED` lead without a reason | applied; the row unchanged; the queue test's statement refused, then accepted with a `LEAD_CLOSURE` reason |
+| M8 | the 90 ordered pairs of statuses | 27 accepted, exactly the draft's table |
+| M9 | each guard; a party's deletion under the draft and a strict variant | each refuses what it names; the draft lets the deletion through; the strict variant refuses it for a terminal lead (F8-17) |
+| M10 | the attempts table | the clock rule, the outcome's category, append-only, one audit row per insert, no free-text column |
+| M11 | the downgrade | refused with an attempt or a `LEAD_*` reason; with neither, run; the upgrade again |
+
+### 6.6 Tests of `0009`'s consequences (when it is applied)
+- the migration test comparing the applied text with the approved text,
+  statement by statement, as `0008`'s;
+- M8's whole matrix, as a test, against `TRANSITIONS`;
+- each guard of M9 and M10, and a mutation of each killed;
+- **Q-A1:** the queue test's `DECLINED` row written with
+  `LEAD_DUPLICATE`, the guard unchanged;
+- **Q-B1 (a):** deleting a party a terminal lead names: accepted, the link
+  NULL; re-pointing it: refused; **no service path writes a NULL to a
+  terminal lead** (an inventory of the statements, as G7-19 (ii));
+- the downgrade refused with data, run without, the upgrade again;
+- the "existing rows" check (M5) repeated on the database the migration
+  targets, its counts recorded before applying.
+
+### 6.7 RENT through the conversion (Q-A6)
+- a RENT payload converts to a `RAW` request, `ASSISTED`/`UNCLAIMED`;
+- in the same test, nothing else is written: no `match_runs`, no candidate,
+  no opportunity, no task, no thread (rows of each table before and after);
+- `postRequestsRequestIdMatchingRun` on it: `422` naming G4-5R, as today;
+- the BUY case writes the same and nothing more.
+
+### 6.8 Queue paging (Delta §3.4)
+- a walk over committed open leads returns each once, in order, with
+  `next_cursor` null at the end;
+- **M6's case as a test:** a lead whose transaction began before the
+  cursor's row and committed after the page: not in this walk; **in a new
+  walk, if it is still open**;
+- a lead closed between two pages: absent from the later page; a lead moved
+  between open statuses: once, at its key;
+- a malformed cursor: `422`; `limit` outside 1 to 200: `422`.
+
 ## 7. Acceptance conditions
 1. The four mandatory tests pass, with mutation pairs killing each guard.
 2. No path creates an active PROPERTY or REQUEST from a lead without
@@ -895,7 +974,7 @@ recorded (§5A.3).
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | the decisions G8-1 to G8-14; revision 2 with the Delta text, `0009`'s text and §6.5's measurements | **revision 2 delivered for review**; the Delta's and `0009`'s texts **not approved**, code **not authorized** (review of `3922850`) |
+| 0 | the decisions G8-1 to G8-14; the texts of the Delta, CORRECTION-009 and `0009` | **revision 3 delivered for review**: the drafts as files, measured and generated; **not approved; code not authorized** (review of `b39ad10`). Open: Q-B1 to Q-B3 |
 | 1 | `0009` as approved; the attempts record and the status machine (service); tests | step 0 |
 | 2 | the addendum's operations: contact attempts, status, Call Brief; tests | step 1 |
 | 3 | REQUEST conversion (G8-5 (i)), lineage, claim after conversion; tests | step 2 |

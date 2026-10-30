@@ -1227,3 +1227,12 @@ docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS.py                 new   b859e5fea22
 docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS.txt                new   dae53e69c1802851b1698e0b06a2a87a795b776670f0753c69efadf57b68cc84
 docs/gate/SLICE_8_PLAN.md                                      rev2  e8505622883d2b012de4aaabbcb13d1393a62c1fdc7814b063edcd88ab44ba2f
 docs/gate/SLICE_8_PLAN.md                                      rev2  fe8e801e65f6eab707ba5891af31e1b04e70747f35514a422df32f9d61a2b6e8
+--- Slice 8 plan revision 3 (the review of b39ad10): the drafts, their measurements, the expected contract ---
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.py              new   375ecc2de269e1ae19071f138d03636a85ee77ea538ef3109d3f8c766f0602a8
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt             new   0422626e1bce4bbde043a00a692384ab425d5335259df96f192b35d9ab76d94b
+docs/gate/drafts/0009_external_lead_workflow.DRAFT.py          draft 25512e40602a853d609332201d00564e9b7df7aaa602f7cd506a1dcfffd9b08a
+docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml  draft 16bc064a48ece11ccbac7b40ee7aa9c8b5bdb58c4891c463ae865c331cef99a2
+docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md draft 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
+docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md draft 8c85c41c0256969cf8ff6efa3fad5740cc0fc9b29c7abd42f5625098412cc0d0
+docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        draft 0da284864ada9040947a47a83eeef0e813998a81e3d3ad41c89af70f491cfbb9
+docs/gate/SLICE_8_PLAN.md                                      rev3  ce294e2a6c712361ac18fe25f73616918607320d53519a550fbac29dadef7786

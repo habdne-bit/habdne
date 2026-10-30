@@ -1,0 +1,231 @@
+# DRAFT — NOT AN ADDENDUM. Slice 8 plan revision 3, §5A.4.
+#
+# This file is a draft for review. It is kept under docs/gate/drafts/, which
+# src/turab/auth/contract.py never reads (its addenda live in
+# docs/contract/addenda/), so it changes no policy table and no effective
+# contract. The review of b39ad10 authorized preparing "the text of the Delta
+# and the addendum"; it did not approve them.
+#
+# Were it approved, it would be copied unchanged to
+# docs/contract/addenda/ADD-SLICE8_external_lead_workflow.yaml, with
+# delta_sha256 set to the sha256 of the approved Delta document. The value
+# below is a placeholder. The effective contract this text would produce was
+# generated in a temporary copy of the tree:
+# docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt.
+#
+# Rules this text satisfies (contract.load_addenda): every operation NEW, by
+# operationId and by METHOD+PATH; every operation authenticated with x-roles;
+# every component name new (none collides with the frozen package or
+# ADD-G3-6).
+addendum:
+  id: ADD-SLICE8
+  kind: ADDITION
+  decision: >-
+    DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text
+    authorized in the review of b39ad10; not approved.
+  delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
+  delta_sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+paths:
+  /external-leads/{lead_id}/contact-attempts:
+    post:
+      operationId: postExternalLeadsLeadIdContactAttempts
+      summary: Record one contact attempt on an external lead and its outcome
+      tags: [External Leads]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR]
+      x-authorization: >-
+        Staff-only. Records an attempt made outside TURAB; sends nothing. The
+        lead's contact status is derived from the outcome (Delta §3.1).
+      parameters:
+        - {name: lead_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LeadContactAttemptInput'}
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LeadContactAttemptRecorded'}
+        '400': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '404': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '409': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '422': {$ref: '#/components/responses/LeadWorkflowProblem'}
+  /external-leads/{lead_id}/status:
+    post:
+      operationId: postExternalLeadsLeadIdStatus
+      summary: Move an external lead to a status the workflow allows
+      tags: [External Leads]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR]
+      x-authorization: >-
+        Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock
+        (Delta §3.2); CONVERTED is never set here.
+      parameters:
+        - {name: lead_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LeadStatusChangeInput'}
+      responses:
+        '200':
+          description: Moved
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LeadStatusChanged'}
+        '400': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '404': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '409': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '422': {$ref: '#/components/responses/LeadWorkflowProblem'}
+  /external-leads/{lead_id}/call-brief:
+    get:
+      operationId: getExternalLeadsLeadIdCallBrief
+      summary: A computed brief of what is known, missing and needed for a lead
+      tags: [External Leads]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR, REVIEWER]
+      x-authorization: >-
+        Staff-only, audited read. Never carries raw text, a URL, the raw
+        payload or a contact point's value. CONSENT_CURRENT is computed at the
+        read and authorizes nothing (Delta §3.3).
+      parameters:
+        - {name: lead_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: The brief
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LeadCallBrief'}
+        '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '404': {$ref: '#/components/responses/LeadWorkflowProblem'}
+  /backoffice/queues/external-leads/page:
+    get:
+      operationId: getBackofficeQueuesExternalLeadsPage
+      summary: The external-lead queue, one page at a time
+      tags: [Backoffice]
+      security: [{BearerAuth: []}]
+      x-roles: [ADMIN, OPERATOR, REVIEWER]
+      x-authorization: >-
+        Staff-only, audited once per page. The operation for operational
+        volume; its guarantee is Delta §3.4, exactly as stated there.
+      parameters:
+        - {name: cursor, in: query, required: false, schema: {type: string, maxLength: 512}}
+        - {name: limit, in: query, required: false,
+           schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        '200':
+          description: One page, oldest first
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LeadQueuePage'}
+        '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
+        '422': {$ref: '#/components/responses/LeadWorkflowProblem'}
+
+components:
+  responses:
+    LeadWorkflowProblem:
+      description: Request rejected
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+  schemas:
+    LeadContactAttemptInput:
+      type: object
+      additionalProperties: false
+      required: [channel, outcome_code, occurred_at]
+      properties:
+        channel: {type: string, enum: [PHONE, WHATSAPP, SMS, IN_PERSON, OTHER]}
+        outcome_code:
+          type: string
+          enum: [LEAD_NO_ANSWER, LEAD_REACHED, LEAD_WRONG_NUMBER, LEAD_NUMBER_NOT_IN_SERVICE]
+        occurred_at: {type: string, format: date-time}
+    LeadContactAttemptRecorded:
+      type: object
+      additionalProperties: false
+      required: [attempt_id, lead_id, lead_status]
+      properties:
+        attempt_id: {type: string, format: uuid}
+        lead_id: {type: string, format: uuid}
+        lead_status: {$ref: '#/components/schemas/LeadWorkflowStatus'}
+    LeadStatusChangeInput:
+      type: object
+      additionalProperties: false
+      required: [to]
+      properties:
+        to: {type: string, enum: [CONSENT_PENDING, CONSENTED, PENDING_INFO, DECLINED, CLOSED]}
+        party_id: {type: string, format: uuid}
+        consent_id: {type: string, format: uuid}
+        reason_code:
+          type: string
+          enum: [LEAD_DECLINED_BY_PERSON, LEAD_DUPLICATE, LEAD_NOT_RELEVANT, LEAD_STALE]
+      allOf:
+        - if: {properties: {to: {const: CONSENTED}}, required: [to]}
+          then: {required: [party_id, consent_id], not: {required: [reason_code]}}
+          else: {not: {anyOf: [{required: [party_id]}, {required: [consent_id]}]}}
+        - if: {properties: {to: {enum: [DECLINED, CLOSED]}}, required: [to]}
+          then: {required: [reason_code]}
+          else: {not: {required: [reason_code]}}
+    LeadStatusChanged:
+      type: object
+      additionalProperties: false
+      required: [lead_id, status]
+      properties:
+        lead_id: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/LeadWorkflowStatus'}
+    LeadWorkflowStatus:
+      type: string
+      enum: [DISCOVERED, CONTACT_ATTEMPTED, CONTACTED, CONSENT_PENDING, CONSENTED,
+             PENDING_INFO, CONVERTED, DECLINED, UNREACHABLE, CLOSED]
+    LeadCallBrief:
+      type: object
+      additionalProperties: false
+      required: [lead_id, lead_kind, status, source_kind, discovered_at, attempts, known,
+                 missing, permission_needed, as_of]
+      properties:
+        lead_id: {type: string, format: uuid}
+        lead_kind: {type: string, enum: [PROPERTY, REQUEST]}
+        status: {$ref: '#/components/schemas/LeadWorkflowStatus'}
+        source_kind: {type: string}
+        discovered_at: {type: string, format: date-time}
+        attempts:
+          type: object
+          additionalProperties: false
+          required: [count]
+          properties:
+            count: {type: integer, minimum: 0}
+            last_outcome_code: {type: [string, 'null']}
+            last_occurred_at: {type: [string, 'null'], format: date-time}
+        known:
+          type: array
+          uniqueItems: true
+          items: {type: string, enum: [PARTY_IDENTIFIED, CONTACT_POINT_VERIFIED, CONSENT_CURRENT]}
+        missing:
+          type: array
+          uniqueItems: true
+          items: {type: string}
+        permission_needed:
+          type: array
+          uniqueItems: true
+          items: {type: string, enum: [ASSISTED_ENTRY, PROPERTY_CONVERSION_NOT_AVAILABLE]}
+        as_of: {type: string, format: date-time}
+    LeadQueuePage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/QueueItem'}
+        next_cursor: {type: [string, 'null']}

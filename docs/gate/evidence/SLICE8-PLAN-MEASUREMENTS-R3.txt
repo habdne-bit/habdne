@@ -1,0 +1,90 @@
+TURAB — Slice 8, plan revision 3: the draft of 0009 measured on PostgreSQL
+==========================================================================
+Authorized : the review of b39ad10: a planning revision 3 with 0009's text, its
+             downgrade and the tests of its consequences; the consequence for a
+             party's deletion measured before the text is approved. No
+             implementation code; nothing applied to the repository; a scratch
+             database dropped at the end.
+Script     : docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.py (beside this
+             record; under docs/, outside the fingerprinted trees). It executes
+             the draft's own UPGRADE and DOWNGRADE statements, read from
+             docs/gate/drafts/0009_external_lead_workflow.DRAFT.py.
+Runs       : twice, each on a freshly rebuilt scratch database; the two outputs
+             are IDENTICAL, byte for byte. The output below is the first run.
+             "working tree NOT CLEAN": the drafts and this script, uncommitted.
+These results are ours; nobody else has re-run them.
+
+Tree    : b39ad10f4fc3704522618be33b7969b45a4c84c7; working tree NOT CLEAN at the start
+Database: turab_s8_probe, rebuilt by db/dev/reset_db.sh --fixtures; PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+Draft   : docs/gate/drafts/0009_external_lead_workflow.DRAFT.py; 11 upgrade and 10 downgrade statements
+
+M9a A party's deletion with no 0009 (the frozen schema alone):
+    a DECLINED lead: delete ACCEPTED; lead's party_id now NULL
+
+M7  Existing rows, then the draft applied
+    a DECLINED lead without a reason code exists: True
+    the draft's UPGRADE: APPLIED
+    that row after the upgrade: status DECLINED, reason None (unchanged)
+    the queue test's own statement on a new DISCOVERED lead, after the upgrade:
+      UPDATE ... SET status = 'DECLINED' (no reason): REFUSED P0001: DECLINED requires a LEAD_CLOSURE reason code
+      the same with close_reason_code = 'LEAD_DUPLICATE': ACCEPTED
+      (rolled back)
+
+M8  Every (from, to) pair of the ten statuses, against the draft's table
+    pairs tried: 90; accepted: 27; allowed by the draft's table: 27
+    mismatches with the table: none
+    (rolled back)
+
+M9  The guards, one by one; a party's deletion
+    DISCOVERED -> DECLINED, a MATCH-category reason code: REFUSED P0001: DECLINED requires a LEAD_CLOSURE reason code
+    a reason code on an open lead: REFUSED P0001: a reason code belongs to a DECLINED or CLOSED lead only
+    CONTACTED -> CONSENTED without party_id: REFUSED P0001: CONSENTED requires party_id
+    a DECLINED lead's reason changed: REFUSED P0001: a terminal lead's workflow columns are frozen (a link may only become NULL)
+    a DECLINED lead's party_id re-pointed to another party: REFUSED P0001: a terminal lead's workflow columns are frozen (a link may only become NULL)
+    a DECLINED lead's party_id set to NULL by hand: ACCEPTED
+    (rolled back)
+    A party's deletion (the frozen key: external_leads.party_id ON DELETE SET NULL):
+      the draft (a link may only become NULL), a DECLINED lead: delete ACCEPTED; lead's party_id now NULL
+      the draft (a link may only become NULL), a CONTACTED lead: delete ACCEPTED; lead's party_id now NULL
+      a strict variant (no exception), a DECLINED lead: delete REFUSED P0001: a terminal lead's workflow columns are frozen (a link may only become NULL); lead's party_id now unchanged
+      a strict variant (no exception), a CONTACTED lead: delete ACCEPTED; lead's party_id now NULL
+
+M10 The attempts table
+    occurred_at now(): ACCEPTED
+    occurred_at one second after the insert's clock: REFUSED 23514: new row for relation "external_lead_contact_attempts" violates check constraint "ck_lead_attempt_not_future"
+    outcome LEAD_DUPLICATE (a LEAD_CLOSURE code): REFUSED P0001: outcome_code LEAD_DUPLICATE is not a LEAD_CONTACT code
+    UPDATE of an attempt: REFUSED P0001: external_lead_contact_attempts is append-only
+    DELETE of an attempt: REFUSED P0001: external_lead_contact_attempts is append-only
+    audit_log rows for the attempts table: [('INSERT', True, True)]
+    its columns (no free text): ['attempt_id', 'external_lead_id', 'channel', 'outcome_code', 'occurred_at', 'operator_account_id', 'recorded_at']
+    (rolled back)
+
+M11 The downgrade
+    with one attempt recorded: REFUSED P0001: 0009 downgrade refused: 1 attempt(s), 0 lead(s) with a LEAD_* reason
+    with one lead CLOSED by a LEAD_* reason: REFUSED P0001: 0009 downgrade refused: 0 attempt(s), 1 lead(s) with a LEAD_* reason
+    with neither: APPLIED
+    after it: table none; LEAD_* codes 0; triggers 0
+    the upgrade again: APPLIED
+
+
+Reading (what each measurement shows, and no more):
+- M9a: with the frozen schema alone, deleting a party sets a DECLINED lead's
+  party_id to NULL (external_leads.party_id ON DELETE SET NULL).
+- M7: the draft applies on a database holding a DECLINED lead without a reason
+  code and leaves it as it is (the guard acts on UPDATE only). The queue test's
+  own statement (DISCOVERED -> DECLINED, no reason) is refused after it, and
+  accepted with a LEAD_CLOSURE reason: Q-A1's test change is needed.
+- M8: of the 90 ordered pairs of distinct statuses, the 27 the draft's table
+  allows are accepted, and only those.
+- M9: each guard refuses what it names. The draft lets a terminal lead's
+  party_id become NULL, so a party's deletion behaves as with the frozen schema.
+  The strict variant (no NULL exception) REFUSES the deletion of a party that a
+  DECLINED lead names, and still allows it for an open lead. The draft cannot
+  tell the foreign key's NULL from a NULL written by hand: both are accepted.
+- M10: the clock rule (occurred_at <= recorded_at, no margin), the outcome's
+  category, append-only, and one audit_log row per accepted INSERT carrying the
+  whole row. The table has no free-text column.
+- M11: the downgrade refuses while an attempt or a LEAD_* reason exists; with
+  neither, it removes the table, the triggers and the eight codes, and the
+  upgrade applies again.
+- None of this is K06: the scratch database's role is a superuser (EN-02).
