@@ -1,7 +1,7 @@
 """Duty 5 and §5.1's answers: each FORWARD element sent to TURAB, signed, in
 document order; Meta's answer decided from TURAB's.
 
-Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 8) §3 duty 5, §5.1 (each
+Plan: `docs/gate/R1_RELAY_PLAN.md` (revision 9) §3 duty 5, §5.1 (each
 class, and the answer to Meta), R1-D2 (synchronous, a timeout per envelope),
 R1-D3 (TURAB's 400 or 401: not 200, and an alert), §5.6 (R1-Q2, TURAB's
 URL). Step 3, authorized in the review of `da3d778`; corrected after the
@@ -110,7 +110,12 @@ def url_refusal(url: str) -> str | None:
     """§5.6: None when TURAB's URL may be used; otherwise the fixed reason."""
     if _URL_CHARACTERS.fullmatch(url) is None:
         return "MALFORMED"
-    parts = urlsplit(url)
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        # `urlsplit` refuses it: an unclosed bracket, or brackets around
+        # something that is not an IPv6 address (the review of `3dac09f`).
+        return "MALFORMED"
     scheme = parts.scheme.lower()
     if scheme not in ("https", "http"):
         return "SCHEME"

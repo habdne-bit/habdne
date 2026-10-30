@@ -1,0 +1,21 @@
+TURAB — R-1 step 3: a URL urlsplit cannot split, AFTER the correction
+
+HEAD: 8dd449011669e04e78b3f69bb616aa7e2cdc0c9f, with the correction in the working tree:
+   M db/dev/mutate_r1_step3.py
+   M relay/turab_relay/forward.py
+   M tests/test_r1_step3.py
+  ?? docs/gate/evidence/R1-STEP3-UNSPLITTABLE-AFTER.txt
+  ?? docs/gate/evidence/R1-STEP3-UNSPLITTABLE-BEFORE.txt
+forward.py sha256 a56bce2a2b1b44953afb860f015e7a763c95fcebb11a2dd027eca5c8a4819c5e
+Method: as R1-STEP3-UNSPLITTABLE-BEFORE.txt, part 2: the relay behind uvicorn on
+127.0.0.1, TURAB's URL https://[::1/webhooks/whatsapp, one signed notification.
+Run at: 2026-10-30T08:17:36Z
+------------------------------------------------------------------------
+HTTP status to Meta: 503 Service Unavailable body: b''
+log records: 9
+  | turab_relay.alert ERROR alert TURAB_URL_NOT_ALLOWED MALFORMED trace=6011bc2fa45c4baaa1355664bbad4796
+  | turab_relay INFO refused 503 TURAB_URL_NOT_ALLOWED trace=6011bc2fa45c4baaa1355664bbad4796
+URL in the log: False | '[::1' in the log: False | content in the log: False | alert TURAB_URL_NOT_ALLOWED: True
+------------------------------------------------------------------------
+Reading: 503 TURAB_URL_NOT_ALLOWED and the alert with its fixed reason; no traceback;
+neither the URL nor the content in any log.

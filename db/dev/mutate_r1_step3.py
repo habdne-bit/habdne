@@ -3,8 +3,9 @@ which weakening.
 
     .venv/bin/python db/dev/mutate_r1_step3.py [D1 A1 ...] > /outside/the/tree.txt
 
-Plan: `docs/gate/R1_RELAY_PLAN.md`, revision 8; step 3 authorized in the
-review of `da3d778`; T, V and U added after the review of `c480474`. Each
+Plan: `docs/gate/R1_RELAY_PLAN.md`, revision 9; step 3 authorized in the
+review of `da3d778`; T, V and U added after the review of `c480474`, U10
+after the review of `3dac09f`. Each
 mutation weakens ONE rule:
 - D: duty 5, the delivery to TURAB (R1-D2), the stop at the first element
   not completed, and the HTTP client's settings;
@@ -111,6 +112,9 @@ MUTATIONS = [
   "    if _URL_CHARACTERS.fullmatch(url) is None:", "    if False:"),
  ("U9 an escaped host allowed", FORWARD,
   "    if \"%\" in parts.netloc:", "    if False:"),
+ ("U10 a URL urlsplit refuses raises instead of being refused", FORWARD,
+  "    try:\n        parts = urlsplit(url)\n    except ValueError:",
+  "    parts = urlsplit(url)\n    try:\n        pass\n    except ValueError:"),
 ]
 
 

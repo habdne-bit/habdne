@@ -1,0 +1,71 @@
+TURAB — R-1 step 3: a URL urlsplit cannot split (review of 3dac09f), BEFORE the correction
+
+HEAD:                        8dd449011669e04e78b3f69bb616aa7e2cdc0c9f
+relay/turab_relay/forward.py, as at 3dac09f (unchanged since):
+  sha256 now      3addd8bfd4988db153c03faad3d1b0755922baeaf86e94fcb527ed90ca558ce5
+  sha256 3dac09f  3addd8bfd4988db153c03faad3d1b0755922baeaf86e94fcb527ed90ca558ce5
+The tree's only change: eight URLs added to REFUSED in tests/test_r1_step3.py:
+   M tests/test_r1_step3.py
+  ?? docs/gate/evidence/R1-STEP3-UNSPLITTABLE-BEFORE.txt
+Python: 3.12.3
+
+1. The tests (the rule, and the relay's path through TestClient)
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider -rA tests/test_r1_step3.py -k '<the eight URLs>'
+Run at: 2026-10-30T08:14:11Z
+------------------------------------------------------------------------
+  cause: ValueError: Invalid IPv6 URL
+            ValueError: if the *address* passed isn't either a v4 or a v6
+  cause: ValueError: '[::1' does not appear to be an IPv4 or IPv6 address
+            ValueError: if the *address* passed isn't either a v4 or a v6
+  cause: ValueError: 'zz' does not appear to be an IPv4 or IPv6 address
+  cause: ValueError: An IPv4 address cannot be in brackets
+            ValueError: if the *address* passed isn't either a v4 or a v6
+            ValueError: if the *address* passed isn't either a v4 or a v6
+PASSED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://[::ffff:127.0.0.1]/webhooks/whatsapp-UNENCRYPTED]
+PASSED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://[v1.x]/webhooks/whatsapp-MALFORMED]
+PASSED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://[::ffff:127.0.0.1]/webhooks/whatsapp-UNENCRYPTED]
+PASSED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://[v1.x]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://[::1/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://::1]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://[::1]x/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://[::1]]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[https://[[::1]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://[zz]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_and_its_reason[http://[127.0.0.1]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://[::1/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://::1]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://[::1]x/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://[::1]]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://[[::1]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://[zz]/webhooks/whatsapp-MALFORMED]
+FAILED tests/test_r1_step3.py::test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://[127.0.0.1]/webhooks/whatsapp-MALFORMED]
+14 failed, 4 passed, 97 deselected, 1 warning in 3.93s
+------------------------------------------------------------------------
+
+2. The whole relay behind uvicorn (the review did not state the code)
+Method: the relay's app (no client certificate), uvicorn on 127.0.0.1, access log off;
+TURAB's URL https://[::1/webhooks/whatsapp; one signed notification holding one text
+message; every logger captured at DEBUG. Script kept outside the tree (scratch).
+------------------------------------------------------------------------
+HTTP status to Meta: 500 Internal Server Error body: b'Internal Server Error'
+log records: 33
+  | uvicorn.error ERROR Exception in ASGI application
+  |   File "/home/user/habdne/relay/turab_relay/app.py", line 137, in app
+  |   File "/home/user/habdne/relay/turab_relay/app.py", line 100, in _post
+  |   File "/home/user/habdne/relay/turab_relay/app.py", line 113, in deliver
+  |   File "/home/user/habdne/relay/turab_relay/forward.py", line 171, in post
+  |   File "/home/user/habdne/relay/turab_relay/forward.py", line 113, in url_refusal
+  |     raise ValueError("Invalid IPv6 URL")
+  | ValueError: Invalid IPv6 URL
+URL in the log: False | '[::1' in the log: False | content in the log: False | alert TURAB_URL_NOT_ALLOWED: False
+------------------------------------------------------------------------
+Reading:
+- Seven of the eight URLs make urlsplit raise ValueError outside url_refusal's try:
+  the rule raises instead of refusing, and the relay's path raises with it.
+- Behind uvicorn the answer is 500 (uvicorn's own), with a traceback in uvicorn.error:
+  not 200, so Meta would redeliver, but not §5.6's 503 TURAB_URL_NOT_ALLOWED, and no
+  alert. The log holds neither the URL nor the content (the exception's text is fixed).
+- The eighth, http://[v1.x]/..., urlsplit accepts; it is already refused (the parsers'
+  readings differ).
+- The selection's '-k' also took the two existing tests of http://[::ffff:127.0.0.1]/...:
+  they pass (UNENCRYPTED), and are not among the eight.

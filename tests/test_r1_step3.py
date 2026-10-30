@@ -681,6 +681,16 @@ REFUSED = [
     ("https://turab%2Eexample/webhooks/whatsapp", "MALFORMED"),
     ("https://turab%2eexample/webhooks/whatsapp", "MALFORMED"),
     ("http://127%2E0.0.1/webhooks/whatsapp", "MALFORMED"),
+    # The review of `3dac09f`: URLs `urlsplit` itself refuses, raising
+    # ValueError; each must still be §5.6's refusal, not an exception.
+    ("https://[::1/webhooks/whatsapp", "MALFORMED"),
+    ("https://::1]/webhooks/whatsapp", "MALFORMED"),
+    ("http://[::1]x/webhooks/whatsapp", "MALFORMED"),
+    ("https://[::1]]/webhooks/whatsapp", "MALFORMED"),
+    ("https://[[::1]/webhooks/whatsapp", "MALFORMED"),
+    ("http://[zz]/webhooks/whatsapp", "MALFORMED"),
+    ("http://[127.0.0.1]/webhooks/whatsapp", "MALFORMED"),
+    ("http://[v1.x]/webhooks/whatsapp", "MALFORMED"),
 ]
 
 
