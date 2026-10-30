@@ -1,0 +1,350 @@
+TURAB — R-1 step 3: the delivery to TURAB, and the answer to Meta
+============================================================
+Base commit       : 648bec074305483091205d5bb0abfd0c7511f3d9
+Source fingerprint: 99af4583f23b005d7286cfa77475dd7cb3fdf4156680c0df1fcbb270221a3193
+Working tree      : CLEAN
+Recorded          : 2026-10-29 21:08:43 UTC
+Test file         : tests/test_r1_step3.py
+
+=== baseline (no mutation) ===
+   99 passed, 1 warning in 23.93s
+== D1 an element not completed acknowledged 200 [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   19 failed, 80 passed, 1 warning in 24.15s
+   FAILED test_each_element_and_each_delivery_is_counted
+   FAILED test_r1_q2_turabs_certificate_is_verified
+   FAILED test_r1_t3_8_an_isolated_element_does_not_rescue_a_failed_delivery
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[500-502-TURAB_NOT_COMPLETED]
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[503-502-TURAB_NOT_COMPLETED]
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[silent-504-TURAB_NO_ANSWER]
+   FAILED test_r1_t5_4_a_connection_that_never_answers_is_504_within_the_deadline
+   FAILED test_r1_t5_4_no_connection_is_504
+   FAILED test_r1_t5_5_metas_redelivery_sends_everything_again_in_order
+   FAILED test_r1_t5_6_a_500_then_metas_redelivery_against_turabs_real_application
+   FAILED test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[201]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[302]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[400]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[401]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[403]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[404]
+   FAILED test_r1_t5_7_turabs_401_against_its_real_application
+   FAILED test_the_configured_limit_is_the_deadline_either_side[3.0-504]
+   cause: AssertionError: TURAB's 500: not 200 to Meta
+   cause: AssertionError: assert {('FORWARD', ...AGE'): 1, ...} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   AssertionError: TURAB's 500: not 200 to Meta
+   cause: E   AssertionError: assert {('FORWARD', ...AGE'): 1, ...} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   assert (200 == 502)
+   cause: E   assert (200 == 504)
+== D2 the delivery goes on past an element not completed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   13 failed, 86 passed, 1 warning in 23.64s
+   FAILED test_each_element_and_each_delivery_is_counted
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[500-502-TURAB_NOT_COMPLETED]
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[503-502-TURAB_NOT_COMPLETED]
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[silent-504-TURAB_NO_ANSWER]
+   FAILED test_r1_t5_5_metas_redelivery_sends_everything_again_in_order
+   FAILED test_r1_t5_6_a_500_then_metas_redelivery_against_turabs_real_application
+   FAILED test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[201]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[302]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[400]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[401]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[403]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[404]
+   cause: AssertionError: assert ['message:w1'...d:1700000000'] == ['message:w1'...d:1700000000']
+   cause: AssertionError: assert {('FORWARD', ...AGE'): 1, ...} == {('FORWARD', ...AGE'): 1, ...}
+   cause: AssertionError: read waits
+   cause: AssertionError: stopped at the element not completed
+   cause: AssertionError: stopped: the status was not sent
+   cause: AssertionError: stopped; a redirect is not followed
+== D3 TURAB's 500 taken as completed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   5 failed, 94 passed, 1 warning in 23.68s
+   FAILED test_each_element_and_each_delivery_is_counted
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[500-502-TURAB_NOT_COMPLETED]
+   FAILED test_r1_t5_5_metas_redelivery_sends_everything_again_in_order
+   FAILED test_r1_t5_6_a_500_then_metas_redelivery_against_turabs_real_application
+   FAILED test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order
+   cause: AssertionError: TURAB's 500: not 200 to Meta
+   cause: AssertionError: assert {('FORWARD', ...E_ERRORS'): 1} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   AssertionError: TURAB's 500: not 200 to Meta
+   cause: E   AssertionError: assert {('FORWARD', ...E_ERRORS'): 1} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   assert (200 == 502)
+   cause: E   assert 200 == 502
+== D4 no deadline per envelope [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 83.72s (0:01:23)
+   FAILED test_no_log_holds_content_an_envelope_a_signature_a_key_or_turabs_answer[silent]
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[silent-504-TURAB_NO_ANSWER]
+   cause: E   TypeError: '<=' not supported between instances of 'int' and 'str'
+   cause: TypeError: '<=' not supported between instances of 'int' and 'str'
+== D5 no answer taken as completed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   5 failed, 94 passed, 1 warning in 23.82s
+   FAILED test_r1_q2_turabs_certificate_is_verified
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[silent-504-TURAB_NO_ANSWER]
+   FAILED test_r1_t5_4_a_connection_that_never_answers_is_504_within_the_deadline
+   FAILED test_r1_t5_4_no_connection_is_504
+   FAILED test_the_configured_limit_is_the_deadline_either_side[3.0-504]
+   cause: E   assert (200 == 504)
+   cause: E   assert 200 == 504
+   cause: assert (200 == 504)
+   cause: assert 200 == 504
+== D6 a redirect followed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   1 failed, 98 passed, 1 warning in 23.90s
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[302]
+   cause: E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+   cause: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+== D7 the environment's proxy used [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   4 failed, 95 passed, 1 warning in 25.08s
+   FAILED test_r1_t5_5_a_repeated_status_changes_nothing_against_turabs_real_application
+   FAILED test_r1_t5_6_a_500_then_metas_redelivery_against_turabs_real_application
+   FAILED test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order
+   FAILED test_r1_t5_7_turabs_401_against_its_real_application
+   cause: AssertionError: TURAB's 500: not 200 to Meta
+   cause: E   AssertionError: TURAB's 500: not 200 to Meta
+   cause: E   assert 504 == 200
+   cause: E   assert 504 == 502
+   cause: assert 504 == 200
+   cause: assert 504 == 502
+== D8 the signature over other bytes [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   4 failed, 95 passed, 1 warning in 22.48s
+   FAILED test_r1_t5_1_every_element_200_is_200_to_meta_in_document_order
+   FAILED test_r1_t5_5_a_repeated_status_changes_nothing_against_turabs_real_application
+   FAILED test_r1_t5_6_a_500_then_metas_redelivery_against_turabs_real_application
+   FAILED test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order
+   cause: AssertionError: TURAB's own verify
+   cause: AssertionError: assert [] == [('PROCESSED', None)]
+   cause: E   AssertionError: TURAB's own verify
+   cause: E   AssertionError: assert [] == [('PROCESSED', None)]
+   cause: E   assert 502 == 200
+   cause: assert 502 == 200
+== D9 the signature under another header [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   4 failed, 95 passed, 1 warning in 22.98s
+   FAILED test_r1_t5_1_every_element_200_is_200_to_meta_in_document_order
+   FAILED test_r1_t5_5_a_repeated_status_changes_nothing_against_turabs_real_application
+   FAILED test_r1_t5_6_a_500_then_metas_redelivery_against_turabs_real_application
+   FAILED test_r1_t5_6_stopping_keeps_two_statuses_of_one_message_in_order
+   cause: AssertionError: TURAB's own verify
+   cause: AssertionError: assert [] == [('PROCESSED', None)]
+   cause: E   AssertionError: TURAB's own verify
+   cause: E   AssertionError: assert [] == [('PROCESSED', None)]
+   cause: E   assert 502 == 200
+   cause: assert 502 == 200
+== A1 an ISOLATED element not alerted [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 23.57s
+   FAILED test_an_undocumented_status_is_counted_and_alerted
+   FAILED test_r1_t3_8_isolated_and_dropped_do_not_change_a_200
+   cause: AssertionError: assert [] == ['alert ISOLA...US_NOT_KNOWN']
+   cause: E   AssertionError: assert [] == ['alert ISOLA...US_NOT_KNOWN']
+== A2 TURAB's refusal not alerted [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   7 failed, 92 passed, 1 warning in 24.28s
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[201]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[302]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[400]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[401]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[403]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[404]
+   FAILED test_r1_t5_7_turabs_401_against_its_real_application
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 201']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 302']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 400']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 401']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 403']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 404']
+== A3 TURAB's refusal taken as retryable [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   7 failed, 92 passed, 1 warning in 24.85s
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[201]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[302]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[400]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[401]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[403]
+   FAILED test_r1_t5_7_any_other_answer_is_not_200_and_an_alert[404]
+   FAILED test_r1_t5_7_turabs_401_against_its_real_application
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 201']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 302']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 400']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 401']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 403']
+   cause: AssertionError: assert [] == ['alert TURAB_REFUSED 404']
+== A4 a retryable answer alerted as a refusal [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   3 failed, 96 passed, 1 warning in 25.76s
+   FAILED test_each_element_and_each_delivery_is_counted
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[500-502-TURAB_NOT_COMPLETED]
+   FAILED test_r1_t5_2_to_4_one_element_not_completed_is_not_200_and_stops_the_delivery[503-502-TURAB_NOT_COMPLETED]
+   cause: AssertionError: assert {('FORWARD', ...AGE'): 1, ...} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   AssertionError: assert {('FORWARD', ...AGE'): 1, ...} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   assert False
+   cause: assert False
+== A5 the elements not counted [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 24.11s
+   FAILED test_an_undocumented_status_is_counted_and_alerted
+   FAILED test_each_element_and_each_delivery_is_counted
+   cause: AssertionError: assert {('DELIVERY',...OMPLETED'): 1} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   AssertionError: assert {('DELIVERY',...OMPLETED'): 1} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   assert 0 == 1
+   cause: assert 0 == 1
+== A6 the deliveries not counted [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   1 failed, 98 passed, 1 warning in 24.87s
+   FAILED test_each_element_and_each_delivery_is_counted
+   cause: AssertionError: assert {('FORWARD', ...E_ERRORS'): 1} == {('FORWARD', ...AGE'): 1, ...}
+   cause: E   AssertionError: assert {('FORWARD', ...E_ERRORS'): 1} == {('FORWARD', ...AGE'): 1, ...}
+== F1 the relay's key not checked [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   3 failed, 96 passed, 1 warning in 25.13s
+   FAILED test_no_key_or_no_url_sends_nothing_and_is_503[<lambda>-RELAY_KEY_REFUSED0]
+   FAILED test_no_key_or_no_url_sends_nothing_and_is_503[<lambda>-RELAY_KEY_REFUSED1]
+   FAILED test_no_key_or_no_url_sends_nothing_and_is_503[<lambda>-RELAY_KEY_REFUSED2]
+   cause: E   assert 200 == 503
+   cause: assert 200 == 503
+== F2 no TURAB URL not refused before sending [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   1 failed, 98 passed, 1 warning in 25.72s
+   FAILED test_no_key_or_no_url_sends_nothing_and_is_503[<lambda>-TURAB_URL_NOT_CONFIGURED1]
+   cause: AssertionError: assert ['alert TURAB...ED MALFORMED'] == ['alert TURAB...T_CONFIGURED']
+   cause: E   AssertionError: assert ['alert TURAB...ED MALFORMED'] == ['alert TURAB...T_CONFIGURED']
+== T1 HTTPX's timeout left at its 5 s default [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   1 failed, 98 passed, 1 warning in 22.31s
+   FAILED test_an_answer_after_5_s_and_before_the_10_s_limit_is_completed
+   cause: AssertionError: 504 after 5.05 s
+   cause: E   AssertionError: 504 after 5.05 s
+== T2 HTTPX's timeout shorter than the limit [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 21.58s
+   FAILED test_an_answer_after_5_s_and_before_the_10_s_limit_is_completed
+   FAILED test_the_configured_limit_is_the_deadline_either_side[3.0-504]
+   cause: AssertionError: 504 after 1.04 s
+   cause: AssertionError: 504 after 5.04 s
+   cause: E   AssertionError: 504 after 1.04 s
+   cause: E   AssertionError: 504 after 5.04 s
+== V1 TURAB's certificate not verified [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   1 failed, 98 passed, 1 warning in 22.48s
+   FAILED test_r1_q2_turabs_certificate_is_verified
+   cause: E   assert 200 == 504
+   cause: assert 200 == 504
+== U1 the URL not checked [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   26 failed, 73 passed, 1 warning in 23.61s
+   FAILED ffff:127.0.0.1]/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[HTTP://turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[ftp://turab.example/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://0x7f.1/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://10.0.0.5/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127%2E0.0.1/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.0.0.1.turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.0.0.1:8000@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.1/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://2130706433/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https:///webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://relay:SECRET-PASSWORD-r1s3@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://relay@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab%2Eexample/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab%2eexample/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.\xe9xample/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/what
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp#part-QUERY]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp?-QUERY]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp?token=SECRET-QUERY-r1s3-QUERY]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example:99999/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example\\@127.0.0.1/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[turab.example/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[ws://127.0.0.1/webhooks/whatsapp-SCHEME]
+   cause: E   ValueError: unknown url type: '/turab.example/webhooks/whatsapp'
+   cause: E   ValueError: unknown url type: '/webhooks/whatsapp'
+   cause: E   assert 200 == 503
+   cause: ValueError: unknown url type: '/turab.example/webhooks/whatsapp'
+   cause: ValueError: unknown url type: '/webhooks/whatsapp'
+   cause: assert 200 == 503
+== U2 http allowed for any host [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   18 failed, 81 passed, 1 warning in 22.11s
+   FAILED ffff:127.0.0.1]/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[HTTP://turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://0x7f.1/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://10.0.0.5/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://127.0.0.1.turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://127.1/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://2130706433/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[HTTP://turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://0x7f.1/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://10.0.0.5/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.0.0.1.turab.example/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.1/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://2130706433/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://turab.example/webhooks/whatsapp-UNENCRYPTED]
+   cause: AssertionError: assert None == 'UNENCRYPTED'
+   cause: E   AssertionError: assert None == 'UNENCRYPTED'
+   cause: E   assert 200 == 503
+   cause: assert 200 == 503
+== U3 a name taken as loopback [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 23.45s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://localhost:8000/webhooks/whatsapp-UNENCRYPTED]
+   cause: AssertionError: assert None == 'UNENCRYPTED'
+   cause: E   AssertionError: assert None == 'UNENCRYPTED'
+   cause: E   assert 200 == 503
+   cause: assert 200 == 503
+== U4 credentials allowed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   6 failed, 93 passed, 1 warning in 23.72s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[http://127.0.0.1:8000@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://relay:SECRET-PASSWORD-r1s3@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://relay@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[http://127.0.0.1:8000@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://relay:SECRET-PASSWORD-r1s3@turab.example/webhooks/whatsapp-CREDENTIALS]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://relay@turab.example/webhooks/whatsapp-CREDENTIALS]
+   cause: AssertionError: assert 'UNENCRYPTED' == 'CREDENTIALS'
+   cause: AssertionError: assert None == 'CREDENTIALS'
+   cause: AssertionError: assert ['alert TURAB... UNENCRYPTED'] == ['alert TURAB... CREDENTIALS']
+   cause: E   AssertionError: assert 'UNENCRYPTED' == 'CREDENTIALS'
+   cause: E   AssertionError: assert None == 'CREDENTIALS'
+   cause: E   AssertionError: assert ['alert TURAB... UNENCRYPTED'] == ['alert TURAB... CREDENTIALS']
+== U5 a query allowed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   4 failed, 95 passed, 1 warning in 24.82s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/whatsapp?-QUERY]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/whatsapp?token=SECRET-QUERY-r1s3-QUERY]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp?-QUERY]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp?token=SECRET-QUERY-r1s3-QUERY]
+   cause: AssertionError: assert None == 'QUERY'
+   cause: E   AssertionError: assert None == 'QUERY'
+   cause: E   assert 200 == 503
+   cause: assert 200 == 503
+== U6 a fragment allowed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 23.15s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/whatsapp#part-QUERY]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/whatsapp#part-QUERY]
+   cause: AssertionError: assert None == 'QUERY'
+   cause: E   AssertionError: assert None == 'QUERY'
+   cause: E   assert 200 == 503
+   cause: assert 200 == 503
+== U7 any scheme allowed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   6 failed, 93 passed, 1 warning in 23.57s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[ftp://turab.example/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[turab.example/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_and_its_reason[ws://127.0.0.1/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[ftp://turab.example/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[turab.example/webhooks/whatsapp-SCHEME]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[ws://127.0.0.1/webhooks/whatsapp-SCHEME]
+   cause: E   KeyError: ''
+   cause: E   KeyError: 'ftp'
+   cause: E   KeyError: 'ws'
+   cause: KeyError: ''
+   cause: KeyError: 'ftp'
+   cause: KeyError: 'ws'
+== U8 any character allowed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   4 failed, 95 passed, 1 warning in 24.32s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://turab.example/webhooks/what
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://turab.example\\@127.0.0.1/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example/webhooks/what
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab.example\\@127.0.0.1/webhooks/whatsapp-MALFORMED]
+   cause: AssertionError: assert 'CREDENTIALS' == 'MALFORMED'
+   cause: AssertionError: assert None == 'MALFORMED'
+   cause: AssertionError: assert ['alert TURAB... CREDENTIALS'] == ['alert TURAB...ED MALFORMED']
+   cause: E   AssertionError: assert 'CREDENTIALS' == 'MALFORMED'
+   cause: E   AssertionError: assert None == 'MALFORMED'
+   cause: E   AssertionError: assert ['alert TURAB... CREDENTIALS'] == ['alert TURAB...ED MALFORMED']
+== U9 an escaped host allowed [relay/turab_relay/forward.py, 1 site(s)]  restored: sha256 3addd8bfd4988db1 identical
+   2 failed, 97 passed, 1 warning in 23.61s
+   FAILED test_r1_q2_a_refused_url_and_its_reason[https://turab%2eexample/webhooks/whatsapp-MALFORMED]
+   FAILED test_r1_q2_a_refused_url_sends_nothing_and_logs_no_url[https://turab%2eexample/webhooks/whatsapp-MALFORMED]
+   cause: AssertionError: assert None == 'MALFORMED'
+   cause: E   AssertionError: assert None == 'MALFORMED'
+   cause: E   assert 200 == 503
+   cause: assert 200 == 503
+
+SURVIVING MUTATIONS: none

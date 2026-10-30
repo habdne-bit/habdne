@@ -1141,3 +1141,8 @@ docs/gate/R1_RELAY_PLAN.md                                     rev9  8c83920dde0
 --- R-1 step 3 correction (review of 3dac09f): before and after records ---
 docs/gate/evidence/R1-STEP3-UNSPLITTABLE-BEFORE.txt            new   841eeebd311c668905d9523e842518ed6ee5c97c3dec665f8bbd2933b26125c5
 docs/gate/evidence/R1-STEP3-UNSPLITTABLE-AFTER.txt             new   eb51fc2326ad490f2c2be548f1c6f0da5af721c2fa5d59abde86606a5075b3db
+--- R-1 step 3 mutation records at 9a17cc1: 30/30, twice, outcomes identical; 648bec0's renamed ---
+docs/gate/evidence/R1-STEP3-MUTATIONS.txt                      new   2377f51e725fe08414b0c7f1a8baeabd94d357cae3b307d0d3baf6b5aa252f6b
+docs/gate/evidence/R1-STEP3-MUTATIONS-REPEAT.txt               new   c8c1dc5556a71d3483e9c087fdc25ee4eb040246ea324b28a983312f6c0628ca
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-648bec0.txt           new   8b53b6fea81fe6d9c93a7608c15697d8ada2e06e57ecff85e9ae2eba12fcfef1
+docs/gate/evidence/R1-STEP3-MUTATIONS-AT-648bec0-REPEAT.txt    new   62f58953d0b0d38f9625c43678d51e116535c7b2a826a0fc3c7a3ffd57c74ed2
