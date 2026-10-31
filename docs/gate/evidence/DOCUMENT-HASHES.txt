@@ -1262,3 +1262,8 @@ docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.txt new  
 docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP2-MUTATIONS.txt new   73d512d01b70302f2410e3c84f6029969510102e2d09820e10944082d97c15f5
 docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   c72bb51b1f82e8156b39140e26e4228ddd24abfa9fb4e35f69fc55524ae1104a
 docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP3-MUTATIONS.txt new   e0f35235a4812b6bece2e6d2767a67a87f3795d95fc7c3103f29540c4ea03596
+--- preparatory step add_all_of: delivery; CORRECTION-009 in final form; expected contract regenerated; Slice 8 plan revision 5 ---
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  new   60f82cf47b5394e73b2dae6d0843fb8fccd2e927b4125260c2a6ce23b4e4ebb4
+docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r5    bc2dfd905732f1c833307c687915b0a85e9ff5c792ce99bb2cf90479b5f05817
+docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r5    5fc1a290d64c988cecdacfbcf6ca947bc1638ab71e4c759df9006197b0a45bd4
+docs/gate/SLICE_8_PLAN.md                                      rev5  e0ad731e01cb9e765382579b99036132b57d90523a90e45f8ce3d4d6fab04f55

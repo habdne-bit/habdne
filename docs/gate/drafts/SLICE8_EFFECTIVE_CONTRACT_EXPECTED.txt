@@ -1,28 +1,40 @@
-TURAB — Slice 8 plan revision 3: the effective contract the drafts would produce
-================================================================================
-DRAFT EVIDENCE. Nothing below is in force.
-STALE SINCE PLAN REVISION 4: generated at revision 3 (from b39ad10) with the
-Delta draft as it was then, so its delta_sha256 and x-turab-addendum values
-name that text. It is regenerated after the preparatory step (Q-B3 (a)), with
-CORRECTION-009's payload part then generated too (review of 0a78e91).
+TURAB — Slice 8: the effective contract the drafts produce (CORRECTION-009 complete)
+=====================================================================================
+DRAFT EVIDENCE. Nothing below is in force. Regenerated after the preparatory step
+(Slice 8 plan Q-B3 (a)), replacing revision 3's version of this file, whose part 3
+was not generated.
 
-How it was produced (the same tools the gate runs, on a temporary git worktree
-of b39ad10, never on the repository's tree):
+How it was produced (the gate's own generators, on a temporary git worktree of
+0c54875, the preparatory step's commit, never on the repository's tree):
 - docs/contract/addenda/ADD-SLICE8_external_lead_workflow.yaml = the draft
-  docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml, its
-  delta_sha256 set to the sha256 of the Delta draft;
-- CONTRACT_CORRECTIONS.yaml + CORRECTION-009, ONLY the part today's narrowing
-  keys express: require [target, payload] (see part 3 for the rest);
-- then: db/gate/generate_effective_contract.py, and
+  docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml, its delta_sha256
+  set to the sha256 of the Delta draft as committed at 0c54875;
+- docs/contract/CONTRACT_CORRECTIONS.yaml + CORRECTION-009, appended to
+  request_body_narrowings, LITERALLY as
+  docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md §3 now carries
+  it: require [target, payload] AND add_all_of (the payload schema), the whole
+  entry generated, nothing hand-written;
+- then db/gate/generate_effective_contract.py and
   db/gate/generate_api_inventory.py docs/api/openapi_effective_v0.2.3.yaml
   -o docs/api/API_INVENTORY_GENERATED.md.
-The worktree was removed afterwards. Below: the two generated diffs, unedited,
-then part 3, which is NOT generated.
+The worktree was removed afterwards.
+
+0. The runtime's judgement of the generated body (contract.body_violations, on
+   contract.effective_request_body, in the same worktree)
+------------------------------------------------------------------------------
+the generated body equals the runtime's effective body: True
+  REQUEST, minimal payload: accepted
+  REQUEST, RENT: accepted
+  payload carries party_id: refused: body.payload.party_id: not allowed
+  payload carries claim_status: refused: body.payload.claim_status: not allowed
+  payload without transaction_intent: refused: body.payload.transaction_intent: required
+  target absent: refused: body.target: required
+  PROPERTY, any payload (refused 409 by decision, not by schema): accepted
 
 1. git diff docs/api/API_INVENTORY_GENERATED.md
 -----------------------------------------------
 diff --git a/docs/api/API_INVENTORY_GENERATED.md b/docs/api/API_INVENTORY_GENERATED.md
-index 89b019b..f64ead4 100644
+index 89b019b..1a3999c 100644
 --- a/docs/api/API_INVENTORY_GENERATED.md
 +++ b/docs/api/API_INVENTORY_GENERATED.md
 @@ -3,8 +3,8 @@
@@ -31,7 +43,7 @@ index 89b019b..f64ead4 100644
  - Source: `docs/api/openapi_effective_v0.2.3.yaml`
 -- Source SHA-256: `5a0391b71218d40bc3204c60c97a2551a2114425bfb509a356590fbcbe975f43`
 -- Operations: 67 · role-annotated: 60 · unauthenticated: 6
-+- Source SHA-256: `60b1fa412e28a1f82b628ae5cb2b633a0ee49c7dff1ace3540a08ce31b76970e`
++- Source SHA-256: `d974fbdefef578e88053f3a0db00871d1aeb3dfcab1e1cef05e259d8dd890bed`
 +- Operations: 71 · role-annotated: 64 · unauthenticated: 6
  
  ## Unauthenticated operations
@@ -63,7 +75,7 @@ index 89b019b..f64ead4 100644
 2. git diff docs/api/openapi_effective_v0.2.3.yaml
 --------------------------------------------------
 diff --git a/docs/api/openapi_effective_v0.2.3.yaml b/docs/api/openapi_effective_v0.2.3.yaml
-index 5a6eb90..76ef4f9 100644
+index 5a6eb90..07f4362 100644
 --- a/docs/api/openapi_effective_v0.2.3.yaml
 +++ b/docs/api/openapi_effective_v0.2.3.yaml
 @@ -23,11 +23,12 @@
@@ -71,9 +83,9 @@ index 5a6eb90..76ef4f9 100644
  # Source digests at generation time:
  #   openapi_v0.2.3.yaml          b3b1eb864836d14e275d58e312f960e0e45c7e5b80d2170b54c0e8b39c1f7b72
 -#   CONTRACT_CORRECTIONS.yaml    91f30c7fbd37a0eec74d71b5cfd8b6e2c725cbad81f0c8ead69c35e02183f671
-+#   CONTRACT_CORRECTIONS.yaml    ba00dffe5574193663484224dc8b4da1f6c497e7d27bd0543ddf2482076f8fa9
++#   CONTRACT_CORRECTIONS.yaml    29a81ecd913f0a5a3a207fec23791ee1ba02ca3910a505bdf5365456dda0d096
  #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
-+#   addenda/ADD-SLICE8_external_lead_workflow.yaml   86f1f51c90a0e4d1ea1f7695636b624f93ca5cf8a670133369c10cf6be469121
++#   addenda/ADD-SLICE8_external_lead_workflow.yaml   2c89e3c785fc343108ac66c2c38fd534bd619459e5cf44cdef0392aebbae5379
  #
 -# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)
 -# Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd)
@@ -91,26 +103,212 @@ index 5a6eb90..76ef4f9 100644
                properties:
                  party_id: *id002
                  consent_id: *id002
-@@ -510,6 +513,18 @@ paths:
+@@ -482,6 +485,95 @@ paths:
+                 payload:
+                   type: object
+                   additionalProperties: true
++              allOf:
++              - if:
++                  properties:
++                    target:
++                      const: REQUEST
++                  required:
++                  - target
++                then:
++                  properties:
++                    payload:
++                      type: object
++                      additionalProperties: false
++                      required:
++                      - intent
++                      - transaction_intent
++                      properties:
++                        intent:
++                          type: string
++                          enum:
++                          - EXPLORING
++                          - ACTIVE_SEARCH
++                          - READY_TO_ACT
++                        payment:
++                          type: string
++                          enum:
++                          - CASH
++                          - BANK_FINANCING
++                          - MIXED
++                          - UNDECIDED
++                        desired_property_type:
++                          anyOf:
++                          - type: string
++                            enum:
++                            - HOUSE_VILLA
++                            - APARTMENT
++                            - LAND
++                            - SHOP_COMMERCIAL
++                            - AGRICULTURAL_PROPERTY
++                            - BUILDING
++                            - OTHER
++                          - type: 'null'
++                        property_type_importance:
++                          type: string
++                          enum:
++                          - REQUIRED
++                          - PREFERRED
++                          - FLEXIBLE
++                        primary_location_id:
++                          anyOf:
++                          - type: string
++                            format: uuid
++                          - type: 'null'
++                        location_importance:
++                          type: string
++                          enum:
++                          - REQUIRED
++                          - PREFERRED
++                          - FLEXIBLE
++                        local_location_detail:
++                          type: string
++                        budget_target_dzd:
++                          type: integer
++                          minimum: 0
++                        budget_max_dzd:
++                          type: integer
++                          minimum: 0
++                        budget_importance:
++                          type: string
++                          enum:
++                          - REQUIRED
++                          - PREFERRED
++                          - FLEXIBLE
++                        budget_flexibility:
++                          type: string
++                          enum:
++                          - STRICT
++                          - LOW
++                          - MODERATE
++                          - HIGH
++                          - UNSPECIFIED
++                        criteria:
++                          type: array
++                          items:
++                            $ref: '#/components/schemas/RequestCriterion'
++                        transaction_intent:
++                          type: string
++                          enum:
++                          - BUY
++                          - RENT
+       responses:
+         '201':
+           description: Converted
+@@ -510,6 +602,108 @@ paths:
        - ADMIN
        - OPERATOR
        operationId: postExternalLeadsLeadIdConvert
 +      x-turab-correction:
 +        id: CORRECTION-009
 +        kind: REQUEST_BODY_NARROWING
-+        decision: DRAFT (temporary worktree only). Slice 8 plan Q-A5, the part the existing narrowing
-+          keys can express.
-+        approved: '2026-10-30'
++        decision: 'G3-10 Q-3 (b); Slice 8 plan G8-5 (REQUEST conversion only), Q-A5 and Q-B3 (a). DRAFT:
++          approval pending.'
++        approved: None
 +        frozen-required:
 +        - party_id
 +        - consent_id
 +        frozen-defaults: {}
-+        runtime-rule: DRAFT
-+        reference: docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md
++        add-all-of:
++        - if:
++            properties:
++              target:
++                const: REQUEST
++            required:
++            - target
++          then:
++            properties:
++              payload:
++                type: object
++                additionalProperties: false
++                required:
++                - intent
++                - transaction_intent
++                properties:
++                  intent:
++                    type: string
++                    enum:
++                    - EXPLORING
++                    - ACTIVE_SEARCH
++                    - READY_TO_ACT
++                  payment:
++                    type: string
++                    enum:
++                    - CASH
++                    - BANK_FINANCING
++                    - MIXED
++                    - UNDECIDED
++                  desired_property_type:
++                    anyOf:
++                    - type: string
++                      enum:
++                      - HOUSE_VILLA
++                      - APARTMENT
++                      - LAND
++                      - SHOP_COMMERCIAL
++                      - AGRICULTURAL_PROPERTY
++                      - BUILDING
++                      - OTHER
++                    - type: 'null'
++                  property_type_importance:
++                    type: string
++                    enum:
++                    - REQUIRED
++                    - PREFERRED
++                    - FLEXIBLE
++                  primary_location_id:
++                    anyOf:
++                    - type: string
++                      format: uuid
++                    - type: 'null'
++                  location_importance:
++                    type: string
++                    enum:
++                    - REQUIRED
++                    - PREFERRED
++                    - FLEXIBLE
++                  local_location_detail:
++                    type: string
++                  budget_target_dzd:
++                    type: integer
++                    minimum: 0
++                  budget_max_dzd:
++                    type: integer
++                    minimum: 0
++                  budget_importance:
++                    type: string
++                    enum:
++                    - REQUIRED
++                    - PREFERRED
++                    - FLEXIBLE
++                  budget_flexibility:
++                    type: string
++                    enum:
++                    - STRICT
++                    - LOW
++                    - MODERATE
++                    - HIGH
++                    - UNSPECIFIED
++                  criteria:
++                    type: array
++                    items:
++                      $ref: '#/components/schemas/RequestCriterion'
++                  transaction_intent:
++                    type: string
++                    enum:
++                    - BUY
++                    - RENT
++        runtime-rule: A body without target or payload, or a REQUEST payload outside the schema, is refused
++          422 VALIDATION_FAILED, writing nothing and consuming no idempotency key.
++        reference: docs/contract/CORRECTION-009-lead-conversion-payload.md
    /requests:
      post:
        summary: Create request
-@@ -3256,6 +3271,202 @@ paths:
+@@ -3256,6 +3450,202 @@ paths:
            applied as revision 3a.
          delta_document: docs/gate/CONTRACT_DELTA_G3-6_party_property_relations.md
          delta_sha256: e2550c095d6cba9a152e89ec0e73b015fb61f8089c7b3ad5c6445cd720abdbf8
@@ -166,7 +364,7 @@ index 5a6eb90..76ef4f9 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
 +  /external-leads/{lead_id}/status:
 +    post:
 +      operationId: postExternalLeadsLeadIdStatus
@@ -219,7 +417,7 @@ index 5a6eb90..76ef4f9 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
 +  /external-leads/{lead_id}/call-brief:
 +    get:
 +      operationId: getExternalLeadsLeadIdCallBrief
@@ -260,7 +458,7 @@ index 5a6eb90..76ef4f9 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
 +  /backoffice/queues/external-leads/page:
 +    get:
 +      operationId: getBackofficeQueuesExternalLeadsPage
@@ -309,11 +507,11 @@ index 5a6eb90..76ef4f9 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: 35853294caec1f2df4bb5cf16d14e376cc263f2415b78d8f4803715d845b61e6
++        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
  components:
    securitySchemes:
      BearerAuth:
-@@ -5284,6 +5495,224 @@ components:
+@@ -5284,6 +5674,224 @@ components:
          total:
            type: integer
            minimum: 0
@@ -538,7 +736,7 @@ index 5a6eb90..76ef4f9 100644
    responses:
      AddendumProblem:
        description: Request rejected
-@@ -5291,3 +5720,9 @@ components:
+@@ -5291,3 +5899,9 @@ components:
          application/problem+json:
            schema:
              $ref: '#/components/schemas/Problem'
@@ -548,124 +746,3 @@ index 5a6eb90..76ef4f9 100644
 +        application/problem+json:
 +          schema:
 +            $ref: '#/components/schemas/Problem'
-
-3. NOT GENERATED: the body of postExternalLeadsLeadIdConvert once CORRECTION-009's
-   payload constraint is expressible (plan Q-B3: a new narrowing key, `add_all_of`,
-   in src/turab/auth/contract.py and the generator; not authorized). Computed by
-   this record's script from the effective body generated in part 2 (the frozen
-   body + `require: [target, payload]`) and the frozen RequestCreate, without
-   party_id, management_mode and claim_status, which the conversion sets.
-   An added allOf branch can only narrow: a document it accepts, the frozen
-   body accepts.
-------------------------------------------------------------------------------
-type: object
-required:
-- party_id
-- consent_id
-- target
-- payload
-properties:
-  party_id:
-    type: string
-    format: uuid
-  consent_id:
-    type: string
-    format: uuid
-  target:
-    type: string
-    enum:
-    - REQUEST
-    - PROPERTY
-  payload:
-    type: object
-    additionalProperties: true
-allOf:
-- if:
-    properties:
-      target:
-        const: REQUEST
-    required:
-    - target
-  then:
-    properties:
-      payload:
-        type: object
-        additionalProperties: false
-        required:
-        - intent
-        - transaction_intent
-        properties:
-          intent:
-            type: string
-            enum:
-            - EXPLORING
-            - ACTIVE_SEARCH
-            - READY_TO_ACT
-          payment:
-            type: string
-            enum:
-            - CASH
-            - BANK_FINANCING
-            - MIXED
-            - UNDECIDED
-          desired_property_type:
-            anyOf:
-            - type: string
-              enum:
-              - HOUSE_VILLA
-              - APARTMENT
-              - LAND
-              - SHOP_COMMERCIAL
-              - AGRICULTURAL_PROPERTY
-              - BUILDING
-              - OTHER
-            - type: 'null'
-          property_type_importance:
-            type: string
-            enum:
-            - REQUIRED
-            - PREFERRED
-            - FLEXIBLE
-          primary_location_id:
-            anyOf:
-            - type: string
-              format: uuid
-            - type: 'null'
-          location_importance:
-            type: string
-            enum:
-            - REQUIRED
-            - PREFERRED
-            - FLEXIBLE
-          local_location_detail:
-            type: string
-          budget_target_dzd:
-            type: integer
-            minimum: 0
-          budget_max_dzd:
-            type: integer
-            minimum: 0
-          budget_importance:
-            type: string
-            enum:
-            - REQUIRED
-            - PREFERRED
-            - FLEXIBLE
-          budget_flexibility:
-            type: string
-            enum:
-            - STRICT
-            - LOW
-            - MODERATE
-            - HIGH
-            - UNSPECIFIED
-          criteria:
-            type: array
-            items:
-              $ref: '#/components/schemas/RequestCriterion'
-          transaction_intent:
-            type: string
-            enum:
-            - BUY
-            - RENT
-

@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | **DRAFT for review**, Slice 8 plan revision 4 (Q-A5). Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml`. **Incomplete for approval** (review of `0a78e91`): its `payload` below is a placeholder; the literal YAML and the generated diff follow the preparatory step (Q-B3 (a)) |
+| **Status** | **DRAFT in final form, for review**, Slice 8 plan revision 5. Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml`. §3 is the literal entry, no placeholder; its effective contract was generated after the preparatory step (Q-B3 (a)), which added the `add_all_of` key it uses |
 | **Classification** | a narrowing of a frozen operation's request body |
 | **Operation** | `postExternalLeadsLeadIdConvert` (`POST /external-leads/{lead_id}/convert`) |
 | **Decision it would implement** | G3-10 Q-3 (b) ("a conversion schema must be declared by an approved contract change"); Slice 8 G8-5, REQUEST conversion only, as directed in the reviews of `3922850` and `b39ad10` |
-| **Expected effective contract** | `docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt`, parts 2 and 3 |
+| **Expected effective contract** | `docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt`: part 0 (the runtime's verdicts on the generated body), part 2 (the operation, from `+        id: CORRECTION-009`) |
 
 ---
 
@@ -43,50 +43,146 @@ schema needs an approved contract change before anything is implemented.
 frozen schema accepts. Requiring a declared property, and adding an `allOf`
 branch, only remove documents.
 
-## 3. The entry, as it would appear
+## 3. The entry, literally
+
+As it would be appended to `request_body_narrowings` in
+`docs/contract/CONTRACT_CORRECTIONS.yaml`. **This is the text the expected
+file was generated from**, character for character (the generator read this
+entry; nothing in the expected file is hand-written).
 
 ```yaml
   - id: CORRECTION-009
-    decision: >-
-      G3-10 Q-3 (b); Slice 8 plan G8-5 (REQUEST conversion only) and Q-A5.
-      DRAFT: approval pending.
+    decision: 'G3-10 Q-3 (b); Slice 8 plan G8-5 (REQUEST conversion only), Q-A5 and Q-B3 (a). DRAFT: approval
+      pending.'
     approved: null
     operation_id: postExternalLeadsLeadIdConvert
-    require: [target, payload]
-    add_all_of:                       # NOT SUPPORTED TODAY: plan Q-B3
-      - if: {properties: {target: {const: REQUEST}}, required: [target]}
-        then:
-          properties:
-            payload: <RequestCreate without party_id, management_mode, claim_status;
-                      additionalProperties false; required [intent, transaction_intent]>
+    require:
+    - target
+    - payload
+    add_all_of:
+    - if:
+        properties:
+          target:
+            const: REQUEST
+        required:
+        - target
+      then:
+        properties:
+          payload:
+            type: object
+            additionalProperties: false
+            required:
+            - intent
+            - transaction_intent
+            properties:
+              intent:
+                type: string
+                enum:
+                - EXPLORING
+                - ACTIVE_SEARCH
+                - READY_TO_ACT
+              payment:
+                type: string
+                enum:
+                - CASH
+                - BANK_FINANCING
+                - MIXED
+                - UNDECIDED
+              desired_property_type:
+                anyOf:
+                - type: string
+                  enum:
+                  - HOUSE_VILLA
+                  - APARTMENT
+                  - LAND
+                  - SHOP_COMMERCIAL
+                  - AGRICULTURAL_PROPERTY
+                  - BUILDING
+                  - OTHER
+                - type: 'null'
+              property_type_importance:
+                type: string
+                enum:
+                - REQUIRED
+                - PREFERRED
+                - FLEXIBLE
+              primary_location_id:
+                anyOf:
+                - type: string
+                  format: uuid
+                - type: 'null'
+              location_importance:
+                type: string
+                enum:
+                - REQUIRED
+                - PREFERRED
+                - FLEXIBLE
+              local_location_detail:
+                type: string
+              budget_target_dzd:
+                type: integer
+                minimum: 0
+              budget_max_dzd:
+                type: integer
+                minimum: 0
+              budget_importance:
+                type: string
+                enum:
+                - REQUIRED
+                - PREFERRED
+                - FLEXIBLE
+              budget_flexibility:
+                type: string
+                enum:
+                - STRICT
+                - LOW
+                - MODERATE
+                - HIGH
+                - UNSPECIFIED
+              criteria:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestCriterion'
+              transaction_intent:
+                type: string
+                enum:
+                - BUY
+                - RENT
     frozen_defaults: {}
-    rationale: >-
-      The payload is an open object, and G3-10 Q-3 (b) requires its schema to
-      be declared before a conversion exists. REQUEST only: PROPERTY stays
-      refused by decision (409), not by schema.
-    runtime_rule: >-
-      A body without target or payload, or a REQUEST payload outside the
-      schema, is refused 422 VALIDATION_FAILED, writing nothing and consuming
-      no idempotency key.
+    rationale: 'The payload is an open object, and G3-10 Q-3 (b) requires its schema to be declared before
+      a conversion exists. REQUEST only: PROPERTY stays refused by decision (409), not by schema.'
+    runtime_rule: A body without target or payload, or a REQUEST payload outside the schema, is refused
+      422 VALIDATION_FAILED, writing nothing and consuming no idempotency key.
     reference: docs/contract/CORRECTION-009-lead-conversion-payload.md
 ```
 
-## 4. What today's mechanism can and cannot carry
+**What the payload schema is, checked by a script against the frozen
+contract** (`docs/handoff/05_API/openapi_v0.2.3.yaml`, `RequestCreate`):
+- its 13 properties are the frozen `RequestCreate`'s 16 **minus**
+  `party_id`, `management_mode` and `claim_status`;
+- each of the 13 is **equal** to the frozen one (parsed YAML compared);
+- `additionalProperties: false`, as the frozen `RequestCreate`;
+- `required: [intent, transaction_intent]`: the frozen required list minus
+  the three removed fields;
+- `criteria` refers to the frozen `#/components/schemas/RequestCriterion`;
+  no schema is added (the loader refuses `$defs` and any `$ref` outside the
+  frozen components, and inspects the referred component's keywords).
 
-**Measured by running the generator** on a temporary worktree:
-- **`require: [target, payload]` is carried today.** The effective contract
-  gains it, with `x-turab-correction: CORRECTION-009` on the operation (the
-  expected file, part 2).
-- **The `payload` schema is not.** `contract.py` accepts only `require`,
-  `non_null`, `enum` and `frozen_defaults` on a body's own properties
-  (`_BODY_NARROWING_KEYS`). Nothing can constrain a property's inner schema.
-- **So the payload part needs a new narrowing key** (plan Q-B3), `add_all_of`:
-  a list of schemas appended to the body's `allOf`, accepted by the loader
-  only if it adds no `$defs` and no components, then written by the generator
-  and enforced by the runtime's validation. That is a change to
-  `src/turab/auth/contract.py`, the generator and their tests: code, which no
-  review has authorized. The body it would produce is the expected file's
-  part 3.
+## 4. What carries it
+
+- **`require: [target, payload]`:** the existing narrowing key.
+- **`add_all_of`:** the key added by the preparatory step
+  (`docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md`). The loader accepts this
+  entry (it was loaded in the worktree that generated the expected file); the
+  generator writes the body with the branch appended to its `allOf` and
+  annotates it `x-turab-correction.add-all-of`; the runtime's judge
+  (`contract.body_violations`) **gives the verdicts of the expected file's
+  part 0 on the body the generator wrote**, which equals the runtime's
+  effective body.
+- **What still separates it from force:** this entry is not in the
+  repository's corrections file, `approved` is null, and no route reads
+  `body_violations` yet. Approval, then Slice 8's step that wires the
+  conversion, do that; neither is authorized.
 
 ## 5. Tests it would carry (when implemented)
 
@@ -95,8 +191,8 @@ branch, only remove documents.
 - a body without `target`, or without `payload`: `422`, nothing written, the
   key free;
 - `target = REQUEST` with a payload carrying `party_id`, `management_mode`,
-  `claim_status` or any unknown field: `422`;
+  `claim_status` or any unknown field, or without `intent` or
+  `transaction_intent`: `422`, nothing written, the key free;
 - `target = PROPERTY`: `409 EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE`,
-  unchanged;
-- the loader refusing an `add_all_of` that adds a component or a `$defs`,
-  or that is not a list of schema objects.
+  unchanged (the schema accepts it: expected file, part 0);
+- the route's verdicts equal `body_violations`' on the same bodies.
