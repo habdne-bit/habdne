@@ -11,8 +11,14 @@ the slice's commands. What it had to prove:
 - invalid correction input is refused;
 - **no other operation changes**.
 
-**Status: DELIVERED for review.** Slice 8's step 1 is not authorized; the
-texts of CORRECTION-009, the Delta and `0009` are not approved.
+**Status: DELIVERED; NOT CLOSED** (review of `a7a4fe9`). The loader checked
+the names of the admitted keywords, not the structure of their values. The
+addendum `SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md` changes what §1.2 and §1.3 say:
+- each keyword's value is checked, by the loader and the judge alike;
+- `format` is `uuid` only: `date-time` is not admitted.
+
+Slice 8's step 1 is not authorized; the texts of CORRECTION-009, the Delta
+and `0009` are not approved.
 - **What a reviewer has not done:** re-run the suite, the mutations or the
   gate. The results are ours.
 

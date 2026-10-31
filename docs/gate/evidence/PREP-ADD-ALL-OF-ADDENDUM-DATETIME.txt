@@ -1,0 +1,14 @@
+TURAB — add_all_of addendum (review of a7a4fe9): why format date-time is not admitted
+==============================================================================
+Python: 3.12.3
+JSON Schema 2020-12 Validation §7.3.1: date-time = RFC 3339 §5.6 'date-time' ABNF
+  date-time = full-date "T" full-time ; full-time = partial-time time-offset
+  (a time-offset, Z or +hh:mm, is required; partial-time is hh:mm:ss).
+The judge before the addendum: datetime.fromisoformat(value.replace('Z', '+00:00')).
+
+Each string below is NOT an RFC 3339 date-time; what fromisoformat did with it:
+  '2026-10-31'               a date alone             ACCEPTED
+  '2026-10-31T10:00:00'      no time-offset           ACCEPTED
+  '20261031T100000Z'         the basic format         ACCEPTED
+  '2026-W44-6T10:00:00Z'     an ISO week date         ACCEPTED
+  '2026-10-31T10Z'           no minutes or seconds    ACCEPTED

@@ -1286,3 +1286,8 @@ docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP2-MUTATIONS.txt new   27aebd5c7193aadb3e5816fb0ff8a75284e1fe71cdf000558e7c2058ed5586d1
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   e51fcaf9c3d53c9de823d597e6357e9a47cb45ea9d6c479b589cf209b7db153c
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP3-MUTATIONS.txt new   255c5128b5da1b1d24e871486873afa9a02e2a5dcb39fa2ad9e0c5537bdac3d4
+--- add_all_of addendum: delivery note; date-time measurement; the step's note's status; Slice 8 plan revision 6 ---
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  new   41bce07cb881e571dd14888d2903a4efa550f10e4bdddf10ff391853f16762a7
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-DATETIME.txt       new   602f2bd37b4c47fc90b50941412e442d19de0907c4de69e7e370291e0b032e8a
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  r2    1305e5907826d68154533b2071cdf592fe79754e992aabe7b9fa173734305adb
+docs/gate/SLICE_8_PLAN.md                                      rev6  c43d41ad40f994f44301587069a92895501d212cb67b012ca5cac323b3d70bf8
