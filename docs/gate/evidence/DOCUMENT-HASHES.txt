@@ -1272,3 +1272,6 @@ docs/gate/SLICE_8_PLAN.md                                      rev5  155d86be60e
 --- preparatory step add_all_of, addendum (review of a7a4fe9): before record, mutation trial ---
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-BEFORE.txt         new   df90854f094ac2a2f54d2ec864ff093324c6f9a55fec300b27c7740e2e94d662
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-MUTATIONS-TRIAL.txt new   4bd9c167fff9bf4dae38c2b05a1bf78d585a74a3f96abcc414c6c953f2dd6bcf
+--- add_all_of addendum: the expected contract regenerated at 7e7da47 by its script; CORRECTION-009 draft's status ---
+docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r6    6b7436d973678e6ccb526ea1e559b290759cafd57aa4ee2694977fc398352aa5
+docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r6    81f79cb2882f8d4b99b518348b3bfef7a9857a7ccfcf51f16a75f047dacac69e

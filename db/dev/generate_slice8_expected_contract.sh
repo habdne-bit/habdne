@@ -18,7 +18,13 @@ import re, yaml, pathlib
 md = pathlib.Path('docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md').read_text()
 block = re.search(r"## 3\. The entry, literally.*?```yaml\n(.*?)```", md, re.S).group(1)
 p = pathlib.Path('docs/contract/CONTRACT_CORRECTIONS.yaml')
-text = p.read_text().rstrip('\n') + '\n' + block   # appended to the last list: request_body_narrowings
+lines = p.read_text().split('\n')
+# after the last entry of request_body_narrowings: the last line that is neither
+# blank nor a comment before the top-level key that follows it
+end = lines.index('response_additions:')
+at = max(i for i in range(end) if lines[i].strip() and not lines[i].lstrip().startswith('#')) + 1
+lines[at:at] = block.rstrip('\n').split('\n')
+text = '\n'.join(lines)
 p.write_text(text)
 doc = yaml.safe_load(text)
 assert doc['request_body_narrowings'][-1]['id'] == 'CORRECTION-009', 'not appended to request_body_narrowings'
@@ -59,8 +65,8 @@ structure of each keyword's value; the previous version was generated at
 0c54875.
 
 How it was produced (the gate's own generators, on a temporary git worktree of
-$(git rev-parse --short HEAD), never on the repository's tree; the script is
-db/dev/generate_slice8_expected_contract.sh):
+$(git rev-parse --short HEAD), never on the repository's tree, by the script
+db/dev/generate_slice8_expected_contract.sh as committed with this file):
 - docs/contract/addenda/ADD-SLICE8_external_lead_workflow.yaml = the draft
   docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml, its delta_sha256
   set to the sha256 of the Delta draft as committed at $(git rev-parse --short HEAD)

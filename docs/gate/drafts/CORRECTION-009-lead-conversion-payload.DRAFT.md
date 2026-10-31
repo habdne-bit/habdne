@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DRAFT in final form, for review**, Slice 8 plan revision 5. Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml`. §3 is the literal entry, no placeholder; its effective contract was generated after the preparatory step (Q-B3 (a)), which added the `add_all_of` key it uses |
+| **Status** | **DRAFT in final form, for review**, Slice 8 plan revision 5. Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml`. §3 is the literal entry, no placeholder; its effective contract was generated after the preparatory step (Q-B3 (a)), which added the `add_all_of` key it uses, and regenerated after that step's addendum (review of `a7a4fe9`: the loader now checks each keyword's value; `date-time` not admitted), unchanged but for hashes |
 | **Classification** | a narrowing of a frozen operation's request body |
 | **Operation** | `postExternalLeadsLeadIdConvert` (`POST /external-leads/{lead_id}/convert`) |
 | **Decision it would implement** | G3-10 Q-3 (b) ("a conversion schema must be declared by an approved contract change"); Slice 8 G8-5, REQUEST conversion only, as directed in the reviews of `3922850` and `b39ad10` |
@@ -172,8 +172,11 @@ contract** (`docs/handoff/05_API/openapi_v0.2.3.yaml`, `RequestCreate`):
 
 - **`require: [target, payload]`:** the existing narrowing key.
 - **`add_all_of`:** the key added by the preparatory step
-  (`docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md`). The loader accepts this
-  entry (it was loaded in the worktree that generated the expected file); the
+  (`docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md`, and its addendum
+  `SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md`). The loader accepts this entry,
+  each keyword's value checked (it was loaded in the worktree that generated
+  the expected file, and `test_the_draft_correction_009_entry_is_accepted_by_the_loader`
+  loads it from this file's §3); it uses no `date-time`; the
   generator writes the body with the branch appended to its `allOf` and
   annotates it `x-turab-correction.add-all-of`; the runtime's judge
   (`contract.body_violations`) **gives the verdicts of the expected file's
