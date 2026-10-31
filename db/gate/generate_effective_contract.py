@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import pathlib
 import sys
 
@@ -274,6 +275,8 @@ def build() -> tuple[str, list[str]]:
                 marker["non-null"] = list(entry["non_null"])
             if entry.get("enum"):
                 marker["enum"] = {f: list(v) for f, v in entry["enum"].items()}
+            if entry.get("add_all_of"):
+                marker["add-all-of"] = json.loads(json.dumps(entry["add_all_of"]))
             marker["runtime-rule"] = " ".join(entry["runtime_rule"].split())
             marker["reference"] = entry.get("reference")
             op["x-turab-correction"] = marker

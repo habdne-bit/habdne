@@ -9,10 +9,12 @@ policy silently drifts from the contract it is supposed to enforce.
 from __future__ import annotations
 
 import copy
+import datetime
 import functools
 import json
 import pathlib
 import re
+import uuid
 from typing import Any
 
 import yaml
@@ -182,7 +184,7 @@ def _corrected_roles(
 #: no other kind of change can travel under this heading.
 _BODY_NARROWING_KEYS = frozenset({
     "id", "decision", "approved", "operation_id", "require", "non_null", "enum",
-    "frozen_defaults", "rationale", "runtime_rule", "reference",
+    "add_all_of", "frozen_defaults", "rationale", "runtime_rule", "reference",
 })
 
 #: JSON Schema types a narrowing `enum` value may have, as Python types. A
@@ -321,6 +323,12 @@ def narrowed_body_schema(entry: dict[str, Any], contract: dict[str, Any]) -> dic
                              "type": remaining[0] if len(remaining) == 1 else remaining}
     for field, values in (entry.get("enum") or {}).items():
         properties[field] = {**properties[field], "enum": list(values)}
+    if entry.get("add_all_of"):
+        # Slice 8 Q-B3 (a): appended, never merged. A new list, and a JSON
+        # copy of the entry's branches, so neither the frozen body nor the
+        # corrections document is reachable from the effective schema.
+        schema["allOf"] = (list(frozen.get("allOf") or [])
+                           + json.loads(json.dumps(entry["add_all_of"])))
     return schema
 
 
@@ -383,6 +391,157 @@ def _check_enum(cid: str, enums: Any, properties: dict[str, Any]) -> None:
         if frozen is not None and not set(values) <= set(frozen):
             raise ContractError(f"{cid}: the enum of {field!r} admits a value the frozen "
                                 "enum does not; a narrowing may only remove values")
+
+
+# --- add_all_of (Slice 8 plan Q-B3 (a), review of 0a78e91) -----------------------------
+
+#: The JSON Schema keywords an `add_all_of` branch may use, the schemas it
+#: references included, and the ONLY ones `body_violations` reads. The loader
+#: refuses any other keyword, so nothing narrowed goes unvalidated; the
+#: validator refuses to judge one, so it never reads a schema as narrower than
+#: what it checks.
+_ALL_OF_KEYWORDS = frozenset({
+    "type", "enum", "const", "required", "properties", "additionalProperties", "items",
+    "anyOf", "if", "then", "minimum", "format", "default", "$ref",
+})
+#: The formats asserted: as the project's routes and CORRECTION-006's judge do.
+_ALL_OF_FORMATS = frozenset({"uuid", "date-time"})
+_ALL_OF_TYPES = frozenset({"object", "array", "string", "integer", "number", "boolean",
+                           "null"})
+
+
+def _schema_problems(node: Any, contract: dict[str, Any], *, branch: bool,
+                     seen: frozenset[str] = frozenset()) -> list[str]:
+    """What makes `node` outside the subset. `branch`: inside the entry's own
+    text, where `additionalProperties` may only be `false` (a narrowing);
+    a referenced frozen component may say `true`, which narrows nothing."""
+    if not isinstance(node, dict):
+        return [f"{node!r} is not a schema object"]
+    problems = [f"keyword {k!r} is not one the validator reads"
+                for k in sorted(set(node) - _ALL_OF_KEYWORDS)]
+    if "then" in node and "if" not in node:
+        problems.append("'then' without 'if'")
+    if "if" in node and "then" not in node:
+        problems.append("'if' without 'then'")
+    declared = node.get("type")
+    for kind in (declared if isinstance(declared, list) else [declared] if declared else []):
+        if kind not in _ALL_OF_TYPES:
+            problems.append(f"type {kind!r} is not a JSON type")
+    if "format" in node and node["format"] not in _ALL_OF_FORMATS:
+        problems.append(f"format {node['format']!r} is not asserted by the validator")
+    extra = node.get("additionalProperties", False)
+    if extra is not False and (branch or extra is not True):
+        problems.append("additionalProperties may only be false in an added branch")
+    if "$ref" in node:
+        ref = node["$ref"]
+        name = ref[len(_SCHEMA_REF):] if isinstance(ref, str) and ref.startswith(_SCHEMA_REF) \
+            else None
+        target = (contract.get("components", {}).get("schemas", {}).get(name)
+                  if name else None)
+        if name is None:
+            problems.append(f"$ref {ref!r} is not a reference to the frozen components")
+        elif target is None:
+            problems.append(f"$ref {ref!r}: no component {name}")
+        elif name not in seen:
+            problems += [f"{name}: {p}" for p in
+                         _schema_problems(target, contract, branch=False, seen=seen | {name})]
+    for key in ("properties",):
+        for sub in (node.get(key) or {}).values():
+            problems += _schema_problems(sub, contract, branch=branch, seen=seen)
+    for key in ("items", "if", "then"):
+        if key in node:
+            problems += _schema_problems(node[key], contract, branch=branch, seen=seen)
+    for sub in node.get("anyOf") or ():
+        problems += _schema_problems(sub, contract, branch=branch, seen=seen)
+    return problems
+
+
+def _check_add_all_of(cid: str, branches: Any, contract: dict[str, Any]) -> None:
+    if not isinstance(branches, list) or not branches or \
+            not all(isinstance(b, dict) for b in branches):
+        raise ContractError(f"{cid}: add_all_of must be a non-empty list of schema objects")
+    problems = [p for b in branches for p in _schema_problems(b, contract, branch=True)]
+    if problems:
+        raise ContractError(f"{cid}: add_all_of: " + "; ".join(problems))
+
+
+def _json_same(a: Any, b: Any) -> bool:
+    """JSON equality: a boolean is never a number."""
+    return a == b and isinstance(a, bool) == isinstance(b, bool)
+
+
+def _type_holds(kind: str, value: Any) -> bool:
+    return {
+        "object": isinstance(value, dict), "array": isinstance(value, list),
+        "string": isinstance(value, str), "null": value is None,
+        "boolean": isinstance(value, bool),
+        "integer": isinstance(value, int) and not isinstance(value, bool),
+        "number": isinstance(value, (int, float)) and not isinstance(value, bool),
+    }[kind]
+
+
+def _format_holds(fmt: str, value: str) -> bool:
+    try:
+        if fmt == "uuid":
+            uuid.UUID(value)
+        else:
+            datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
+def body_violations(schema: dict[str, Any], value: Any, contract: dict[str, Any],
+                    where: str = "body") -> list[str]:
+    """Where `value` fails `schema`, for the keywords of `_ALL_OF_KEYWORDS`
+    (JSON Schema 2020-12 semantics, `format` asserted for uuid and date-time).
+    Empty when it holds. A message names the place, never the value.
+
+    The runtime's judge of an effective body narrowed by `add_all_of`: it
+    reads every keyword it is given, or refuses with ContractError. It never
+    judges a schema as if an unread keyword were absent."""
+    unread = sorted(set(schema) - _ALL_OF_KEYWORDS - {"allOf"})
+    if unread:
+        raise ContractError(f"{where}: keyword(s) {unread} not read by body_violations")
+    out: list[str] = []
+    if "$ref" in schema:
+        name = schema["$ref"][len(_SCHEMA_REF):]
+        out += body_violations(contract["components"]["schemas"][name], value, contract,
+                               where)
+    for branch in schema.get("allOf") or ():
+        out += body_violations(branch, value, contract, where)
+    if "anyOf" in schema and all(body_violations(b, value, contract, where)
+                                 for b in schema["anyOf"]):
+        out.append(f"{where}: matches none of its alternatives")
+    if "if" in schema and not body_violations(schema["if"], value, contract, where):
+        out += body_violations(schema["then"], value, contract, where)
+    if "type" in schema:
+        declared = schema["type"]
+        if not any(_type_holds(k, value)
+                   for k in (declared if isinstance(declared, list) else [declared])):
+            out.append(f"{where}: not of type {declared}")
+            return out
+    if "enum" in schema and not any(_json_same(value, e) for e in schema["enum"]):
+        out.append(f"{where}: not one of the allowed values")
+    if "const" in schema and not _json_same(value, schema["const"]):
+        out.append(f"{where}: not the required value")
+    if "minimum" in schema and _type_holds("number", value) and value < schema["minimum"]:
+        out.append(f"{where}: below {schema['minimum']}")
+    if "format" in schema and isinstance(value, str) and \
+            not _format_holds(schema["format"], value):
+        out.append(f"{where}: not a {schema['format']}")
+    if isinstance(value, dict):
+        properties = schema.get("properties") or {}
+        out += [f"{where}.{f}: required" for f in schema.get("required") or ()
+                if f not in value]
+        if schema.get("additionalProperties") is False:
+            out += [f"{where}.{k}: not allowed" for k in sorted(set(value) - set(properties))]
+        for key in sorted(set(value) & set(properties)):
+            out += body_violations(properties[key], value[key], contract, f"{where}.{key}")
+    if isinstance(value, list) and "items" in schema:
+        for i, item in enumerate(value):
+            out += body_violations(schema["items"], item, contract, f"{where}[{i}]")
+    return out
 
 
 def load_request_body_narrowings(
@@ -487,6 +646,8 @@ def load_request_body_narrowings(
             _check_non_null(cid, entry["non_null"], properties)
         if "enum" in entry:
             _check_enum(cid, entry["enum"], properties)
+        if "add_all_of" in entry:
+            _check_add_all_of(cid, entry["add_all_of"], frozen)
     return entries
 
 
