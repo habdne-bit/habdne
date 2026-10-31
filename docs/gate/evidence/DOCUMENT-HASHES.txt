@@ -1291,3 +1291,5 @@ docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  new   41bce07cb88
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-DATETIME.txt       new   602f2bd37b4c47fc90b50941412e442d19de0907c4de69e7e370291e0b032e8a
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  r2    1305e5907826d68154533b2071cdf592fe79754e992aabe7b9fa173734305adb
 docs/gate/SLICE_8_PLAN.md                                      rev6  c43d41ad40f994f44301587069a92895501d212cb67b012ca5cac323b3d70bf8
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  named 65a03c9ffa931de207f6d57cc6e9fa411335180d337554f02ccf7d50a3f3a06d
+docs/gate/SLICE_8_PLAN.md                                      rev6  52fdb15db00232fbada483c7a28a897626170f39c3037dca5b6dba267fff6278

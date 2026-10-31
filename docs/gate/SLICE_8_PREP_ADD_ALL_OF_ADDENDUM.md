@@ -32,7 +32,7 @@ until this addendum is reviewed.
   CORRECTION-009 draft's status;
 - `632fde5`: the mutation pairs;
 - `687da71`, `c0b616f`, `d071cdf`: the evidence round;
-- CLOSE_COMMIT: this note, the `date-time` measurement, plan revision 6.
+- `414fcbd`: this note, the `date-time` measurement, plan revision 6.
 
 ---
 
