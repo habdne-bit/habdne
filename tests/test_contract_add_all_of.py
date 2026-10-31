@@ -16,6 +16,12 @@ What the review asked this file to prove:
 - invalid correction input is refused;
 - **no other operation changes** in the effective contract.
 
+The review of `a7a4fe9` found that the loader checked the NAMES of the
+keywords, not the structure of their values (`required: "target"`,
+`minimum: "1"` were admitted), and asked that `format: date-time` be checked
+to its stated bound or not admitted. Its cases are pinned below
+(`INVALID_VALUES`, the judge's own refusals, `date-time` not admitted).
+
 The narrowing used here is a TEST entry, `TEST-ADD-ALL-OF`, in a temporary
 copy of the corrections file. It is not CORRECTION-009.
 """
@@ -169,11 +175,6 @@ def _judge(schema, value, components) -> bool:
             uuid.UUID(value)
         except ValueError:
             return False
-    if schema.get("format") == "date-time" and isinstance(value, str):
-        try:
-            datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return False
     if isinstance(value, dict):
         if not set(schema.get("required", ())) <= set(value):
             return False
@@ -308,3 +309,104 @@ INVALID = [
 def test_invalid_add_all_of_is_refused(tmp_path, label, value, message):
     with pytest.raises(C.ContractError, match=message):
         _loaded(tmp_path, add_all_of=value)
+
+
+# --- the structure of each keyword's value (review of a7a4fe9) ------------------------------
+# JSON Schema 2020-12, Validation §6: `required` an array of distinct
+# strings; `minimum` a number; `enum` an array (SHOULD be non-empty, its
+# items SHOULD be unique: required here); `type` a type name or an array of
+# distinct names; `properties` an object of schemas; `anyOf` a non-empty
+# array of schemas; `const`, `enum`'s items and `default` JSON values (a YAML
+# date is not one). `additionalProperties` true or false only: a schema
+# there would not be read by the judge.
+
+A_DATE = datetime.date(2026, 10, 31)
+
+INVALID_VALUES = [
+    ("required, a string", [{"required": "target"}], "'required' must be"),
+    ("required, a non-string name", [{"required": [1]}], "'required' must be"),
+    ("required, a name twice", [{"required": ["target", "target"]}], "'required' must be"),
+    ("minimum, a string", [{"properties": {"payload": {"minimum": "1"}}}],
+     "'minimum' must be a number"),
+    ("minimum, a boolean", [{"properties": {"payload": {"minimum": True}}}],
+     "'minimum' must be a number"),
+    ("minimum, not finite", [{"properties": {"payload": {"minimum": float("nan")}}}],
+     "'minimum' must be a number"),
+    ("properties, a list", [{"properties": ["payload"]}], "'properties' must be"),
+    ("properties, a name not a string", [{"properties": {1: {"type": "string"}}}],
+     "'properties' must be"),
+    ("enum, a string", [{"properties": {"target": {"enum": "REQUEST"}}}], "'enum' must be"),
+    ("enum, empty", [{"properties": {"target": {"enum": []}}}], "'enum' must be"),
+    ("enum, a value twice", [{"properties": {"target": {"enum": ["REQUEST", "REQUEST"]}}}],
+     "'enum' must be"),
+    ("enum, a date", [{"properties": {"target": {"enum": [A_DATE]}}}], "'enum' must be"),
+    ("const, a date", [{"properties": {"target": {"const": A_DATE}}}], "'const' must be"),
+    ("const, not finite", [{"properties": {"target": {"const": float("inf")}}}],
+     "'const' must be"),
+    ("default, a date", [{"properties": {"target": {"default": A_DATE}}}], "'default' must be"),
+    ("type, an empty list", [{"type": []}], "'type' must be"),
+    ("type, a name twice", [{"type": ["string", "string"]}], "'type' must be"),
+    ("anyOf, empty", [{"properties": {"payload": {"anyOf": []}}}], "'anyOf' must be"),
+    ("anyOf, a mapping", [{"properties": {"payload": {"anyOf": {"type": "string"}}}}],
+     "'anyOf' must be"),
+    ("format, not a string", [{"properties": {"payload": {"format": ["uuid"]}}}], "format"),
+    ("format date-time, in a branch", [{"properties": {"payload": {"format": "date-time"}}}],
+     "date-time"),
+    ("format date-time, in a referenced component",
+     [{"properties": {"payload": {"$ref": "#/components/schemas/StateReconfirm"}}}],
+     "date-time"),
+]
+
+
+@pytest.mark.parametrize("label, value, message", INVALID_VALUES,
+                         ids=[i[0] for i in INVALID_VALUES])
+def test_a_keyword_value_of_the_wrong_structure_is_refused_at_load(tmp_path, label, value,
+                                                                   message):
+    with pytest.raises(C.ContractError, match=message):
+        _loaded(tmp_path, add_all_of=value)
+
+
+JUDGE_REFUSES = [
+    ("required, a string", {"type": "object", "required": "target"}, {"t": 1},
+     "'required' must be"),
+    ("minimum, a string", {"type": "integer", "minimum": "1"}, 5, "'minimum' must be a number"),
+    ("enum, a string", {"enum": "REQUEST"}, "R", "'enum' must be"),
+    ("properties, a list", {"type": "object", "properties": ["a"]}, {"a": 1},
+     "'properties' must be"),
+    ("anyOf, empty", {"anyOf": []}, 1, "'anyOf' must be"),
+    ("format date-time", {"type": "string", "format": "date-time"}, "2026-10-31T00:00:00Z",
+     "date-time"),
+    ("additionalProperties, a schema", {"type": "object", "additionalProperties": {}}, {},
+     "additionalProperties"),
+    ("if without then", {"if": {"type": "string"}}, "x", "'if' without 'then'"),
+    ("a $ref to no component", {"$ref": "#/components/schemas/NoSuchThing"}, 1, "NoSuchThing"),
+    ("allOf, empty", {"allOf": []}, 1, "'allOf' must be"),
+    ("items, not a schema", {"type": "array", "items": "x"}, [1], "not a schema object"),
+]
+
+
+@pytest.mark.parametrize("label, schema, value, message", JUDGE_REFUSES,
+                         ids=[j[0] for j in JUDGE_REFUSES])
+def test_the_runtime_refuses_to_judge_a_malformed_keyword_value(label, schema, value,
+                                                                message):
+    """Fail closed, as for an unread keyword: the judge never reads a value of
+    the wrong structure as something else (a string as a list of names, a
+    string as a number)."""
+    with pytest.raises(C.ContractError, match=message):
+        C.body_violations(schema, value, C.load_contract())
+
+
+def test_the_draft_correction_009_entry_is_accepted_by_the_loader(tmp_path):
+    """The literal entry of the draft (its §3), loaded as it stands: the
+    stricter checks refuse nothing it needs. It stays a draft."""
+    import re
+
+    text = (ROOT / "docs" / "gate" / "drafts"
+            / "CORRECTION-009-lead-conversion-payload.DRAFT.md").read_text(encoding="utf-8")
+    block = re.search(r"## 3\. The entry, literally.*?```yaml\n(.*?)```", text, re.S).group(1)
+    [entry] = yaml.safe_load(block)
+    entry["approved"] = "2026-10-31"  # loaded in a temporary copy only
+    path = _corrections_with(tmp_path, entry)
+    loaded = C.load_request_body_narrowings(path, C.load_contract())
+    assert [e["id"] for e in loaded if "add_all_of" in e] == ["CORRECTION-009"]
+

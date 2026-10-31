@@ -9,9 +9,9 @@ policy silently drifts from the contract it is supposed to enforce.
 from __future__ import annotations
 
 import copy
-import datetime
 import functools
 import json
+import math
 import pathlib
 import re
 import uuid
@@ -404,10 +404,86 @@ _ALL_OF_KEYWORDS = frozenset({
     "type", "enum", "const", "required", "properties", "additionalProperties", "items",
     "anyOf", "if", "then", "minimum", "format", "default", "$ref",
 })
-#: The formats asserted: as the project's routes and CORRECTION-006's judge do.
-_ALL_OF_FORMATS = frozenset({"uuid", "date-time"})
+#: The formats asserted: `uuid`, as the project's routes and CORRECTION-006's
+#: judge do. `date-time` is NOT admitted (review of a7a4fe9): its JSON Schema
+#: meaning is RFC 3339's date-time, which `datetime.fromisoformat` does not
+#: check exactly, and CORRECTION-009 does not need it. A referenced component
+#: carrying it is refused too.
+_ALL_OF_FORMATS = frozenset({"uuid"})
 _ALL_OF_TYPES = frozenset({"object", "array", "string", "integer", "number", "boolean",
                            "null"})
+
+
+def _is_json(value: Any) -> bool:
+    """A JSON value: what YAML may give that JSON has not (a date, a
+    non-finite number, a non-string key) is not one."""
+    if value is None or isinstance(value, (str, bool, int)):
+        return True
+    if isinstance(value, float):
+        return math.isfinite(value)
+    if isinstance(value, list):
+        return all(_is_json(v) for v in value)
+    if isinstance(value, dict):
+        return all(isinstance(k, str) and _is_json(v) for k, v in value.items())
+    return False
+
+
+def _value_problems(node: dict[str, Any]) -> list[str]:
+    """What makes the VALUE of one of `node`'s own keywords malformed (JSON
+    Schema 2020-12, Validation §6), so that it would be read as something it
+    is not (review of a7a4fe9). Shared by the loader and `body_violations`."""
+    problems = []
+    if "type" in node:
+        declared = node["type"]
+        kinds = declared if isinstance(declared, list) else [declared]
+        if not kinds or not all(isinstance(k, str) for k in kinds) \
+                or len(set(kinds)) != len(kinds):
+            problems.append("'type' must be a type name or a non-empty list of distinct "
+                            "type names")
+        else:
+            problems += [f"type {k!r} is not a JSON type" for k in kinds
+                         if k not in _ALL_OF_TYPES]
+    if "enum" in node:
+        values = node["enum"]
+        if not isinstance(values, list) or not values or not all(map(_is_json, values)) \
+                or any(_json_same(a, b) for i, a in enumerate(values) for b in values[i + 1:]):
+            problems.append("'enum' must be a non-empty list of distinct JSON values")
+    for key in ("const", "default"):
+        if key in node and not _is_json(node[key]):
+            problems.append(f"{key!r} must be a JSON value")
+    if "required" in node:
+        names = node["required"]
+        if not isinstance(names, list) or not all(isinstance(n, str) for n in names) \
+                or len(set(names)) != len(names):
+            problems.append("'required' must be a list of distinct property names")
+    if "properties" in node and not (isinstance(node["properties"], dict)
+                                     and all(isinstance(k, str) for k in node["properties"])):
+        problems.append("'properties' must be a mapping of property names to schemas")
+    if "anyOf" in node and not (isinstance(node["anyOf"], list) and node["anyOf"]):
+        problems.append("'anyOf' must be a non-empty list of schemas")
+    if "minimum" in node and not (_type_holds("number", node["minimum"])
+                                  and math.isfinite(node["minimum"])):
+        problems.append("'minimum' must be a number")
+    if "format" in node and not (isinstance(node["format"], str)
+                                 and node["format"] in _ALL_OF_FORMATS):
+        problems.append(f"format {node['format']!r} is not asserted by the validator")
+    if "additionalProperties" in node and not isinstance(node["additionalProperties"], bool):
+        problems.append("'additionalProperties' must be true or false: a schema there is "
+                        "not read")
+    if "then" in node and "if" not in node:
+        problems.append("'then' without 'if'")
+    if "if" in node and "then" not in node:
+        problems.append("'if' without 'then'")
+    return problems
+
+
+def _component(ref: Any, contract: dict[str, Any]) -> tuple[str | None, Any]:
+    """The frozen component a `$ref` names: (its name, its schema or None);
+    (None, None) when it is not a reference to the frozen components."""
+    if not (isinstance(ref, str) and ref.startswith(_SCHEMA_REF)):
+        return None, None
+    name = ref[len(_SCHEMA_REF):]
+    return name, contract.get("components", {}).get("schemas", {}).get(name)
 
 
 def _schema_problems(node: Any, contract: dict[str, Any], *, branch: bool,
@@ -419,25 +495,12 @@ def _schema_problems(node: Any, contract: dict[str, Any], *, branch: bool,
         return [f"{node!r} is not a schema object"]
     problems = [f"keyword {k!r} is not one the validator reads"
                 for k in sorted(set(node) - _ALL_OF_KEYWORDS)]
-    if "then" in node and "if" not in node:
-        problems.append("'then' without 'if'")
-    if "if" in node and "then" not in node:
-        problems.append("'if' without 'then'")
-    declared = node.get("type")
-    for kind in (declared if isinstance(declared, list) else [declared] if declared else []):
-        if kind not in _ALL_OF_TYPES:
-            problems.append(f"type {kind!r} is not a JSON type")
-    if "format" in node and node["format"] not in _ALL_OF_FORMATS:
-        problems.append(f"format {node['format']!r} is not asserted by the validator")
-    extra = node.get("additionalProperties", False)
-    if extra is not False and (branch or extra is not True):
+    problems += _value_problems(node)
+    if branch and node.get("additionalProperties", False) is not False:
         problems.append("additionalProperties may only be false in an added branch")
     if "$ref" in node:
         ref = node["$ref"]
-        name = ref[len(_SCHEMA_REF):] if isinstance(ref, str) and ref.startswith(_SCHEMA_REF) \
-            else None
-        target = (contract.get("components", {}).get("schemas", {}).get(name)
-                  if name else None)
+        name, target = _component(ref, contract)
         if name is None:
             problems.append(f"$ref {ref!r} is not a reference to the frozen components")
         elif target is None:
@@ -445,14 +508,15 @@ def _schema_problems(node: Any, contract: dict[str, Any], *, branch: bool,
         elif name not in seen:
             problems += [f"{name}: {p}" for p in
                          _schema_problems(target, contract, branch=False, seen=seen | {name})]
-    for key in ("properties",):
-        for sub in (node.get(key) or {}).values():
+    if isinstance(node.get("properties"), dict):
+        for sub in node["properties"].values():
             problems += _schema_problems(sub, contract, branch=branch, seen=seen)
     for key in ("items", "if", "then"):
         if key in node:
             problems += _schema_problems(node[key], contract, branch=branch, seen=seen)
-    for sub in node.get("anyOf") or ():
-        problems += _schema_problems(sub, contract, branch=branch, seen=seen)
+    if isinstance(node.get("anyOf"), list):
+        for sub in node["anyOf"]:
+            problems += _schema_problems(sub, contract, branch=branch, seen=seen)
     return problems
 
 
@@ -481,11 +545,10 @@ def _type_holds(kind: str, value: Any) -> bool:
 
 
 def _format_holds(fmt: str, value: str) -> bool:
+    """`fmt` is one of `_ALL_OF_FORMATS` (`_value_problems` refused any other)."""
+    assert fmt == "uuid", fmt
     try:
-        if fmt == "uuid":
-            uuid.UUID(value)
-        else:
-            datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        uuid.UUID(value)
     except ValueError:
         return False
     return True
@@ -494,20 +557,29 @@ def _format_holds(fmt: str, value: str) -> bool:
 def body_violations(schema: dict[str, Any], value: Any, contract: dict[str, Any],
                     where: str = "body") -> list[str]:
     """Where `value` fails `schema`, for the keywords of `_ALL_OF_KEYWORDS`
-    (JSON Schema 2020-12 semantics, `format` asserted for uuid and date-time).
+    (JSON Schema 2020-12 semantics, `format` asserted for uuid).
     Empty when it holds. A message names the place, never the value.
 
     The runtime's judge of an effective body narrowed by `add_all_of`: it
     reads every keyword it is given, or refuses with ContractError. It never
-    judges a schema as if an unread keyword were absent."""
+    judges a schema as if an unread keyword were absent, nor a keyword's value
+    of the wrong structure as something else (review of a7a4fe9)."""
+    if not isinstance(schema, dict):
+        raise ContractError(f"{where}: {schema!r} is not a schema object")
     unread = sorted(set(schema) - _ALL_OF_KEYWORDS - {"allOf"})
     if unread:
         raise ContractError(f"{where}: keyword(s) {unread} not read by body_violations")
+    malformed = _value_problems(schema)
+    if "allOf" in schema and not (isinstance(schema["allOf"], list) and schema["allOf"]):
+        malformed.append("'allOf' must be a non-empty list of schemas")
+    if malformed:
+        raise ContractError(f"{where}: " + "; ".join(malformed))
     out: list[str] = []
     if "$ref" in schema:
-        name = schema["$ref"][len(_SCHEMA_REF):]
-        out += body_violations(contract["components"]["schemas"][name], value, contract,
-                               where)
+        name, target = _component(schema["$ref"], contract)
+        if target is None:
+            raise ContractError(f"{where}: $ref {schema['$ref']!r}: no component {name}")
+        out += body_violations(target, value, contract, where)
     for branch in schema.get("allOf") or ():
         out += body_violations(branch, value, contract, where)
     if "anyOf" in schema and all(body_violations(b, value, contract, where)

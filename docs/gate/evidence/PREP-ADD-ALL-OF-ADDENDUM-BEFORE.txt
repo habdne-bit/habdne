@@ -1,0 +1,120 @@
+TURAB — preparatory step add_all_of, ADDENDUM (review of a7a4fe9): BEFORE
+
+HEAD:                        a7a4fe9423061f7b45f977cc922a3cddcc8c1a99
+src/turab/auth/contract.py and db/gate/generate_effective_contract.py, as at a7a4fe9 (unchanged):
+  src/turab/auth/contract.py sha256 now fe2b20ec7e443fc5  at a7a4fe9 fe2b20ec7e443fc5
+  db/gate/generate_effective_contract.py sha256 now 56488a8812b181d1  at a7a4fe9 56488a8812b181d1
+The tree's only change: the test file, and this record:
+   M tests/test_contract_add_all_of.py
+  ?? docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-BEFORE.txt
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider --tb=short --junitxml=<tmp> tests/test_contract_add_all_of.py
+Each FAILED test with how it failed (from the junit file's failure message):
+  ACCEPTED = the malformed value was admitted; 'not a ContractError' = an unrelated exception.
+------------------------------------------------------------------------
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[anyOf, a mapping]
+         -> refused, with another message: "TEST-ADD-ALL-OF: add_all_of: 'type' is not a schema object"
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[anyOf, empty]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const, a date]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const, not finite]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[default, a date]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum, a date]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum, a string]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum, a value twice]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum, empty]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format date-time, in a branch]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format date-time, in a referenced component]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format, not a string]
+         -> not a ContractError: TypeError: unhashable type: 'list'
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum, a boolean]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum, a string]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum, not finite]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[properties, a list]
+         -> not a ContractError: AttributeError: 'list' object has no attribute 'values'
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[properties, a name not a string]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required, a name twice]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required, a non-string name]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required, a string]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[type, a name twice]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[type, an empty list]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[a $ref to no component]
+         -> not a ContractError: KeyError: 'NoSuchThing'
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[additionalProperties, a schema]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[allOf, empty]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[anyOf, empty]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[enum, a string]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[format date-time]
+         -> ACCEPTED (did not raise ContractError)
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[if without then]
+         -> not a ContractError: KeyError: 'then'
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[items, not a schema]
+         -> refused, with another message: "body[0]: keyword(s) ['x'] not read by body_violations"
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[minimum, a string]
+         -> not a ContractError: TypeError: '<' not supported between instances of 'int' and 'str'
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[properties, a list]
+         -> not a ContractError: TypeError: list indices must be integers or slices, not str
+FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[required, a string]
+         -> ACCEPTED (did not raise ContractError)
+PASSED test_a_violation_names_where_it_is_and_never_the_value
+PASSED test_invalid_add_all_of_is_refused[$defs]
+PASSED test_invalid_add_all_of_is_refused[a $ref outside the components]
+PASSED test_invalid_add_all_of_is_refused[a $ref to a component with an unread keyword]
+PASSED test_invalid_add_all_of_is_refused[a $ref to no component]
+PASSED test_invalid_add_all_of_is_refused[a branch that is not an object]
+PASSED test_invalid_add_all_of_is_refused[a format the validator does not assert]
+PASSED test_invalid_add_all_of_is_refused[additionalProperties as a schema]
+PASSED test_invalid_add_all_of_is_refused[additionalProperties true]
+PASSED test_invalid_add_all_of_is_refused[an empty list]
+PASSED test_invalid_add_all_of_is_refused[an unknown type]
+PASSED test_invalid_add_all_of_is_refused[an unread keyword]
+PASSED test_invalid_add_all_of_is_refused[if without then]
+PASSED test_invalid_add_all_of_is_refused[not a list]
+PASSED test_invalid_add_all_of_is_refused[then without if]
+PASSED test_no_approved_correction_uses_add_all_of
+PASSED test_the_draft_correction_009_entry_is_accepted_by_the_loader
+PASSED test_the_effective_body_is_the_frozen_body_required_and_with_the_branches_appended
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[PROPERTY, any payload: not narrowed here]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[REQUEST, RENT]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[REQUEST, a minimal payload]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[REQUEST, every field]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[an unknown top-level key: the frozen body admits it]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[party_id not a uuid]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload absent]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload carries management_mode]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload carries party_id]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload without intent]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload, a budget given as true]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload, a criterion without its code]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload, a location not a uuid]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload, a negative budget]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload, an unknown intent]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload, criteria not a list]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[target absent]
+PASSED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[target unknown]
+PASSED test_the_generator_writes_that_body_and_changes_no_other_operation
+PASSED test_the_runtime_refuses_to_judge_a_keyword_it_does_not_read
+
+33 failed, 38 passed
