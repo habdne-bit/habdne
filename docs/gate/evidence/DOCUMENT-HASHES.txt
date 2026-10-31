@@ -1275,3 +1275,14 @@ docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-MUTATIONS-TRIAL.txt new   4bd9c167ff
 --- add_all_of addendum: the expected contract regenerated at 7e7da47 by its script; CORRECTION-009 draft's status ---
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r6    6b7436d973678e6ccb526ea1e559b290759cafd57aa4ee2694977fc398352aa5
 docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r6    81f79cb2882f8d4b99b518348b3bfef7a9857a7ccfcf51f16a75f047dacac69e
+--- add_all_of addendum: mutation pairs at 64ad041 (its own 47; and the four earlier scripts that mutate contract.py, re-run) ---
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-MUTATIONS.txt      new   b7c77a06190424df63536e421a25805a8ea953107fcd7506db34e61fd62ae445
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-MUTATIONS-REPEAT.txt new   c2210870daf014fbd20a7267e8eb10361117a05a7959d157695e9e5cc5c5dec7
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-CORRECTION-004-MUTATIONS-REPEAT.txt new   5442096fb4a4f4bd3b1b1fdc035bb88b9142485ce5faf0ce82c4de3ab8324eef
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-CORRECTION-004-MUTATIONS.txt new   562c27f92adf63897863606b7e967672716fbe28635b6d048c8e4981554e49d8
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE6-STEP2-MUTATIONS-REPEAT.txt new   398168bdace3808a753f1cc89e189a0de86eb6afaa00a62630e2dd78b2bbe728
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE6-STEP2-MUTATIONS.txt new   585a91f19ec6bc91031d3fde4eb4479c481177290f25058d653ac031a021d9c0
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.txt new   ecfd01b3a9aa368a32e3fb7f1c337733eb996e77ffca19229407e2758522c8f1
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP2-MUTATIONS.txt new   27aebd5c7193aadb3e5816fb0ff8a75284e1fe71cdf000558e7c2058ed5586d1
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   e51fcaf9c3d53c9de823d597e6357e9a47cb45ea9d6c479b589cf209b7db153c
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM-RERUN-SLICE7-STEP3-MUTATIONS.txt new   255c5128b5da1b1d24e871486873afa9a02e2a5dcb39fa2ad9e0c5537bdac3d4
