@@ -1251,3 +1251,14 @@ docs/gate/SLICE_8_PLAN.md                                      rev4  8f9bde7d7b5
 --- preparatory step add_all_of (Slice 8 plan Q-B3 (a)): the before record; the mutation trial ---
 docs/gate/evidence/PREP-ADD-ALL-OF-BEFORE.txt                  new   1f032360edbdbe527a52f426fb366640c4b987a4bf46afed7c3a15d051fc9b2a
 docs/gate/evidence/PREP-ADD-ALL-OF-MUTATIONS-TRIAL.txt         new   1cb9c0b852b63ba5f790022cf1ad804aca791234c461c7a7259e3b588694e74a
+--- preparatory step add_all_of: mutation pairs at 0c54875 (its own; and the four earlier scripts that mutate contract.py, re-run) ---
+docs/gate/evidence/PREP-ADD-ALL-OF-MUTATIONS.txt               new   21bc984fef2eaecf6d0f2ebbaffaf1bcae894e3d547893ae0c5a0a20696b353e
+docs/gate/evidence/PREP-ADD-ALL-OF-MUTATIONS-REPEAT.txt        new   0eddb88105fbbd880409487fb8a29a1a422ce020675c21f9e8e36a998235866c
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-CORRECTION-004-MUTATIONS-REPEAT.txt new   af6eca8be1e7baa601cb6e18ae0fdf8d407c72a55158ed3feee07c111d4badd1
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-CORRECTION-004-MUTATIONS.txt new   9f2753307b0f42d8f3bfea8960e389b1c5be95e7f959df68809dc8e004a7d58b
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE6-STEP2-MUTATIONS-REPEAT.txt new   046baec64ca7e328fc1e3100fbb7b014ba0a823d91899ad0fa68a146df8f451a
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE6-STEP2-MUTATIONS.txt new   900fd2bc908cfd68374e437fa3c9b6b35ffd97f4000e7e21f72d6630853b4ca6
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.txt new   2b5349babcb13ece93bbcdb985ef4a5cff3c353b268e32581a01e437b85b4424
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP2-MUTATIONS.txt new   73d512d01b70302f2410e3c84f6029969510102e2d09820e10944082d97c15f5
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   c72bb51b1f82e8156b39140e26e4228ddd24abfa9fb4e35f69fc55524ae1104a
+docs/gate/evidence/PREP-ADD-ALL-OF-RERUN-SLICE7-STEP3-MUTATIONS.txt new   e0f35235a4812b6bece2e6d2767a67a87f3795d95fc7c3103f29540c4ea03596
