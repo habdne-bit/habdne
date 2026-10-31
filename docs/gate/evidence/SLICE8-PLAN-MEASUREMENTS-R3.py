@@ -275,7 +275,7 @@ def m11(conn, draft) -> None:
         "SELECT to_regclass('turab.external_lead_contact_attempts')::text, "
         "(SELECT count(*) FROM reason_codes WHERE code LIKE 'LEAD\\_%'), "
         "(SELECT count(*) FROM pg_trigger WHERE tgname IN ('trg_external_lead_transition', "
-        "'trg_lead_attempt_outcome', 'trg_lead_attempt_immutable', "
+        "'trg_lead_attempt_insert', 'trg_lead_attempt_immutable', "
         "'audit_external_lead_contact_attempts'))").fetchone()
     out(f"    after it: table {left[0] or 'none'}; LEAD_* codes {left[1]}; triggers {left[2]}")
     out(f"    the upgrade again: {apply(conn, draft.UPGRADE)}")

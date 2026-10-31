@@ -1,28 +1,21 @@
 # Slice 8 — External Acquisition / Assisted Entry / Self-service
-## Implementation plan — **revision 3**
+## Implementation plan — **revision 4**
 
-**Status: revision 3 submitted for review (planning only).**
-- **The review of `b39ad10`** accepted revision 2's measurements as a basis
-  for planning, adopted M4's condition (the conversion locks the grant `FOR
-  SHARE` and re-checks it in its transaction), decided Q-A1 to Q-A8, asked
-  for corrections, and authorized this planning revision. **It did not
-  approve `0009`'s text or the Delta, and did not authorize code.** Recorded
-  below.
-- **The drafts are files now**, under `docs/gate/drafts/`, which neither the
-  code nor Alembic reads:
-  - `0009_external_lead_workflow.DRAFT.py`: upgrade **and downgrade**;
-  - `CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md` and
-    `ADD-SLICE8_external_lead_workflow.DRAFT.yaml`: the Delta and its
-    addendum;
-  - `CORRECTION-009-lead-conversion-payload.DRAFT.md`: the payload's
-    narrowing;
-  - `SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt`: the effective contract and
-    the inventory **as the gate's own generators produce them** from these
-    drafts, on a temporary worktree.
-- **Nothing is applied:** no file under `db/migrations/versions/` or
-  `docs/contract/` changed; no code.
-- **The draft of `0009` was run** on a scratch database:
-  `evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt` (M7 to M11).
+**Status: revision 4 submitted for review (planning only).**
+- **The review of `0a78e91`** decided Q-B1 (a), Q-B2 (b) and Q-B3 (a); did
+  **not** approve `0009`'s text or CORRECTION-009; did **not** authorize
+  Slice 8's step 1; authorized **one bounded preparatory step** for Q-B3
+  (`add_all_of`), delivered separately (`SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md`).
+  Recorded below.
+- **This revision's corrections:** the draft of `0009` carries its Alembic
+  metadata and was run **through Alembic** in the real chain (M12); the clock
+  rule is bounded precisely, `recorded_at` assigned by the server (M13); the
+  wording of Q-B1 is restricted after measuring a `CONVERTED` lead (M14).
+- **Nothing of the slice is applied:** no file under `db/migrations/` or
+  `docs/contract/` changed for it; no slice command exists.
+- **The drafts** stay under `docs/gate/drafts/`; CORRECTION-009's literal
+  YAML and its generated diff come after the preparatory step, as the review
+  asked.
 
 **What it rests on:**
 - **The findings of §4** rest on reading the frozen sources, the earlier
@@ -36,9 +29,52 @@
 
 | rev | commit | what changed |
 |---|---|---|
+| 4 | REV4_COMMIT | the review of `0a78e91` recorded: Q-B1 (a), Q-B2 (b), Q-B3 (a); the draft of `0009` with its revision metadata, run through Alembic (M12); `recorded_at` assigned by the server (M13); Q-B1's wording restricted after the `CONVERTED` case (M14); R3 re-run on the revised draft, unchanged |
 | 3 | `1eafe4c` | the review of `b39ad10` recorded; Q-A1 to Q-A8 applied; §5A.8's guarantee rewritten to the query (Delta §3.4); `0009`'s clock rule and the party-deletion consequence settled in its draft and measured (M7 to M11); the drafts as files under `docs/gate/drafts/`, with the expected effective contract generated |
 | 2 | `3db08bb` | the review of `3922850` recorded; §6.5's measurements run, with the two the review added; §0.4 (delivered and deferred); §5A's drafts (status machine, Contract Delta, `0009`, Call Brief, Direct Interest, conversion, audit, queue paging), not applied; OQ8-1 checked against the Journal Officiel |
 | 1 | `3922850` | first plan (planning only) |
+
+---
+
+## The review of `0a78e91`
+
+**Q-B1 to Q-B3 are decided as below. `0009`'s text and CORRECTION-009 are
+not approved yet, and Slice 8's step 1 is not authorized.** The reviewer
+read the drafts and the records; the measurements are ours, not re-run.
+
+| | Decision |
+|---|---|
+| **Q-B1** | **(a):** keep the frozen key's `ON DELETE SET NULL`, declaring that a NULL written by hand passes the guard too; **prove the service never writes it**. M9 proves deleting a party linked to a `DECLINED` lead; **do not generalize it to deleting a `CONVERTED` lead's target**: the frozen check requires `CONVERTED` to keep its target. **Measure that case and restrict "links may become NULL".** Deleting a party proves neither the erasure of `raw_payload` nor the fulfilment of a data-erasure request |
+| **Q-B2** | **(b), now:** the frozen operation's roles stay as they are. Narrowing them to `ADMIN` would not make its unpaged query safe at operational volume: `ADMIN` could still run it. **The new paged operation is the approved operating path; the old one's limit of use is carried into the closure and the operational setup** |
+| **Q-B3** | **(a):** a **separate, limited preparatory step** is authorized: `add_all_of` in the corrections loader, the contract generator and their tests. **Not included:** activating CORRECTION-009, moving `0009` into Alembic, or writing the slice's commands. **Prove** the addition applies to an operation-local copy of the body, that **the effective contract and the runtime validation reject the same payload**, with tests refusing invalid correction input and showing **no other operation changes** |
+
+- **Two corrections asked before the texts are approved:**
+  1. **`0009` was not yet a complete Alembic revision:** "Would-be Revision
+     ID" in its docstring, but no `revision`/`down_revision` as `0008` has.
+     M7 to M11 tested its statements, not its place in Alembic's chain.
+     **Add the revision metadata, then test upgrade and downgrade through
+     Alembic on a temporary database, the downgrade refused with data.**
+  2. **The clock rule needs a tighter description.** `occurred_at <=
+     recorded_at` is measured, but `recorded_at DEFAULT clock_timestamp()`
+     does not stop an INSERT from supplying an explicit value, so "both
+     sides are always the server's clock" claimed more than the database
+     guarantees. **Either the draft makes the server assign `recorded_at`,
+     or the constraint is described as a comparison of two columns**, the
+     service relying on the server's value and the explicit value tested.
+     Neither counts as a remedy for K06.
+- **Paging:** the new wording is closer to what the pages do (each query its
+  own snapshot under READ COMMITTED; no snapshot for the walk). The late
+  commit and the status change are accepted as Delta §3.4 states them, **to
+  be proved by tests of the actual path**.
+- **CORRECTION-009 is not complete for approval:** its `payload` entry is
+  still a descriptive placeholder between `<…>`, and part 3 of the expected
+  contract is marked not generated. **After the preparatory step, show the
+  literal YAML schema and the effective-contract diff the generator
+  produces; then the correction, the Delta and the migration are reviewed in
+  final form before step 1.**
+- **OQ8-1 stays open;** `raw_text` capture is not widened.
+- **Standing:** R-1 UNMET; K06 UNPROVEN; SALE only; not a release
+  authorization.
 
 ---
 
@@ -219,6 +255,9 @@ the customer's name).
 8. **Slice 3's publication rule** (`services/public_listing.py`): three SQL
    conditions, and the precautionary rule R6-P1, accepted "for now" in the
    review of `3a53b0a`.
+9. **The frozen unpaged queue is not for operational volume** (G3-10 Q-8;
+   Q-B2 (b), review of `0a78e91`). The paged operation is the operating path;
+   this limit goes into the closure record and the operational setup.
 
 ### 0.4 What Slice 8 delivers, and what it declares deferred (G8-1)
 
@@ -650,7 +689,8 @@ inline SQL is replaced by it. **Measured by executing those statements**
 | `CONSENTED` | only with `party_id` | M9 |
 | `DECLINED`, `CLOSED` (Q-A3) | a `close_reason_code` of category `LEAD_CLOSURE`; a reason on any other status refused | M9: a `MATCH` code refused; a reason on an open lead refused |
 | **changing a closed row's reason** (Q-A3) | **refused:** a terminal lead's reason is frozen | M9 |
-| the clock (the review) | **one rule:** `occurred_at <= recorded_at`, both the server's clock (`clock_timestamp()`), **no margin**; the service refuses the same with `422`. No margin, because both sides of the comparison are the server's: the operator types a time, the server compares it with its own | M10: one second after the insert's clock refused |
+| the clock (reviews of `b39ad10`, `0a78e91`) | **`recorded_at` assigned by the server:** the BEFORE INSERT trigger sets `NEW.recorded_at := clock_timestamp()`, overwriting any value an INSERT supplies; then **`CHECK (occurred_at <= recorded_at)`, no margin**. The CHECK compares two columns; the trigger is what makes one of them the server's clock. The service refuses a future `occurred_at` with `422`. Not K06 (a superuser can disable a trigger) | M10: one second after the insert's clock refused; **M13:** `recorded_at` given as 2099 does not save a future `occurred_at`; given as 2000, it is replaced by the server's clock |
+| Alembic (review of `0a78e91`) | `revision = "0009_external_lead_workflow"`, `down_revision = "0008_communication_records"`, as `0008` | **M12:** the only head, after `0008`; upgrade 0008 → 0009 by Alembic; downgrade refused with an attempt recorded, the database left at 0009; without data, downgrade to 0008 and upgrade again |
 | the attempts' outcome | a `LEAD_CONTACT` code (trigger) | M10 |
 | append-only | UPDATE and DELETE refused | M10 |
 | audit (Q-A4) | `AFTER INSERT ... audit_row_change('attempt_id')`; the table has **no free-text column** | M10: one `audit_log` row per insert, the whole row |
@@ -658,20 +698,20 @@ inline SQL is replaced by it. **Measured by executing those statements**
 | existing rows | the guard acts on UPDATE only; a pre-check refuses the upgrade if a `LEAD_*` code exists | M7: the test's `DECLINED` row without a reason survives the upgrade unchanged |
 | **downgrade** | **refused** while an attempt or a `LEAD_*` reason exists, naming the counts; otherwise drops the triggers, functions and table, then the eight codes. Nothing recorded is lost by a downgrade that runs | M11: refused twice with data; with none, run, then the upgrade again |
 
-**Q-B1 · A party's deletion and the terminal freeze (F8-17).** Measured:
-the frozen schema alone lets a party be deleted, setting the lead's
-`party_id` to NULL (M9a). Three texts are possible:
-
-| Option | Effect | Measured |
-|---|---|---|
-| **(a) recommended, the draft:** a terminal lead's links may become NULL, never another value; the reason never changes | a party's deletion works as the frozen key declares | M9: accepted, `party_id` NULL. **Consequence, declared:** a NULL written by hand is accepted too; the trigger cannot tell it from the key's action |
-| (b) strict freeze | deleting a party that a terminal lead names is **refused**; for an open lead it passes | M9: refused for `DECLINED`, accepted for `CONTACTED` |
-| (c) as `0008`'s D2: the key becomes `ON DELETE RESTRICT` | no party any lead names can be deleted; a frozen constraint changes, a declared delta in `migration_deltas.py` | not measured (`0008`'s precedent) |
-
-*Why (a):* it keeps the frozen key's meaning, and changes no frozen object.
-A party's deletion is an erasure path that this slice should not newly
-block (OQ8-1). Its cost, the hand-written NULL, is a write the service never
-makes; the tests pin that no service path makes it.
+**Q-B1 · A party's deletion and the terminal freeze (F8-17): DECIDED (a)**
+(review of `0a78e91`), with the wording restricted after M14:
+- **a terminal lead's `party_id` may become NULL**, never another value: the
+  frozen `ON DELETE SET NULL` keeps working (M9: a `DECLINED` lead's party
+  deleted, the link NULL);
+- **a NULL written by hand passes the guard too** (M9). Declared; **the
+  service never writes it**, pinned by an inventory of its statements (§6.6);
+- **a `CONVERTED` lead's links never become NULL** (M14): its target cannot
+  (`ck_external_lead_converted_target`, frozen), its request cannot be
+  deleted (`prevent_core_delete`), and its party cannot be deleted either
+  (the request's `party_id` is `ON DELETE RESTRICT`);
+- **deleting a party erases nothing captured** (M14): the lead's
+  `raw_payload` and its source's `raw_text` stay. It is **not** an erasure of
+  personal data, and proves nothing about a data-erasure request (OQ8-1).
 
 **Tests of the draft's consequences** (§6.6).
 
@@ -737,14 +777,13 @@ CORRECTION), drafted in full in
 closed to `RequestCreate` without the three fields the conversion sets.
 PROPERTY is not narrowed: it stays a `409` by decision.
 
-**Q-B3 · The overlay cannot carry the payload's schema (F8-18).** Measured
-on the worktree: `require` is carried today; the payload's schema is not.
-(a) recommended: a new narrowing key, `add_all_of`, in `contract.py` and the
-generator (an appended `allOf` can only narrow), with its tests; **code,
-which needs its own authorization**. (b) the payload's schema as a new
-addendum operation (`POST /external-leads/{lead_id}/convert-request`), which
-leaves two conversion paths. The body (a) would produce is the expected
-file's part 3.
+**Q-B3 · The overlay cannot carry the payload's schema (F8-18): DECIDED (a)**
+(review of `0a78e91`). A separate, limited preparatory step adds
+`add_all_of` to the corrections loader, the contract generator and their
+tests, with one runtime validator reading the effective body; delivered in
+`SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md`. **It activates nothing:** CORRECTION-009
+stays a draft, `0009` stays outside Alembic, no slice command is written.
+CORRECTION-009's literal YAML and the generator's diff follow it.
 
 **6. `postInterests`** needs no Delta: it is frozen. Its rules are §5A.5.
 
@@ -840,11 +879,12 @@ three guarantees, and the table of what a walk does not guarantee. In brief:
 operational volume it is the one used. **The frozen unpaged operation does
 not become safe because the new one exists** (Delta §3.5).
 
-**Q-B2 · The frozen unpaged queue before operational volume.** (a)
-recommended: before operational volume begins, a CORRECTION narrows
-`getBackofficeQueuesExternalLeads` to ADMIN only, so operators use the paged
-one; (b) keep it as it is, the closure record carrying G3-10's condition as a
-limit. Either way, its use at operational volume stays forbidden.
+**Q-B2 · The frozen unpaged queue: DECIDED (b)** (review of `0a78e91`).
+Its roles stay as they are: narrowing them to ADMIN would not make an
+unpaged query safe at volume, since ADMIN could still run it. **The paged
+operation is the approved operating path. The old operation's limit of use
+(not at operational volume, G3-10 Q-8) is carried into the slice's closure
+record and the operational setup** (§0.3, item 9).
 
 **Q-A8 (decided): `discovered_at` stays `now()`.** Revision 2's proposal to
 move it to `clock_timestamp()` is withdrawn: it would not order rows by
@@ -909,8 +949,18 @@ fingerprinted trees.
 **Before `0009` is applied:** M5 repeated on the target database, its counts
 recorded (§5A.3).
 
+**Revision 4's measurements** (`evidence/SLICE8-PLAN-MEASUREMENTS-R4.txt`),
+twice, identical:
+
+| # | Measurement | Result |
+|---|---|---|
+| M12 | the draft as an Alembic revision after `0008` | the only head; upgrade; downgrade refused with an attempt (database stays at 0009); without data, downgrade to 0008, upgrade again |
+| M13 | an explicit `recorded_at` in an INSERT | overwritten by the server's clock: a future `occurred_at` refused even with `recorded_at` 2099 |
+| M14 | a `CONVERTED` lead; a `DECLINED` lead's party deleted | the target cannot be NULLed, the request not deleted, the party not deleted; a `DECLINED` lead's party deleted, `raw_payload` and `raw_text` kept |
+
 **Revision 3's measurements** (`evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt`),
-on the draft of `0009`, its own statements executed:
+on the draft of `0009`, its own statements executed (re-run on the draft as
+revised for revision 4: the same results, line for line):
 
 | # | Measurement | Result |
 |---|---|---|
@@ -924,6 +974,12 @@ on the draft of `0009`, its own statements executed:
 ### 6.6 Tests of `0009`'s consequences (when it is applied)
 - the migration test comparing the applied text with the approved text,
   statement by statement, as `0008`'s;
+- **through Alembic** (M12): upgrade from `0008`, downgrade refused with
+  data, downgrade and upgrade without;
+- **the clock** (M13): an explicit `recorded_at` overwritten; a future
+  `occurred_at` refused whatever `recorded_at` is supplied;
+- **a `CONVERTED` lead** (M14): its target never NULL, its request and its
+  party never deleted;
 - M8's whole matrix, as a test, against `TRANSITIONS`;
 - each guard of M9 and M10, and a mutation of each killed;
 - **Q-A1:** the queue test's `DECLINED` row written with
@@ -974,7 +1030,9 @@ on the draft of `0009`, its own statements executed:
 
 | Step | Content | Depends on |
 |---|---|---|
-| 0 | the decisions G8-1 to G8-14; the texts of the Delta, CORRECTION-009 and `0009` | **revision 3 delivered for review**: the drafts as files, measured and generated; **not approved; code not authorized** (review of `b39ad10`). Open: Q-B1 to Q-B3 |
+| 0 | the decisions G8-1 to G8-14; the texts of the Delta, CORRECTION-009 and `0009` | **revision 4 delivered for review**; Q-B1 to Q-B3 decided; the texts **not approved; step 1 not authorized** (review of `0a78e91`) |
+| P | **the preparatory step (Q-B3):** `add_all_of` in the loader, the generator and their tests; a runtime validator of the effective body | **authorized, limited** (review of `0a78e91`); activates nothing |
+| 0b | CORRECTION-009's literal YAML and the generator's diff; the correction, the Delta and the migration in final form | after P; then the review before step 1 |
 | 1 | `0009` as approved; the attempts record and the status machine (service); tests | step 0 |
 | 2 | the addendum's operations: contact attempts, status, Call Brief; tests | step 1 |
 | 3 | REQUEST conversion (G8-5 (i)), lineage, claim after conversion; tests | step 2 |

@@ -1,6 +1,6 @@
 # Contract Delta · Slice 8 — the external-lead workflow (DRAFT)
 
-**Status: DRAFT for review, Slice 8 plan revision 3.** The review of
+**Status: DRAFT for review, Slice 8 plan revision 4.** The review of
 `b39ad10` authorized preparing this text; **it is not approved.** Nothing in
 it is in force: its addendum is a draft under `docs/gate/drafts/`, which the
 code never reads.
@@ -44,8 +44,10 @@ are the addendum's (`ADD-SLICE8_external_lead_workflow.DRAFT.yaml`).
   the row is audited whole by `audit_row_change` (plan Q-A4), so nothing said
   on a call may enter it.
 - **`occurred_at` is not in the future** by the server's clock: refused `422`
-  by the service, and by `ck_lead_attempt_not_future` (`occurred_at <=
-  recorded_at`, no margin) in the database. One rule, one clock.
+  by the service; in the database, `recorded_at` is assigned by the server at
+  insert (a BEFORE INSERT trigger overwrites any supplied value), and
+  `ck_lead_attempt_not_future` compares `occurred_at <= recorded_at`, no
+  margin (plan M13). One rule, one clock.
 - **The lead's status is derived** (plan §5A.1): `LEAD_NO_ANSWER` →
   `CONTACT_ATTEMPTED`; `LEAD_WRONG_NUMBER` or `LEAD_NUMBER_NOT_IN_SERVICE` →
   `UNREACHABLE`; `LEAD_REACHED` → `CONTACTED`; each from `DISCOVERED`,
@@ -139,10 +141,11 @@ SELECT external_lead_id, lead_kind, status, discovered_at
 
 - **At operational volume, the paged operation is the one used.**
 - **The frozen `getBackofficeQueuesExternalLeads` stays as it is:** unpaged
-  and uncapped (G3-10 Q-8). **It does not become safe because this one
-  exists.** Its use at operational volume stays forbidden by G3-10's
-  condition; plan Q-B2 asks whether a CORRECTION narrows its roles before
-  that volume begins.
+  and uncapped (G3-10 Q-8), **its roles unchanged** (plan Q-B2 (b), review of
+  `0a78e91`: narrowing them would not make an unpaged query safe). **It does
+  not become safe because this one exists.** Its use at operational volume
+  stays forbidden; that limit is carried into the slice's closure record and
+  the operational setup.
 
 ## 4. Audit
 

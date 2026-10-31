@@ -11,10 +11,14 @@ Script     : docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.py (beside this
              docs/gate/drafts/0009_external_lead_workflow.DRAFT.py.
 Runs       : twice, each on a freshly rebuilt scratch database; the two outputs
              are IDENTICAL, byte for byte. The output below is the first run.
-             "working tree NOT CLEAN": the drafts and this script, uncommitted.
+             Re-run for plan revision 4 on the draft as revised (revision
+             metadata; the clock trigger; a trigger renamed, the script's list
+             of names updated with it): every result is the same as revision
+             3's run (`0a78e91`), line for line.
+             "working tree NOT CLEAN": the revised drafts, uncommitted.
 These results are ours; nobody else has re-run them.
 
-Tree    : b39ad10f4fc3704522618be33b7969b45a4c84c7; working tree NOT CLEAN at the start
+Tree    : 0a78e91d996f7aabb8be6d5e44673fd75a0840c8; working tree NOT CLEAN at the start
 Database: turab_s8_probe, rebuilt by db/dev/reset_db.sh --fixtures; PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
 Draft   : docs/gate/drafts/0009_external_lead_workflow.DRAFT.py; 11 upgrade and 10 downgrade statements
 
@@ -65,7 +69,6 @@ M11 The downgrade
     with neither: APPLIED
     after it: table none; LEAD_* codes 0; triggers 0
     the upgrade again: APPLIED
-
 
 Reading (what each measurement shows, and no more):
 - M9a: with the frozen schema alone, deleting a party sets a DECLINED lead's

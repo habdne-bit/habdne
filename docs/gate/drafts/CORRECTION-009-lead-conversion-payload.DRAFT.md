@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DRAFT for review**, Slice 8 plan revision 3 (Q-A5). Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml` |
+| **Status** | **DRAFT for review**, Slice 8 plan revision 4 (Q-A5). Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml`. **Incomplete for approval** (review of `0a78e91`): its `payload` below is a placeholder; the literal YAML and the generated diff follow the preparatory step (Q-B3 (a)) |
 | **Classification** | a narrowing of a frozen operation's request body |
 | **Operation** | `postExternalLeadsLeadIdConvert` (`POST /external-leads/{lead_id}/convert`) |
 | **Decision it would implement** | G3-10 Q-3 (b) ("a conversion schema must be declared by an approved contract change"); Slice 8 G8-5, REQUEST conversion only, as directed in the reviews of `3922850` and `b39ad10` |

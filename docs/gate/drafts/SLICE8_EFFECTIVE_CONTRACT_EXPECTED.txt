@@ -1,6 +1,10 @@
 TURAB — Slice 8 plan revision 3: the effective contract the drafts would produce
 ================================================================================
 DRAFT EVIDENCE. Nothing below is in force.
+STALE SINCE PLAN REVISION 4: generated at revision 3 (from b39ad10) with the
+Delta draft as it was then, so its delta_sha256 and x-turab-addendum values
+name that text. It is regenerated after the preparatory step (Q-B3 (a)), with
+CORRECTION-009's payload part then generated too (review of 0a78e91).
 
 How it was produced (the same tools the gate runs, on a temporary git worktree
 of b39ad10, never on the repository's tree):

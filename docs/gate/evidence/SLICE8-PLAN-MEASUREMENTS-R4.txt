@@ -1,0 +1,59 @@
+TURAB — Slice 8, plan revision 4: the draft of 0009 through Alembic; the clock; Q-B1
+=====================================================================================
+Authorized : the review of 0a78e91: the draft tested as an Alembic revision on a
+             temporary database, the downgrade refused with data included; the
+             clock rule bounded; the CONVERTED case measured. No implementation
+             code; nothing written under db/migrations/; scratch databases
+             dropped; the temporary version directory removed.
+Script     : docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R4.py (beside this
+             record; under docs/, outside the fingerprinted trees).
+Runs       : twice; the two outputs are IDENTICAL, byte for byte. The output
+             below is the first run. Alembic's own log is not part of it.
+             "working tree NOT CLEAN": the revised drafts, uncommitted.
+These results are ours; nobody else has re-run them.
+
+Tree    : 0a78e91d996f7aabb8be6d5e44673fd75a0840c8; working tree NOT CLEAN at the start
+Draft   : docs/gate/drafts/0009_external_lead_workflow.DRAFT.py
+
+M12 The draft as an Alembic revision, in the real chain
+    heads: ['0009_external_lead_workflow']; 0009's down_revision: 0008_communication_records
+    the scratch database before: 0008_communication_records
+    alembic upgrade head: DONE; now 0009_external_lead_workflow
+    one attempt recorded; alembic downgrade -1: REFUSED: 0009 downgrade refused: 1 attempt(s), 0 lead(s) with a LEAD_* reason; now 0009_external_lead_workflow
+    after the refused downgrade: ('external_lead_contact_attempts', 8, 4)
+    a fresh database: 0008_communication_records
+    alembic upgrade head: DONE; now 0009_external_lead_workflow; objects ('external_lead_contact_attempts', 8, 4)
+    alembic downgrade -1: DONE; now 0008_communication_records; objects (None, 0, 0)
+    alembic upgrade head: DONE; now 0009_external_lead_workflow; objects ('external_lead_contact_attempts', 8, 4)
+
+Database: turab_s8_probe at 0009_external_lead_workflow, after M12's last upgrade; PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+
+M13 The clock rule: recorded_at assigned by the server
+    occurred_at tomorrow, recorded_at given as 2099-01-01: REFUSED 23514: new row for relation "external_lead_contact_attempts" violates check constraint "ck_lead_attempt_not_future"
+    occurred_at now(), recorded_at given as 2000-01-01: ACCEPTED; recorded_at stored is the server's clock: True
+    (rolled back)
+
+M14 A CONVERTED lead's links; what a party's deletion leaves
+    the CONVERTED lead's converted_request_id set to NULL: REFUSED 23514 constraint=ck_external_lead_converted_target: new row for relation "external_leads" violates check constraint "ck_external_lead_converted_target"
+    DELETE of its converted request: REFUSED P0001: Hard delete prohibited for core TURAB records; close/supersede instead
+    DELETE of its party (the converted request's party too): REFUSED 23503 constraint=requests_party_id_fkey: update or delete on table "parties" violates foreign key constraint "requests_party_id_fkey" on table "requests"
+    DELETE of a DECLINED lead's party: ACCEPTED
+    after it: the lead's party_id NULL; its raw_payload kept: True; its source's raw_text kept: True
+    (rolled back)
+
+Reading (what each measurement shows, and no more):
+- M12: the draft, as a file in an extra version location, is the chain's only
+  head, after 0008. Alembic upgrades a scratch database from 0008 to it; with an
+  attempt recorded, Alembic's downgrade is refused by the draft's own pre-check,
+  and the database stays at 0009 with every object; on a fresh database without
+  data, Alembic downgrades to 0008 (no table, no LEAD_* code, no trigger) and
+  upgrades again.
+- M13: an explicit recorded_at in an INSERT does not survive: the BEFORE INSERT
+  trigger assigns the server's clock, so a future occurred_at is refused even
+  with recorded_at given as 2099, and a past recorded_at given is replaced.
+  A superuser can disable the trigger: not K06.
+- M14: a CONVERTED lead's target cannot become NULL (the frozen check), its
+  request cannot be deleted (prevent_core_delete), and its party cannot be
+  deleted (requests.party_id is RESTRICT). A DECLINED lead's party can be
+  deleted; the lead's party_id becomes NULL, and its raw_payload and its
+  source's raw_text stay: a party's deletion erases nothing captured.

@@ -1,14 +1,20 @@
 """DRAFT — NOT A MIGRATION. External-lead workflow: attempts, transitions, reason codes.
 
-Would-be Revision ID: 0009_external_lead_workflow
-Would-be Revises: 0008_communication_records
+Revision ID: 0009_external_lead_workflow
+Revises: 0008_communication_records
 
-**Status: a draft for review, Slice 8 plan revision 3, §5A.3.** It is kept
-under `docs/gate/drafts/`, which Alembic never reads (its versions live in
-`db/migrations/versions/`), and is NOT applied. The review of `b39ad10` did
-not approve `0009`'s text; it authorized this draft "with its downgrade and
-the tests of its consequences" for review. The measurements that ran this
-text on a scratch database are `docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt`.
+**Status: a draft for review, Slice 8 plan revision 4, §5A.3.** It is kept
+under `docs/gate/drafts/`, which Alembic does not read by its configuration
+(`alembic.ini`: `script_location = db/migrations`), and is NOT applied. The
+reviews of `b39ad10` and `0a78e91` did not approve its text.
+
+**Measured:** its statements on a scratch database
+(`evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt`, M7 to M11), and **this file as
+an Alembic revision in the real chain after `0008`**, upgraded and
+downgraded by Alembic on a scratch database, the downgrade refused with data
+(`evidence/SLICE8-PLAN-MEASUREMENTS-R4.txt`, M12). Alembic was pointed at it
+through an extra `version_locations` entry, on a temporary copy; nothing was
+written under `db/migrations/`.
 
 ## What it would add
 
@@ -16,9 +22,13 @@ text on a scratch database are `docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.t
 after a pre-check that no `LEAD_*` code exists yet (M5).
 
 **B. `external_lead_contact_attempts`**, append-only (G8-2 (a)):
-- `occurred_at <= recorded_at`, both by the server's clock: no margin
-  (the review of `b39ad10`: one rule, the Delta's "not in the future");
-- the outcome must be a `LEAD_CONTACT` code (trigger);
+- **the clock rule:** `recorded_at` is ASSIGNED by the server at insert, by
+  the BEFORE INSERT trigger (`NEW.recorded_at := clock_timestamp()`), so an
+  explicit value in an INSERT is overwritten; then `CHECK (occurred_at <=
+  recorded_at)`, no margin. The constraint compares two columns; the trigger
+  is what makes one of them the server's clock (review of `0a78e91`;
+  measured, M13). Not K06: a superuser can disable a trigger (EN-02);
+- the outcome must be a `LEAD_CONTACT` code (the same BEFORE INSERT trigger);
 - UPDATE and DELETE refused (trigger), as `0005`/`0006`;
 - audited on INSERT by the frozen `audit_row_change('attempt_id')` (Q-A4):
   the function records the whole row, which is why the table holds **no free
@@ -32,10 +42,19 @@ after a pre-check that no `LEAD_*` code exists yet (M5).
 - `DECLINED` and `CLOSED` only with a `close_reason_code` of category
   `LEAD_CLOSURE` (Q-A3); a reason code on a lead that is not `DECLINED` or
   `CLOSED` is refused;
-- **a terminal lead's workflow columns are frozen**, with one exception:
-  `party_id`, `converted_request_id` and `converted_property_id` may become
-  NULL, never another value. That keeps the frozen keys' `ON DELETE SET NULL`
-  working (Q-B1, measured M9); the reason code never changes.
+- **a terminal lead's workflow columns are frozen**, with one exception
+  (Q-B1 (a), decided in the review of `0a78e91`): **`party_id` may become
+  NULL**, never another value, so the frozen key's `ON DELETE SET NULL` keeps
+  working (M9). **A NULL written by hand passes the guard too**; the service
+  never writes one (to be pinned by a test). The reason code never changes.
+- **a `CONVERTED` lead's target never becomes NULL:** the guard lets the
+  `converted_*` columns become NULL only as the frozen keys would, but the
+  frozen check `ck_external_lead_converted_target` keeps a `CONVERTED` lead's
+  target, `prevent_core_delete` refuses deleting a request or a property, and
+  the target request's own `party_id` (`ON DELETE RESTRICT`) refuses deleting
+  its party (M14). So for a `CONVERTED` lead, none of its links becomes NULL.
+- **Deleting a party erases nothing captured:** the lead's `raw_payload` and
+  its source's `raw_text` stay (M14). It is not an erasure of personal data.
 
 **Not K06.** Under the superuser application role (EN-02) these are
 trigger-level guards against careless writes, not a privilege boundary.
@@ -50,6 +69,11 @@ functions and the table, then deletes the eight codes.
 from __future__ import annotations
 
 from alembic import op
+
+revision = "0009_external_lead_workflow"
+down_revision = "0008_communication_records"
+branch_labels = None
+depends_on = None
 
 LEAD_CODES = (
     ("LEAD_NO_ANSWER", "LEAD_CONTACT", "لم يُجب", "No answer"),
@@ -107,18 +131,19 @@ END $$""",
 )""",
     """CREATE INDEX idx_lead_attempts_lead ON turab.external_lead_contact_attempts
   (external_lead_id, occurred_at, attempt_id)""",
-    """CREATE FUNCTION turab.enforce_lead_attempt_outcome() RETURNS trigger
+    """CREATE FUNCTION turab.enforce_lead_attempt_insert() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+  NEW.recorded_at := clock_timestamp();
   IF NOT EXISTS (SELECT 1 FROM turab.reason_codes
                   WHERE code = NEW.outcome_code AND category = 'LEAD_CONTACT') THEN
     RAISE EXCEPTION 'outcome_code % is not a LEAD_CONTACT code', NEW.outcome_code;
   END IF;
   RETURN NEW;
 END $$""",
-    """CREATE TRIGGER trg_lead_attempt_outcome BEFORE INSERT
+    """CREATE TRIGGER trg_lead_attempt_insert BEFORE INSERT
   ON turab.external_lead_contact_attempts
-  FOR EACH ROW EXECUTE FUNCTION turab.enforce_lead_attempt_outcome()""",
+  FOR EACH ROW EXECUTE FUNCTION turab.enforce_lead_attempt_insert()""",
     """CREATE FUNCTION turab.prevent_lead_attempt_change() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -186,8 +211,8 @@ END $$""",
     "DROP TRIGGER audit_external_lead_contact_attempts ON turab.external_lead_contact_attempts",
     "DROP TRIGGER trg_lead_attempt_immutable ON turab.external_lead_contact_attempts",
     "DROP FUNCTION turab.prevent_lead_attempt_change()",
-    "DROP TRIGGER trg_lead_attempt_outcome ON turab.external_lead_contact_attempts",
-    "DROP FUNCTION turab.enforce_lead_attempt_outcome()",
+    "DROP TRIGGER trg_lead_attempt_insert ON turab.external_lead_contact_attempts",
+    "DROP FUNCTION turab.enforce_lead_attempt_insert()",
     "DROP TABLE turab.external_lead_contact_attempts",
     "DELETE FROM turab.reason_codes WHERE code IN ("
     + ", ".join(f"'{c}'" for c, *_ in LEAD_CODES) + ")",

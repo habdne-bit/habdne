@@ -1237,3 +1237,13 @@ docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md draft 8c85c41c0
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        draft 0da284864ada9040947a47a83eeef0e813998a81e3d3ad41c89af70f491cfbb9
 docs/gate/SLICE_8_PLAN.md                                      rev3  ce294e2a6c712361ac18fe25f73616918607320d53519a550fbac29dadef7786
 docs/gate/SLICE_8_PLAN.md                                      rev3  0bcf0055b3ec700fa6eec07bb4e0ca92087de0a1a682e62bc499c4af0dd3de5b
+--- Slice 8 plan revision 4 (the review of 0a78e91): the draft through Alembic; the clock; Q-B1 ---
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.py              r4    02b35615d37f25db110456fc4f85f9285e5ac46d1056e4165c862ff0c9af1b88
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R3.txt             r4    a64b2564947cc19dfd1d3f33b9623b9c4e95e1541654366d4d4002a30ad6ae2e
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R4.py              r4    b98c4fb8f9eb028ce01f0771dcebef069f60541d54b7d6bdc32bb3910cd73301
+docs/gate/evidence/SLICE8-PLAN-MEASUREMENTS-R4.txt             r4    8678878c0b09aa53de1a2e6ce96e1820279b9ff34e086ecbcb1692d6502230f6
+docs/gate/drafts/0009_external_lead_workflow.DRAFT.py          r4    528c9cb59ca5c67a5e6c0f4ecd241f643d770bad1a502fd2b89b5dc37325966f
+docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md r4    e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
+docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r4    9d4c4c3b4e06e6cec0b49318621183624f58a8a51476a44c6de19d838213bd75
+docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r4    93ae7c0a150445d3e21f58f27fbe861f3c5751398cafc6da006080d68755a98f
+docs/gate/SLICE_8_PLAN.md                                      rev4  58b6904184ed08fa5e9e340532e5195b0e5bfa092e8e39c6fa595cb26f995ff7
