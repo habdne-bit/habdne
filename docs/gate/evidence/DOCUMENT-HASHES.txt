@@ -1267,3 +1267,5 @@ docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  new   60f82cf47b5
 docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r5    bc2dfd905732f1c833307c687915b0a85e9ff5c792ce99bb2cf90479b5f05817
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r5    5fc1a290d64c988cecdacfbcf6ca947bc1638ab71e4c759df9006197b0a45bd4
 docs/gate/SLICE_8_PLAN.md                                      rev5  e0ad731e01cb9e765382579b99036132b57d90523a90e45f8ce3d4d6fab04f55
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  named f5964fac901bc232f14dae5732afc2312baddfd94ad702a3ff32eb3b3d500bf4
+docs/gate/SLICE_8_PLAN.md                                      rev5  155d86be60e8ee7e66ecbf487fc2ec4204ab792cab28d3075d8a025dd527bc17

@@ -22,7 +22,7 @@ texts of CORRECTION-009, the Delta and `0009` are not approved.
   the mutation trial;
 - `6567503`: the mutation pairs (§4);
 - `0990109`, `d9f8a5e`, `9100a70`: the evidence round (§5);
-- CLOSE_COMMIT: this note; CORRECTION-009's literal text and the
+- `405f418`: this note; CORRECTION-009's literal text and the
   regenerated expected contract (§6); plan revision 5.
 
 ---
