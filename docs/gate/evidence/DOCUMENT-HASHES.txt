@@ -1247,3 +1247,4 @@ docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md r4    e25
 docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r4    9d4c4c3b4e06e6cec0b49318621183624f58a8a51476a44c6de19d838213bd75
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r4    93ae7c0a150445d3e21f58f27fbe861f3c5751398cafc6da006080d68755a98f
 docs/gate/SLICE_8_PLAN.md                                      rev4  58b6904184ed08fa5e9e340532e5195b0e5bfa092e8e39c6fa595cb26f995ff7
+docs/gate/SLICE_8_PLAN.md                                      rev4  8f9bde7d7b5f8c882d0aa535a34d9beaa8d3f03139454d62e94089e780f4b2bd

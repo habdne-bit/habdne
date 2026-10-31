@@ -29,7 +29,7 @@
 
 | rev | commit | what changed |
 |---|---|---|
-| 4 | REV4_COMMIT | the review of `0a78e91` recorded: Q-B1 (a), Q-B2 (b), Q-B3 (a); the draft of `0009` with its revision metadata, run through Alembic (M12); `recorded_at` assigned by the server (M13); Q-B1's wording restricted after the `CONVERTED` case (M14); R3 re-run on the revised draft, unchanged |
+| 4 | `1c8a6ba` | the review of `0a78e91` recorded: Q-B1 (a), Q-B2 (b), Q-B3 (a); the draft of `0009` with its revision metadata, run through Alembic (M12); `recorded_at` assigned by the server (M13); Q-B1's wording restricted after the `CONVERTED` case (M14); R3 re-run on the revised draft, unchanged |
 | 3 | `1eafe4c` | the review of `b39ad10` recorded; Q-A1 to Q-A8 applied; §5A.8's guarantee rewritten to the query (Delta §3.4); `0009`'s clock rule and the party-deletion consequence settled in its draft and measured (M7 to M11); the drafts as files under `docs/gate/drafts/`, with the expected effective contract generated |
 | 2 | `3db08bb` | the review of `3922850` recorded; §6.5's measurements run, with the two the review added; §0.4 (delivered and deferred); §5A's drafts (status machine, Contract Delta, `0009`, Call Brief, Direct Interest, conversion, audit, queue paging), not applied; OQ8-1 checked against the Journal Officiel |
 | 1 | `3922850` | first plan (planning only) |
