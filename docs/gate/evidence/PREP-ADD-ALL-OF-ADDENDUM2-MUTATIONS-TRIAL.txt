@@ -1,0 +1,422 @@
+TURAB — preparatory step: add_all_of (Slice 8 plan Q-B3 (a))
+============================================================
+Base commit       : 44c3d65b1b9c0580f81da60ff719c744c0b36db9
+Source fingerprint: ecbf8dd915d5b6903cf62f0e3fa39203bb9e1c9c293bb364ce4465778af4b676
+Working tree      : DIRTY
+M db/dev/mutate_prep_add_all_of.py
+ M src/turab/auth/contract.py
+ M tests/test_contract_add_all_of.py
+?? docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-BEFORE.txt
+Recorded          : 2026-11-01 00:42:10 UTC
+Test file         : tests/test_contract_add_all_of.py
+
+=== baseline (no mutation) ===
+   78 passed in 4.30s
+== K1 the key not admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   41 failed, 16 passed, 21 errors in 3.07s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[anyOf,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[default,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[properties,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[type,
+   FAILED test_a_minimum_too_large_for_a_float_is_judged_not_overflowed
+   FAILED test_distinct_json_values_are_not_duplicates_in_an_enum
+   FAILED test_invalid_add_all_of_is_refused[$defs]
+   FAILED test_invalid_add_all_of_is_refused[a
+   FAILED test_invalid_add_all_of_is_refused[additionalProperties
+   FAILED test_invalid_add_all_of_is_refused[an
+   FAILED test_invalid_add_all_of_is_refused[if
+   FAILED test_invalid_add_all_of_is_refused[not
+   FAILED test_invalid_add_all_of_is_refused[then
+   FAILED test_the_draft_correction_009_entry_is_accepted_by_the_loader
+   FAILED test_the_effective_body_is_the_frozen_body_required_and_with_the_branches_appended
+   FAILED test_the_generator_writes_that_body_and_changes_no_other_operation
+   cause: AssertionError: Regex pattern did not match.
+   cause: E   AssertionError: Regex pattern did not match.
+   cause: E   turab.auth.contract.ContractError: CORRECTION-009: unknown key(s) ['add_all_of']; a request-body narrowing may only require fields, remove null or restrict values
+   cause: E   turab.auth.contract.ContractError: TEST-ADD-ALL-OF: unknown key(s) ['add_all_of']; a request-body narrowing may only require fields, remove null or restrict values
+   cause: turab.auth.contract.ContractError: CORRECTION-009: unknown key(s) ['add_all_of']; a request-body narrowing may only require fields, remove null or restrict values
+   cause: turab.auth.contract.ContractError: TEST-ADD-ALL-OF: unknown key(s) ['add_all_of']; a request-body narrowing may only require fields, remove null or restrict values
+== K2 the loader's check never called [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   36 failed, 42 passed in 4.35s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[anyOf,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[default,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[properties,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[type,
+   FAILED test_invalid_add_all_of_is_refused[$defs]
+   FAILED test_invalid_add_all_of_is_refused[a
+   FAILED test_invalid_add_all_of_is_refused[additionalProperties
+   FAILED test_invalid_add_all_of_is_refused[an
+   FAILED test_invalid_add_all_of_is_refused[if
+   FAILED test_invalid_add_all_of_is_refused[not
+   FAILED test_invalid_add_all_of_is_refused[then
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K3 an unread keyword admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   3 failed, 75 passed in 4.12s
+   FAILED test_invalid_add_all_of_is_refused[$defs]
+   FAILED test_invalid_add_all_of_is_refused[a
+   FAILED test_invalid_add_all_of_is_refused[an
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K4 a referenced component not inspected [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.22s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format
+   FAILED test_invalid_add_all_of_is_refused[a
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K5 a $ref to no component admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.16s
+   FAILED test_invalid_add_all_of_is_refused[a
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K6 any format admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   5 failed, 73 passed in 3.88s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format,
+   FAILED test_invalid_add_all_of_is_refused[a
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[format
+   cause: AssertionError: date-time
+   cause: E   AssertionError: date-time
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K7 additionalProperties other than false admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.40s
+   FAILED test_invalid_add_all_of_is_refused[additionalProperties
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K8 then without if admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.56s
+   FAILED test_invalid_add_all_of_is_refused[then
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== K9 if without then admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.27s
+   FAILED test_invalid_add_all_of_is_refused[if
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[if
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: E   KeyError: 'then'
+   cause: Failed: DID NOT RAISE ContractError
+   cause: KeyError: 'then'
+== K10 any type admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.25s
+   FAILED test_invalid_add_all_of_is_refused[an
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== N1 the branches not appended [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   12 failed, 66 passed in 4.32s
+   FAILED test_a_violation_names_where_it_is_and_never_the_value
+   FAILED test_the_effective_body_is_the_frozen_body_required_and_with_the_branches_appended
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: payload carries management_mode
+   cause: AssertionError: payload carries party_id
+   cause: AssertionError: payload without intent
+   cause: AssertionError: payload, a budget given as true
+   cause: AssertionError: payload, a budget of 1.5
+   cause: AssertionError: payload, a criterion without its code
+== N2 the frozen body changed [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.17s
+   FAILED test_the_effective_body_is_the_frozen_body_required_and_with_the_branches_appended
+   cause: AssertionError: the frozen contract is unchanged
+   cause: E   AssertionError: the frozen contract is unchanged
+== N3 the entry's own objects in the body [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.11s
+   FAILED test_the_effective_body_is_the_frozen_body_required_and_with_the_branches_appended
+   cause: AssertionError: a copy, not the entry's object
+   cause: E   AssertionError: a copy, not the entry's object
+== G1 the annotation omits the branches [db/gate/generate_effective_contract.py, 1 site(s)]  restored: sha256 56488a8812b181d1 identical
+   1 failed, 77 passed in 4.34s
+   FAILED test_the_generator_writes_that_body_and_changes_no_other_operation
+   cause: E   KeyError: 'add-all-of'
+   cause: KeyError: 'add-all-of'
+== V1 if/then ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   11 failed, 67 passed in 4.54s
+   FAILED test_a_violation_names_where_it_is_and_never_the_value
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload carries management_mode', [])
+   cause: AssertionError: ('payload carries party_id', [])
+   cause: AssertionError: ('payload without intent', [])
+   cause: AssertionError: ('payload, a budget given as true', [])
+   cause: AssertionError: ('payload, a budget of 1.5', [])
+   cause: AssertionError: ('payload, a criterion without its code', [])
+== V2 required ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   4 failed, 74 passed in 4.38s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[target
+   cause: AssertionError: ('payload absent', [])
+   cause: AssertionError: ('payload without intent', [])
+   cause: AssertionError: ('payload, a criterion without its code', [])
+   cause: AssertionError: ('target absent', [])
+   cause: E   AssertionError: ('payload absent', [])
+   cause: E   AssertionError: ('payload without intent', [])
+== V3 additionalProperties false ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.57s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload
+   cause: AssertionError: ('payload carries management_mode', [])
+   cause: AssertionError: ('payload carries party_id', [])
+   cause: E   AssertionError: ('payload carries management_mode', [])
+   cause: E   AssertionError: ('payload carries party_id', [])
+== V4 enum ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   4 failed, 74 passed in 4.15s
+   FAILED test_a_violation_names_where_it_is_and_never_the_value
+   FAILED test_equality_is_json_equality_item_by_item
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[target
+   cause: AssertionError: ('payload, an unknown intent', [])
+   cause: AssertionError: ('target unknown', [])
+   cause: AssertionError: assert [] == ['body: not o...lowed values']
+   cause: E   AssertionError: ('payload, an unknown intent', [])
+   cause: E   AssertionError: ('target unknown', [])
+   cause: E   AssertionError: assert [] == ['body: not o...lowed values']
+== V5 const ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.17s
+   FAILED test_equality_is_json_equality_item_by_item
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[PROPERTY,
+   cause: AssertionError: ('PROPERTY, any payload: not narrowed here', ['body.payload.intent: required', 'body.payload.transaction_intent: required', 'body.payload.anything: not al
+   cause: AssertionError: assert [] == ['body: not t...quired value']
+   cause: E   AssertionError: ('PROPERTY, any payload: not narrowed here', ['body.payload.intent: required', 'body.payload.transaction_intent: required', 'body.payload.anything: no
+   cause: E   AssertionError: assert [] == ['body: not t...quired value']
+== V6 items ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.37s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[items,
+   cause: AssertionError: ('payload, a criterion without its code', [])
+   cause: E   AssertionError: ('payload, a criterion without its code', [])
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== V7 anyOf read as allOf [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.09s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[REQUEST,
+   cause: AssertionError: ('REQUEST, every field', ['body.payload.primary_location_id: matches none of its alternatives'])
+   cause: E   AssertionError: ('REQUEST, every field', ['body.payload.primary_location_id: matches none of its alternatives'])
+== V8 minimum ignored [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.81s
+   FAILED test_a_minimum_too_large_for_a_float_is_judged_not_overflowed
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload, a negative budget', [])
+   cause: AssertionError: assert [] == ['body: below...000000000000']
+   cause: E   AssertionError: ('payload, a negative budget', [])
+   cause: E   AssertionError: assert [] == ['body: below...000000000000']
+== V9 a boolean taken for a number [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   4 failed, 74 passed in 4.25s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum,
+   FAILED test_distinct_json_values_are_not_duplicates_in_an_enum
+   FAILED test_equality_is_json_equality_item_by_item
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload, a budget given as true', [])
+   cause: AssertionError: assert [] == ['body: not t...quired value']
+   cause: E   AssertionError: ('payload, a budget given as true', [])
+   cause: E   AssertionError: assert [] == ['body: not t...quired value']
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: E   turab.auth.contract.ContractError: TEST-ADD-ALL-OF: add_all_of: 'enum' must be a non-empty list of distinct JSON values
+== V10 an unread keyword judged as absent [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.34s
+   FAILED test_the_runtime_refuses_to_judge_a_keyword_it_does_not_read
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== V11 format not asserted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.32s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[party_id
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('party_id not a uuid', [])
+   cause: AssertionError: ('payload, a location not a uuid', [])
+   cause: E   AssertionError: ('party_id not a uuid', [])
+   cause: E   AssertionError: ('payload, a location not a uuid', [])
+== V12 a $ref not followed [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.15s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload, a criterion without its code', [])
+   cause: E   AssertionError: ('payload, a criterion without its code', [])
+== V13 the allOf branches not applied [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   11 failed, 67 passed in 4.04s
+   FAILED test_a_violation_names_where_it_is_and_never_the_value
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload carries management_mode', [])
+   cause: AssertionError: ('payload carries party_id', [])
+   cause: AssertionError: ('payload without intent', [])
+   cause: AssertionError: ('payload, a budget given as true', [])
+   cause: AssertionError: ('payload, a budget of 1.5', [])
+   cause: AssertionError: ('payload, a criterion without its code', [])
+== V14 a violation names the value [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.48s
+   FAILED test_a_violation_names_where_it_is_and_never_the_value
+   FAILED test_equality_is_json_equality_item_by_item
+   cause: E   assert ["body: {'a':...lowed values"] == ['body: not o...lowed values']
+   cause: E   assert not True
+   cause: assert ["body: {'a':...lowed values"] == ['body: not o...lowed values']
+   cause: assert not True
+== S1 required's structure unchecked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   4 failed, 74 passed in 4.31s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[required,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S2 minimum's structure unchecked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   4 failed, 74 passed in 4.05s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[minimum,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: E   TypeError: '<' not supported between instances of 'int' and 'str'
+   cause: Failed: DID NOT RAISE ContractError
+   cause: TypeError: '<' not supported between instances of 'int' and 'str'
+== S3 properties' structure unchecked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   3 failed, 75 passed in 4.15s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[properties,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[properties,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: E   TypeError: list indices must be integers or slices, not str
+   cause: Failed: DID NOT RAISE ContractError
+   cause: TypeError: list indices must be integers or slices, not str
+== S4 enum's structure unchecked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   5 failed, 73 passed in 4.31s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[enum,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S5 const and default not checked as JSON values [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   3 failed, 75 passed in 4.48s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[default,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S6 type's structure unchecked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.16s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[type,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S7 anyOf's structure unchecked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   3 failed, 75 passed in 4.31s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[anyOf,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[anyOf,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S8 additionalProperties as a schema admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.24s
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[additionalProperties,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S9 an enum value twice admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.58s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S10 an enum value not checked as JSON [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 3.98s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S11 the judge does not check structure [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   9 failed, 69 passed in 4.27s
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[additionalProperties,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[allOf,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[anyOf,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[enum,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[format
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[if
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[minimum,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[properties,
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[required,
+   cause: AssertionError: date-time
+   cause: E   AssertionError: date-time
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: E   KeyError: 'then'
+   cause: E   TypeError: '<' not supported between instances of 'int' and 'str'
+   cause: E   TypeError: list indices must be integers or slices, not str
+== S12 the judge follows a $ref to no component [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 3.96s
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[a
+   cause: AssertionError: Regex pattern did not match.
+   cause: E   AssertionError: Regex pattern did not match.
+== S13 any value taken for JSON [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   3 failed, 75 passed in 3.95s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[default,
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[enum,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S14 a required name twice admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 3.98s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[required,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S15 date-time admitted again [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   3 failed, 75 passed in 4.04s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[format
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[format
+   cause: AssertionError: date-time
+   cause: E   AssertionError: date-time
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S16 the judge's allOf not checked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 3.97s
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[allOf,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S17 the judge reads a non-object as a schema [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.02s
+   FAILED test_the_runtime_refuses_to_judge_a_malformed_keyword_value[items,
+   cause: AssertionError: Regex pattern did not match.
+   cause: E   AssertionError: Regex pattern did not match.
+== S18 a non-finite float taken for a number [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.14s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[minimum,
+   FAILED test_a_number_json_cannot_carry_is_refused_and_the_limit_is_stated
+   cause: AssertionError: 1e400
+   cause: E   AssertionError: 1e400
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== S19 a non-finite number taken for JSON [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.23s
+   FAILED test_a_keyword_value_of_the_wrong_structure_is_refused_at_load[const,
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== J1 integer only a Python int [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.12s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload, a budget of 1.0', ['body.payload.budget_max_dzd: not of type integer'])
+   cause: E   AssertionError: ('payload, a budget of 1.0', ['body.payload.budget_max_dzd: not of type integer'])
+== J2 integer any number [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.10s
+   FAILED test_the_effective_contract_and_the_runtime_refuse_the_same_payload[payload,
+   cause: AssertionError: ('payload, a budget of 1.5', [])
+   cause: E   AssertionError: ('payload, a budget of 1.5', [])
+== J3 minimum's finiteness checked through a float [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.22s
+   FAILED test_a_minimum_too_large_for_a_float_is_judged_not_overflowed
+   cause: E   OverflowError: int too large to convert to float
+   cause: OverflowError: int too large to convert to float
+== J4 arrays compared as Python lists [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   2 failed, 76 passed in 4.21s
+   FAILED test_distinct_json_values_are_not_duplicates_in_an_enum
+   FAILED test_equality_is_json_equality_item_by_item
+   cause: AssertionError: assert [] == ['body: not t...quired value']
+   cause: E   AssertionError: assert [] == ['body: not t...quired value']
+   cause: E   turab.auth.contract.ContractError: TEST-ADD-ALL-OF: add_all_of: 'enum' must be a non-empty list of distinct JSON values
+   cause: turab.auth.contract.ContractError: TEST-ADD-ALL-OF: add_all_of: 'enum' must be a non-empty list of distinct JSON values
+== J5 objects compared as Python dicts [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.07s
+   FAILED test_equality_is_json_equality_item_by_item
+   cause: AssertionError: assert [] == ['body: not o...lowed values']
+   cause: E   AssertionError: assert [] == ['body: not o...lowed values']
+== J6 numbers equal only of one Python type [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 bbfcb86e8d10f83b identical
+   1 failed, 77 passed in 4.25s
+   FAILED test_equality_is_json_equality_item_by_item
+   cause: AssertionError: assert ['body: not t...quired value'] == []
+   cause: E   AssertionError: assert ['body: not t...quired value'] == []
+
+SURVIVING MUTATIONS: none

@@ -461,8 +461,7 @@ def _value_problems(node: dict[str, Any]) -> list[str]:
         problems.append("'properties' must be a mapping of property names to schemas")
     if "anyOf" in node and not (isinstance(node["anyOf"], list) and node["anyOf"]):
         problems.append("'anyOf' must be a non-empty list of schemas")
-    if "minimum" in node and not (_type_holds("number", node["minimum"])
-                                  and math.isfinite(node["minimum"])):
+    if "minimum" in node and not _type_holds("number", node["minimum"]):
         problems.append("'minimum' must be a number")
     if "format" in node and not (isinstance(node["format"], str)
                                  and node["format"] in _ALL_OF_FORMATS):
@@ -530,17 +529,32 @@ def _check_add_all_of(cid: str, branches: Any, contract: dict[str, Any]) -> None
 
 
 def _json_same(a: Any, b: Any) -> bool:
-    """JSON equality: a boolean is never a number."""
-    return a == b and isinstance(a, bool) == isinstance(b, bool)
+    """JSON equality (JSON Schema 2020-12 Core §4.2.2): numbers by their
+    mathematical value (1 and 1.0 alike); arrays item by item; objects key by
+    key; a boolean is never a number, at any depth (review of 44c3d65)."""
+    if _type_holds("number", a) and _type_holds("number", b):
+        return a == b
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(_json_same(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_json_same(a[k], b[k]) for k in a)
+    return type(a) is type(b) and a == b
 
 
 def _type_holds(kind: str, value: Any) -> bool:
+    """JSON Schema 2020-12 Validation §6.1.1. A number is not a boolean, and a
+    float only if finite (JSON has neither NaN nor infinity); `integer` is any
+    number with a zero fractional part, so 1.0 is one (review of 44c3d65). A
+    Python int is never converted to a float: no OverflowError, exact
+    comparison."""
+    number = (isinstance(value, int) and not isinstance(value, bool)) \
+        or (isinstance(value, float) and math.isfinite(value))
     return {
         "object": isinstance(value, dict), "array": isinstance(value, list),
         "string": isinstance(value, str), "null": value is None,
         "boolean": isinstance(value, bool),
-        "integer": isinstance(value, int) and not isinstance(value, bool),
-        "number": isinstance(value, (int, float)) and not isinstance(value, bool),
+        "integer": number and (isinstance(value, int) or value.is_integer()),
+        "number": number,
     }[kind]
 
 

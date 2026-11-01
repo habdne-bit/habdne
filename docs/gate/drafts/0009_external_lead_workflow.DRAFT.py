@@ -52,7 +52,10 @@ after a pre-check that no `LEAD_*` code exists yet (M5).
   frozen check `ck_external_lead_converted_target` keeps a `CONVERTED` lead's
   target, `prevent_core_delete` refuses deleting a request or a property, and
   the target request's own `party_id` (`ON DELETE RESTRICT`) refuses deleting
-  its party (M14). So for a `CONVERTED` lead, none of its links becomes NULL.
+  its party (M14). So for a `CONVERTED` lead, **no deletion** makes one of its
+  links NULL. A NULL **written by hand** to its `party_id` still passes the
+  guard, as for every terminal lead (above; not measured for `CONVERTED`);
+  the service never writes one.
 - **Deleting a party erases nothing captured:** the lead's `raw_payload` and
   its source's `raw_text` stay (M14). It is not an erasure of personal data.
 

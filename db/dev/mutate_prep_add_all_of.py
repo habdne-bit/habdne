@@ -12,7 +12,10 @@ tests". Each mutation weakens ONE rule:
   refusal to judge an unread keyword;
 - S (addendum, review of a7a4fe9): the structure of each keyword's value,
   checked by `_value_problems` for the loader and the judge alike, and
-  `date-time` no longer admitted.
+  `date-time` no longer admitted;
+- J (second addendum, review of 44c3d65): numbers and equality as JSON
+  Schema 2020-12 states them: `integer` any number with a zero fractional
+  part, a large int never converted to a float, equality item by item.
 
 Not mutated, each with its reason:
 - `default` as a keyword of judgement (an annotation, read by nothing); its
@@ -95,9 +98,9 @@ MUTATIONS = [
  ("V8 minimum ignored", CONTRACT,
   '    if "minimum" in schema and _type_holds("number", value) and value < schema["minimum"]:',
   '    if False:'),
- ("V9 a boolean taken for an integer", CONTRACT,
-  '        "integer": isinstance(value, int) and not isinstance(value, bool),',
-  '        "integer": isinstance(value, int),'),
+ ("V9 a boolean taken for a number", CONTRACT,
+  '    number = (isinstance(value, int) and not isinstance(value, bool)) \\\n',
+  '    number = isinstance(value, int) \\\n'),
  ("V10 an unread keyword judged as absent", CONTRACT,
   '    if unread:\n        raise ContractError(f"{where}: keyword(s) {unread} not read by body_violations")',
   '    if False:\n        raise ContractError(f"{where}: keyword(s) {unread} not read by body_violations")'),
@@ -118,8 +121,8 @@ MUTATIONS = [
   '    if "required" in node:\n        names = node["required"]',
   '    if False:\n        names = node["required"]'),
  ("S2 minimum's structure unchecked", CONTRACT,
-  '    if "minimum" in node and not (_type_holds("number", node["minimum"])',
-  '    if False and not (_type_holds("number", node["minimum"])'),
+  '    if "minimum" in node and not _type_holds("number", node["minimum"]):',
+  '    if False and not _type_holds("number", node["minimum"]):'),
  ("S3 properties' structure unchecked", CONTRACT,
   '    if "properties" in node and not (isinstance(node["properties"], dict)',
   '    if False and not (isinstance(node["properties"], dict)'),
@@ -161,11 +164,32 @@ MUTATIONS = [
  ("S17 the judge reads a non-object as a schema", CONTRACT,
   '    if not isinstance(schema, dict):\n        raise ContractError(f"{where}: {schema!r} is not',
   '    if False:\n        raise ContractError(f"{where}: {schema!r} is not'),
- ("S18 minimum not required finite", CONTRACT,
-  '                                  and math.isfinite(node["minimum"])):',
-  '                                  and True):'),
+ ("S18 a non-finite float taken for a number", CONTRACT,
+  '        or (isinstance(value, float) and math.isfinite(value))',
+  '        or isinstance(value, float)'),
  ("S19 a non-finite number taken for JSON", CONTRACT,
   '        return math.isfinite(value)', '        return True'),
+ # --- J: numbers and equality as JSON Schema states them (review of 44c3d65) ---------------
+ ("J1 integer only a Python int", CONTRACT,
+  '        "integer": number and (isinstance(value, int) or value.is_integer()),',
+  '        "integer": number and isinstance(value, int),'),
+ ("J2 integer any number", CONTRACT,
+  '        "integer": number and (isinstance(value, int) or value.is_integer()),',
+  '        "integer": number,'),
+ ("J3 minimum's finiteness checked through a float", CONTRACT,
+  '    if "minimum" in node and not _type_holds("number", node["minimum"]):',
+  '    if "minimum" in node and not (_type_holds("number", node["minimum"])\n'
+  '                                  and math.isfinite(node["minimum"])):'),
+ ("J4 arrays compared as Python lists", CONTRACT,
+  '        return len(a) == len(b) and all(_json_same(x, y) for x, y in zip(a, b))',
+  '        return a == b'),
+ ("J5 objects compared as Python dicts", CONTRACT,
+  '        return a.keys() == b.keys() and all(_json_same(a[k], b[k]) for k in a)',
+  '        return a == b'),
+ ("J6 numbers equal only of one Python type", CONTRACT,
+  '    if _type_holds("number", a) and _type_holds("number", b):\n        return a == b',
+  '    if _type_holds("number", a) and _type_holds("number", b):\n'
+  '        return a == b and type(a) is type(b)'),
 ]
 
 

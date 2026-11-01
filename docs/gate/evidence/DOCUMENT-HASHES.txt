@@ -1293,3 +1293,7 @@ docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  r2    1305e590782
 docs/gate/SLICE_8_PLAN.md                                      rev6  c43d41ad40f994f44301587069a92895501d212cb67b012ca5cac323b3d70bf8
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  named 65a03c9ffa931de207f6d57cc6e9fa411335180d337554f02ccf7d50a3f3a06d
 docs/gate/SLICE_8_PLAN.md                                      rev6  52fdb15db00232fbada483c7a28a897626170f39c3037dca5b6dba267fff6278
+--- add_all_of second addendum (review of 44c3d65): before record, mutation trial; 0009 draft docstring ---
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-BEFORE.txt        new   5f333bd2466dcd9a1ec9f65b94cc9b107ffbf795db01763c92db5fbb0b056075
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-MUTATIONS-TRIAL.txt new   4eaa6745f4d2787359815efe7a2586742740b44bc9d0b6841e38aa9d319b6a0f
+docs/gate/drafts/0009_external_lead_workflow.DRAFT.py          r7    8fe94b9fb3340a0def238612ba8730c3dfa3066ff8e98ac23b8cfa726d39f146

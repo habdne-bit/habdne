@@ -765,10 +765,14 @@ inline SQL is replaced by it. **Measured by executing those statements**
   deleted, the link NULL);
 - **a NULL written by hand passes the guard too** (M9). Declared; **the
   service never writes it**, pinned by an inventory of its statements (§6.6);
-- **a `CONVERTED` lead's links never become NULL** (M14): its target cannot
-  (`ck_external_lead_converted_target`, frozen), its request cannot be
-  deleted (`prevent_core_delete`), and its party cannot be deleted either
-  (the request's `party_id` is `ON DELETE RESTRICT`);
+- **no deletion makes a `CONVERTED` lead's links NULL** (M14): its target
+  cannot become NULL (`ck_external_lead_converted_target`, frozen), its
+  request cannot be deleted (`prevent_core_delete`), and its party cannot be
+  deleted either (the request's `party_id` is `ON DELETE RESTRICT`). A NULL
+  **written by hand** to its `party_id` passes the guard, as for every
+  terminal lead (the line above; not measured for `CONVERTED`); the service
+  never writes one. Each terminal status's verdict on a party's deletion is
+  named in §6.6 (review of `44c3d65`);
 - **deleting a party erases nothing captured** (M14): the lead's
   `raw_payload` and its source's `raw_text` stay. It is **not** an erasure of
   personal data, and proves nothing about a data-erasure request (OQ8-1).
@@ -1044,9 +1048,26 @@ revised for revision 4: the same results, line for line):
 - each guard of M9 and M10, and a mutation of each killed;
 - **Q-A1:** the queue test's `DECLINED` row written with
   `LEAD_DUPLICATE`, the guard unchanged;
-- **Q-B1 (a):** deleting a party a terminal lead names: accepted, the link
-  NULL; re-pointing it: refused; **no service path writes a NULL to a
-  terminal lead** (an inventory of the statements, as G7-19 (ii));
+- **Q-B1 (a), a party's deletion, each terminal status with its own
+  verdict** (review of `44c3d65`: one sentence for all of them generalized
+  `DECLINED`'s result):
+  - **`DECLINED`:** deleting the lead's party is **accepted**; the lead's
+    `party_id` becomes NULL; its `raw_payload` and its source's `raw_text`
+    stay (measured: M9, M14);
+  - **`CLOSED`:** the same guard rule applies, so **accepted** is expected,
+    with the link NULL; **not measured yet**: the test measures it, and a
+    refusal there is a finding, not a pass;
+  - **`CONVERTED` to a request:** deleting the lead's party is **refused**,
+    by the converted request's own `party_id` (`requests_party_id_fkey`,
+    `ON DELETE RESTRICT`): the conversion gives the request the lead's party
+    (measured: M14). Its target cannot become NULL
+    (`ck_external_lead_converted_target`), and its request cannot be deleted
+    (`prevent_core_delete`) (M14);
+  - **in each:** re-pointing `party_id` to another party is refused;
+  - **a NULL written by hand** passes the guard for every terminal status,
+    `CONVERTED` included, by the guard's text (Q-B1 (a) declares it; for
+    `CONVERTED` not measured). **No service path writes a NULL to a terminal
+    lead:** an inventory of the statements, as G7-19 (ii);
 - the downgrade refused with data, run without, the upgrade again;
 - the "existing rows" check (M5) repeated on the database the migration
   targets, its counts recorded before applying.

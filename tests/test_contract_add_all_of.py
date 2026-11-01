@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import copy
 import datetime
+import json
+import math
 import pathlib
 import uuid
 
@@ -140,8 +142,29 @@ def test_no_approved_correction_uses_add_all_of():
 
 # --- the effective contract and the runtime refuse the same payload -------------------------
 
+def _number(v) -> bool:
+    """A JSON number: not a boolean; a float only if finite (JSON has no NaN
+    or infinity)."""
+    return (isinstance(v, int) and not isinstance(v, bool)) or \
+        (isinstance(v, float) and math.isfinite(v))
+
+
+def _same(a, b) -> bool:
+    """JSON equality (Core §4.2.2): numbers by their mathematical value,
+    arrays item by item, objects key by key; a boolean is not a number."""
+    if _number(a) and _number(b):
+        return a == b
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(_same(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return set(a) == set(b) and all(_same(a[k], b[k]) for k in a)
+    return type(a) is type(b) and a == b
+
+
 def _judge(schema, value, components) -> bool:
-    """An independent verdict, written here for the subset the loader admits."""
+    """An independent verdict, written here for the subset the loader admits,
+    to JSON Schema 2020-12's text: `integer` is any number with a zero
+    fractional part (Validation §6.1.1), so 1.0 is one (review of 44c3d65)."""
     if "$ref" in schema:
         if not _judge(components[schema["$ref"].rsplit("/", 1)[1]], value, components):
             return False
@@ -157,18 +180,16 @@ def _judge(schema, value, components) -> bool:
         kinds = {"object": isinstance(value, dict), "array": isinstance(value, list),
                  "string": isinstance(value, str), "null": value is None,
                  "boolean": isinstance(value, bool),
-                 "integer": isinstance(value, int) and not isinstance(value, bool),
-                 "number": isinstance(value, (int, float)) and not isinstance(value, bool)}
+                 "integer": _number(value) and value == math.floor(value),
+                 "number": _number(value)}
         declared = schema["type"]
         if not any(kinds[t] for t in (declared if isinstance(declared, list) else [declared])):
             return False
-    same = (lambda a, b: a == b and type(a) is type(b))
-    if "enum" in schema and not any(same(value, e) for e in schema["enum"]):
+    if "enum" in schema and not any(_same(value, e) for e in schema["enum"]):
         return False
-    if "const" in schema and not same(value, schema["const"]):
+    if "const" in schema and not _same(value, schema["const"]):
         return False
-    if "minimum" in schema and isinstance(value, (int, float)) and not isinstance(value, bool) \
-            and value < schema["minimum"]:
+    if "minimum" in schema and _number(value) and value < schema["minimum"]:
         return False
     if schema.get("format") == "uuid" and isinstance(value, str):
         try:
@@ -219,6 +240,18 @@ BODIES = [
     ("payload, a negative budget", False,
      {"party_id": P, "consent_id": C1, "target": "REQUEST",
       "payload": {**GOOD, "budget_max_dzd": -1}}),
+    # JSON Schema 2020-12 Validation §6.1.1: "integer" matches any number
+    # with a zero fractional part: 1.0 is an integer, 1.5 is not (review of
+    # 44c3d65).
+    ("payload, a budget of 1.0", True,
+     {"party_id": P, "consent_id": C1, "target": "REQUEST",
+      "payload": {**GOOD, "budget_max_dzd": 1.0}}),
+    ("payload, a budget of 1.5", False,
+     {"party_id": P, "consent_id": C1, "target": "REQUEST",
+      "payload": {**GOOD, "budget_max_dzd": 1.5}}),
+    ("payload, a budget of 10**400", True,
+     {"party_id": P, "consent_id": C1, "target": "REQUEST",
+      "payload": {**GOOD, "budget_max_dzd": 10 ** 400}}),
     ("payload, a budget given as true", False,
      {"party_id": P, "consent_id": C1, "target": "REQUEST",
       "payload": {**GOOD, "budget_max_dzd": True}}),
@@ -409,4 +442,44 @@ def test_the_draft_correction_009_entry_is_accepted_by_the_loader(tmp_path):
     path = _corrections_with(tmp_path, entry)
     loaded = C.load_request_body_narrowings(path, C.load_contract())
     assert [e["id"] for e in loaded if "add_all_of" in e] == ["CORRECTION-009"]
+
+
+# --- numbers and equality as JSON Schema states them (review of 44c3d65) --------------------
+
+def test_a_minimum_too_large_for_a_float_is_judged_not_overflowed(tmp_path):
+    """`math.isfinite` on a very large int raises OverflowError: the check
+    must give a verdict instead. JSON allows the number; it is admitted, and
+    compared exactly."""
+    huge = 10 ** 400
+    _loaded(tmp_path, add_all_of=[{"properties": {"payload": {"properties": {
+        "n": {"type": "integer", "minimum": huge}}}}}])
+    schema = {"type": "integer", "minimum": huge}
+    assert C.body_violations(schema, huge, C.load_contract()) == []
+    assert C.body_violations(schema, huge - 1, C.load_contract()) == [f"body: below {huge}"]
+
+
+def test_equality_is_json_equality_item_by_item():
+    """[1] and [true] are different JSON values; 1 and 1.0 the same number."""
+    frozen = C.load_contract()
+    assert C.body_violations({"const": [1]}, [True], frozen) == ["body: not the required value"]
+    assert C.body_violations({"const": [1]}, [1.0], frozen) == []
+    assert C.body_violations({"enum": [{"a": 1}]}, {"a": True}, frozen) == [
+        "body: not one of the allowed values"]
+
+
+def test_distinct_json_values_are_not_duplicates_in_an_enum(tmp_path):
+    _loaded(tmp_path, add_all_of=[{"properties": {"target": {"enum": [[1], [True]]}}}])
+
+
+def test_a_number_json_cannot_carry_is_refused_and_the_limit_is_stated():
+    """Declared limit: Python's json reads 1e400 as infinity and accepts NaN,
+    neither a JSON value. The judge refuses both as not a number; the
+    mathematical integer 1e400 is lost by the parser before the judge sees
+    it, so an `integer` field refuses it where the contract would not."""
+    frozen = C.load_contract()
+    for text in ("1e400", "NaN", "-Infinity"):
+        assert C.body_violations({"type": "integer"}, json.loads(text), frozen) == [
+            "body: not of type integer"], text
+        assert C.body_violations({"type": "number"}, json.loads(text), frozen) == [
+            "body: not of type number"], text
 
