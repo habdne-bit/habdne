@@ -1315,3 +1315,5 @@ docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP3-MUTATIONS.txt ne
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 new   dc7bb3511ab9bcb91b634cc3ad45d43bae9c9414744f22293eaa256fcc3d8602
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  r2    9bfd52ec6028ce579191cf9e9c26146764e3e3d137d3b6448d9e2caae845cf77
 docs/gate/SLICE_8_PLAN.md                                      rev7  39a7f6abd7b233cc0923397563a725297f81a7a185bf6bcdb9a7b103bb771bfb
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 named e33b6bb99e60e0c68596b43ed76a7d154206929192e958bb50c9cad00b0c8b8c
+docs/gate/SLICE_8_PLAN.md                                      rev7  e3512d373050839d7c12b30db2f9d2d3f12b7aeb81b25c96359f13b15086be36

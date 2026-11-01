@@ -35,7 +35,7 @@ until it is reviewed.
 - `7dd8c2d`, `d26fcfd`: the expected contract regenerated;
 - `fb708b2`: the mutation pairs;
 - `5589b68`, `83de5d7`, `699706f`: the evidence round;
-- CLOSE_COMMIT: this note, plan revision 7.
+- `02651aa`: this note, plan revision 7.
 
 ---
 
