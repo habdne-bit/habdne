@@ -17,8 +17,12 @@ admitted while CORRECTION-009 does not need it.
 3. settle `date-time`;
 4. rebind the evidence to the resulting tree.
 
-**Status: DELIVERED for review.** The preparatory step is **not closed**
-until this addendum is reviewed.
+**Status: DELIVERED; reviewed (review of `44c3d65`): NOT CLOSED.**
+- The second addendum, `SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md`, makes
+  `integer` and equality agree with JSON Schema, and removes an
+  `OverflowError`.
+- It changes this note's §2 rows for `minimum` (no float conversion of an
+  int) and for `enum`'s distinctness (equality item by item).
 - **Not approved:** CORRECTION-009, the Delta and `0009` stay drafts, not
   activated.
 - **Not authorized:** Slice 8's step 1.

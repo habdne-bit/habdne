@@ -1311,3 +1311,7 @@ docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP2-MUTATIONS.txt new   8ac94ea7ba9535d9778f691dec771fc2805ac86754201fdb524e86d24f87c092
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   ad40c16dbccc519122bbac9c1e0faa69a7836adb2c602b5cd82847394e7933a3
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP3-MUTATIONS.txt new   85f6ef77aafce96a71e62dc597c8aeac767139fbd149608a6f573667ed69434b
+--- add_all_of second addendum: delivery note; the first addendum's status; Slice 8 plan revision 7 ---
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 new   dc7bb3511ab9bcb91b634cc3ad45d43bae9c9414744f22293eaa256fcc3d8602
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  r2    9bfd52ec6028ce579191cf9e9c26146764e3e3d137d3b6448d9e2caae845cf77
+docs/gate/SLICE_8_PLAN.md                                      rev7  39a7f6abd7b233cc0923397563a725297f81a7a185bf6bcdb9a7b103bb771bfb
