@@ -1300,3 +1300,14 @@ docs/gate/drafts/0009_external_lead_workflow.DRAFT.py          r7    8fe94b9fb33
 --- add_all_of second addendum: the expected contract regenerated at 66c4aa9 ---
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r7    1bfab92cf33aa7060ac0339dfb623e1cd629bb2ba7b6e7753a846f4a6241806f
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r7b   1987dad827eabad83de1ac41f76a7403fc0c6a6c90440835fab2c2fb46d4f4e2
+--- add_all_of second addendum: mutation pairs at d26fcfd (its own 53; and the four earlier scripts that mutate contract.py, re-run) ---
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-MUTATIONS.txt     new   696669dc3ba48909cd0198478d740d0338b4eb3ba00d3b81e9af8a2ed2cb8f31
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-MUTATIONS-REPEAT.txt new   eb3c98b526f2b12893bcdaf7ffe6c3ed751fa7c646debc9f58440a7b7b59754d
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-CORRECTION-004-MUTATIONS-REPEAT.txt new   1917a6de4f24aa6a932c24ba9f5452ca9992857bad5303c55cc1231a3cc83a32
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-CORRECTION-004-MUTATIONS.txt new   8bcf19b433ec46ff79e873a560f4340ef8c9714e18e592741daccf888b92a6b8
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE6-STEP2-MUTATIONS-REPEAT.txt new   3f23fc5486c44158a4e6915d2af87df261d9c731ca4117ef3c94b25738525d8c
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE6-STEP2-MUTATIONS.txt new   cca78c8f502675b94e88fde5bcc429316f268689664f52a9fa2d7fd8513f8f4b
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.txt new   ac0b506e1b21b9f066b7b7bac9851e4c23f7aca333288a7cf1732c9bc38f30f2
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP2-MUTATIONS.txt new   8ac94ea7ba9535d9778f691dec771fc2805ac86754201fdb524e86d24f87c092
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   ad40c16dbccc519122bbac9c1e0faa69a7836adb2c602b5cd82847394e7933a3
+docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-RERUN-SLICE7-STEP3-MUTATIONS.txt new   85f6ef77aafce96a71e62dc597c8aeac767139fbd149608a6f573667ed69434b
