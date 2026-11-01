@@ -5,21 +5,21 @@ db/gate/run_binding.py, through `db/gate/stop_gate_c_evidence.py --check`.
 A saved JUnit report says when IT was produced, not which tree produced it.
 This record binds the report to that tree, and to its own digest and counts.
 
-Recorded    : 2026-10-31 13:28:03 UTC
-Commit      : c0b616f34c714b422ed78c44c55bd24612ecc8f6
+Recorded    : 2026-11-01 03:30:51 UTC
+Commit      : 83de5d7f8e60860a7998a22f324a19d071d111d5
 Working tree: clean when the suite started; unchanged when it ended
 Test database: turab_authz_test on host 127.0.0.1
 Test destination: host=127.0.0.1 hostaddr=- port=5432 dbname=turab_authz_test
 Test server : system_identifier=7697828029857667607 address=127.0.0.1 port=5432 database=turab_authz_test
 Source fingerprint (db/dev/source_fingerprint.py):
-              d1d94e2a70775dbd6287dfaa6a60d7b85fb4ba4acc683cbebefb9d242b70f5a3
+              567ef5f4fcb189dc64029881dd5889d999fbc08f8ad6a424a524f08b70f0f15c
 Report      : docs/gate/evidence/junit-run.xml
 Report sha256:
-              1ffcae874edeba8b77f17a4d14c43e216a3df539457f8a09cbefb7d8b4f4f32d
+              11680233028df45680c069e93561d3e72d3d04414898054a30bb7cc0750ab17e
 Cases counted in the report, one per <testcase>:
-              tests=3597 failures=0 errors=0 skipped=0
+              tests=3604 failures=0 errors=0 skipped=0
 JUnit timestamp / time:
-              timestamp=2026-10-31T13:28:03.550695+00:00 time=711.410s
+              timestamp=2026-11-01T03:30:52.309216+00:00 time=602.002s
 
 WHAT THIS DOES AND DOES NOT SAY
   * It says: these tests were run, at this time, against a tree whose source
