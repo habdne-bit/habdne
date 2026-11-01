@@ -59,10 +59,10 @@ PY
 cat <<HDR
 TURAB — Slice 8: the effective contract the drafts produce (CORRECTION-009 complete)
 =====================================================================================
-DRAFT EVIDENCE. Nothing below is in force. Regenerated on the tree of the
-preparatory step's addendum (review of a7a4fe9), whose loader checks the
-structure of each keyword's value; the previous version was generated at
-0c54875.
+DRAFT EVIDENCE. Nothing below is in force. Regenerated on the tree named
+below, after the preparatory step's second addendum (review of 44c3d65);
+earlier versions were generated at 0c54875 and 7e7da47, with the same
+generated content.
 
 How it was produced (the gate's own generators, on a temporary git worktree of
 $(git rev-parse --short HEAD), never on the repository's tree, by the script

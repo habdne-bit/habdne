@@ -1,16 +1,16 @@
 TURAB — Slice 8: the effective contract the drafts produce (CORRECTION-009 complete)
 =====================================================================================
-DRAFT EVIDENCE. Nothing below is in force. Regenerated on the tree of the
-preparatory step's addendum (review of a7a4fe9), whose loader checks the
-structure of each keyword's value; the previous version was generated at
-0c54875.
+DRAFT EVIDENCE. Nothing below is in force. Regenerated on the tree named
+below, after the preparatory step's second addendum (review of 44c3d65);
+earlier versions were generated at 0c54875 and 7e7da47, with the same
+generated content.
 
 How it was produced (the gate's own generators, on a temporary git worktree of
-7e7da47, never on the repository's tree, by the script
+66c4aa9, never on the repository's tree, by the script
 db/dev/generate_slice8_expected_contract.sh as committed with this file):
 - docs/contract/addenda/ADD-SLICE8_external_lead_workflow.yaml = the draft
   docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml, its delta_sha256
-  set to the sha256 of the Delta draft as committed at 7e7da47
+  set to the sha256 of the Delta draft as committed at 66c4aa9
   (e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b);
 - docs/contract/CONTRACT_CORRECTIONS.yaml + CORRECTION-009, appended to
   request_body_narrowings, LITERALLY as

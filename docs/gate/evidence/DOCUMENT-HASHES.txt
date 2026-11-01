@@ -1297,3 +1297,5 @@ docs/gate/SLICE_8_PLAN.md                                      rev6  52fdb15db00
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-BEFORE.txt        new   5f333bd2466dcd9a1ec9f65b94cc9b107ffbf795db01763c92db5fbb0b056075
 docs/gate/evidence/PREP-ADD-ALL-OF-ADDENDUM2-MUTATIONS-TRIAL.txt new   4eaa6745f4d2787359815efe7a2586742740b44bc9d0b6841e38aa9d319b6a0f
 docs/gate/drafts/0009_external_lead_workflow.DRAFT.py          r7    8fe94b9fb3340a0def238612ba8730c3dfa3066ff8e98ac23b8cfa726d39f146
+--- add_all_of second addendum: the expected contract regenerated at 66c4aa9 ---
+docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r7    1bfab92cf33aa7060ac0339dfb623e1cd629bb2ba7b6e7753a846f4a6241806f
