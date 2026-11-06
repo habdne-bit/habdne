@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DRAFT in final form, for review**, Slice 8 plan revision 5. Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml`. §3 is the literal entry, no placeholder; its effective contract was generated after the preparatory step (Q-B3 (a)), which added the `add_all_of` key it uses, and regenerated after that step's addendum (review of `a7a4fe9`: the loader now checks each keyword's value; `date-time` not admitted), unchanged but for hashes |
+| **Status** | **DRAFT in final form, for review; one point open before approval** (review of `f77f8aa`). §3 is the literal entry. **§6:** the number the judge sees differs from the number the schema judges; a solution must be chosen and tested before this text is approved or the judge is wired to the conversion (plan Q-C1). Not approved; not in `docs/contract/CONTRACT_CORRECTIONS.yaml` |
 | **Classification** | a narrowing of a frozen operation's request body |
 | **Operation** | `postExternalLeadsLeadIdConvert` (`POST /external-leads/{lead_id}/convert`) |
 | **Decision it would implement** | G3-10 Q-3 (b) ("a conversion schema must be declared by an approved contract change"); Slice 8 G8-5, REQUEST conversion only, as directed in the reviews of `3922850` and `b39ad10` |
@@ -199,3 +199,50 @@ contract** (`docs/handoff/05_API/openapi_v0.2.3.yaml`, `RequestCreate`):
 - `target = PROPERTY`: `409 EXTERNAL_LEAD_CONVERSION_NOT_AVAILABLE`,
   unchanged (the schema accepts it: expected file, part 0);
 - the route's verdicts equal `body_violations`' on the same bodies.
+
+## 6. The number the judge sees (review of `f77f8aa`; plan Q-C1)
+
+**The budget fields:** `budget_target_dzd` and `budget_max_dzd` are
+`integer`, `minimum: 0`, **with no maximum** (§3, as the frozen
+`RequestCreate`).
+- **So the second addendum's sentence was wrong:** "no field of
+  CORRECTION-009 has a bound near the double range". These fields have no
+  upper bound, so the number `1e400` is within the schema.
+
+**Measured** (M15, `evidence/SLICE8-NUMBER-PARSING-MEASUREMENTS.txt`, run
+twice, identical; no database, no code changed), for `{"type": "integer",
+"minimum": 0}`:
+
+| Text | The schema (exact) | The judge today, after `json.loads` |
+|---|---|---|
+| `1e400` | accepted | **refused** (parsed as infinity) |
+| `1e-400` | refused: not an integer | **accepted** (parsed as `0.0`) |
+| `1.0000000000000001` | refused: not an integer | **accepted** (parsed as `1.0`) |
+| `0.99999999999999999` | refused: not an integer | **accepted** (parsed as `1.0`) |
+
+**Four differences, three the other way.** The judge **accepts** bodies the
+contract refuses, because the float parser rounds them to an integer.
+- **Those values sit near 0 and 1,** so **a maximum on the range alone does
+  not remove them**. Narrowing the domain is not enough by itself.
+
+**The two ways the review named, measured:**
+
+| | Preserve the value at parsing | Narrow the domain by an approved bound |
+|---|---|---|
+| **What** | a non-integer literal parsed as `decimal.Decimal` (exact); `NaN`, `Infinity` refused at parsing; the judge's number test admits a finite `Decimal` | a `maximum` on each budget field, approved and declared |
+| **M15's four differences** | **0** (the prototype, in the measurement script only) | 1 removed (`1e400`); **3 stay** (`1e-400`, `1.0000000000000001`, `0.99999999999999999`) |
+| **What it needs** | a change to `contract.py` (`_type_holds`, `_json_same` admit `Decimal`), and a body parser used where the judge is wired | the `maximum` keyword admitted by the loader and the judge (a change to `contract.py`), and a business bound to approve |
+
+**One more bound, shared by both columns and stated:** Python refuses an
+integer literal over **4300 digits** at parsing (`sys.int_max_str_digits`),
+where the schema, having no maximum, accepts it. Only an approved `maximum`
+makes the schema refuse it too; the two would then refuse with different
+statuses (a parse error, a schema refusal).
+
+**Recommended (Q-C1):** preserve the value at parsing, the only way M15
+shows agreeing on every JSON text. An approved `maximum` is optional, and
+would close the 4300-digit case.
+- **Either is a change to `contract.py`,** which no review has authorized.
+  It would be a step of its own, or a part of Slice 8's step 3, which wires
+  the conversion, with M15's texts as agreement tests.
+

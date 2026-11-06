@@ -1317,3 +1317,12 @@ docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  r2    9bfd52ec602
 docs/gate/SLICE_8_PLAN.md                                      rev7  39a7f6abd7b233cc0923397563a725297f81a7a185bf6bcdb9a7b103bb771bfb
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 named e33b6bb99e60e0c68596b43ed76a7d154206929192e958bb50c9cad00b0c8b8c
 docs/gate/SLICE_8_PLAN.md                                      rev7  e3512d373050839d7c12b30db2f9d2d3f12b7aeb81b25c96359f13b15086be36
+--- Slice 8 plan revision 8 (review of f77f8aa): P closed; drafts corrected (403 by lead_id, Delta 3.0); M15; the step's notes closed ---
+docs/gate/evidence/SLICE8-NUMBER-PARSING-MEASUREMENTS.py       new   58cc4bcb9dabcf7de9ffe874dcf1c56372ceefe9490026e72b0ffadd938e3cac
+docs/gate/evidence/SLICE8-NUMBER-PARSING-MEASUREMENTS.txt      new   52d2faa5ee1e0b2d66f3431b10148ab6f66f9c89f545e2d2a12d5b267d5354a2
+docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml  r8    b8d8a58a106f954ca3027eebcf34b2e0bdab088f7940dd7d8c0dfafd660dca66
+docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md r8    7cc9eabe5bdf5896cbc0050e6f3215e9e7d5f0c97fa06ac7b32c23c552496b90
+docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r8    cd1aa40e0460fabaddb3ddf3095e86c8cccb2df9f1a5dba227390458a2dee24b
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  r3    301884eb16d92fd82dc2fd12f32fadc0f4a55614ae0b9dc86d90e24f812363d8
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  r3    116e50eb07afbb3af489bc2c22f53919ab5ea98338b7e707b6cfeb9a5da7c531
+docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 r2    0abaa13018b6b6f9d9f2b3145f0164757669bc385013824083bf4e167f6b4de4

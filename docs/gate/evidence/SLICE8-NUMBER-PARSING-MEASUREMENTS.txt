@@ -1,0 +1,40 @@
+M15 What a JSON number becomes before the judge; schema {"type": "integer", "minimum": 0}
+Python 3.12.3; sys.int_max_str_digits = 4300
+
+text                     SPEC                       | TODAY
+0                        accepted                   | accepted  (parsed 0)
+                                                    | PARSE-EXACT: accepted
+1                        accepted                   | accepted  (parsed 1)
+                                                    | PARSE-EXACT: accepted
+1.0                      accepted                   | accepted  (parsed 1.0)
+                                                    | PARSE-EXACT: accepted
+1e0                      accepted                   | accepted  (parsed 1.0)
+                                                    | PARSE-EXACT: accepted
+1E+2                     accepted                   | accepted  (parsed 100.0)
+                                                    | PARSE-EXACT: accepted
+1.5                      refused: not an integer    | refused: not of type integer  (parsed 1.5)
+                                                    | PARSE-EXACT: refused: not of type integer
+-1                       refused: below 0           | refused: below 0  (parsed -1)
+                                                    | PARSE-EXACT: refused: below 0
+-0.0                     accepted                   | accepted  (parsed -0.0)
+                                                    | PARSE-EXACT: accepted
+1e400                    accepted                   | refused: not of type integer  (parsed inf)   <-- DIFFERS
+                                                    | PARSE-EXACT: accepted
+1e-400                   refused: not an integer    | accepted  (parsed 0.0)   <-- DIFFERS
+                                                    | PARSE-EXACT: refused: not of type integer
+1.0000000000000001       refused: not an integer    | accepted  (parsed 1.0)   <-- DIFFERS
+                                                    | PARSE-EXACT: refused: not of type integer
+0.99999999999999999      refused: not an integer    | accepted  (parsed 1.0)   <-- DIFFERS
+                                                    | PARSE-EXACT: refused: not of type integer
+9007199254740993.0       accepted                   | accepted  (parsed 9007199254740992.0)
+                                                    | PARSE-EXACT: accepted
+NaN                      not JSON                   | refused: not of type integer  (parsed nan)
+                                                    | PARSE-EXACT: parser error: ValueError: NaN is not JSON
+Infinity                 not JSON                   | refused: not of type integer  (parsed inf)
+                                                    | PARSE-EXACT: parser error: ValueError: Infinity is not JSON
+
+disagreements with SPEC (JSON texts): TODAY 4, PARSE-EXACT 0
+
+A long integer literal (the parser's own bound, both columns):
+  4300 digits: parsed
+  4301 digits: ValueError (Exceeds the limit (4300 digits) for integer string conversio...)

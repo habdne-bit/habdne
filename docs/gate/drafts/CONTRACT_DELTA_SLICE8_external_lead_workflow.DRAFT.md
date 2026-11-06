@@ -1,6 +1,7 @@
 # Contract Delta · Slice 8 — the external-lead workflow (DRAFT)
 
-**Status: DRAFT for review, Slice 8 plan revision 4.** The review of
+**Status: DRAFT for review, Slice 8 plan revision 8** (§3.0 added after the
+review of `f77f8aa`: no `404` on the three operations by `lead_id`). The review of
 `b39ad10` authorized preparing this text; **it is not approved.** Nothing in
 it is in force: its addendum is a draft under `docs/gate/drafts/`, which the
 code never reads.
@@ -37,6 +38,52 @@ are the addendum's (`ADD-SLICE8_external_lead_workflow.DRAFT.yaml`).
 
 ## 3. The rules each operation carries
 
+### 3.0 A `lead_id` that names no lead, or a lead not the caller's to act on
+
+Decided in the review of `f77f8aa`, for the three operations addressed by
+`lead_id` (contact attempts, status, Call Brief): **`403
+OBJECT_NOT_AUTHORIZED`**, never `404`.
+
+| Case | Answer |
+|---|---|
+| the role is not the operation's (a CUSTOMER; a REVIEWER on a command) | `403 ROLE_NOT_PERMITTED`, at the role stage, before any lead is read |
+| **the `lead_id` names no lead** | **`403 OBJECT_NOT_AUTHORIZED`**, and the denial recorded with the kind and the id |
+| the lead exists, and the caller's object check fails | `403 OBJECT_NOT_AUTHORIZED`, recorded: the same answer |
+
+**The text each case rests on:**
+- **R5.3b:** "Staff object checks that fail return `403` with
+  `OBJECT_NOT_AUTHORIZED`".
+- **The absent id is stated in RFC-001's own text,** not inferred from
+  R5.3b. §10's decision pipeline, stage 5: "absent ⇒ 404 on /me/*, 403
+  internal (R5.3)".
+- **§12's table:** "Object check failed, internal endpoint: 403,
+  `OBJECT_NOT_AUTHORIZED`".
+
+**The precedents, each pinned by a test:** a staff path's unknown id is
+`403`, recorded.
+- property: `test_on_the_staff_path_an_unknown_property_is_403`;
+- match: `test_an_unknown_match_is_403_and_recorded`;
+- opportunity: `test_an_unknown_opportunity_is_403_for_staff_and_recorded`;
+- task: `test_an_unknown_task_is_403_and_the_denial_is_recorded`;
+- thread: `test_an_unknown_thread_is_403_and_the_denial_is_recorded`. The
+  thread's case is the closest: Slice 7 plan revision 8 corrected a drafted
+  "404 for the path's thread" to this answer.
+
+**What the refusal does:**
+- **For the two commands:** it writes nothing and consumes no idempotency
+  key, as the thread's message does. The check runs before the command's
+  transaction.
+- **For the brief:** no brief is computed; the denial is recorded, as
+  `read_opportunity` records it.
+- **Its `detail`** names no lead and no reason beyond "not an available
+  lead".
+
+**Not this Delta's:** the frozen `postExternalLeadsLeadIdConvert` answers
+`404` for an unknown lead today (Slice 3, G3-10; `services/external_leads.py`
+`refuse_conversion`, pinned by `test_converting_an_unknown_lead_is_404`). It
+is outside the three operations decided here. Whether it follows the same
+rule when Slice 8 implements the conversion is plan question Q-C2.
+
 ### 3.1 Contact attempts
 
 - **Body:** `channel` (PHONE, WHATSAPP, SMS, IN_PERSON, OTHER), `outcome_code`
@@ -55,6 +102,7 @@ are the addendum's (`ADD-SLICE8_external_lead_workflow.DRAFT.yaml`).
   status is unchanged.
 - **A terminal lead** (`CONVERTED`, `DECLINED`, `CLOSED`): `409
   EXTERNAL_LEAD_TERMINAL`, nothing written, no idempotency key consumed.
+- **An unknown lead:** §3.0.
 - **`201`** `{attempt_id, lead_id, lead_status}`. Sends nothing to anyone.
 
 ### 3.2 Status
@@ -69,6 +117,7 @@ are the addendum's (`ADD-SLICE8_external_lead_workflow.DRAFT.yaml`).
 - **`DECLINED`, `CLOSED`** require a `LEAD_CLOSURE` reason code; any other
   `to` refuses one (the schema's `allOf`).
 - **A transition the table refuses:** `409 EXTERNAL_LEAD_TRANSITION_NOT_ALLOWED`.
+- **An unknown lead:** §3.0.
 - **`200`** `{lead_id, status}`.
 
 ### 3.3 The Call Brief
@@ -89,6 +138,7 @@ are the addendum's (`ADD-SLICE8_external_lead_workflow.DRAFT.yaml`).
   command re-checks the grant itself, under its lock.
 - **Never in it:** `raw_text`, the source's URL or reference, `raw_payload`,
   metadata, a contact point's value.
+- **An unknown lead:** §3.0; no brief, the denial recorded.
 
 ### 3.4 The paged queue
 
@@ -150,7 +200,8 @@ SELECT external_lead_id, lead_kind, status, discovered_at
 ## 4. Audit
 
 Each command audited by the command layer, once per accepted command,
-refusals as every refusal; the brief audited once per read; the page once
+refusals as every refusal (an unknown lead: a recorded `OBJECT_NOT_AUTHORIZED`
+denial with the lead's kind and id, §3.0); the brief audited once per read; the page once
 per page; `external_lead_contact_attempts` by `audit_row_change` on INSERT.
 
 ## 5. What this Delta does not do

@@ -17,7 +17,7 @@ admitted while CORRECTION-009 does not need it.
 3. settle `date-time`;
 4. rebind the evidence to the resulting tree.
 
-**Status: DELIVERED; reviewed (review of `44c3d65`): NOT CLOSED.**
+**Status: CLOSED with the step** (review of `f77f8aa`). Before that: reviewed (review of `44c3d65`), NOT CLOSED.
 - The second addendum, `SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md`, makes
   `integer` and equality agree with JSON Schema, and removes an
   `OverflowError`.

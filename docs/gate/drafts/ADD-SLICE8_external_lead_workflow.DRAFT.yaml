@@ -37,6 +37,9 @@ paths:
       x-authorization: >-
         Staff-only. Records an attempt made outside TURAB; sends nothing. The
         lead's contact status is derived from the outcome (Delta §3.1).
+        A lead_id that names no lead, or a lead the caller may not act on, is
+        refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001
+        R5.3b and section 10 stage 5; Delta section 3.0); never 404.
       parameters:
         - {name: lead_id, in: path, required: true, schema: {type: string, format: uuid}}
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -54,7 +57,6 @@ paths:
         '400': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
-        '404': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '409': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '422': {$ref: '#/components/responses/LeadWorkflowProblem'}
   /external-leads/{lead_id}/status:
@@ -67,6 +69,9 @@ paths:
       x-authorization: >-
         Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock
         (Delta §3.2); CONVERTED is never set here.
+        A lead_id that names no lead, or a lead the caller may not act on, is
+        refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001
+        R5.3b and section 10 stage 5; Delta section 3.0); never 404.
       parameters:
         - {name: lead_id, in: path, required: true, schema: {type: string, format: uuid}}
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -84,7 +89,6 @@ paths:
         '400': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
-        '404': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '409': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '422': {$ref: '#/components/responses/LeadWorkflowProblem'}
   /external-leads/{lead_id}/call-brief:
@@ -98,6 +102,9 @@ paths:
         Staff-only, audited read. Never carries raw text, a URL, the raw
         payload or a contact point's value. CONSENT_CURRENT is computed at the
         read and authorizes nothing (Delta §3.3).
+        A lead_id that names no lead, or a lead the caller may not act on, is
+        refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001
+        R5.3b and section 10 stage 5; Delta section 3.0); never 404.
       parameters:
         - {name: lead_id, in: path, required: true, schema: {type: string, format: uuid}}
       responses:
@@ -108,7 +115,6 @@ paths:
               schema: {$ref: '#/components/schemas/LeadCallBrief'}
         '401': {$ref: '#/components/responses/LeadWorkflowProblem'}
         '403': {$ref: '#/components/responses/LeadWorkflowProblem'}
-        '404': {$ref: '#/components/responses/LeadWorkflowProblem'}
   /backoffice/queues/external-leads/page:
     get:
       operationId: getBackofficeQueuesExternalLeadsPage

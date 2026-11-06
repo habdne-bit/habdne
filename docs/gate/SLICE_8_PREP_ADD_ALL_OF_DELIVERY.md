@@ -11,7 +11,7 @@ the slice's commands. What it had to prove:
 - invalid correction input is refused;
 - **no other operation changes**.
 
-**Status: DELIVERED; NOT CLOSED** (review of `a7a4fe9`). The loader checked
+**Status: CLOSED** (review of `f77f8aa`), with its two addenda. Before that: NOT CLOSED (review of `a7a4fe9`). The loader checked
 the names of the admitted keywords, not the structure of their values. The
 addendum `SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md` changes what §1.2 and §1.3 say:
 - each keyword's value is checked, by the loader and the judge alike;

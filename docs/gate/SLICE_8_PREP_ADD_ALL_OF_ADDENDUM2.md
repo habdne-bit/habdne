@@ -22,8 +22,7 @@
 4. the evidence rebound to the new tree;
 5. §6.6's two cases named, each with its verdict.
 
-**Status: DELIVERED for review.** The preparatory step is **not closed**
-until it is reviewed.
+**Status: CLOSED with the step** (review of `f77f8aa`). §3's scope sentence is corrected there: see §3.
 - **Not approved:** CORRECTION-009, the Delta and `0009` stay drafts, not
   activated.
 - **Not authorized:** step 1.
@@ -103,7 +102,12 @@ from the code.
   lost it before the judge sees it.
 
 **Its scope:**
-- no field of CORRECTION-009 has a bound near the double range;
+- ~~no field of CORRECTION-009 has a bound near the double range~~
+  **Corrected (review of `f77f8aa`):** the budget fields have no maximum,
+  so `1e400` is within the schema. M15 measures this limit and three
+  differences the other way (`1e-400`, `1.0000000000000001`,
+  `0.99999999999999999`, accepted by the judge); CORRECTION-009 draft §6;
+  plan Q-C1;
 - the judge is wired to no route yet;
 - the parser is decided where a route uses it, not here.
 
