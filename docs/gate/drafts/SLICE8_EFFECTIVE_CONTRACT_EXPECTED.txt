@@ -1,17 +1,16 @@
 TURAB — Slice 8: the effective contract the drafts produce (CORRECTION-009 complete)
 =====================================================================================
-DRAFT EVIDENCE. Nothing below is in force. Regenerated on the tree named
-below, after the preparatory step's second addendum (review of 44c3d65);
-earlier versions were generated at 0c54875 and 7e7da47: the same verdicts
-and diffs, 0c54875's with other hashes of the corrections file's bytes.
+DRAFT EVIDENCE. Nothing below is in force. Generated from the drafts as
+they stand on the tree named below; what changed since the previous version
+is in the Slice 8 plan's revision history.
 
 How it was produced (the gate's own generators, on a temporary git worktree of
-66c4aa9, never on the repository's tree, by the script
+f5560fc, never on the repository's tree, by the script
 db/dev/generate_slice8_expected_contract.sh as committed with this file):
 - docs/contract/addenda/ADD-SLICE8_external_lead_workflow.yaml = the draft
   docs/gate/drafts/ADD-SLICE8_external_lead_workflow.DRAFT.yaml, its delta_sha256
-  set to the sha256 of the Delta draft as committed at 66c4aa9
-  (e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b);
+  set to the sha256 of the Delta draft as committed at f5560fc
+  (7cc9eabe5bdf5896cbc0050e6f3215e9e7d5f0c97fa06ac7b32c23c552496b90);
 - docs/contract/CONTRACT_CORRECTIONS.yaml + CORRECTION-009, appended to
   request_body_narrowings, LITERALLY as
   docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md §3 carries
@@ -37,7 +36,7 @@ the generated body equals the runtime's effective body: True
 1. git diff docs/api/API_INVENTORY_GENERATED.md
 -----------------------------------------------
 diff --git a/docs/api/API_INVENTORY_GENERATED.md b/docs/api/API_INVENTORY_GENERATED.md
-index 89b019b..2e0f1c1 100644
+index 89b019b..cccd4f5 100644
 --- a/docs/api/API_INVENTORY_GENERATED.md
 +++ b/docs/api/API_INVENTORY_GENERATED.md
 @@ -3,8 +3,8 @@
@@ -46,7 +45,7 @@ index 89b019b..2e0f1c1 100644
  - Source: `docs/api/openapi_effective_v0.2.3.yaml`
 -- Source SHA-256: `5a0391b71218d40bc3204c60c97a2551a2114425bfb509a356590fbcbe975f43`
 -- Operations: 67 · role-annotated: 60 · unauthenticated: 6
-+- Source SHA-256: `e16010f343667e46e23e02cd968eb0044f4202a85f7ba0d87fa92256276b06c5`
++- Source SHA-256: `b9d0c7194865cc3451571df679990c83e93f48310e28c83ba909adc65c5549a9`
 +- Operations: 71 · role-annotated: 64 · unauthenticated: 6
  
  ## Unauthenticated operations
@@ -60,7 +59,7 @@ index 89b019b..2e0f1c1 100644
  | `getBackofficeQueuesOpportunities` | GET | `/backoffice/queues/opportunities` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
  | `getBackofficeQueuesProperties` | GET | `/backoffice/queues/properties` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
  | `getBackofficeQueuesRequests` | GET | `/backoffice/queues/requests` | `ADMIN`, `OPERATOR`, `REVIEWER` | Internal queue. Filters and sorting must be deterministic and role-aware. |
-+| `getExternalLeadsLeadIdCallBrief` | GET | `/external-leads/{lead_id}/call-brief` | `ADMIN`, `OPERATOR`, `REVIEWER` | Staff-only, audited read. Never carries raw text, a URL, the raw payload or a contact point's value. CONSENT_CURRENT is computed at the read and authorizes nothing (Delta §3.3). |
++| `getExternalLeadsLeadIdCallBrief` | GET | `/external-leads/{lead_id}/call-brief` | `ADMIN`, `OPERATOR`, `REVIEWER` | Staff-only, audited read. Never carries raw text, a URL, the raw payload or a contact point's value. CONSENT_CURRENT is computed at the read and authorizes nothing (Delta §3.3). A lead_id that names no lead, or a lead the caller may not act on, is refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001 R5.3b and section 10 stage 5; Delta section 3.0); never 404. |
  | `getIdentityCandidates` | GET | `/identity/candidates` | `ADMIN`, `OPERATOR`, `REVIEWER` | — |
  | `getLocations` | GET | `/locations` | — | — |
  | `getMasterCriterionDefinitions` | GET | `/master/criterion-definitions` | — | — |
@@ -68,9 +67,9 @@ index 89b019b..2e0f1c1 100644
  | `postConsentsBindings` | POST | `/consents/bindings` | `ADMIN`, `OPERATOR` | Server validates consent party, scope, status and resource-party consistency. |
  | `postConsentsConsentIdRevoke` | POST | `/consents/{consent_id}/revoke` | `ADMIN`, `OPERATOR`, `CUSTOMER` | CUSTOMER may revoke only consent belonging to own party; staff require operational authority. |
  | `postExternalLeads` | POST | `/external-leads` | `ADMIN`, `OPERATOR` | — |
-+| `postExternalLeadsLeadIdContactAttempts` | POST | `/external-leads/{lead_id}/contact-attempts` | `ADMIN`, `OPERATOR` | Staff-only. Records an attempt made outside TURAB; sends nothing. The lead's contact status is derived from the outcome (Delta §3.1). |
++| `postExternalLeadsLeadIdContactAttempts` | POST | `/external-leads/{lead_id}/contact-attempts` | `ADMIN`, `OPERATOR` | Staff-only. Records an attempt made outside TURAB; sends nothing. The lead's contact status is derived from the outcome (Delta §3.1). A lead_id that names no lead, or a lead the caller may not act on, is refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001 R5.3b and section 10 stage 5; Delta section 3.0); never 404. |
  | `postExternalLeadsLeadIdConvert` | POST | `/external-leads/{lead_id}/convert` | `ADMIN`, `OPERATOR` | — |
-+| `postExternalLeadsLeadIdStatus` | POST | `/external-leads/{lead_id}/status` | `ADMIN`, `OPERATOR` | Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock (Delta §3.2); CONVERTED is never set here. |
++| `postExternalLeadsLeadIdStatus` | POST | `/external-leads/{lead_id}/status` | `ADMIN`, `OPERATOR` | Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock (Delta §3.2); CONVERTED is never set here. A lead_id that names no lead, or a lead the caller may not act on, is refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001 R5.3b and section 10 stage 5; Delta section 3.0); never 404. |
  | `postIdentityCandidatesCandidateIdReview` | POST | `/identity/candidates/{candidate_id}/review` | `ADMIN`, `REVIEWER` | — |
  | `postIdentityCandidatesGenerate` | POST | `/identity/candidates/generate` | `ADMIN`, `OPERATOR` | — |
  | `postInterests` | POST | `/interests` | `CUSTOMER`, `ADMIN`, `OPERATOR` | Customer may act only on resources owned/managed by authenticated party; service MUST enforce object-level authorization in addition to role. |
@@ -78,7 +77,7 @@ index 89b019b..2e0f1c1 100644
 2. git diff docs/api/openapi_effective_v0.2.3.yaml
 --------------------------------------------------
 diff --git a/docs/api/openapi_effective_v0.2.3.yaml b/docs/api/openapi_effective_v0.2.3.yaml
-index 5a6eb90..eb165c5 100644
+index 5a6eb90..b5652a1 100644
 --- a/docs/api/openapi_effective_v0.2.3.yaml
 +++ b/docs/api/openapi_effective_v0.2.3.yaml
 @@ -23,11 +23,12 @@
@@ -88,7 +87,7 @@ index 5a6eb90..eb165c5 100644
 -#   CONTRACT_CORRECTIONS.yaml    91f30c7fbd37a0eec74d71b5cfd8b6e2c725cbad81f0c8ead69c35e02183f671
 +#   CONTRACT_CORRECTIONS.yaml    129684e0a5df0cf4cf83ba9592ebde8aff143db3894d06cda1b066ac558c28f9
  #   addenda/ADD-G3-6_party_property_relations.yaml   21ecc93aed0d1a5ad5b34e5e49faf1157f68566f6293bf15fd0c98ec4952d83a
-+#   addenda/ADD-SLICE8_external_lead_workflow.yaml   2c89e3c785fc343108ac66c2c38fd534bd619459e5cf44cdef0392aebbae5379
++#   addenda/ADD-SLICE8_external_lead_workflow.yaml   15f64e6cc9f3749ede406eb4b9f385c4254e911208c9151e97917fc1d140b809
  #
 -# Corrections applied: CORRECTION-001 (postParties), CORRECTION-004 (postRequestsRequestIdMatchingRun), CORRECTION-005 (postTasksTaskIdComplete), CORRECTION-006 (postCommunicationThreads), CORRECTION-007 (postWebhooksWhatsapp 500), CORRECTION-008 (postWebhooksWhatsapp 503), CORRECTION-002 (postRequestsRequestIdState)
 -# Additions merged: ADD-G3-6 (getPropertiesPropertyIdRelations), ADD-G3-6 (postPropertiesPropertyIdRelations), ADD-G3-6 (postPropertyRelationEnd)
@@ -327,7 +326,9 @@ index 5a6eb90..eb165c5 100644
 +      - ADMIN
 +      - OPERATOR
 +      x-authorization: Staff-only. Records an attempt made outside TURAB; sends nothing. The lead's contact
-+        status is derived from the outcome (Delta §3.1).
++        status is derived from the outcome (Delta §3.1). A lead_id that names no lead, or a lead the caller
++        may not act on, is refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001 R5.3b and
++        section 10 stage 5; Delta section 3.0); never 404.
 +      parameters:
 +      - name: lead_id
 +        in: path
@@ -355,8 +356,6 @@ index 5a6eb90..eb165c5 100644
 +          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '403':
 +          $ref: '#/components/responses/LeadWorkflowProblem'
-+        '404':
-+          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '409':
 +          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '422':
@@ -367,7 +366,7 @@ index 5a6eb90..eb165c5 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
++        delta_sha256: 7cc9eabe5bdf5896cbc0050e6f3215e9e7d5f0c97fa06ac7b32c23c552496b90
 +  /external-leads/{lead_id}/status:
 +    post:
 +      operationId: postExternalLeadsLeadIdStatus
@@ -380,7 +379,9 @@ index 5a6eb90..eb165c5 100644
 +      - ADMIN
 +      - OPERATOR
 +      x-authorization: Staff-only. CONSENTED re-checks the grant under a FOR SHARE lock (Delta §3.2);
-+        CONVERTED is never set here.
++        CONVERTED is never set here. A lead_id that names no lead, or a lead the caller may not act on,
++        is refused 403 OBJECT_NOT_AUTHORIZED and the denial recorded (RFC-001 R5.3b and section 10 stage
++        5; Delta section 3.0); never 404.
 +      parameters:
 +      - name: lead_id
 +        in: path
@@ -408,8 +409,6 @@ index 5a6eb90..eb165c5 100644
 +          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '403':
 +          $ref: '#/components/responses/LeadWorkflowProblem'
-+        '404':
-+          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '409':
 +          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '422':
@@ -420,7 +419,7 @@ index 5a6eb90..eb165c5 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
++        delta_sha256: 7cc9eabe5bdf5896cbc0050e6f3215e9e7d5f0c97fa06ac7b32c23c552496b90
 +  /external-leads/{lead_id}/call-brief:
 +    get:
 +      operationId: getExternalLeadsLeadIdCallBrief
@@ -434,7 +433,9 @@ index 5a6eb90..eb165c5 100644
 +      - OPERATOR
 +      - REVIEWER
 +      x-authorization: Staff-only, audited read. Never carries raw text, a URL, the raw payload or a contact
-+        point's value. CONSENT_CURRENT is computed at the read and authorizes nothing (Delta §3.3).
++        point's value. CONSENT_CURRENT is computed at the read and authorizes nothing (Delta §3.3). A
++        lead_id that names no lead, or a lead the caller may not act on, is refused 403 OBJECT_NOT_AUTHORIZED
++        and the denial recorded (RFC-001 R5.3b and section 10 stage 5; Delta section 3.0); never 404.
 +      parameters:
 +      - name: lead_id
 +        in: path
@@ -453,15 +454,13 @@ index 5a6eb90..eb165c5 100644
 +          $ref: '#/components/responses/LeadWorkflowProblem'
 +        '403':
 +          $ref: '#/components/responses/LeadWorkflowProblem'
-+        '404':
-+          $ref: '#/components/responses/LeadWorkflowProblem'
 +      x-turab-addendum:
 +        id: ADD-SLICE8
 +        kind: ADDITION
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
++        delta_sha256: 7cc9eabe5bdf5896cbc0050e6f3215e9e7d5f0c97fa06ac7b32c23c552496b90
 +  /backoffice/queues/external-leads/page:
 +    get:
 +      operationId: getBackofficeQueuesExternalLeadsPage
@@ -510,7 +509,7 @@ index 5a6eb90..eb165c5 100644
 +        decision: 'DRAFT. Slice 8 plan (docs/gate/SLICE_8_PLAN.md) G8-4: preparing the text authorized
 +          in the review of b39ad10; not approved.'
 +        delta_document: docs/gate/drafts/CONTRACT_DELTA_SLICE8_external_lead_workflow.DRAFT.md
-+        delta_sha256: e255927b91260acdcb7eabb26d629d840a5c235f1698fcac107342299f50b49b
++        delta_sha256: 7cc9eabe5bdf5896cbc0050e6f3215e9e7d5f0c97fa06ac7b32c23c552496b90
  components:
    securitySchemes:
      BearerAuth:

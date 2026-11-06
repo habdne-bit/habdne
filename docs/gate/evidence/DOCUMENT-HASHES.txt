@@ -1326,3 +1326,6 @@ docs/gate/drafts/CORRECTION-009-lead-conversion-payload.DRAFT.md r8    cd1aa40e0
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_DELIVERY.md                  r3    301884eb16d92fd82dc2fd12f32fadc0f4a55614ae0b9dc86d90e24f812363d8
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM.md                  r3    116e50eb07afbb3af489bc2c22f53919ab5ea98338b7e707b6cfeb9a5da7c531
 docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 r2    0abaa13018b6b6f9d9f2b3145f0164757669bc385013824083bf4e167f6b4de4
+--- Slice 8 plan revision 8: its commit named (f5560fc); the expected contract regenerated from the corrected drafts at f5560fc ---
+docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r8    3a23b9c05b9a9425417390888fe8f22b7ff7e2a7fa65760f0f363d0c388a6f4e
+docs/gate/SLICE_8_PLAN.md                                      rev8  1075ca595bf0812719ae8d6a8901ebb58d369b6749c75de272cc897210705fde
