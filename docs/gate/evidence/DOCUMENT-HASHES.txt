@@ -1329,3 +1329,4 @@ docs/gate/SLICE_8_PREP_ADD_ALL_OF_ADDENDUM2.md                 r2    0abaa13018b
 --- Slice 8 plan revision 8: its commit named (f5560fc); the expected contract regenerated from the corrected drafts at f5560fc ---
 docs/gate/drafts/SLICE8_EFFECTIVE_CONTRACT_EXPECTED.txt        r8    3a23b9c05b9a9425417390888fe8f22b7ff7e2a7fa65760f0f363d0c388a6f4e
 docs/gate/SLICE_8_PLAN.md                                      rev8  1075ca595bf0812719ae8d6a8901ebb58d369b6749c75de272cc897210705fde
+docs/gate/SLICE_8_PLAN.md                                      rev8b d6930a911e50ed4402634826e84633989f13a8454fefd0e242bc1861a2181f02
