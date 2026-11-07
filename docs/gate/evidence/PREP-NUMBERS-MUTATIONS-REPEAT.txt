@@ -1,0 +1,263 @@
+TURAB — preparatory step: exact numbers (Slice 8 plan Q-C1 (a))
+============================================================
+Base commit       : 7e7ed36ad42515490cb7ad9c7fcc1866a3a87183
+Source fingerprint: 1baf5b74072089f9a23795c4cab66f259700e4ac846c87d32006f3d6a5da50bb
+Working tree      : CLEAN
+Recorded          : 2026-11-07 15:17:51 UTC
+Test file         : tests/test_exact_numbers.py
+
+=== baseline (no mutation) ===
+   58 passed, 1 warning in 10.12s
+== P1 a non-integer number parsed as a float [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   20 failed, 38 passed, 1 warning in 12.81s
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[not
+   FAILED test_a_budget_with_a_huge_exponent_is_refused_by_the_bound_not_built
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[-0.0]
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[0.99999999999999999]
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[1.0000000000000001]
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[1.0]
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[1e-400]
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[1e400]
+   FAILED test_a_non_integer_literal_keeps_its_exact_value[9007199254740993.0]
+   FAILED test_a_parsed_body_holds_no_float_anywhere
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9007199254740993.0]
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9223372036854775807.0]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[0.99999999999999999]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0000000000000001]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e-400]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e400]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[0.99999999999999999]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0000000000000001]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e-400]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e400]
+   cause: AssertionError: ('0.99999999999999999', [])
+   cause: AssertionError: ('1.0000000000000001', [])
+   cause: AssertionError: ('1e-400', [])
+   cause: AssertionError: ('1e400', ['body.payload.budget_max_dzd: not of type integer'])
+   cause: AssertionError: ('1e400', ['body: not of type integer'])
+   cause: AssertionError: ('9007199254740993.0', 9007199254740992)
+== P2 an integer beyond 4300 digits refused [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   4 failed, 54 passed, 1 warning in 10.52s
+   FAILED test_a_body_that_parses_reaches_the_command_and_its_key[5000
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[5000
+   FAILED test_an_integer_beyond_4300_digits_is_kept_exactly
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[777777777777777777777777]
+   cause: AssertionError: 5000 digits
+   cause: E   AssertionError: 5000 digits
+   cause: E   turab.api.exact_json.BodyNotParsed: the body is not JSON
+   cause: HTTP 422 field error: the body is not JSON
+   cause: turab.api.exact_json.BodyNotParsed: the body is not JSON
+== P3 NaN and Infinity accepted [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   3 failed, 55 passed, 1 warning in 9.26s
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[-Infinity]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[Infinity]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[NaN]
+   cause: AssertionError: ('-Infinity', 201, '{"accepted":true}')
+   cause: AssertionError: ('Infinity', 201, '{"accepted":true}')
+   cause: AssertionError: ('NaN', 201, '{"accepted":true}')
+   cause: E   AssertionError: ('-Infinity', 201, '{"accepted":true}')
+   cause: E   AssertionError: ('Infinity', 201, '{"accepted":true}')
+   cause: E   AssertionError: ('NaN', 201, '{"accepted":true}')
+== P4 a body not UTF-8 decoded anyway [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   1 failed, 57 passed, 1 warning in 8.95s
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not
+   cause: AssertionError: ('not UTF-8', 201, '{"accepted":true}')
+   cause: E   AssertionError: ('not UTF-8', 201, '{"accepted":true}')
+== P5 a body nested too deeply not classified [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   1 failed, 57 passed, 1 warning in 8.94s
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[nested
+   cause: AssertionError: ('nested 100000 deep', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"08b748907b6e45f5bc58104dcb8ef
+   cause: E   AssertionError: ('nested 100000 deep', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"08b748907b6e45f5bc58104dc
+== P6 a 400 refusal answered as a 422 [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   2 failed, 56 passed, 1 warning in 10.84s
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[nested
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not
+   cause: HTTP 422 field error: the body is not UTF-8
+   cause: HTTP 422 field error: the body nests too deeply to be parsed
+== P7 a 422 refusal raised as a general exception [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   5 failed, 53 passed, 1 warning in 10.08s
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[-Infinity]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[Infinity]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[NaN]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[empty]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not
+   cause: AssertionError: ('-Infinity', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"93162585d1b84db685a7e22441326bf6"}')
+   cause: AssertionError: ('Infinity', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"1818881bf71d49a38e6ab775b88b7246"}')
+   cause: AssertionError: ('NaN', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"0cc98a1648874d9989629b75786efa16"}')
+   cause: AssertionError: ('empty', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"c438726f4d594b729388a986100fce23"}')
+   cause: AssertionError: ('not JSON', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"aab302b939264304b700a719af76bbb3"}')
+   cause: E   AssertionError: ('-Infinity', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"93162585d1b84db685a7e22441326bf6"}
+== P8 an invalid body not classified [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   2 failed, 56 passed, 1 warning in 9.09s
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[empty]
+   FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not
+   cause: AssertionError: ('empty', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"8b12cc4e0d724681a451c3251afe10aa"}')
+   cause: AssertionError: ('not JSON', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"362288c5ad6e4c5fb97d141911182d8a"}')
+   cause: E   AssertionError: ('empty', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"8b12cc4e0d724681a451c3251afe10aa"}')
+   cause: E   AssertionError: ('not JSON', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"362288c5ad6e4c5fb97d141911182d8a"}'
+== P9 a refusal at the storage bound raised as a general exception [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   8 failed, 50 passed, 1 warning in 8.86s
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[1e400
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[5000
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[below
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[beyond
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[not
+   FAILED test_a_budget_with_a_huge_exponent_is_refused_by_the_bound_not_built
+   cause: AssertionError: ('1e400', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"f3f4863e34a545c38b7d3aeba93c259e"}')
+   cause: AssertionError: ('5000 digits', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"22d1ca56f1834a5eabc29295bc3e249f"}')
+   cause: AssertionError: ('below 0', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"93e992d30c6c4983acbfccebe4291b06"}')
+   cause: AssertionError: ('beyond bigint', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"474b530f06674a6b8c27697d84123d81"}
+   cause: AssertionError: ('beyond bigint', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"e58434c5582d4041bbfe2f394a418b02"}
+   cause: AssertionError: ('not an integer', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"46114308315b4c919717e1f7fb703760"
+== P10 the route's body model not applied [src/turab/api/exact_json.py, 1 site(s)]  restored: sha256 c968f68053335b0a identical
+   8 failed, 50 passed, 14 warnings in 9.52s
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[1e400
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[5000
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[below
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[beyond
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[not
+   FAILED test_a_budget_with_a_huge_exponent_is_refused_by_the_bound_not_built
+   cause: AssertionError: ('1e400', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"5312bae71662490c908ac1441f6ed447"}')
+   cause: AssertionError: ('5000 digits', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"5c2c72d625714ce292653bace792f71b"}')
+   cause: AssertionError: ('below 0', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"ede40fcab1d84a9a8c539516f69e3ce8"}')
+   cause: AssertionError: ('beyond bigint', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"1dec7885922b4654b66c34cd069d3fe3"}
+   cause: AssertionError: ('beyond bigint', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"cd47926c9b29442f8ab6f95d5262c327"}
+   cause: AssertionError: ('not an integer', 201, '{"request_id":"077f0425-4e7c-48fe-b03e-518836316753"}')
+== T1 a Decimal not read as an integer [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 9159d1b700185570 identical
+   6 failed, 52 passed, 1 warning in 9.74s
+   FAILED test_a_budget_with_a_huge_exponent_is_refused_by_the_bound_not_built
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[1.0]
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[1E+3]
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9007199254740993.0]
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9223372036854775807.0]
+   FAILED test_json_integer_reads_an_exact_decimal
+   cause: AssertionError: assert ('budget_max_dzd' == 'budget_max_dzd'
+   cause: E   AssertionError: assert ('budget_max_dzd' == 'budget_max_dzd'
+   cause: E   ValueError: must be a JSON integer
+   cause: HTTP 422 field error: Value error, must be a JSON integer
+   cause: ValueError: must be a JSON integer
+== T2 a Decimal's fractional part ignored [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 9159d1b700185570 identical
+   3 failed, 55 passed, 1 warning in 8.83s
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[not
+   FAILED test_json_integer_reads_an_exact_decimal
+   cause: AssertionError: ('not an integer', 201, '{"request_id":"1ba84977-54e6-483d-ac71-8d3a9e5625b0"}')
+   cause: AssertionError: ('not an integer', 201, '{"request_id":"49b9b6c7-160f-4a72-83b0-0bd4084edfd4"}')
+   cause: E   AssertionError: ('not an integer', 201, '{"request_id":"1ba84977-54e6-483d-ac71-8d3a9e5625b0"}')
+   cause: E   AssertionError: ('not an integer', 201, '{"request_id":"49b9b6c7-160f-4a72-83b0-0bd4084edfd4"}')
+   cause: E   Failed: DID NOT RAISE ValueError
+   cause: Failed: DID NOT RAISE ValueError
+== T3 the digit count not bounded before int() [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 9159d1b700185570 identical
+   2 failed, 56 passed, 1 warning in 9.26s
+   FAILED test_a_budget_with_a_huge_exponent_is_refused_by_the_bound_not_built
+   FAILED test_json_integer_reads_an_exact_decimal
+   cause: AssertionError: assert ('budget_max_dzd' == 'budget_max_dzd'
+   cause: E   AssertionError: assert ('budget_max_dzd' == 'budget_max_dzd'
+   cause: E   Failed: DID NOT RAISE ValueError
+   cause: Failed: DID NOT RAISE ValueError
+== T4 a non-finite Decimal not refused first [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 9159d1b700185570 identical
+   1 failed, 57 passed, 1 warning in 9.80s
+   FAILED test_json_integer_reads_an_exact_decimal
+   cause: E   TypeError: '<' not supported between instances of 'str' and 'int'
+   cause: TypeError: '<' not supported between instances of 'str' and 'int'
+== T5 a Decimal converted through a float [src/turab/api/json_types.py, 1 site(s)]  restored: sha256 9159d1b700185570 identical
+   4 failed, 54 passed, 1 warning in 9.05s
+   FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[1e400
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9007199254740993.0]
+   FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9223372036854775807.0]
+   FAILED test_json_integer_reads_an_exact_decimal
+   cause: AssertionError: ('1e400', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"b47b11af39e249adbf1daab54b426fc8"}')
+   cause: AssertionError: ('9007199254740993.0', 9007199254740992)
+   cause: AssertionError: assert 9007199254740992 == 9007199254740993
+   cause: E   AssertionError: ('1e400', 500, '{"type":"about:blank","title":"Internal error","status":500,"code":"INTERNAL_ERROR","trace_id":"b47b11af39e249adbf1daab54b426fc8"}')
+   cause: E   AssertionError: ('9007199254740993.0', 9007199254740992)
+   cause: E   AssertionError: assert 9007199254740992 == 9007199254740993
+== E1 a Decimal not a number [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   9 failed, 49 passed, 1 warning in 9.51s
+   FAILED test_an_integer_beyond_4300_digits_is_kept_exactly
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e400]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[-0.0]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1E+2]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e400]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[777777777777777777777777]
+   FAILED test_the_judge_reads_a_decimal_as_a_json_number
+   cause: AssertionError: ('-0.0', ['body: not of type integer'])
+   cause: AssertionError: ('1.0', ['body.payload.budget_max_dzd: not of type integer'])
+   cause: AssertionError: ('1.0', ['body: not of type integer'])
+   cause: AssertionError: ('1E+2', ['body: not of type integer'])
+   cause: AssertionError: ('1e400', ['body.payload.budget_max_dzd: not of type integer'])
+   cause: AssertionError: ('1e400', ['body: not of type integer'])
+== E2 a non-finite Decimal a number [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   1 failed, 57 passed, 1 warning in 9.32s
+   FAILED test_the_judge_reads_a_decimal_as_a_json_number
+   cause: E   TypeError: '>=' not supported between instances of 'str' and 'int'
+   cause: TypeError: '>=' not supported between instances of 'str' and 'int'
+== E3 a Decimal integral only with a non-negative exponent [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   4 failed, 54 passed, 1 warning in 9.76s
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[-0.0]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0]
+   FAILED test_the_judge_reads_a_decimal_as_a_json_number
+   cause: AssertionError: ('-0.0', ['body: not of type integer'])
+   cause: AssertionError: ('1.0', ['body.payload.budget_max_dzd: not of type integer'])
+   cause: AssertionError: ('1.0', ['body: not of type integer'])
+   cause: AssertionError: assert ['body: not of type integer'] == []
+   cause: E   AssertionError: ('-0.0', ['body: not of type integer'])
+   cause: E   AssertionError: ('1.0', ['body.payload.budget_max_dzd: not of type integer'])
+== E4 every Decimal integral [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   8 failed, 50 passed, 1 warning in 9.15s
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[0.99999999999999999]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0000000000000001]
+   FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e-400]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[0.99999999999999999]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0000000000000001]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.5]
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e-400]
+   FAILED test_the_judge_reads_a_decimal_as_a_json_number
+   cause: AssertionError: ('0.99999999999999999', [])
+   cause: AssertionError: ('1.0000000000000001', [])
+   cause: AssertionError: ('1.5', [])
+   cause: AssertionError: ('1e-400', [])
+   cause: AssertionError: assert [] == ['body: not of type integer']
+   cause: E   AssertionError: ('0.99999999999999999', [])
+== E5 the fractional digits read one short [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   2 failed, 56 passed, 1 warning in 9.50s
+   FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.5]
+   FAILED test_the_judge_reads_a_decimal_as_a_json_number
+   cause: AssertionError: ('1.5', [])
+   cause: AssertionError: assert [] == ['body: not of type integer']
+   cause: E   AssertionError: ('1.5', [])
+   cause: E   AssertionError: assert [] == ['body: not of type integer']
+== E6 the schema's inexact numbers admitted [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   5 failed, 53 passed, 1 warning in 8.87s
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[const]
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[default]
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[enum]
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[minimum]
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[nested
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== E7 minimum not checked for exactness [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   1 failed, 57 passed, 1 warning in 9.48s
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[minimum]
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== E8 a list's numbers not checked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   2 failed, 56 passed, 1 warning in 9.84s
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[enum]
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[nested
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== E9 an object's numbers not checked [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   1 failed, 57 passed, 1 warning in 9.58s
+   FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[nested
+   cause: E   Failed: DID NOT RAISE ContractError
+   cause: Failed: DID NOT RAISE ContractError
+== E10 an integral float taken for inexact [src/turab/auth/contract.py, 1 site(s)]  restored: sha256 7011d05820233eac identical
+   1 failed, 57 passed, 1 warning in 9.94s
+   FAILED test_an_integral_float_in_the_schema_is_exact_and_admitted
+   cause: E   turab.auth.contract.ContractError: TEST-ADD-ALL-OF: add_all_of: 'minimum' holds a non-integral number, which YAML reads as an inexact binary float
+   cause: turab.auth.contract.ContractError: TEST-ADD-ALL-OF: add_all_of: 'minimum' holds a non-integral number, which YAML reads as an inexact binary float
+
+SURVIVING MUTATIONS: none

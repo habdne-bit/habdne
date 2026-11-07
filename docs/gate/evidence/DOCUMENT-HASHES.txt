@@ -1339,3 +1339,18 @@ docs/gate/evidence/PREP-NUMBERS-MUTATIONS-TRIAL-2.txt          new   c258085f1b1
 --- M16 (review of 5054bd0): the body parsed today; the frozen schema's numbers; POST /requests's budgets ---
 docs/gate/evidence/SLICE8-BODY-PARSING-MEASUREMENTS.py         new   4d551dd97b104d6ed2ca3ada17cdca58b57bab03aa567800ae944afc60bd029b
 docs/gate/evidence/SLICE8-BODY-PARSING-MEASUREMENTS.txt        new   83c53257675b4b29773a8970229e7ba96a965b4f673c63a57c4912f9908621da
+--- preparatory step exact numbers: mutation pairs at 7e7ed36 (its own 25; the five scripts that mutate contract.py, and input hardening, which mutates json_types.py, re-run) ---
+docs/gate/evidence/PREP-NUMBERS-MUTATIONS.txt                  new   2bb6e4d76cf5f75522b7e9a2585ceb8c644e7de44524549068897a17c19666e2
+docs/gate/evidence/PREP-NUMBERS-MUTATIONS-REPEAT.txt           new   4c1fcbd8c7c82a559db39314ce7bed9674be8528503a09735ab6be978dcf252a
+docs/gate/evidence/PREP-NUMBERS-RERUN-CORRECTION-004-MUTATIONS-REPEAT.txt new   74a0584930ca0244f40d102dca4744a9f2ff50de437d509f59f56a67166ced8f
+docs/gate/evidence/PREP-NUMBERS-RERUN-CORRECTION-004-MUTATIONS.txt new   4213dd5cfbafe89baa3ed641fc043063336fbcbc8d1c40ad9761564da30e352e
+docs/gate/evidence/PREP-NUMBERS-RERUN-INPUT-HARDENING-MUTATIONS-REPEAT.txt new   f61305326dc2368ff8aa377e6b36674c8475eacc5bf1be812b940ba518388a05
+docs/gate/evidence/PREP-NUMBERS-RERUN-INPUT-HARDENING-MUTATIONS.txt new   abe52661ccc43e1df771a0dbc6f6f9a5731f3025be21dea0952148c10f6368b4
+docs/gate/evidence/PREP-NUMBERS-RERUN-PREP-ADD-ALL-OF-MUTATIONS-REPEAT.txt new   3a1035cd8a3d4e398720439d6b45a85c1888aaf9dbc2d189271f24bb92dd525d
+docs/gate/evidence/PREP-NUMBERS-RERUN-PREP-ADD-ALL-OF-MUTATIONS.txt new   181e86560f16d6e9a393151b1310ea20f546e78a93e240a21a245a278aaec5e7
+docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE6-STEP2-MUTATIONS-REPEAT.txt new   e6b5867745b8357786dfffffe92a654e9e1eca6734c1a9b8ef257819ec75ce17
+docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE6-STEP2-MUTATIONS.txt new   473e3509b4ee2913fd55df7daf5ebccf17bc0422cea9979c139d337d7431ec50
+docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.txt new   95b7606d94216ed5dd572953c82179f5de89937a8b3fefd85b1e53ba7dc4f6c2
+docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP2-MUTATIONS.txt new   8e5ba5ec9944f431c88bceea25a5dfa54b2c31e582ba84b6e258de4ebd55ad91
+docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   85383de1715d785067bf67dc110eb0c4d4e7d2ab64ca2305adf00fe3a707a7b6
+docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP3-MUTATIONS.txt new   74676d73a957e41254e7f75368ae43a32a02339217303b083a0d27c52d9c34bb
