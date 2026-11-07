@@ -38,7 +38,7 @@ numbers before CORRECTION-009 is approved":
 - `7e7ed36`: M16;
 - `f4a160b`: the mutation pairs;
 - `65adf09`, `d74187f`, `0eece56`: the evidence round;
-- CLOSE_COMMIT: this note, plan revision 9.
+- `1fbeede`: this note, plan revision 9.
 
 ---
 
