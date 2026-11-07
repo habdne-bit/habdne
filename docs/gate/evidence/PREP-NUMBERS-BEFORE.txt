@@ -1,0 +1,103 @@
+TURAB — preparatory step: exact numbers (Slice 8 plan Q-C1 (a), review of 5054bd0): BEFORE
+
+HEAD:                        5054bd05c7c6ba8118e95fdf856a40bd99db182f
+src/turab/auth/contract.py as at 5054bd0 (unchanged); src/turab/api/exact_json.py absent:
+  src/turab/auth/contract.py sha256 now bbfcb86e8d10f83b  at 5054bd0 bbfcb86e8d10f83b
+  src/turab/api/exact_json.py: absent
+The tree's only change: the new test file, and this record:
+  ?? tests/test_exact_numbers.py
+  ?? docs/gate/evidence/PREP-NUMBERS-BEFORE.txt
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider --tb=short --junitxml=<tmp> tests/test_exact_numbers.py
+Each test not passing, with how (from the junit file's message, first line). An ERROR is a
+test whose fixture failed: the route tests import the module the step adds.
+------------------------------------------------------------------------
+FAILED test_a_non_integer_literal_keeps_its_exact_value[-0.0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[0.99999999999999999]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1.0000000000000001]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1.0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1e-400]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1e400]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[9007199254740993.0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[const]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[default]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[enum]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[minimum]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[nested const]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_parsed_body_holds_no_float_anywhere
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_an_integer_beyond_4300_digits_is_kept_exactly
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_an_integer_literal_stays_an_int
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[0.99999999999999999]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0000000000000001]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e-400]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e400]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[-0.0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[-1]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[0.99999999999999999]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0000000000000001]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.5]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1E+2]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e-400]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e400]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[777777777777777777777777]
+         -> ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)
+FAILED test_the_judge_reads_a_decimal_as_a_json_number
+         -> AssertionError: assert ['body: not of type integer'] == []
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[-Infinity]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[Infinity]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[NaN]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[empty]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[nested 100000 deep]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not JSON]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not UTF-8]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_that_parses_reaches_the_command_and_its_key[1e-400]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_that_parses_reaches_the_command_and_its_key[1e400]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+ERROR test_a_body_that_parses_reaches_the_command_and_its_key[5000 digits]
+         -> failed on setup with "ImportError: cannot import name 'exact_json' from 'turab.api' (/home/user/habdne/src/turab/api/__init__.py)"
+PASSED test_an_integral_float_in_the_schema_is_exact_and_admitted
+
+33 failed, 10 errors, 1 passed

@@ -171,10 +171,10 @@ MUTATIONS = [
   '        return math.isfinite(value)', '        return True'),
  # --- J: numbers and equality as JSON Schema states them (review of 44c3d65) ---------------
  ("J1 integer only a Python int", CONTRACT,
-  '        "integer": number and (isinstance(value, int) or value.is_integer()),',
+  '        "integer": number and (isinstance(value, int) or _integral(value)),',
   '        "integer": number and isinstance(value, int),'),
  ("J2 integer any number", CONTRACT,
-  '        "integer": number and (isinstance(value, int) or value.is_integer()),',
+  '        "integer": number and (isinstance(value, int) or _integral(value)),',
   '        "integer": number,'),
  ("J3 minimum's finiteness checked through a float", CONTRACT,
   '    if "minimum" in node and not _type_holds("number", node["minimum"]):',

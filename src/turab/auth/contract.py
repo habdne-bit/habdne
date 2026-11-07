@@ -9,6 +9,7 @@ policy silently drifts from the contract it is supposed to enforce.
 from __future__ import annotations
 
 import copy
+import decimal
 import functools
 import json
 import math
@@ -428,6 +429,19 @@ def _is_json(value: Any) -> bool:
     return False
 
 
+def _inexact(value: Any) -> bool:
+    """A non-integral float anywhere in a schema value. YAML reads `0.1` as
+    the binary float nearest to it, so an exact instance `0.1` would not equal
+    it; the frozen components hold none (Slice 8 plan Q-C1 (a))."""
+    if isinstance(value, float):
+        return not value.is_integer()
+    if isinstance(value, list):
+        return any(_inexact(v) for v in value)
+    if isinstance(value, dict):
+        return any(_inexact(v) for v in value.values())
+    return False
+
+
 def _value_problems(node: dict[str, Any]) -> list[str]:
     """What makes the VALUE of one of `node`'s own keywords malformed (JSON
     Schema 2020-12, Validation §6), so that it would be read as something it
@@ -451,6 +465,10 @@ def _value_problems(node: dict[str, Any]) -> list[str]:
     for key in ("const", "default"):
         if key in node and not _is_json(node[key]):
             problems.append(f"{key!r} must be a JSON value")
+    for key in ("const", "enum", "default", "minimum"):
+        if key in node and _inexact(node[key]):
+            problems.append(f"{key!r} holds a non-integral number, which YAML reads as an "
+                            "inexact binary float")
     if "required" in node:
         names = node["required"]
         if not isinstance(names, list) or not all(isinstance(n, str) for n in names) \
@@ -546,16 +564,29 @@ def _type_holds(kind: str, value: Any) -> bool:
     float only if finite (JSON has neither NaN nor infinity); `integer` is any
     number with a zero fractional part, so 1.0 is one (review of 44c3d65). A
     Python int is never converted to a float: no OverflowError, exact
-    comparison."""
+    comparison. A finite `decimal.Decimal` is a number too: it is how
+    `api.exact_json` keeps a non-integer number's value (Slice 8 plan Q-C1
+    (a), review of 5054bd0), and it compares exactly with an int or a float."""
     number = (isinstance(value, int) and not isinstance(value, bool)) \
-        or (isinstance(value, float) and math.isfinite(value))
+        or (isinstance(value, float) and math.isfinite(value)) \
+        or (isinstance(value, decimal.Decimal) and value.is_finite())
     return {
         "object": isinstance(value, dict), "array": isinstance(value, list),
         "string": isinstance(value, str), "null": value is None,
         "boolean": isinstance(value, bool),
-        "integer": number and (isinstance(value, int) or value.is_integer()),
+        "integer": number and (isinstance(value, int) or _integral(value)),
         "number": number,
     }[kind]
+
+
+def _integral(value: float | decimal.Decimal) -> bool:
+    """A zero fractional part, exactly (Slice 8 plan Q-C1 (a)). A `Decimal`
+    (`api.exact_json`'s non-integer numbers) is read from its digits, with no
+    arithmetic context, so no exponent can round, overflow or trap."""
+    if isinstance(value, float):
+        return value.is_integer()
+    _sign, digits, exponent = value.as_tuple()
+    return exponent >= 0 or not any(digits[max(len(digits) + exponent, 0):])
 
 
 def _format_holds(fmt: str, value: str) -> bool:
