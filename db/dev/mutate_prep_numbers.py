@@ -6,14 +6,18 @@ Authorized in the review of `5054bd0`: "parse the body from its bytes before
 its numbers become float, update the judge and its comparison for exact
 values", every refusal at the parsing limit classified, no idempotency key
 consumed. Each mutation weakens ONE rule:
-- P: `api/exact_json.py`, the parser and the dependency;
+- P: `api/exact_json.py`, the parser, the dependency and `validated`;
+- T: `api/json_types.py`, `JsonInteger` on an exact Decimal;
 - E: `auth/contract.py`, the judge's exact number and the schema's exact
   numbers.
 
 Not mutated, each with its reason:
 - the refusals' message texts: fixed strings naming no part of the body;
   the tests assert the status and the code, not the words;
-- `BodyNotParsed.__init__`: plumbing every refusal test goes through.
+- `BodyNotParsed.__init__`: plumbing every refusal test goes through;
+- `validated`'s "body" prefix on each location: the problem handler drops
+  "body" from a field's name anyway, so its absence changes no answer
+  (an equivalent mutation).
 
 Only `tests/test_exact_numbers.py` is run. See `mutation_runner.py`.
 """
@@ -23,6 +27,7 @@ from mutation_runner import ROOT, run
 
 PARSER = "src/turab/api/exact_json.py"
 CONTRACT = "src/turab/auth/contract.py"
+TYPES = "src/turab/api/json_types.py"
 TESTS = "tests/test_exact_numbers.py"
 
 MUTATIONS = [
@@ -46,10 +51,28 @@ MUTATIONS = [
  ("P6 a 400 refusal answered as a 422", PARSER,
   "        if refused.status == 400:", "        if False:"),
  ("P7 a 422 refusal raised as a general exception", PARSER,
-  "        raise RequestValidationError([", "        raise ValueError(["),
+  '        raise RequestValidationError([{"type": "json_invalid"',
+  '        raise ValueError([{"type": "json_invalid"'),
  ("P8 an invalid body not classified", PARSER,
   "    except ValueError:  # json.JSONDecodeError is a ValueError\n"
   '        raise BodyNotParsed(422, "the body is not JSON") from None\n', ""),
+ ("P9 a refusal at the storage bound raised as a general exception", PARSER,
+  "        raise RequestValidationError([\n            {**error,",
+  "        raise ValueError([\n            {**error,"),
+ ("P10 the route's body model not applied", PARSER,
+  "        return model.model_validate(value)", "        return model.model_construct(**value)"),
+ # --- T: JsonInteger on an exact Decimal ---------------------------------------------------
+ ("T1 a Decimal not read as an integer", TYPES,
+  "    if isinstance(value, Decimal):\n        return _decimal_integer(value)\n", ""),
+ ("T2 a Decimal's fractional part ignored", TYPES,
+  "    if exponent < 0 and any(digits[max(len(digits) + exponent, 0):]):", "    if False:"),
+ ("T3 the digit count not bounded before int()", TYPES,
+  "    if value.adjusted() >= sys.get_int_max_str_digits():", "    if False:"),
+ ("T4 a non-finite Decimal not refused first", TYPES,
+  "    if not value.is_finite():\n        raise ValueError", "    if False:\n        raise ValueError"),
+ ("T5 a Decimal converted through a float", TYPES,
+  "        raise ValueError(\"must be an integer a column can store\")\n    return int(value)\n",
+  "        raise ValueError(\"must be an integer a column can store\")\n    return int(float(value))\n"),
  # --- E: the judge's exact number; the schema's exact numbers --------------------------------
  ("E1 a Decimal not a number", CONTRACT,
   "        or (isinstance(value, decimal.Decimal) and value.is_finite())",

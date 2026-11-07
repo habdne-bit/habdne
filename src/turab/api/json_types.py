@@ -53,6 +53,7 @@ below are the columns' own, so nothing storable is refused.
 from __future__ import annotations
 
 import math
+import sys
 from decimal import Decimal
 from typing import Annotated, Any
 
@@ -70,8 +71,27 @@ _AREA_LOWEST = Decimal("0.005")
 _AREA_BEYOND = Decimal("9999999999.995")
 
 
+def _decimal_integer(value: Decimal) -> int:
+    """`api.exact_json`'s exact number as an `int` (Slice 8 plan Q-C1 (a),
+    review of 5054bd0): a finite Decimal with a zero fractional part, read
+    from its digits with no arithmetic context. Its digit count is bounded
+    BEFORE `int()`, so an exponent such as `1e100000000` never builds a huge
+    int: beyond Python's own `int_max_str_digits`, it exceeds every integer
+    column by far, and the field's storage bound refuses it anyway."""
+    if not value.is_finite():
+        raise ValueError("must be a JSON integer")
+    _sign, digits, exponent = value.as_tuple()
+    if exponent < 0 and any(digits[max(len(digits) + exponent, 0):]):
+        raise ValueError("must be a JSON integer")
+    if value.adjusted() >= sys.get_int_max_str_digits():
+        raise ValueError("must be an integer a column can store")
+    return int(value)
+
+
 def _json_integer(value: Any) -> Any:
     # `bool` first: in Python it IS an `int`, which is the whole problem.
+    if isinstance(value, Decimal):
+        return _decimal_integer(value)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError("must be a JSON integer")
     if isinstance(value, float):

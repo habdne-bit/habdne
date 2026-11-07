@@ -1,0 +1,108 @@
+TURAB — preparatory step: exact numbers (Slice 8 plan Q-C1 (a)): BEFORE, today's parsing measured
+
+Why a second record (review of the step, before delivery): in PREP-NUMBERS-BEFORE.txt the ten
+route tests ERRORED in their fixture (the module absent), which shows nothing of the old code.
+That record stays as it is. Here the same cases run on the old code with a working setup: on a
+tree without the parser, the test file measures TODAY's parsing (FastAPI's json.loads, and the
+route's body model as POST /requests declares it), so every test reports an assertion.
+
+HEAD:                        1da86d17903dff0659d19af79abbc7453e9bb07f
+As at 5054bd0 (unchanged), and the parser absent:
+  src/turab/auth/contract.py sha256 now bbfcb86e8d10f83b  at 5054bd0 bbfcb86e8d10f83b
+  src/turab/api/json_types.py sha256 now 23956e95fe22db03  at 5054bd0 23956e95fe22db03
+  src/turab/api/exact_json.py: absent
+The test file: tests/test_exact_numbers.py as committed with this record.
+
+Command: .venv/bin/python -m pytest -q -p no:cacheprovider --tb=short --junitxml=<tmp> tests/test_exact_numbers.py
+Each test not passing, with how (the junit message's first line, cut at 150 characters).
+------------------------------------------------------------------------
+FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[-Infinity]
+         -> AssertionError: ('-Infinity', 201, '{"accepted":true}')
+FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[Infinity]
+         -> AssertionError: ('Infinity', 201, '{"accepted":true}')
+FAILED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[NaN]
+         -> AssertionError: ('NaN', 201, '{"accepted":true}')
+FAILED test_a_body_that_parses_reaches_the_command_and_its_key[5000 digits]
+         -> AssertionError: {"type":"about:blank","title":"Validation failed","status":400,"code":"VALIDATION_FAILED","trace_id":"d7c98309bf9e406abd50ac907e91fc2e
+FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[5000 digits 777777777777]
+         -> AssertionError: ('5000 digits', 400, '{"type":"about:blank","title":"Validation failed","status":400,"code":"VALIDATION_FAILED","trace_id":"670f195aff
+FAILED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[not an integer 1e-400]
+         -> AssertionError: ('not an integer', 201, '{"request_id":"dbc3bb73-072f-41e4-91c8-15f7180f7f13"}')
+FAILED test_a_non_integer_literal_keeps_its_exact_value[-0.0]
+         -> assert (False)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[0.99999999999999999]
+         -> assert (False)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1.0000000000000001]
+         -> assert (False)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1.0]
+         -> assert (False)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1e-400]
+         -> assert (False)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[1e400]
+         -> assert (False)
+FAILED test_a_non_integer_literal_keeps_its_exact_value[9007199254740993.0]
+         -> assert (False)
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[const]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[default]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[enum]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[minimum]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_non_integral_number_in_the_schema_is_refused_at_load[nested const]
+         -> Failed: DID NOT RAISE ContractError
+FAILED test_a_parsed_body_holds_no_float_anywhere
+         -> assert False
+FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9007199254740993.0]
+         -> AssertionError: ('9007199254740993.0', 9007199254740992)
+FAILED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9223372036854775807.0]
+         -> AssertionError: ('9223372036854775807.0', '{"type":"about:blank","title":"Validation failed","status":422,"code":"VALIDATION_FAILED","...:"budget_max_
+FAILED test_an_integer_beyond_4300_digits_is_kept_exactly
+         -> ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5000 digits; use sys.set_int_max_str_digits() to increase the lim
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[0.99999999999999999]
+         -> AssertionError: ('0.99999999999999999', [])
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0000000000000001]
+         -> AssertionError: ('1.0000000000000001', [])
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e-400]
+         -> AssertionError: ('1e-400', [])
+FAILED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1e400]
+         -> AssertionError: ('1e400', ['body.payload.budget_max_dzd: not of type integer'])
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[0.99999999999999999]
+         -> AssertionError: ('0.99999999999999999', [])
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0000000000000001]
+         -> AssertionError: ('1.0000000000000001', [])
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e-400]
+         -> AssertionError: ('1e-400', [])
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[1e400]
+         -> AssertionError: ('1e400', ['body: not of type integer'])
+FAILED test_the_judge_agrees_with_the_schema_on_the_exact_value[777777777777777777777777]
+         -> ValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5000 digits; use sys.set_int_max_str_digits() to increase the lim
+FAILED test_the_judge_reads_a_decimal_as_a_json_number
+         -> AssertionError: assert ['body: not of type integer'] == []
+PASSED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[empty]
+PASSED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[nested 100000 deep]
+PASSED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not JSON]
+PASSED test_a_body_refused_at_parsing_is_classified_and_consumes_no_key[not UTF-8]
+PASSED test_a_body_that_parses_reaches_the_command_and_its_key[1e-400]
+PASSED test_a_body_that_parses_reaches_the_command_and_its_key[1e400]
+PASSED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[1e400 1e400]
+PASSED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[below 0 -1]
+PASSED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[beyond bigint 922337203685_0]
+PASSED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[beyond bigint 922337203685_1]
+PASSED test_a_budget_refused_is_classified_before_the_key_and_writes_nothing[not an integer 1.5]
+PASSED test_an_accepted_budget_reaches_the_column_with_its_exact_value[1.0]
+PASSED test_an_accepted_budget_reaches_the_column_with_its_exact_value[1E+3]
+PASSED test_an_accepted_budget_reaches_the_column_with_its_exact_value[9223372036854775807]
+PASSED test_an_integer_literal_stays_an_int
+PASSED test_an_integral_float_in_the_schema_is_exact_and_admitted
+PASSED test_in_a_conversion_body_the_budget_is_judged_as_the_schema_judges_it[1.0]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[-0.0]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[-1]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[0]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.0]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[1.5]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[1E+2]
+PASSED test_the_judge_agrees_with_the_schema_on_the_exact_value[1]
+
+32 failed, 0 errors, 24 passed

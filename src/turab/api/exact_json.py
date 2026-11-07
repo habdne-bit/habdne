@@ -26,8 +26,14 @@ VALIDATION_FAILED` for one that is not JSON or carries a non-JSON constant.
 `ExactJsonBody` raises them before the route's handler runs, so before any
 command claims an idempotency key.
 
-**It activates nothing:** no route uses it yet. The conversion (Slice 8 step
-3) is where an accepted value is carried to storage, and tested there.
+`validated` applies a route's own body model, the columns' storage bounds
+included, to an exact body (the review of 5054bd0: a budget beyond
+`BIGINT_MAX` is refused as not storable, a classified 422, before the key).
+
+**It activates nothing:** no production route uses it yet; the conversion
+(Slice 8 step 3) will. Its tests drive a route built for them from the real
+parts: the application, the command plumbing that claims the key, the request
+model with its bounds, and the request service that writes the row.
 """
 from __future__ import annotations
 
@@ -37,6 +43,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 
 
 class BodyNotParsed(Exception):
@@ -92,3 +99,22 @@ async def exact_json_body(request: Request) -> Any:
 
 
 ExactJsonBody = Annotated[Any, Depends(exact_json_body)]
+
+
+def validated(model: type[BaseModel], value: Any) -> BaseModel:
+    """`value`, an exact body, validated by a route's own body model, with the
+    model's storage bounds (`json_types`: `le=BIGINT_MAX` and the like, decision
+    F-3). A refusal is the `RequestValidationError` FastAPI raises for a body
+    model: `422 VALIDATION_FAILED`, the fields named, no value echoed. A route
+    calls it before the command, so before any idempotency key is claimed.
+
+    The schema's verdict and the column's are distinct (review of 5054bd0): a
+    budget above `BIGINT_MAX` is an `integer` the contract accepts, and is
+    refused here as not storable, not as invalid JSON Schema."""
+    try:
+        return model.model_validate(value)
+    except ValidationError as refused:
+        raise RequestValidationError([
+            {**error, "loc": ("body", *error.get("loc", ()))}
+            for error in refused.errors(include_input=False, include_url=False)
+        ]) from None

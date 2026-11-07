@@ -1333,3 +1333,6 @@ docs/gate/SLICE_8_PLAN.md                                      rev8b d6930a911e5
 --- preparatory step: exact numbers (Q-C1 (a), review of 5054bd0): before record, mutation trial ---
 docs/gate/evidence/PREP-NUMBERS-BEFORE.txt                     new   56efe21a7c844719a63a298afe64b9939a91d51e0bdb9d0ac0c7d00fab98abed
 docs/gate/evidence/PREP-NUMBERS-MUTATIONS-TRIAL.txt            new   8ab31ead1cacd58af8e2fbaab1b2322f66bdc4852bc78b86ad45c06caacb46ca
+--- exact numbers, revised before delivery (storage through the real parts; JsonInteger on Decimal; validated): the before record with today's parsing; the 25-mutation trial ---
+docs/gate/evidence/PREP-NUMBERS-BEFORE-TODAY-PARSING.txt       new   c74c411c1cf466c0e375ab40cba91555fd3ec4cfa4e68570f062078363def878
+docs/gate/evidence/PREP-NUMBERS-MUTATIONS-TRIAL-2.txt          new   c258085f1b1bbb04812291bd23f3bd0f4fa250cf102c15cb11831a80f150e10b
