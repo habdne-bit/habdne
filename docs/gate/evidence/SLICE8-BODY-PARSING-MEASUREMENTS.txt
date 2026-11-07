@@ -1,0 +1,19 @@
+M16.1 The conversion route today, raw bodies, an unknown lead
+  a valid body         404 NOT_FOUND fields=[]
+  NaN                  422 VALIDATION_FAILED fields=['payload']
+  1e400                422 VALIDATION_FAILED fields=['payload']
+  1e-400               404 NOT_FOUND fields=[]
+  nested 100000 deep   400 VALIDATION_FAILED fields=[]
+  not JSON             422 VALIDATION_FAILED fields=['1']
+  not UTF-8            400 VALIDATION_FAILED fields=[]
+
+M16.2 Numbers in the frozen contract's numeric keywords
+  floats: 0; non-integral: 0
+
+M16.3 The production route POST /requests today (FastAPI's parsing, RequestCreate):
+      the budget sent, the answer, and the value the bigint column holds
+  1e-400                   201                    held=0
+  9007199254740993.0       201                    held=9007199254740992
+  9223372036854775807.0    422 VALIDATION_FAILED  held=None
+  9007199254740993         201                    held=9007199254740993
+  1.0                      201                    held=1
