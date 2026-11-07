@@ -1354,3 +1354,6 @@ docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP2-MUTATIONS-REPEAT.txt new   95
 docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP2-MUTATIONS.txt new   8e5ba5ec9944f431c88bceea25a5dfa54b2c31e582ba84b6e258de4ebd55ad91
 docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP3-MUTATIONS-REPEAT.txt new   85383de1715d785067bf67dc110eb0c4d4e7d2ab64ca2305adf00fe3a707a7b6
 docs/gate/evidence/PREP-NUMBERS-RERUN-SLICE7-STEP3-MUTATIONS.txt new   74676d73a957e41254e7f75368ae43a32a02339217303b083a0d27c52d9c34bb
+--- preparatory step exact numbers: delivery note; Slice 8 plan revision 9 (review of 5054bd0) ---
+docs/gate/SLICE_8_PREP_NUMBERS_DELIVERY.md                     new   5783c5cc837fe8ea8ae24b5f39edadd1bcbfc9543b4a301388f74c2999cf10ac
+docs/gate/SLICE_8_PLAN.md                                      rev9  23839fc9e97f71815e34e8c9b95c7b0051d03bc3b9d6dc72cbeb04ebc4792c5f
